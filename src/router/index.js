@@ -1,21 +1,35 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
-//import Layout from '@/layout/index.vue';
+import Layout from '@/layout/index.vue';
 // 首页组件
 // 无需在这里引入所有页面组件，因为我们使用路由懒加载
 
 const routes = [
+  // 登录页面
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('../views/login/LoginView.vue'),
+    meta: { title: '用户登录' }
+  },
   {
     path: '/',
-    name: 'home',
-    component: HomeView, // 首页
-    meta: { title: '首页/总览' }
+    component: Layout,
+    redirect: '/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'home',
+        component: HomeView,
+        meta: { title: '首页/总览' }
+      }
+    ]
   },
   // 系统配置
   {
     path: '/system-config', // 系统配置模块的父路径
-    //component: Layout, // 使用布局组件
+    component: Layout, // 使用布局组件
     redirect: '/system-config/basic-management', // 默认重定向到基础管理
     name: 'SystemConfig',
     meta: {
@@ -49,7 +63,7 @@ const routes = [
     path: '/algorithm',
     name: 'algorithm',
     redirect: '/algorithm/upload',
-    component: () => import('../views/AlgorithmConfig.vue'),
+    component: Layout,
     meta: { title: '算法配置', requiresAuth: true },
     children: [
       {
@@ -70,7 +84,8 @@ const routes = [
   {
     path: '/usermanagement',
     name: 'UserManagement',
-    component: () => import('../views/UserManagement.vue'), // 新建的集成页面
+    component: Layout,
+    redirect: '/usermanagement/user-management-manage',
     meta: { title: '用户管理', icon: 'User' },
     children: [
       {
@@ -79,16 +94,20 @@ const routes = [
         component: () => import('../views/user-management/UserManage.vue'), // 保持这个组件名，但内容会更新
         meta: { title: '用户管理' }
       },
-
+      {
+        path: 'role-management', // 角色管理子路由
+        name: 'RoleManagement',
+        component: () => import('../views/user-management/RoleManagement.vue'),
+        meta: { title: '角色管理' }
+      }
     ]
-
   },
   // 接入管理
   {
     path: '/access',
     name: 'access',
     redirect: '/access/device',
-    component: () => import('../views/AccessManagement.vue'),
+    component: Layout,
     meta: { title: '接入管理', requiresAuth: true },
     children: [
       {
@@ -116,7 +135,7 @@ const routes = [
     path: '/detection',
     name: 'detection',
     redirect: '/detection/realtime',
-    component: () => import('../views/Detection.vue'),
+    component: Layout,
     meta: { title: '实时检测', requiresAuth: true },
     children: [
       {
@@ -133,12 +152,34 @@ const routes = [
       }
     ]
   },
+  // 录像管理
+  {
+    path: '/recording',
+    name: 'recording',
+    redirect: '/recording/list',
+    component: Layout,
+    meta: { title: '录像管理', icon: 'VideoCamera', requiresAuth: true },
+    children: [
+      {
+        path: 'list',
+        name: 'recording-list',
+        component: () => import('../views/recording/RecordingList.vue'),
+        meta: { title: '录像列表' }
+      },
+      {
+        path: 'statistics',
+        name: 'recording-statistics',
+        component: () => import('../views/recording/RecordingStatistics.vue'),
+        meta: { title: '录像统计' }
+      }
+    ]
+  },
   // 事件中心
   {
     path: '/event',
     name: 'event',
     redirect: '/event/alarm-display',
-    component: () => import('../views/EventCenter.vue'),
+    component: Layout,
     meta: { title: '事件中心', requiresAuth: true },
     children: [
       {
@@ -176,16 +217,28 @@ const routes = [
   // 日志中心
   {
     path: '/log',
-    name: 'log',
-    component: () => import('../views/LogCenter.vue'),
-    meta: { title: '日志中心', requiresAuth: true }
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'log',
+        component: () => import('../views/LogCenter.vue'),
+        meta: { title: '日志中心', requiresAuth: true }
+      }
+    ]
   },
   // 统计分析
   {
     path: '/statistics',
-    name: 'statistics',
-    component: () => import('../views/StatisticsAnalysis.vue'),
-    meta: { title: '统计分析', requiresAuth: true }
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'statistics',
+        component: () => import('../views/StatisticsAnalysis.vue'),
+        meta: { title: '统计分析', requiresAuth: true }
+      }
+    ]
   },
   // API 接口（通常不需要页面）
   // {

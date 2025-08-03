@@ -39,7 +39,7 @@
               <el-icon v-else><Fold /></el-icon>
             </div>
 
-            <el-menu-item index="/">
+            <el-menu-item index="/dashboard">
               <el-icon><HomeFilled /></el-icon>
               <template #title>首页/总览</template>
             </el-menu-item>
@@ -69,7 +69,7 @@
                 <span>用户管理</span>
               </template>
               <el-menu-item index="/usermanagement/user-management-manage">用户管理</el-menu-item>
-
+              <el-menu-item index="/usermanagement/role-management">角色管理</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu index="/access">
@@ -89,6 +89,15 @@
               </template>
               <el-menu-item index="/detection/realtime">实时检测</el-menu-item>
               <el-menu-item index="/detection/playback">录像回放</el-menu-item>
+            </el-sub-menu>
+
+            <el-sub-menu index="/recording">
+              <template #title>
+                <el-icon><VideoCamera /></el-icon>
+                <span>录像管理</span>
+              </template>
+              <el-menu-item index="/recording/list">录像列表</el-menu-item>
+              <el-menu-item index="/recording/statistics">录像统计</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu index="/event">

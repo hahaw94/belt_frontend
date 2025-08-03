@@ -1,17 +1,12 @@
 <template>
   <div id="app">
-    <LayoutIndex />
+    <router-view />
   </div>
 </template>
 
 <script>
-import LayoutIndex from './layout/index.vue'; // 引入布局组件
-
 export default {
-  name: 'App',
-  components: {
-    LayoutIndex // 注册布局组件
-  }
+  name: 'App'
 }
 </script>
 
