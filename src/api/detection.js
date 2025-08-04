@@ -20,5 +20,20 @@ export const detectionApi = {
   // 摄像头云镜控制
   ptzControl(deviceId, data) {
     return api.post(`/api/detection/ptz-control/${deviceId}`, data)
+  },
+
+  // 获取实时检测状态
+  getRealTimeStatus() {
+    return api.get('/api/detection/real-time')
+  },
+
+  // 开始实时检测
+  startDetection(data) {
+    return api.post('/api/detection/start', data)
+  },
+
+  // 停止实时检测
+  stopDetection(data) {
+    return api.post('/api/detection/stop', data)
   }
 } 

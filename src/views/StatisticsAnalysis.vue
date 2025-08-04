@@ -389,7 +389,7 @@
 
 <script setup name="StatisticsAnalysis">
 import { ref, reactive, computed, onMounted } from 'vue'
-// import { statisticsApi } from '@/api/statistics'
+import { statisticsApi } from '@/api/statistics'
 import { ElMessage } from 'element-plus'
 import { 
   DataAnalysis, 
@@ -577,49 +577,14 @@ const loadTrendData = async () => {
 const loadDetailData = async () => {
   tableLoading.value = true
   try {
-    // TODO: 调用实际的API
-    // const response = await statisticsApi.getMultiDimensionAlarm({
-    //   dimensions: selectedDimension.value,
-    //   start_date: timeRange.value[0],
-    //   end_date: timeRange.value[1]
-    // })
+    const response = await statisticsApi.getMultiDimensionAlarm({
+      dimensions: selectedDimension.value,
+      start_date: timeRange.value[0],
+      end_date: timeRange.value[1]
+    })
     
-    // 模拟数据
-    const mockData = {
-      'type': [
-        {
-          dimension: '异常行为',
-          count: 45,
-          percentage: 0.35,
-          avg_per_day: 6.4,
-          max_day: '2024-01-17',
-          trend: '下降',
-          description: '主要发生在工作时间，需重点关注'
-        },
-        {
-          dimension: '车辆违规',
-          count: 32,
-          percentage: 0.25,
-          avg_per_day: 4.6,
-          max_day: '2024-01-15',
-          trend: '稳定',
-          description: '多发生在出入口区域'
-        }
-      ],
-      'location': [
-        {
-          dimension: '前门',
-          count: 38,
-          percentage: 0.30,
-          avg_per_day: 5.4,
-          max_day: '2024-01-16',
-          trend: '上升',
-          description: '人流量大，告警频发'
-        }
-      ]
-    }
-    
-    detailTableData.value = mockData[selectedDimension.value] || []
+    const dimensionKey = `by_${selectedDimension.value}`
+    detailTableData.value = response.body[dimensionKey] || []
   } catch (error) {
     ElMessage.error('加载详细数据失败')
   } finally {

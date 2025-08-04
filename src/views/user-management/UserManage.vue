@@ -37,14 +37,14 @@
       </el-table>
 
       <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
+                  v-model:current-page="pagination.page"
+        v-model:page-size="pagination.pageSize"
           :page-sizes="[5, 10, 20]"
           :small="false"
           :disabled="loading"
           :background="true"
           layout="total, sizes, prev, pager, next, jumper"
-          :total="mockUsers.length"
+          :total="pagination.total"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
           class="mt-20 flex-center"
@@ -87,11 +87,11 @@
 
         <el-form-item label="模块权限">
           <el-checkbox-group v-model="currentUser.permissions" class="permission-checkbox-group">
-            <el-checkbox v-for="route in allRoutesForPermission" :key="route.name" :label="route.name">
+            <el-checkbox v-for="route in allParentRoutesForPermission" :key="route.name" :label="route.name">
               {{ route.meta?.title || route.name }}
             </el-checkbox>
           </el-checkbox-group>
-          <div class="permission-tip">请勾选该用户可以访问的页面模块。</div>
+          <div class="permission-tip">请勾选该用户可以访问的页面模块（仅包含主要功能模块）。</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -109,6 +109,7 @@ import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Edit, Key, CircleClose, Select, Delete } from '@element-plus/icons-vue';
 import router from '@/router'; // 导入路由实例以获取所有路由信息
+import { userApi } from '@/api/user';
 
 // ===================== 数据定义 =====================
 const loading = ref(false); // 表格加载状态
@@ -127,12 +128,15 @@ const currentUser = reactive({
   lastLogin: '',
 });
 
-// 模拟用户数据
-const mockUsers = ref([]);
+// 用户数据
+const userList = ref([]);
 
 // 分页数据
-const currentPage = ref(1);
-const pageSize = ref(10);
+const pagination = reactive({
+  page: 1,
+  pageSize: 10,
+  total: 0
+});
 
 // 表单验证规则
 const userFormRef = ref(null);
@@ -163,77 +167,54 @@ const userRules = reactive({
   ],
 });
 
-// 用于权限勾选的所有可访问路由模块
-const allRoutesForPermission = computed(() => {
-  // 过滤掉根路由和不应作为独立权限勾选的路由，只保留菜单项或有明确meta.title的路由
-  const accessibleRoutes = router.getRoutes().filter(route =>
-      route.meta?.title && !route.meta?.hidden && route.path !== '/'
-  );
-  // 为了更友好，可以对层级进行处理，这里简化为所有带title的路由
-  return accessibleRoutes;
+// 用于权限勾选的所有父路由（仅包含主要功能模块）
+const allParentRoutesForPermission = computed(() => {
+  // 只获取带有children的父路由，且不包含根路径
+  const parentRoutes = router.getRoutes().filter(route => {
+    return route.meta?.title && 
+           route.children && 
+           route.children.length > 0 && 
+           route.path !== '/' &&
+           !route.meta?.hidden;
+  });
+  
+  return parentRoutes;
 });
 
 
 // ===================== Computed 属性 =====================
-// 根据分页信息获取当前页的用户数据
+// 当前页用户数据（直接使用API返回的分页数据）
 const paginatedUsers = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-  return mockUsers.value.slice(start, end);
+  return userList.value;
 });
 
 // ===================== 方法 =====================
 
 /**
- * 模拟初始化用户数据
+ * 获取用户列表
  */
-const initMockUsers = () => {
-  const users = [];
-  const roles = ['管理员', '操作员', '访客'];
-  const statuses = ['启用', '禁用'];
-  const routeNames = allRoutesForPermission.value.map(r => r.name); // 获取所有路由名称
-
-  for (let i = 1; i <= 25; i++) {
-    const role = roles[Math.floor(Math.random() * roles.length)];
-    const status = statuses[Math.floor(Math.random() * statuses.length)];
-    const createTime = new Date(Date.now() - Math.floor(Math.random() * 90 * 24 * 60 * 60 * 1000)).toLocaleString('zh-CN');
-    const lastLogin = Math.random() > 0.3 ? new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)).toLocaleString('zh-CN') : '从未登录';
-
-    // 为每个用户随机分配一些权限
-    const randomPermissions = [];
-    const numPermissions = Math.floor(Math.random() * routeNames.length) + 1; // 至少1个权限
-    for (let j = 0; j < numPermissions; j++) {
-      const randomRoute = routeNames[Math.floor(Math.random() * routeNames.length)];
-      if (!randomPermissions.includes(randomRoute)) {
-        randomPermissions.push(randomRoute);
-      }
-    }
-
-    users.push({
-      id: i,
-      username: `user_${i < 10 ? '0' + i : i}`,
-      // 密码不存储在前端模拟数据中，仅在添加/重置时处理
-      role: role,
-      status: status,
-      permissions: randomPermissions, // 随机分配权限
-      createTime: createTime,
-      lastLogin: lastLogin,
+const getUserList = async () => {
+  try {
+    loading.value = true;
+    const response = await userApi.getUserList({
+      page: pagination.page,
+      page_size: pagination.pageSize
     });
+    
+    userList.value = response.body.users;
+    pagination.total = response.body.total;
+  } catch (error) {
+    ElMessage.error('获取用户列表失败');
+  } finally {
+    loading.value = false;
   }
-  mockUsers.value = users;
 };
 
 /**
- * 刷新用户列表 (模拟)
+ * 刷新用户列表
  */
 const getUsers = () => {
-  loading.value = true;
-  ElMessage.info('正在刷新用户列表...');
-  setTimeout(() => {
-    initMockUsers(); // 重新加载模拟数据
-    loading.value = false;
-    ElMessage.success('用户列表已刷新！');
-  }, 500);
+  getUserList();
 };
 
 /**
@@ -284,37 +265,34 @@ const submitUserForm = async () => {
 
   await userFormRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true;
-      const messagePrefix = isEditMode.value ? '更新' : '添加';
-      ElMessage.info(`正在${messagePrefix}用户: ${currentUser.username}...`);
-
-      setTimeout(() => {
-        loading.value = false;
+      try {
+        loading.value = true;
+        const { confirmPassword, ...userData } = currentUser;
+        
         if (isEditMode.value) {
           // 编辑用户
-          const index = mockUsers.value.findIndex(u => u.id === currentUser.id);
-          if (index !== -1) {
-            // 复制除密码外的所有属性
-            const { ...rest } = currentUser;
-            Object.assign(mockUsers.value[index], rest);
+          if (passwordResetMode.value) {
+            // 重置密码
+            await userApi.resetPassword(currentUser.id, { password: currentUser.password });
+            ElMessage.success(`用户 ${currentUser.username} 密码重置成功！`);
+          } else {
+            // 更新用户信息
+            await userApi.updateUser(currentUser.id, userData);
             ElMessage.success(`用户 ${currentUser.username} 更新成功！`);
           }
         } else {
           // 添加用户
-          const newId = Math.max(0, ...mockUsers.value.map(u => u.id)) + 1;
-          const {  ...dataToSave } = currentUser; // 移除确认密码字段
-          mockUsers.value.unshift({
-            ...dataToSave,
-            id: newId,
-            createTime: new Date().toLocaleString('zh-CN'),
-            lastLogin: '从未登录',
-            // 真实场景下密码需要加密后存储
-            // password: dataToSave.password // 实际不会这样直接存
-          });
+          await userApi.addUser(userData);
           ElMessage.success(`用户 ${currentUser.username} 添加成功！`);
         }
+        
         userDialogVisible.value = false;
-      }, 1000);
+        getUserList(); // 重新加载用户列表
+      } catch (error) {
+        ElMessage.error(error.message || '操作失败');
+      } finally {
+        loading.value = false;
+      }
     } else {
       ElMessage.error('请检查表单输入！');
     }
@@ -342,53 +320,62 @@ const handleResetPassword = (row) => {
  * 切换用户状态 (启用/禁用)
  * @param {Object} row - 当前行用户数据
  */
-const toggleUserStatus = (row) => {
-  ElMessageBox.confirm(`确定要${row.status === '启用' ? '禁用' : '启用'}用户 "${row.username}" 吗？`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  })
-      .then(() => {
-        loading.value = true;
-        setTimeout(() => {
-          const index = mockUsers.value.findIndex(u => u.id === row.id);
-          if (index !== -1) {
-            mockUsers.value[index].status = row.status === '启用' ? '禁用' : '启用';
-          }
-          loading.value = false;
-          ElMessage.success(`用户 ${row.username} 已${row.status === '启用' ? '禁用' : '启用'}！`);
-        }, 300);
-      })
-      .catch(() => {
-        ElMessage.info('已取消操作。');
-      });
+const toggleUserStatus = async (row) => {
+  const newStatus = row.status === '启用' ? '禁用' : '启用';
+  
+  try {
+    await ElMessageBox.confirm(`确定要${newStatus}用户 "${row.username}" 吗？`, '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    
+    loading.value = true;
+    await userApi.updateUser(row.id, { status: newStatus });
+    ElMessage.success(`用户 ${row.username} 已${newStatus}！`);
+    getUserList(); // 重新加载用户列表
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('状态切换失败');
+    } else {
+      ElMessage.info('已取消操作。');
+    }
+  } finally {
+    loading.value = false;
+  }
 };
 
 /**
  * 处理删除用户操作
  * @param {Object} row - 要删除的用户数据
  */
-const handleDeleteUser = (row) => {
-  ElMessageBox.confirm(`确定要删除用户 "${row.username}" 吗？此操作不可逆！`, '警告', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  })
-      .then(() => {
-        loading.value = true;
-        setTimeout(() => {
-          mockUsers.value = mockUsers.value.filter(user => user.id !== row.id);
-          loading.value = false;
-          ElMessage.success(`用户 ${row.username} 删除成功！`);
-          // 检查当前页是否为空，如果为空且不是第一页，则跳转到上一页
-          if (paginatedUsers.value.length === 0 && currentPage.value > 1) {
-            currentPage.value--;
-          }
-        }, 300);
-      })
-      .catch(() => {
-        ElMessage.info('已取消删除操作。');
-      });
+const handleDeleteUser = async (row) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除用户 "${row.username}" 吗？此操作不可逆！`, '警告', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    });
+    
+    loading.value = true;
+    await userApi.deleteUser(row.id);
+    ElMessage.success(`用户 ${row.username} 删除成功！`);
+    
+    // 检查当前页是否为空，如果为空且不是第一页，则跳转到上一页
+    if (userList.value.length === 1 && pagination.page > 1) {
+      pagination.page--;
+    }
+    
+    getUserList(); // 重新加载用户列表
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除用户失败');
+    } else {
+      ElMessage.info('已取消删除操作。');
+    }
+  } finally {
+    loading.value = false;
+  }
 };
 
 /**
@@ -396,8 +383,9 @@ const handleDeleteUser = (row) => {
  * @param {number} val - 新的每页条数
  */
 const handleSizeChange = (val) => {
-  pageSize.value = val;
-  currentPage.value = 1; // 改变每页大小时，重置到第一页
+  pagination.pageSize = val;
+  pagination.page = 1; // 改变每页大小时，重置到第一页
+  getUserList();
 };
 
 /**
@@ -405,12 +393,13 @@ const handleSizeChange = (val) => {
  * @param {number} val - 新的当前页码
  */
 const handleCurrentChange = (val) => {
-  currentPage.value = val;
+  pagination.page = val;
+  getUserList();
 };
 
 // ===================== 生命周期钩子 =====================
 onMounted(() => {
-  initMockUsers(); // 组件挂载时初始化模拟用户数据
+  getUserList(); // 组件挂载时加载用户数据
 });
 </script>
 

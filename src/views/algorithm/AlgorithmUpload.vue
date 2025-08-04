@@ -2,382 +2,353 @@
   <div class="algorithm-warehouse-container sub-page-content">
     <h2>算法仓</h2>
 
+    <!-- 算法上传 -->
     <el-card class="upload-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>算法版本包上传</span>
+          <span>算法模型上传</span>
+          <el-tag type="info" size="small">每个算法最多存储5个模型</el-tag>
         </div>
       </template>
+      <div class="upload-content">
+        <el-alert
+          title="上传说明"
+          type="info"
+          description="支持手动上传算法模型文件，也支持训练平台自动下发。算法模型文件支持 .zip、.tar、.gz 等压缩包格式。"
+          show-icon
+          :closable="false"
+          class="mb-20">
+        </el-alert>
+        
       <el-upload
           class="upload-demo"
           drag
-          action="#"
-          :http-request="handleUpload"
-          :show-file-list="false"
+          :action="uploadUrl"
+          :headers="uploadHeaders"
+          :on-success="handleUploadSuccess"
+          :on-error="handleUploadError"
+          :before-upload="beforeUpload"
+          :data="uploadData"
           multiple
-          accept=".zip,.tar,.gz,.sh,.py,.bin"
-          :disabled="loading"
-      >
+          accept=".zip,.tar,.gz,.py,.sh,.bin"
+          :disabled="uploading">
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">
-          将文件拖拽至此 或 <em>点击上传</em>
+            将算法文件拖拽至此 或 <em>点击上传</em>
         </div>
         <template #tip>
           <div class="el-upload__tip">
-            支持 .zip, .tar, .gz 等压缩包或脚本文件 (.sh, .py, .bin)，单文件大小不超过 500MB
+              支持 .zip、.tar、.gz 压缩包或 .py、.sh、.bin 脚本文件，单文件大小不超过 500MB
           </div>
         </template>
       </el-upload>
+
+        <el-form :model="uploadForm" label-width="120px" class="upload-form mt-20">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="算法名称">
+                <el-input v-model="uploadForm.algorithm_name" placeholder="请输入算法名称"></el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="算法版本">
+                <el-input v-model="uploadForm.algorithm_version" placeholder="请输入版本号"></el-input>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="算法描述">
+            <el-input 
+              v-model="uploadForm.description" 
+              type="textarea" 
+              :rows="3" 
+              placeholder="请输入算法功能描述">
+            </el-input>
+          </el-form-item>
+        </el-form>
+      </div>
     </el-card>
 
-    <el-card class="resource-list-card" shadow="hover">
+    <!-- 算法列表 -->
+    <el-card class="algorithm-list-card" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>算法版本列表</span>
-          <el-button type="primary" :icon="Refresh" size="small" @click="getAlgorithmVersions" :loading="loading">刷新列表</el-button>
+          <div>
+            <el-button type="primary" :icon="Refresh" size="small" @click="getAlgorithmList" :loading="loading">刷新列表</el-button>
+          </div>
         </div>
       </template>
 
-      <el-table
-          :data="paginatedVersions"
-          v-loading="loading"
-          border
-          stripe
-          width="100%" header-cell-class-name="table-header-cell"
-      >
+      <!-- 算法表格 -->
+      <el-table :data="paginatedAlgorithms" v-loading="loading" border stripe style="width: 100%">
         <el-table-column prop="id" label="ID" width="80" align="center"></el-table-column>
-        <el-table-column prop="name" label="版本名称" min-width="180"></el-table-column> <el-table-column prop="version" label="版本号" width="120"></el-table-column>
-        <el-table-column prop="type" label="文件类型" width="100"></el-table-column>
-        <el-table-column prop="size" label="文件大小" width="120"></el-table-column>
-        <el-table-column prop="uploadTime" label="上传时间" width="180"></el-table-column>
-        <el-table-column prop="status" label="发布状态" width="120" align="center">
+        <el-table-column prop="name" label="算法名称" min-width="180"></el-table-column>
+        <el-table-column prop="version" label="版本号" width="120">
           <template #default="{ row }">
-            <el-tag :type="row.status === '已发布' ? 'success' : 'info'">
-              {{ row.status }}
-            </el-tag>
+            <el-tag type="primary" size="small">{{ row.version }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right" align="center"> <template #default="{ row }">
-          <el-button type="primary" :icon="Edit" size="small" @click="handleEditVersion(row)" :disabled="row.status === '已发布' || loading">编辑</el-button>
-          <el-button
-              :type="row.status === '已发布' ? 'info' : 'success'"
-              :icon="row.status === '已发布' ? View : Promotion"
-              size="small"
-              @click="handlePublishVersion(row)"
-              :disabled="loading"
-          >
-            {{ row.status === '已发布' ? '查看详情' : '发布版本' }}
+        <el-table-column prop="type" label="文件类型" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag size="small">{{ row.type }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="size" label="文件大小" width="120" align="center"></el-table-column>
+        <el-table-column prop="upload_time" label="上传时间" width="160" align="center"></el-table-column>
+        <el-table-column prop="status" label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" size="small" @click="deployAlgorithm(row)">
+              部署
+            </el-button>
+            <el-button type="danger" size="small" @click="deleteAlgorithm(row)">
+              删除
           </el-button>
-          <el-button type="danger" :icon="Delete" size="small" @click="handleDeleteVersion(row)" :disabled="loading">删除</el-button>
         </template>
         </el-table-column>
       </el-table>
 
+      <!-- 分页 -->
+      <div class="pagination-section">
       <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[5, 10, 20]"
-          :small="false"
-          :disabled="loading"
-          :background="true"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="mockVersions.length" @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-          class="mt-20 flex-center"
-      />
+          v-model:current-page="pagination.currentPage"
+          v-model:page-size="pagination.pageSize"
+          :total="pagination.total"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange">
+        </el-pagination>
+      </div>
     </el-card>
-
-    <el-dialog
-        v-model="editDialogVisible"
-        title="编辑算法版本"
-        width="500px"
-        :close-on-click-modal="false"
-        destroy-on-close
-    >
-      <el-form :model="currentVersion" label-width="100px">
-        <el-form-item label="版本名称">
-          <el-input v-model="currentVersion.name"></el-input>
-        </el-form-item>
-        <el-form-item label="版本号">
-          <el-input v-model="currentVersion.version"></el-input>
-        </el-form-item>
-        <el-form-item label="文件类型">
-          <el-input v-model="currentVersion.type" disabled></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="editDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitEditVersion" :loading="loading">保存</el-button>
-        </span>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
-<script setup name="AlgorithmWarehouse">
-import { ref, reactive, computed, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { UploadFilled, Refresh, Edit, Delete, Promotion, View } from '@element-plus/icons-vue';
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { UploadFilled, Refresh } from '@element-plus/icons-vue'
+import { algorithmApi } from '@/api/algorithm'
 
-// ===================== 数据定义 =====================
-const loading = ref(false); // 表格加载状态
-const editDialogVisible = ref(false); // 控制编辑弹窗的显示
-const currentVersion = reactive({}); // 当前编辑的版本数据
+// 响应式数据
+const loading = ref(false)
+const uploading = ref(false)
 
-// 模拟算法版本数据 (现在在组件内部管理，不通过 Pinia)
-const mockVersions = ref([]);
+// 上传表单
+const uploadForm = reactive({
+  algorithm_name: '',
+  algorithm_version: '',
+  description: ''
+})
 
-// 分页数据
-const currentPage = ref(1);
-const pageSize = ref(10);
+// 算法列表
+const algorithmList = ref([])
 
-// ===================== Computed 属性 =====================
-// 根据分页信息获取当前页的版本数据
-const paginatedVersions = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-  return mockVersions.value.slice(start, end);
-});
+// 分页
+const pagination = reactive({
+  currentPage: 1,
+  pageSize: 10,
+  total: 0
+})
 
-// ===================== 方法 =====================
+// 计算属性
+const uploadUrl = computed(() => '/api/algorithms/upload')
 
-/**
- * 生成随机版本号
- */
-const generateVersion = () => {
-  const major = Math.floor(Math.random() * 5);
-  const minor = Math.floor(Math.random() * 10);
-  const patch = Math.floor(Math.random() * 20);
-  return `V${major}.${minor}.${patch}`;
-};
+const uploadHeaders = computed(() => ({
+  'Authorization': `Bearer ${localStorage.getItem('token')}`
+}))
 
-/**
- * 初始化模拟算法版本数据
- */
-const initMockVersions = () => {
-  const versions = [];
-  const fileTypes = ['.zip', '.tar', '.gz', '.py', '.sh', '.bin'];
-  for (let i = 1; i <= 25; i++) {
-    const fileType = fileTypes[Math.floor(Math.random() * fileTypes.length)];
-    const sizeMB = (Math.random() * 400 + 10).toFixed(2); // 10MB to 410MB
-    versions.push({
-      id: i,
-      name: `AlgorithmPack_${i < 10 ? '0' + i : i}`,
-      version: generateVersion(), // 使用本地方法
-      type: fileType,
-      size: `${sizeMB} MB`,
-      uploadTime: new Date(Date.now() - Math.floor(Math.random() * 60 * 24 * 60 * 60 * 1000)).toLocaleString('zh-CN'),
-      status: i % 5 === 0 ? '已发布' : '未发布', // 模拟部分已发布
-      description: `这是算法包 ${i} 的详细描述。`,
-    });
-  }
-  mockVersions.value = versions;
-};
+const uploadData = computed(() => ({
+  algorithm_name: uploadForm.algorithm_name,
+  algorithm_version: uploadForm.algorithm_version,
+  description: uploadForm.description
+}))
 
-/**
- * 模拟文件上传请求
- * @param {Object} options - 上传选项
- */
-const handleUpload = (options) => {
-  const file = options.file;
-  ElMessage.info(`正在上传文件: ${file.name}`);
-  loading.value = true;
-  setTimeout(() => {
-    loading.value = false;
-    // 模拟上传成功
-    if (file.size > 500 * 1024 * 1024) { // 500MB 限制
-      ElMessage.error(`文件 ${file.name} 太大，请上传小于 500MB 的文件！`);
-      return;
-    }
-    const newId = Math.max(0, ...mockVersions.value.map(v => v.id)) + 1;
-    const newVersion = {
-      id: newId,
-      name: file.name.split('.')[0], // 文件名作为版本名称
-      version: generateVersion(),
-      type: `.${file.name.split('.').pop()}`, // 获取文件扩展名
-      size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-      uploadTime: new Date().toLocaleString('zh-CN'),
-      status: '未发布',
-      description: `通过上传文件 ${file.name} 创建。`
-    };
-    mockVersions.value.unshift(newVersion); // 添加到列表顶部
-    ElMessage.success(`文件 ${file.name} 上传成功！`);
-  }, 1500);
-};
+const paginatedAlgorithms = computed(() => {
+  const start = (pagination.currentPage - 1) * pagination.pageSize
+  const end = start + pagination.pageSize
+  return algorithmList.value.slice(start, end)
+})
 
-/**
- * 模拟获取算法版本列表 (刷新)
- */
-const getAlgorithmVersions = () => {
-  loading.value = true;
-  ElMessage.info('正在刷新算法版本列表...');
-  setTimeout(() => {
-    initMockVersions(); // 重新加载模拟数据
-    loading.value = false;
-    ElMessage.success('列表已刷新！');
-  }, 500);
-};
-
-/**
- * 处理编辑版本按钮点击
- * @param {Object} row - 当前行版本数据
- */
-const handleEditVersion = (row) => {
-  Object.assign(currentVersion, { ...row }); // 复制当前行数据
-  editDialogVisible.value = true;
-};
-
-/**
- * 提交编辑版本表单 (模拟)
- */
-const submitEditVersion = () => {
-  loading.value = true;
-  setTimeout(() => {
-    const index = mockVersions.value.findIndex(v => v.id === currentVersion.id);
-    if (index !== -1) {
-      Object.assign(mockVersions.value[index], currentVersion); // 更新整个对象
-      ElMessage.success(`版本 "${currentVersion.name}" (V${currentVersion.version}) 更新成功！`);
-    }
-    loading.value = false;
-    editDialogVisible.value = false;
-  }, 500);
-};
-
-/**
- * 处理发布版本按钮点击 (模拟)
- * @param {Object} row - 要发布的版本数据
- */
-const handlePublishVersion = (row) => {
-  if (row.status === '已发布') {
-    ElMessage.info(`版本 "${row.name}" (V${row.version}) 已处于发布状态。`);
-    return;
-  }
-  ElMessageBox.confirm(`确定要发布算法版本 "${row.name}" (V${row.version}) 吗？发布后将可用于下发到设备。`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  })
-      .then(() => {
-        loading.value = true;
-        setTimeout(() => {
-          const index = mockVersions.value.findIndex(v => v.id === row.id);
-          if (index !== -1) {
-            mockVersions.value[index].status = '已发布';
-          }
-          loading.value = false;
-          ElMessage.success(`版本 "${row.name}" (V${row.version}) 发布成功！`);
-        }, 1000);
-      })
-      .catch(() => {
-        ElMessage.info('已取消发布操作。');
-      });
-};
-
-/**
- * 处理删除版本操作 (模拟)
- * @param {Object} row - 要删除的版本数据
- */
-const handleDeleteVersion = (row) => {
-  ElMessageBox.confirm(`确定要删除算法版本 "${row.name}" (V${row.version}) 吗？此操作不可逆！`, '警告', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  })
-      .then(() => {
-        loading.value = true;
-        setTimeout(() => {
-          mockVersions.value = mockVersions.value.filter(version => version.id !== row.id);
-          loading.value = false;
-          ElMessage.success(`版本 "${row.name}" (V${row.version}) 删除成功！`);
-          // 检查当前页是否为空，如果为空且不是第一页，则跳转到上一页
-          if (paginatedVersions.value.length === 0 && currentPage.value > 1) {
-            currentPage.value--;
-          }
-        }, 300);
-      })
-      .catch(() => {
-        ElMessage.info('已取消删除操作。');
-      });
-};
-
-/**
- * 处理每页显示条数变化
- * @param {number} val - 新的每页条数
- */
-const handleSizeChange = (val) => {
-  pageSize.value = val;
-  currentPage.value = 1; // 改变每页大小时，重置到第一页
-};
-
-/**
- * 处理当前页码变化
- * @param {number} val - 新的当前页码
- */
-const handleCurrentChange = (val) => {
-  currentPage.value = val;
-};
-
-// ===================== 生命周期钩子 =====================
+// 生命周期
 onMounted(() => {
-  initMockVersions(); // 组件挂载时初始化模拟版本数据
-});
+  getAlgorithmList()
+})
+
+// 方法
+const getAlgorithmList = async () => {
+  try {
+    loading.value = true
+    const response = await algorithmApi.getAlgorithmList()
+    if (response.data.success) {
+      algorithmList.value = response.data.body.algorithms
+      pagination.total = response.data.body.total
+    }
+  } catch (error) {
+    ElMessage.error('获取算法列表失败：' + error.message)
+  } finally {
+    loading.value = false
+  }
+}
+
+const beforeUpload = (file) => {
+  const allowedTypes = ['.zip', '.tar', '.gz', '.py', '.sh', '.bin']
+  const fileName = file.name.toLowerCase()
+  const isValidType = allowedTypes.some(type => fileName.endsWith(type))
+  
+  if (!isValidType) {
+    ElMessage.error('只支持 .zip、.tar、.gz、.py、.sh、.bin 格式的文件')
+    return false
+  }
+  
+  const isLt500M = file.size / 1024 / 1024 < 500
+  if (!isLt500M) {
+    ElMessage.error('文件大小不能超过 500MB')
+    return false
+  }
+  
+  if (!uploadForm.algorithm_name) {
+    ElMessage.error('请先填写算法名称')
+    return false
+  }
+  
+  uploading.value = true
+  return true
+}
+
+const handleUploadSuccess = (response) => {
+  uploading.value = false
+  if (response.success) {
+    ElMessage.success('算法上传成功')
+    Object.assign(uploadForm, {
+      algorithm_name: '',
+      algorithm_version: '',
+      description: ''
+    })
+    getAlgorithmList()
+  } else {
+    ElMessage.error('上传失败：' + response.message)
+  }
+}
+
+const handleUploadError = (error) => {
+  uploading.value = false
+  ElMessage.error('上传文件失败：' + error.message)
+}
+
+const handleSizeChange = (size) => {
+  pagination.pageSize = size
+  pagination.currentPage = 1
+}
+
+const handleCurrentChange = (page) => {
+  pagination.currentPage = page
+}
+
+const deployAlgorithm = (algorithm) => {
+  ElMessage.info(`准备部署算法: ${algorithm.name} ${algorithm.version}`)
+}
+
+const deleteAlgorithm = async (algorithm) => {
+  try {
+    await ElMessageBox.confirm(
+      `确认要删除算法 "${algorithm.name} ${algorithm.version}" 吗？此操作不可撤销。`,
+      '确认删除算法',
+      {
+        confirmButtonText: '确认删除',
+    cancelButtonText: '取消',
+        type: 'error'
+      }
+    )
+    
+    const response = await algorithmApi.deleteAlgorithm(algorithm.id, { 
+      confirm: true, 
+      reason: '用户手动删除' 
+    })
+    if (response.data.success) {
+      ElMessage.success('算法删除成功')
+      getAlgorithmList()
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除失败：' + error.message)
+    }
+  }
+}
+
+// 辅助函数
+const getStatusText = (status) => {
+  const statusMap = {
+    'published': '已发布',
+    'testing': '测试中',
+    'disabled': '已禁用'
+  }
+  return statusMap[status] || status
+}
+
+const getStatusType = (status) => {
+  const typeMap = {
+    'published': 'success',
+    'testing': 'warning',
+    'disabled': 'danger'
+  }
+  return typeMap[status] || 'info'
+}
 </script>
 
 <style scoped>
-/* 继承父级页面容器的基础样式 */
 .sub-page-content {
-  padding: 15px;
-  border-radius: 6px;
-  margin-top: 0;
-  min-height: auto;
+  min-height: calc(100vh - 140px);
+  padding-bottom: 40px;
 }
 
-h2 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 24px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
-}
-
-.upload-card, .resource-list-card {
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.mb-20 {
-  margin-bottom: 20px;
+.algorithm-warehouse-container {
+  padding: 20px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: bold;
-  color: #333;
 }
 
-.upload-demo {
-  text-align: center;
+.upload-content {
+  padding: 10px 0;
 }
 
-/* 调整表格头部样式 */
-:deep(.el-table__header-wrapper .el-table__header th) {
-  background-color: #f5f7fa;
-  color: #606266;
-  font-weight: bold;
+.upload-form {
+  border-top: 1px solid #ebeef5;
+  padding-top: 20px;
 }
 
-/* 分页组件居中 */
-.flex-center {
+.pagination-section {
   display: flex;
   justify-content: center;
   margin-top: 20px;
 }
 
-/* 对话框底部按钮的间距 */
-.dialog-footer button:first-child {
-  margin-right: 10px;
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+:deep(.el-card__header) {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #ebeef5;
+}
+
+:deep(.el-upload-dragger) {
+  width: 100%;
+}
+
+:deep(.el-alert) {
+  margin-bottom: 20px;
 }
 </style>

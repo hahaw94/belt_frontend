@@ -138,6 +138,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Download, VideoPlay, Loading } from '@element-plus/icons-vue'
+import { recordingApi } from '@/api/recording'
 
 const loading = ref(false)
 const videoDialogVisible = ref(false)
@@ -185,73 +186,26 @@ const getAlarmTypeColor = (type) => {
 const loadRecordingList = async () => {
   loading.value = true
   try {
-    // TODO: 调用实际的API
-    // const params = {
-    //   page: pagination.page,
-    //   page_size: pagination.pageSize,
-    //   device_id: searchForm.device_id,
-    //   start_time: searchForm.timeRange[0],
-    //   end_time: searchForm.timeRange[1],
-    //   alarm_type: searchForm.alarm_type
-    // }
-
-    // 模拟数据
-    const mockData = {
-      recordings: [
-        {
-          id: 1,
-          device_id: 1,
-          device_name: '前门摄像头',
-          alarm_id: 101,
-          alarm_type: '异常行为',
-          start_time: '2024-01-20 10:29:50',
-          end_time: '2024-01-20 10:30:10',
-          duration: 20,
-          file_path: '/recordings/20240120/1029_50_alarm_101.mp4',
-          file_size: '15.2 MB',
-          has_tracking_box: true,
-          create_time: '2024-01-20 10:30:00',
-          resolution: '1920x1080',
-          fps: 25
-        },
-        {
-          id: 2,
-          device_id: 2,
-          device_name: '后门摄像头',
-          alarm_id: 102,
-          alarm_type: '车辆违规',
-          start_time: '2024-01-20 14:15:20',
-          end_time: '2024-01-20 14:15:40',
-          duration: 20,
-          file_path: '/recordings/20240120/1415_20_alarm_102.mp4',
-          file_size: '18.5 MB',
-          has_tracking_box: true,
-          create_time: '2024-01-20 14:15:40',
-          resolution: '1920x1080',
-          fps: 30
-        },
-        {
-          id: 3,
-          device_id: 3,
-          device_name: '侧门摄像头',
-          alarm_id: 103,
-          alarm_type: '人员闯入',
-          start_time: '2024-01-20 16:22:10',
-          end_time: '2024-01-20 16:22:30',
-          duration: 20,
-          file_path: '/recordings/20240120/1622_10_alarm_103.mp4',
-          file_size: '14.8 MB',
-          has_tracking_box: true,
-          create_time: '2024-01-20 16:22:30',
-          resolution: '1920x1080',
-          fps: 25
-        }
-      ],
-      total: 50
+    const params = {
+      page: pagination.page,
+      page_size: pagination.pageSize
     }
 
-    recordingList.value = mockData.recordings
-    pagination.total = mockData.total
+    // 添加搜索条件
+    if (searchForm.device_id) {
+      params.device_id = searchForm.device_id
+    }
+    if (searchForm.timeRange && searchForm.timeRange.length === 2) {
+      params.start_time = searchForm.timeRange[0]
+      params.end_time = searchForm.timeRange[1]
+    }
+    if (searchForm.alarm_type) {
+      params.alarm_type = searchForm.alarm_type
+    }
+
+    const response = await recordingApi.getRecordingList(params)
+    recordingList.value = response.body.data
+    pagination.total = response.body.total
   } catch (error) {
     ElMessage.error('加载录像列表失败')
   } finally {
@@ -294,13 +248,8 @@ const playRecording = async (recording) => {
   currentVideoUrl.value = ''
 
   try {
-    // TODO: 调用实际的API获取播放地址
-    // const response = await recordingApi.getPlayUrl(recording.id)
-    
-    // 模拟获取播放地址
-    setTimeout(() => {
-      currentVideoUrl.value = `http://192.168.1.100:8080${recording.file_path}`
-    }, 1000)
+    const response = await recordingApi.getPlayUrl(recording.id)
+    currentVideoUrl.value = response.body.play_url
   } catch (error) {
     ElMessage.error('获取播放地址失败')
     videoDialogVisible.value = false
@@ -310,15 +259,7 @@ const playRecording = async (recording) => {
 // 下载录像
 const downloadRecording = async (recording) => {
   try {
-    // TODO: 调用实际的API下载文件
-    // window.open(`/api/recordings/${recording.id}/download`)
-    
-    // 模拟下载
-    const link = document.createElement('a')
-    link.href = `http://192.168.1.100:8080${recording.file_path}`
-    link.download = `recording_${recording.id}.mp4`
-    link.click()
-    
+    await recordingApi.downloadRecording(recording.id)
     ElMessage.success('开始下载录像文件')
   } catch (error) {
     ElMessage.error('下载失败')
@@ -338,9 +279,7 @@ const deleteRecording = async (recording) => {
       }
     )
 
-    // TODO: 调用实际的API
-    // await recordingApi.deleteRecording(recording.id)
-
+    await recordingApi.deleteRecording(recording.id)
     ElMessage.success('删除成功')
     loadRecordingList()
   } catch (error) {

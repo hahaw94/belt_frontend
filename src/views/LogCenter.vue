@@ -280,7 +280,7 @@
 
 <script setup name="LogCenter">
 import { ref, reactive, onMounted } from 'vue'
-// import { logApi } from '@/api/log'
+import { logApi } from '@/api/log'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Refresh } from '@element-plus/icons-vue'
 
@@ -357,80 +357,26 @@ const loadLogList = async () => {
     // }
     // const response = await logApi.getSystemLogs(params)
     
-    // 模拟数据
-    const mockData = {
-      logs: [
-        {
-          id: 1,
-          timestamp: '2024-01-20 10:30:15',
-          level: 'INFO',
-          module: 'UserManagement',
-          operation: '用户登录',
-          user_id: 1,
-          username: 'admin',
-          ip_address: '192.168.1.100',
-          details: '用户 admin 通过 web 界面成功登录系统',
-          result: '成功',
-          user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        {
-          id: 2,
-          timestamp: '2024-01-20 10:28:45',
-          level: 'ERROR',
-          module: 'DeviceManagement',
-          operation: '设备连接',
-          user_id: 2,
-          username: 'operator',
-          ip_address: '192.168.1.105',
-          details: '尝试连接设备 192.168.1.201 失败，连接超时',
-          result: '失败',
-          user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        {
-          id: 3,
-          timestamp: '2024-01-20 10:25:30',
-          level: 'WARN',
-          module: 'AlgorithmConfig',
-          operation: '算法配置',
-          user_id: 1,
-          username: 'admin',
-          ip_address: '192.168.1.100',
-          details: '算法配置参数超出推荐范围，检测精度可能受影响',
-          result: '成功',
-          user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        {
-          id: 4,
-          timestamp: '2024-01-20 10:20:12',
-          level: 'INFO',
-          module: 'SystemConfig',
-          operation: '系统配置',
-          user_id: 1,
-          username: 'admin',
-          ip_address: '192.168.1.100',
-          details: '修改系统时间同步配置，启用自动时间同步',
-          result: '成功',
-          user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        },
-        {
-          id: 5,
-          timestamp: '2024-01-20 10:15:08',
-          level: 'INFO',
-          module: 'EventCenter',
-          operation: '告警处理',
-          user_id: 2,
-          username: 'operator',
-          ip_address: '192.168.1.105',
-          details: '处理告警事件 #101，标记为已处理状态',
-          result: '成功',
-          user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      ],
-      total: 1547
+    const params = {
+      page: pagination.page,
+      page_size: pagination.pageSize
     }
 
-    logList.value = mockData.logs
-    pagination.total = mockData.total
+    // 添加搜索条件
+    if (searchForm.timeRange?.[0] && searchForm.timeRange?.[1]) {
+      params.start_time = searchForm.timeRange[0]
+      params.end_time = searchForm.timeRange[1]
+    }
+    if (searchForm.level) {
+      params.log_level = searchForm.level
+    }
+    if (searchForm.module) {
+      params.module = searchForm.module
+    }
+
+    const response = await logApi.getSystemLogs(params)
+    logList.value = response.body.logs
+    pagination.total = response.body.total
   } catch (error) {
     console.error('加载日志列表失败:', error)
     ElMessage.error('加载日志列表失败')

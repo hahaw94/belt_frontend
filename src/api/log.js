@@ -10,5 +10,15 @@ export const logApi = {
   // 导出系统日志
   exportLogs(params) {
     return api.download('/api/logs/export', params)
+  },
+
+  // 获取日志统计信息
+  getLogStatistics() {
+    return api.get('/api/logs/statistics')
+  },
+
+  // 清理旧日志
+  cleanOldLogs(data) {
+    return api.post('/api/logs/clean', data)
   }
 } 

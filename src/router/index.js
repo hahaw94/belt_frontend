@@ -89,13 +89,13 @@ const routes = [
     meta: { title: '用户管理', icon: 'User' },
     children: [
       {
-        path: 'user-management-manage', // 保持用户管理的子路由路径
+        path: 'user-management-manage',
         name: 'UserManage',
-        component: () => import('../views/user-management/UserManage.vue'), // 保持这个组件名，但内容会更新
+        component: () => import('../views/user-management/UserManage.vue'),
         meta: { title: '用户管理' }
       },
       {
-        path: 'role-management', // 角色管理子路由
+        path: 'role-management',
         name: 'RoleManagement',
         component: () => import('../views/user-management/RoleManagement.vue'),
         meta: { title: '角色管理' }

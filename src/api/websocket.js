@@ -1,150 +1,234 @@
-// WebSocket连接管理
+// WebSocket实时通信API
 export class WebSocketManager {
   constructor() {
     this.connections = new Map()
-    this.baseUrl = process.env.VUE_APP_WS_BASE_URL || 'ws://192.168.1.100:8080'
+    this.reconnectAttempts = new Map()
+    this.maxReconnectAttempts = 5
+    this.reconnectInterval = 3000
   }
 
-  // 创建WebSocket连接
-  connect(endpoint, userId, options = {}) {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      console.error('No token found for WebSocket connection')
-      return null
-    }
-
-    const url = `${this.baseUrl}/ws/${endpoint}/${userId}?token=${token}`
+  /**
+   * 建立WebSocket连接
+   * @param {string} endpoint - WebSocket端点
+   * @param {string} token - 认证令牌
+   * @param {function} onMessage - 消息处理回调
+   * @param {function} onError - 错误处理回调
+   * @returns {WebSocket} WebSocket实例
+   */
+  connect(endpoint, token, onMessage, onError) {
+    const baseUrl = process.env.VUE_APP_WS_BASE_URL || 'ws://localhost:8080'
+    const url = `${baseUrl}${endpoint}?token=${token}`
     
     if (this.connections.has(endpoint)) {
       this.disconnect(endpoint)
     }
 
-    try {
-      const ws = new WebSocket(url)
+    const ws = new WebSocket(url)
+    
+    ws.onopen = () => {
+      console.log(`WebSocket连接已建立: ${endpoint}`)
+      this.reconnectAttempts.set(endpoint, 0)
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (onMessage) {
+          onMessage(data)
+        }
+      } catch (error) {
+        console.error('WebSocket消息解析失败:', error)
+      }
+    }
+
+    ws.onerror = (error) => {
+      console.error(`WebSocket错误 ${endpoint}:`, error)
+      if (onError) {
+        onError(error)
+      }
+    }
+
+    ws.onclose = (event) => {
+      console.log(`WebSocket连接关闭: ${endpoint}`, event.code, event.reason)
+      this.connections.delete(endpoint)
       
-      ws.onopen = () => {
-        console.log(`WebSocket connected: ${endpoint}`)
-        if (options.onOpen) options.onOpen()
+      // 自动重连
+      if (event.code !== 1000) { // 非正常关闭
+        this.handleReconnect(endpoint, token, onMessage, onError)
       }
+    }
 
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data)
-          if (options.onMessage) options.onMessage(data)
-        } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
-        }
-      }
+    this.connections.set(endpoint, ws)
+    return ws
+  }
 
-      ws.onclose = (event) => {
-        console.log(`WebSocket disconnected: ${endpoint}`, event.code, event.reason)
-        this.connections.delete(endpoint)
-        if (options.onClose) options.onClose(event)
-        
-        // 自动重连（除非是正常关闭）
-        if (event.code !== 1000 && options.autoReconnect !== false) {
-          setTimeout(() => {
-            console.log(`Attempting to reconnect WebSocket: ${endpoint}`)
-            this.connect(endpoint, userId, options)
-          }, 5000)
-        }
-      }
-
-      ws.onerror = (error) => {
-        console.error(`WebSocket error: ${endpoint}`, error)
-        if (options.onError) options.onError(error)
-      }
-
-      this.connections.set(endpoint, ws)
-      return ws
-    } catch (error) {
-      console.error('Failed to create WebSocket connection:', error)
-      return null
+  /**
+   * 处理重连逻辑
+   */
+  handleReconnect(endpoint, token, onMessage, onError) {
+    const attempts = this.reconnectAttempts.get(endpoint) || 0
+    
+    if (attempts < this.maxReconnectAttempts) {
+      setTimeout(() => {
+        console.log(`尝试重连 ${endpoint}, 第 ${attempts + 1} 次`)
+        this.reconnectAttempts.set(endpoint, attempts + 1)
+        this.connect(endpoint, token, onMessage, onError)
+      }, this.reconnectInterval)
+    } else {
+      console.error(`WebSocket重连失败，已达到最大重试次数: ${endpoint}`)
     }
   }
 
-  // 断开WebSocket连接
+  /**
+   * 断开WebSocket连接
+   * @param {string} endpoint - WebSocket端点
+   */
   disconnect(endpoint) {
     const ws = this.connections.get(endpoint)
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.close(1000, 'Client disconnect')
+    if (ws) {
+      ws.close(1000, '正常关闭')
+      this.connections.delete(endpoint)
+      this.reconnectAttempts.delete(endpoint)
     }
-    this.connections.delete(endpoint)
   }
 
-  // 发送消息
-  send(endpoint, data) {
-    const ws = this.connections.get(endpoint)
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(data))
-      return true
-    }
-    console.warn(`WebSocket not connected: ${endpoint}`)
-    return false
-  }
-
-  // 断开所有连接
+  /**
+   * 断开所有WebSocket连接
+   */
   disconnectAll() {
-    this.connections.forEach((ws, endpoint) => {
+    for (const [endpoint] of this.connections) {
       this.disconnect(endpoint)
-    })
+    }
   }
 
-  // 获取连接状态
-  isConnected(endpoint) {
+  /**
+   * 发送消息
+   * @param {string} endpoint - WebSocket端点
+   * @param {object} message - 要发送的消息
+   */
+  send(endpoint, message) {
     const ws = this.connections.get(endpoint)
-    return ws && ws.readyState === WebSocket.OPEN
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(message))
+    } else {
+      console.warn(`WebSocket连接未就绪: ${endpoint}`)
+    }
+  }
+
+  /**
+   * 获取连接状态
+   * @param {string} endpoint - WebSocket端点
+   * @returns {number} WebSocket状态
+   */
+  getConnectionState(endpoint) {
+    const ws = this.connections.get(endpoint)
+    return ws ? ws.readyState : WebSocket.CLOSED
   }
 }
 
-// 创建全局WebSocket管理实例
-export const wsManager = new WebSocketManager()
+// 创建全局WebSocket管理器实例
+const wsManager = new WebSocketManager()
 
-// WebSocket相关的API
+// WebSocket API封装
 export const websocketApi = {
-  // 连接实时告警推送
-  connectAlerts(userId, callbacks) {
-    return wsManager.connect('alerts', userId, {
-      onMessage: (data) => {
-        if (data.type === 'alert' && callbacks.onAlert) {
-          callbacks.onAlert(data.data)
+  /**
+   * 连接实时告警推送
+   * @param {number} userId - 用户ID
+   * @param {function} onAlert - 告警消息处理回调
+   * @param {function} onError - 错误处理回调
+   */
+  connectAlerts(userId, onAlert, onError) {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      console.error('未找到认证令牌')
+      return null
+    }
+
+    return wsManager.connect(
+      `/ws/alerts/${userId}`,
+      token,
+      (data) => {
+        if (data.type === 'alert' && onAlert) {
+          onAlert(data.data)
         }
       },
-      ...callbacks
-    })
+      onError
+    )
   },
 
-  // 连接设备状态推送
-  connectDeviceStatus(userId, callbacks) {
-    return wsManager.connect('device-status', userId, {
-      onMessage: (data) => {
-        if (data.type === 'device_status' && callbacks.onDeviceStatus) {
-          callbacks.onDeviceStatus(data.data)
+  /**
+   * 连接设备状态推送
+   * @param {number} userId - 用户ID
+   * @param {function} onDeviceStatus - 设备状态变化处理回调
+   * @param {function} onError - 错误处理回调
+   */
+  connectDeviceStatus(userId, onDeviceStatus, onError) {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      console.error('未找到认证令牌')
+      return null
+    }
+
+    return wsManager.connect(
+      `/ws/device-status/${userId}`,
+      token,
+      (data) => {
+        if (data.type === 'device_status' && onDeviceStatus) {
+          onDeviceStatus(data.data)
         }
       },
-      ...callbacks
-    })
+      onError
+    )
   },
 
-  // 连接即时告警推送
-  connectInstantAlerts(userId, callbacks) {
-    return wsManager.connect('instant-alerts', userId, {
-      onMessage: (data) => {
-        if (data.type === 'instant_alert' && callbacks.onInstantAlert) {
-          callbacks.onInstantAlert(data.data)
+  /**
+   * 连接即时告警推送
+   * @param {number} userId - 用户ID
+   * @param {function} onInstantAlert - 即时告警处理回调
+   * @param {function} onError - 错误处理回调
+   */
+  connectInstantAlerts(userId, onInstantAlert, onError) {
+    const token = localStorage.getItem('token')
+    if (!token) {
+      console.error('未找到认证令牌')
+      return null
+    }
+
+    return wsManager.connect(
+      `/ws/instant-alerts/${userId}`,
+      token,
+      (data) => {
+        if (data.type === 'instant_alert' && onInstantAlert) {
+          onInstantAlert(data.data)
         }
       },
-      ...callbacks
-    })
+      onError
+    )
   },
 
-  // 断开连接
+  /**
+   * 断开指定WebSocket连接
+   * @param {string} endpoint - WebSocket端点
+   */
   disconnect(endpoint) {
     wsManager.disconnect(endpoint)
   },
 
-  // 断开所有连接
+  /**
+   * 断开所有WebSocket连接
+   */
   disconnectAll() {
     wsManager.disconnectAll()
+  },
+
+  /**
+   * 获取连接状态
+   * @param {string} endpoint - WebSocket端点
+   * @returns {number} WebSocket状态
+   */
+  getConnectionState(endpoint) {
+    return wsManager.getConnectionState(endpoint)
   }
-} 
+}
+
+export default websocketApi

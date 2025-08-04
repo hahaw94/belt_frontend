@@ -1,329 +1,605 @@
 <template>
-  <div class="algorithm-setup-container sub-page-content">
+  <div class="algorithm-management-container sub-page-content">
     <h2>算法配置</h2>
 
+    <!-- 算法下发 -->
+    <el-card class="dispatch-card mb-20" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <span>算法下发</span>
+          <el-button type="primary" :icon="Promotion" size="small" @click="showBatchDispatch">批量下发</el-button>
+        </div>
+      </template>
+      <div class="dispatch-content">
+        <el-alert
+          title="下发说明"
+          type="info"
+          description="选择算法模型和目标智能分析板卡，将算法下发到指定设备进行智能分析。下发过程可能需要几分钟时间。"
+          show-icon
+          :closable="false"
+          class="mb-20">
+        </el-alert>
+
+        <el-form :model="dispatchForm" :rules="dispatchRules" ref="dispatchFormRef" label-width="120px">
+        <el-row :gutter="20">
+          <el-col :span="12">
+              <el-form-item label="选择算法" prop="algorithm_version_id">
+                <el-select v-model="dispatchForm.algorithm_version_id" placeholder="请选择算法版本" style="width: 100%" @change="onAlgorithmChange">
+                  <el-option-group v-for="group in algorithmGroups" :key="group.name" :label="group.name">
+                    <el-option
+                      v-for="version in group.versions"
+                      :key="version.id"
+                      :label="`${version.name} ${version.version}`"
+                      :value="version.id">
+                      <div class="algorithm-option">
+                        <span>{{ version.name }} {{ version.version }}</span>
+                        <el-tag size="small" :type="getStatusType(version.status)">{{ getStatusText(version.status) }}</el-tag>
+                      </div>
+                    </el-option>
+                  </el-option-group>
+                </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+              <el-form-item label="目标板卡" prop="target_card">
+                <el-select v-model="dispatchForm.target_card" placeholder="请选择智能分析板卡" style="width: 100%">
+                  <el-option
+                    v-for="card in analysisCards"
+                    :key="card.id"
+                    :label="card.name"
+                    :value="card.id">
+                    <div class="card-option">
+                      <span>{{ card.name }}</span>
+                      <el-tag size="small" :type="card.status === '在线' ? 'success' : 'danger'">{{ card.status }}</el-tag>
+                    </div>
+                  </el-option>
+                </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+              <el-form-item label="同步规则">
+                <el-switch v-model="dispatchForm.sync_rules" active-text="下发后同步配置规则"></el-switch>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+              <el-form-item label="自动重启">
+                <el-switch v-model="dispatchForm.auto_restart" active-text="下发后自动重启板卡"></el-switch>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item>
+            <el-button type="primary" :icon="Promotion" @click="dispatchAlgorithm" :loading="dispatchLoading" :disabled="!canDispatch">
+              下发算法
+            </el-button>
+            <el-button :icon="Refresh" @click="resetDispatchForm">重置</el-button>
+            <el-button type="info" :icon="Document" @click="showDispatchLogs">查看日志</el-button>
+        </el-form-item>
+      </el-form>
+      </div>
+    </el-card>
+
+    <!-- 算法配置 -->
     <el-card class="config-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>智能分析卡基础配置</span>
+          <span>智能分析配置</span>
+          <el-button type="success" :icon="Setting" size="small" @click="showRuleConfig">规则配置</el-button>
         </div>
       </template>
-      <el-form :model="cardConfig" label-width="150px" class="config-form">
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="分析卡IP地址">
-              <el-input v-model="cardConfig.ipAddress" placeholder="例如: 192.168.1.101"></el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="端口">
-              <el-input-number v-model="cardConfig.port" :min="1" :max="65535"></el-input-number>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="分析模式">
-              <el-select v-model="cardConfig.analysisMode" placeholder="请选择分析模式">
-                <el-option label="实时分析" value="realtime"></el-option>
-                <el-option label="离线分析" value="offline"></el-option>
-                <el-option label="混合模式" value="hybrid"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="最大并发任务">
-              <el-input-number v-model="cardConfig.maxConcurrentTasks" :min="1" :max="100"></el-input-number>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="备注">
-          <el-input type="textarea" v-model="cardConfig.remark" :rows="3" placeholder="请输入备注信息"></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :icon="Save" @click="saveCardConfig">保存配置</el-button>
-          <el-button :icon="Refresh" @click="resetCardConfig">重置</el-button>
-        </el-form-item>
-      </el-form>
+      <div class="config-content">
+        <el-form :model="configForm" :rules="configRules" ref="configFormRef" label-width="120px">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="分析板卡" prop="analysis_card_id">
+                <el-select v-model="configForm.analysis_card_id" placeholder="请选择智能分析板卡" style="width: 100%" @change="onCardChange">
+                  <el-option
+                    v-for="card in analysisCards"
+                    :key="card.id"
+                    :label="card.name"
+                    :value="card.id">
+                  </el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="视频通道" prop="channel">
+                <el-select v-model="configForm.channel" placeholder="请选择视频通道" style="width: 100%">
+                  <el-option v-for="n in 8" :key="n" :label="`通道 ${n}`" :value="n"></el-option>
+                </el-select>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-form-item label="检测规则">
+            <el-button type="primary" :icon="Plus" @click="addRule" :disabled="!configForm.analysis_card_id">添加规则</el-button>
+          </el-form-item>
+          
+          <!-- 规则列表 -->
+          <div v-if="configForm.rules.length > 0" class="rules-section">
+            <el-table :data="configForm.rules" border size="small">
+              <el-table-column prop="rule_type" label="规则类型" width="120">
+                <template #default="{ row }">
+                  <el-tag size="small">{{ getRuleTypeText(row.rule_type) }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="sensitivity" label="灵敏度" width="100">
+                <template #default="{ row }">
+                  {{ (row.sensitivity * 100).toFixed(0) }}%
+                </template>
+              </el-table-column>
+              <el-table-column prop="min_target_size" label="最小目标" width="100"></el-table-column>
+              <el-table-column prop="alarm_interval" label="告警间隔" width="100">
+                <template #default="{ row }">
+                  {{ row.alarm_interval }}秒
+                </template>
+              </el-table-column>
+              <el-table-column label="检测区域" min-width="150">
+                <template #default="{ row }">
+                  <span v-if="row.detection_area && row.detection_area.length > 0">
+                    {{ row.detection_area.length }}个点
+                  </span>
+                  <span v-else>全屏检测</span>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="150">
+                <template #default="{ $index }">
+                  <el-button type="primary" :icon="Edit" size="small" @click="editRule($index)">编辑</el-button>
+                  <el-button type="danger" :icon="Delete" size="small" @click="deleteRule($index)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+
+          <el-form-item class="mt-20">
+            <el-button type="success" :icon="Check" @click="saveConfiguration" :loading="configLoading" :disabled="!canSaveConfig">
+              保存配置
+            </el-button>
+            <el-button :icon="Refresh" @click="resetConfigForm">重置</el-button>
+            <el-button type="warning" :icon="Promotion" @click="syncRulesToCard" :loading="syncLoading" :disabled="!configForm.analysis_card_id">
+              同步到板卡
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </div>
     </el-card>
 
-    <el-card class="data-dispatch-card" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span>算法及规则下发</span>
-          <el-button type="success" :icon="Download" size="small" @click="handleAlgorithmDispatch" :loading="dispatchLoading">执行算法下发 (模拟)</el-button>
-        </div>
-      </template>
-      <p class="dispatch-tip">支持将已发布算法包和配置规则下发到智能分析卡节点，实现自动部署。</p>
-      <el-form :model="dispatchForm" label-width="120px">
-        <el-form-item label="选择算法版本">
-          <el-select v-model="dispatchForm.algorithmVersionId" placeholder="请选择要下发的算法版本" style="width: 100%;" :loading="dispatchLoading">
+    <!-- 批量下发对话框 -->
+    <el-dialog v-model="batchDispatchVisible" title="批量算法下发" width="600px">
+      <el-form :model="batchForm" label-width="120px">
+        <el-form-item label="选择算法">
+          <el-select v-model="batchForm.algorithm_version_id" placeholder="请选择算法版本" style="width: 100%">
+            <el-option-group v-for="group in algorithmGroups" :key="group.name" :label="group.name">
             <el-option
-                v-for="version in availableAlgorithms"
+                v-for="version in group.versions"
                 :key="version.id"
-                :label="`${version.name} (V${version.version})`"
-                :value="version.id"
-            ></el-option>
+                :label="`${version.name} ${version.version}`"
+                :value="version.id">
+              </el-option>
+            </el-option-group>
           </el-select>
         </el-form-item>
-        <el-form-item label="目标分析卡">
-          <el-select v-model="dispatchForm.targetCard" placeholder="请选择目标分析卡" style="width: 100%;" :loading="dispatchLoading">
-            <el-option label="分析卡-001 (192.168.1.101)" value="card001"></el-option>
-            <el-option label="分析卡-002 (192.168.1.102)" value="card002"></el-option>
-            <el-option label="所有分析卡" value="all"></el-option>
+        <el-form-item label="目标板卡">
+          <el-select v-model="batchForm.target_cards" multiple placeholder="请选择智能分析板卡" style="width: 100%">
+            <el-option
+              v-for="card in analysisCards"
+              :key="card.id"
+              :label="card.name"
+              :value="card.id">
+            </el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="同步规则到板">
-          <el-switch
-              v-model="dispatchForm.syncRules"
-              active-text="是"
-              inactive-text="否"
-              :disabled="dispatchLoading"
-          ></el-switch>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="warning" :icon="Promotion" @click="handleRuleSync" :loading="dispatchLoading">单独同步规则 (模拟)</el-button>
+        <el-form-item label="下发选项">
+          <el-checkbox v-model="batchForm.sync_rules">下发后同步配置规则</el-checkbox>
+          <el-checkbox v-model="batchForm.auto_restart">下发后自动重启板卡</el-checkbox>
         </el-form-item>
       </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="batchDispatchVisible = false">取消</el-button>
+          <el-button type="primary" @click="executeBatchDispatch" :loading="batchLoading">批量下发</el-button>
+        </span>
+      </template>
+    </el-dialog>
 
-      <el-divider content-position="left">最近下发日志</el-divider>
-      <el-table :data="dispatchLogs" stripe border style="width: 100%;" :max-height="250" v-loading="dispatchLoading">
-        <el-table-column prop="time" label="操作时间" width="180"></el-table-column>
-        <el-table-column prop="operator" label="操作人" width="100"></el-table-column>
-        <el-table-column prop="algorithmName" label="算法名称" width="180"></el-table-column>
-        <el-table-column prop="target" label="目标卡" width="150"></el-table-column>
+    <!-- 规则配置对话框 -->
+    <el-dialog v-model="ruleConfigVisible" title="配置检测规则" width="500px">
+      <el-form :model="ruleForm" label-width="100px">
+        <el-form-item label="规则类型">
+          <el-select v-model="ruleForm.rule_type" placeholder="请选择规则类型" style="width: 100%">
+            <el-option label="区域入侵" value="area_intrusion"></el-option>
+            <el-option label="越线检测" value="line_crossing"></el-option>
+            <el-option label="物体遗留" value="object_left"></el-option>
+            <el-option label="物体移除" value="object_removed"></el-option>
+            <el-option label="人数统计" value="people_counting"></el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item label="灵敏度">
+          <el-slider v-model="ruleForm.sensitivity" :min="0.1" :max="1" :step="0.1" show-stops></el-slider>
+        </el-form-item>
+        <el-form-item label="最小目标大小">
+          <el-input-number v-model="ruleForm.min_target_size" :min="10" :max="500" controls-position="right"></el-input-number>
+        </el-form-item>
+        <el-form-item label="告警间隔(秒)">
+          <el-input-number v-model="ruleForm.alarm_interval" :min="1" :max="300" controls-position="right"></el-input-number>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="ruleConfigVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveRule">保存规则</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 下发日志对话框 -->
+    <el-dialog v-model="logsVisible" title="算法下发日志" width="80%">
+      <el-table :data="dispatchLogs" v-loading="logsLoading" border stripe>
+        <el-table-column prop="id" label="ID" width="80"></el-table-column>
+        <el-table-column prop="algorithm_name" label="算法名称" min-width="150"></el-table-column>
+        <el-table-column prop="target_card" label="目标板卡" width="150"></el-table-column>
+        <el-table-column prop="dispatch_time" label="下发时间" width="160"></el-table-column>
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === '成功' ? 'success' : 'danger'">{{ row.status }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="message" label="消息"></el-table-column>
+        <el-table-column prop="message" label="结果信息" min-width="200"></el-table-column>
       </el-table>
-    </el-card>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="logsVisible = false">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
-<script setup name="AlgorithmSetup">
-import { ref, reactive, onMounted, computed } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
-import { Save, Refresh, Download, Promotion } from '@element-plus/icons-vue';
+<script setup>
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { 
+  Promotion, Refresh, Document, Setting, Plus, Edit, Delete, Check 
+} from '@element-plus/icons-vue'
+import { algorithmApi } from '@/api/algorithm'
 
-// ===================== 智能分析卡配置 =====================
-const cardConfig = reactive({
-  ipAddress: '192.168.1.101',
-  port: 8080,
-  analysisMode: 'realtime',
-  maxConcurrentTasks: 10,
-  remark: '这是智能分析卡的基础配置。'
-});
+// 响应式数据
+const dispatchLoading = ref(false)
+const configLoading = ref(false)
+const syncLoading = ref(false)
+const batchLoading = ref(false)
+const logsLoading = ref(false)
 
-/**
- * 保存分析卡配置 (模拟)
- */
-const saveCardConfig = () => {
-  ElMessage.success('智能分析卡配置已保存 (模拟)。');
-  console.log('保存的分析卡配置:', cardConfig);
-};
+const batchDispatchVisible = ref(false)
+const ruleConfigVisible = ref(false)
+const logsVisible = ref(false)
 
-/**
- * 重置分析卡配置 (模拟)
- */
-const resetCardConfig = () => {
-  ElMessageBox.confirm('确定要重置分析卡配置为默认值吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  }).then(() => {
-    Object.assign(cardConfig, {
-      ipAddress: '192.168.1.101',
-      port: 8080,
-      analysisMode: 'realtime',
-      maxConcurrentTasks: 10,
-      remark: ''
-    });
-    ElMessage.success('分析卡配置已重置。');
-  }).catch(() => {
-    ElMessage.info('已取消重置。');
-  });
-};
+// 表单引用
+const dispatchFormRef = ref()
+const configFormRef = ref()
 
-// ===================== 算法及规则下发 =====================
-const dispatchLoading = ref(false); // 下发操作的加载状态
-
+// 下发表单
 const dispatchForm = reactive({
-  algorithmVersionId: null, // 选择的算法版本ID
-  targetCard: 'card001',
-  syncRules: true, // 默认同步规则
-});
+  algorithm_version_id: '',
+  target_card: '',
+  sync_rules: true,
+  auto_restart: false
+})
 
-// 模拟已发布的算法版本列表 (在此页面独立模拟数据)
-const mockAvailableAlgorithms = ref([]);
+// 配置表单
+const configForm = reactive({
+  analysis_card_id: '',
+  channel: 1,
+  rules: []
+})
 
-// 下拉框中实际显示的已发布算法版本
-const availableAlgorithms = computed(() => {
-  return mockAvailableAlgorithms.value.filter(algo => algo.status === '已发布');
-});
+// 批量下发表单
+const batchForm = reactive({
+  algorithm_version_id: '',
+  target_cards: [],
+  sync_rules: true,
+  auto_restart: false
+})
 
-// 模拟下发日志数据
-const dispatchLogs = ref([]);
+// 规则表单
+const ruleForm = reactive({
+  rule_type: '',
+  sensitivity: 0.8,
+  min_target_size: 50,
+  alarm_interval: 10,
+  detection_area: []
+})
 
-/**
- * 模拟生成随机版本号 (用于本页面数据)
- */
-const generateVersion = () => {
-  const major = Math.floor(Math.random() * 5);
-  const minor = Math.floor(Math.random() * 10);
-  const patch = Math.floor(Math.random() * 20);
-  return `V${major}.${minor}.${patch}`;
-};
+// 数据
+const algorithmList = ref([])
+const analysisCards = ref([])
+const dispatchLogs = ref([])
+const editingRuleIndex = ref(-1)
 
-/**
- * 模拟从后端获取已发布的算法版本列表 (这里在此页面内部独立模拟数据)
- */
-const fetchAvailableAlgorithms = () => {
-  dispatchLoading.value = true;
-  ElMessage.info('正在获取可用算法版本...');
-  setTimeout(() => {
-    const versions = [];
-    const fileTypes = ['.zip', '.tar', '.gz', '.py', '.sh', '.bin'];
-    for (let i = 1; i <= 15; i++) { // 模拟15个算法
-      const fileType = fileTypes[Math.floor(Math.random() * fileTypes.length)];
-      const sizeMB = (Math.random() * 400 + 10).toFixed(2);
-      versions.push({
-        id: i,
-        name: `CoreAlgo_${i < 10 ? '0' + i : i}`,
-        version: generateVersion(),
-        type: fileType,
-        size: `${sizeMB} MB`,
-        uploadTime: new Date(Date.now() - Math.floor(Math.random() * 60 * 24 * 60 * 60 * 1000)).toLocaleString('zh-CN'),
-        status: i % 3 === 0 ? '未发布' : '已发布', // 模拟部分已发布，这里只获取已发布的
-        description: `这是核心算法 ${i}。`,
-      });
+// 计算属性
+const algorithmGroups = computed(() => {
+  const groups = {}
+  algorithmList.value.forEach(algo => {
+    if (!groups[algo.name]) {
+      groups[algo.name] = { name: algo.name, versions: [] }
     }
-    mockAvailableAlgorithms.value = versions;
-    dispatchLoading.value = false;
-    ElMessage.success('可用算法版本获取成功！');
-  }, 800);
-};
+    groups[algo.name].versions.push(algo)
+  })
+  return Object.values(groups)
+})
 
-/**
- * 模拟执行算法下发
- */
-const handleAlgorithmDispatch = () => {
-  if (!dispatchForm.algorithmVersionId) {
-    ElMessage.warning('请先选择要下发的算法版本！');
-    return;
-  }
-  const selectedAlgorithm = availableAlgorithms.value.find(algo => algo.id === dispatchForm.algorithmVersionId);
-  if (!selectedAlgorithm) {
-    ElMessage.error('选择的算法版本不存在或未发布！');
-    return;
-  }
+const canDispatch = computed(() => {
+  return dispatchForm.algorithm_version_id && dispatchForm.target_card
+})
 
-  dispatchLoading.value = true;
-  ElMessage.info(`正在执行算法 "${selectedAlgorithm.name}" (V${selectedAlgorithm.version}) 下发到 ${dispatchForm.targetCard} (模拟)...`);
-  setTimeout(() => {
-    const success = Math.random() > 0.2; // 模拟成功或失败
-    const status = success ? '成功' : '失败';
-    const log = {
-      time: new Date().toLocaleString('zh-CN'),
-      operator: '当前用户', // 真实情况是登录用户
-      algorithmName: selectedAlgorithm.name + ` (V${selectedAlgorithm.version})`,
-      target: dispatchForm.targetCard === 'all' ? '所有分析卡' : dispatchForm.targetCard,
-      status: status,
-      message: success ? '算法下发及规则同步完成。' : '下发失败，请检查网络或目标分析卡状态。'
-    };
-    dispatchLogs.value.unshift(log); // 添加到日志顶部
-    dispatchLoading.value = false;
-    if (success) {
-      ElMessage.success('算法下发成功！');
-    } else {
-      ElMessage.error('算法下发失败！');
-    }
-  }, 2000);
-};
+const canSaveConfig = computed(() => {
+  return configForm.analysis_card_id && configForm.rules.length > 0
+})
 
-/**
- * 模拟单独同步规则
- */
-const handleRuleSync = () => {
-  dispatchLoading.value = true;
-  ElMessage.info('正在单独同步规则到智能分析板 (模拟)...');
-  setTimeout(() => {
-    const success = Math.random() > 0.1; // 模拟成功或失败
-    const status = success ? '成功' : '失败';
-    const log = {
-      time: new Date().toLocaleString('zh-CN'),
-      operator: '当前用户',
-      algorithmName: 'N/A (仅规则)',
-      target: '智能分析板',
-      status: status,
-      message: success ? '规则已成功同步。' : '规则同步失败，请检查连接。'
-    };
-    dispatchLogs.value.unshift(log);
-    dispatchLoading.value = false;
-    if (success) {
-      ElMessage.success('规则单独同步成功！');
-    } else {
-      ElMessage.error('规则单独同步失败！');
-    }
-  }, 1500);
-};
+// 表单验证规则
+const dispatchRules = {
+  algorithm_version_id: [{ required: true, message: '请选择算法版本', trigger: 'change' }],
+  target_card: [{ required: true, message: '请选择目标板卡', trigger: 'change' }]
+}
 
-// ===================== 生命周期钩子 =====================
+const configRules = {
+  analysis_card_id: [{ required: true, message: '请选择分析板卡', trigger: 'change' }],
+  channel: [{ required: true, message: '请选择视频通道', trigger: 'change' }]
+}
+
+// 生命周期
 onMounted(() => {
-  fetchAvailableAlgorithms(); // 页面加载时模拟获取可用的算法版本
-});
+  getAlgorithmList()
+  getAnalysisCards()
+})
+
+// 方法
+const getAlgorithmList = async () => {
+  try {
+    const response = await algorithmApi.getAlgorithmList()
+    if (response.data.success) {
+      algorithmList.value = response.data.body.algorithms
+    }
+  } catch (error) {
+    ElMessage.error('获取算法列表失败：' + error.message)
+  }
+}
+
+const getAnalysisCards = async () => {
+  try {
+    const response = await algorithmApi.getAnalysisCards()
+    if (response.data.success) {
+      analysisCards.value = response.data.body.cards || []
+    }
+  } catch (error) {
+    ElMessage.error('获取分析板卡失败：' + error.message)
+  }
+}
+
+const onAlgorithmChange = () => {
+  // 算法选择变化时的处理
+}
+
+const onCardChange = () => {
+  // 板卡选择变化时的处理
+  configForm.rules = []
+}
+
+const dispatchAlgorithm = async () => {
+  try {
+    await dispatchFormRef.value.validate()
+    dispatchLoading.value = true
+    
+    const response = await algorithmApi.dispatchAlgorithm(dispatchForm)
+    if (response.data.success) {
+      ElMessage.success('算法下发成功')
+      resetDispatchForm()
+    }
+  } catch (error) {
+    if (error !== false) {
+      ElMessage.error('算法下发失败：' + error.message)
+    }
+  } finally {
+    dispatchLoading.value = false
+  }
+}
+
+const resetDispatchForm = () => {
+  dispatchFormRef.value?.resetFields()
+}
+
+const showBatchDispatch = () => {
+  batchDispatchVisible.value = true
+}
+
+const executeBatchDispatch = async () => {
+  try {
+    batchLoading.value = true
+    const response = await algorithmApi.batchDispatchAlgorithm(batchForm)
+    if (response.data.success) {
+      ElMessage.success('批量下发成功')
+      batchDispatchVisible.value = false
+    }
+  } catch (error) {
+    ElMessage.error('批量下发失败：' + error.message)
+  } finally {
+    batchLoading.value = false
+  }
+}
+
+const showDispatchLogs = async () => {
+  try {
+    logsLoading.value = true
+    logsVisible.value = true
+    const response = await algorithmApi.getDispatchLogs()
+    if (response.data.success) {
+      dispatchLogs.value = response.data.body.logs || []
+    }
+  } catch (error) {
+    ElMessage.error('获取下发日志失败：' + error.message)
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+const showRuleConfig = () => {
+  if (!configForm.analysis_card_id) {
+    ElMessage.warning('请先选择智能分析板卡')
+    return
+  }
+  ruleConfigVisible.value = true
+}
+
+const addRule = () => {
+  showRuleConfig()
+}
+
+const editRule = (index) => {
+  editingRuleIndex.value = index
+  const rule = configForm.rules[index]
+  Object.assign(ruleForm, rule)
+  ruleConfigVisible.value = true
+}
+
+const deleteRule = (index) => {
+  configForm.rules.splice(index, 1)
+}
+
+const saveRule = () => {
+  if (editingRuleIndex.value >= 0) {
+    Object.assign(configForm.rules[editingRuleIndex.value], ruleForm)
+    editingRuleIndex.value = -1
+    } else {
+    configForm.rules.push({ ...ruleForm })
+  }
+  ruleConfigVisible.value = false
+}
+
+const saveConfiguration = async () => {
+  try {
+    await configFormRef.value.validate()
+    configLoading.value = true
+    
+    const response = await algorithmApi.configAlgorithm(configForm)
+    if (response.data.success) {
+      ElMessage.success('配置保存成功')
+    }
+  } catch (error) {
+    if (error !== false) {
+      ElMessage.error('保存配置失败：' + error.message)
+    }
+  } finally {
+    configLoading.value = false
+  }
+}
+
+const resetConfigForm = () => {
+  configFormRef.value?.resetFields()
+  configForm.rules = []
+}
+
+const syncRulesToCard = async () => {
+  try {
+    syncLoading.value = true
+    const response = await algorithmApi.syncRules({
+      analysis_card_id: configForm.analysis_card_id,
+      rules: configForm.rules
+    })
+    if (response.data.success) {
+      ElMessage.success('规则同步成功')
+    }
+  } catch (error) {
+    ElMessage.error('规则同步失败：' + error.message)
+  } finally {
+    syncLoading.value = false
+  }
+}
+
+// 辅助函数
+const getStatusText = (status) => {
+  const statusMap = {
+    'published': '已发布',
+    'testing': '测试中',
+    'disabled': '已禁用'
+  }
+  return statusMap[status] || status
+}
+
+const getStatusType = (status) => {
+  const typeMap = {
+    'published': 'success',
+    'testing': 'warning',
+    'disabled': 'danger'
+  }
+  return typeMap[status] || 'info'
+}
+
+const getRuleTypeText = (ruleType) => {
+  const typeMap = {
+    'area_intrusion': '区域入侵',
+    'line_crossing': '越线检测',
+    'object_left': '物体遗留',
+    'object_removed': '物体移除',
+    'people_counting': '人数统计'
+  }
+  return typeMap[ruleType] || ruleType
+}
 </script>
 
 <style scoped>
-/* 继承父级页面容器的基础样式 */
 .sub-page-content {
-  padding: 15px;
-  border-radius: 6px;
-  margin-top: 0;
-  min-height: auto;
+  min-height: calc(100vh - 140px);
+  padding-bottom: 40px;
 }
 
-h2 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 24px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
-}
-
-.config-card, .data-dispatch-card {
-  border-radius: 8px;
-  margin-bottom: 20px;
-}
-
-.mb-20 {
-  margin-bottom: 20px;
+.algorithm-management-container {
+  padding: 20px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: bold;
-  color: #333;
 }
 
-.config-form .el-form-item {
-  margin-bottom: 18px; /* 调整表单项底部间距 */
+.dispatch-content, .config-content {
+  padding: 10px 0;
 }
 
-.dispatch-tip {
-  color: #606266;
-  font-size: 14px;
-  margin-bottom: 15px;
+.algorithm-option, .card-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-/* 调整表格头部样式 */
-:deep(.el-table__header-wrapper .el-table__header th) {
-  background-color: #f5f7fa;
-  color: #606266;
-  font-weight: bold;
+.rules-section {
+  margin-top: 15px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.mt-20 {
+  margin-top: 20px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+:deep(.el-card__header) {
+  background-color: #f8f9fa;
+  border-bottom: 1px solid #ebeef5;
+}
+
+:deep(.el-alert) {
+  margin-bottom: 20px;
+}
+
+:deep(.el-slider) {
+  margin: 0 10px;
 }
 </style>

@@ -18,8 +18,35 @@ export const systemApi = {
   },
 
   // 执行时间同步
-  timeSync(data) {
+  syncTime(data) {
     return api.post('/api/system/config/time-sync', data)
+  },
+
+  // 获取设备参数配置
+  getDeviceParams() {
+    return api.get('/api/system/config/device-params')
+  },
+
+  // 更新设备参数配置
+  updateDeviceParams(data) {
+    return api.put('/api/system/config/device-params', data)
+  },
+
+  // 应用设备参数到所有设备
+  applyDeviceParamsToAll(data) {
+    return api.post('/api/system/config/device-params/apply-all', data)
+  },
+
+  // 导出设备参数配置
+  exportDeviceParams() {
+    return api.download('/api/system/config/device-params/export')
+  },
+
+  // 导入设备参数配置
+  importDeviceParams(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.upload('/api/system/config/import-device-params', formData)
   },
 
   // 获取地图配置
