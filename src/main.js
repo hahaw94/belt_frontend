@@ -3,7 +3,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import store from './store'
+import { createPinia } from 'pinia'
 
 // 引入 Element Plus
 import ElementPlus from 'element-plus'
@@ -13,8 +13,11 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue' // 引入 Element
 // 创建 Vue 应用实例
 const app = createApp(App)
 
-// 挂载路由和 Vuex
-app.use(store).use(router)
+// 创建 Pinia 实例
+const pinia = createPinia()
+
+// 挂载路由和 Pinia
+app.use(pinia).use(router)
 
 // 注册 Element Plus
 app.use(ElementPlus)
