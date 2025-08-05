@@ -258,18 +258,36 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   // 更新页面标题
   if (to.meta.title) {
-    document.title = `${to.meta.title} - 后台管理系统`;
+    document.title = `${to.meta.title} - 智能监控系统`;
   } else {
-    document.title = '后台管理系统';
+    document.title = '智能监控系统';
   }
 
-  // 简单的权限判断（此处仅为示例，实际应结合用户登录状态和角色）
-  // if (to.meta.requiresAuth && !localStorage.getItem('token')) {
-  //   alert('请先登录！');
-  //   next('/login'); // 重定向到登录页
-  // } else {
-  next(); // 继续导航
-  // }
+  // 检查登录状态
+  const token = localStorage.getItem('token')
+  const isLoginPage = to.path === '/login'
+
+  // 如果访问登录页面
+  if (isLoginPage) {
+    if (token) {
+      // 已经登录，重定向到首页
+      next('/')
+    } else {
+      // 未登录，允许访问登录页
+      next()
+    }
+    return
+  }
+
+  // 访问其他页面需要登录验证
+  if (!token) {
+    // 未登录，重定向到登录页
+    next('/login')
+    return
+  }
+
+  // 已登录，允许访问
+  next()
 });
 
 export default router;

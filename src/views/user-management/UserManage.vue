@@ -267,6 +267,7 @@ const submitUserForm = async () => {
     if (valid) {
       try {
         loading.value = true;
+        // eslint-disable-next-line no-unused-vars
         const { confirmPassword, ...userData } = currentUser;
         
         if (isEditMode.value) {

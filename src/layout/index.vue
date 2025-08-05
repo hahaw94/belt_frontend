@@ -4,13 +4,13 @@
       <el-header class="layout-header">
         <div class="header-left">
           <img src="../assets/logo.png" alt="Logo" class="app-logo" />
-          <span class="app-title">后台管理系统</span>
+          <span class="app-title">智能监控系统</span>
         </div>
         <div class="header-right">
           <el-dropdown>
             <span class="el-dropdown-link">
               <el-avatar :size="30" :src="userAvatarUrl"></el-avatar>
-              <span style="margin-left: 8px;">管理员</span>
+              <span style="margin-left: 8px;">{{ displayUsername }}</span>
               <el-icon class="el-icon--right"><arrow-down /></el-icon>
             </span>
             <template #dropdown>
@@ -136,41 +136,65 @@
 </template>
 
 <script>
-import { ref,  } from 'vue';
-// import { useRoute } from 'vue-router';
-// 引入 Element Plus 的图标组件，如果全局注册了，这里就不需要单独引入了，但为了清晰性可以保留
-// import { ArrowDown, Expand, Fold, HomeFilled, Setting, Cpu, User, Connection, Monitor, Bell, Document, TrendCharts } from '@element-plus/icons-vue';
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { useAuthStore } from '@/stores/auth';
 
 export default {
   name: 'LayoutIndex',
   setup() {
-    // const route = useRoute();
-    const userAvatarUrl = ref('https://cube.elemecdn.com/0/88/03b0d4153c31b21f7da7534d36da500d.jpeg'); // 示例头像URL
-    const isCollapse = ref(false); // 侧边栏是否折叠
+    const router = useRouter();
+    const authStore = useAuthStore();
+    
+    const userAvatarUrl = ref('https://cube.elemecdn.com/0/88/03b0d4153c31b21f7da7534d36da500d.jpeg');
+    const isCollapse = ref(false);
+
+    // 显示用户名
+    const displayUsername = computed(() => {
+      return authStore.username || authStore.userInfo?.username || '管理员';
+    });
 
     // 退出登录方法
-    const handleLogout = () => {
-      // 实际业务中，这里会执行清除用户凭证、重定向到登录页等操作
-      alert('退出登录');
-      // 例如: router.push('/login');
+    const handleLogout = async () => {
+      try {
+        await ElMessageBox.confirm(
+          '确定要退出登录吗？',
+          '退出确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        );
+
+        // 调用store的登出方法
+        authStore.logout();
+        
+        ElMessage.success('已退出登录');
+        
+        // 重定向到登录页
+        router.push('/login');
+      } catch (error) {
+        // 用户取消登出
+        if (error !== 'cancel') {
+          console.error('退出登录失败:', error);
+        }
+      }
     };
 
     const toggleCollapse = () => {
       isCollapse.value = !isCollapse.value;
     };
 
-    // 可以在这里添加一些逻辑，例如根据路由修改面包屑导航等
-
     return {
       userAvatarUrl,
       isCollapse,
+      displayUsername,
       handleLogout,
       toggleCollapse,
     };
   },
-  // components: { // 如果没有全局注册图标，需要在这里注册
-  //   ArrowDown, Expand, Fold, HomeFilled, Setting, Cpu, User, Connection, Monitor, Bell, Document, TrendCharts
-  // }
 };
 </script>
 

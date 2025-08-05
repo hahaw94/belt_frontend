@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { recordingAPI } from '@/api/recording'
+import { recordingApi } from '@/api/recording'
 
 /**
  * 录像管理Store
@@ -32,6 +32,8 @@ export const useRecordingStore = defineStore('recording', () => {
   })
   const playingRecordings = ref(new Map()) // 记录正在播放的录像
   const downloadProgress = ref(new Map()) // 记录下载进度
+  const uploadProgress = ref(new Map()) // 记录上传进度
+  const uploadQueue = ref([]) // 上传队列
 
   // Getters
   const totalRecordings = computed(() => recordings.value.length)
@@ -85,9 +87,9 @@ export const useRecordingStore = defineStore('recording', () => {
         ...params
       }
       
-      const response = await recordingAPI.getRecordings(queryParams)
+      const response = await recordingApi.getRecordingList(queryParams)
       if (response.success) {
-        recordings.value = response.body.recordings
+        recordings.value = response.body.data
         pagination.value.total = response.body.total
         pagination.value.page = response.body.page
         pagination.value.page_size = response.body.page_size
@@ -108,7 +110,7 @@ export const useRecordingStore = defineStore('recording', () => {
    */
   const playRecording = async (recordingId) => {
     try {
-      const response = await recordingAPI.playRecording(recordingId)
+      const response = await recordingApi.getPlayUrl(recordingId)
       if (response.success) {
         const playData = response.body
         
@@ -163,7 +165,7 @@ export const useRecordingStore = defineStore('recording', () => {
         startTime: new Date()
       })
       
-      const response = await recordingAPI.downloadRecording(recordingId, (progress) => {
+      const response = await recordingApi.downloadRecording(recordingId, (progress) => {
         // 更新下载进度
         if (downloadProgress.value.has(recordingId)) {
           downloadProgress.value.get(recordingId).progress = progress
@@ -200,7 +202,7 @@ export const useRecordingStore = defineStore('recording', () => {
    */
   const deleteRecording = async (recordingId) => {
     try {
-      const response = await recordingAPI.deleteRecording(recordingId)
+      const response = await recordingApi.deleteRecording(recordingId)
       if (response.success) {
         // 从本地列表移除
         recordings.value = recordings.value.filter(recording => recording.id !== recordingId)
@@ -244,7 +246,7 @@ export const useRecordingStore = defineStore('recording', () => {
    */
   const fetchStatistics = async () => {
     try {
-      const response = await recordingAPI.getStatistics()
+      const response = await recordingApi.getStatistics()
       if (response.success) {
         statistics.value = response.body
         return response
@@ -368,6 +370,117 @@ export const useRecordingStore = defineStore('recording', () => {
   }
 
   /**
+   * 上传录像文件
+   * @param {number} deviceId - 设备ID
+   * @param {File} file - 录像文件
+   */
+  const uploadRecording = async (deviceId, file) => {
+    const uploadId = Date.now().toString()
+    
+    try {
+      // 初始化上传进度
+      uploadProgress.value.set(uploadId, {
+        filename: file.name,
+        progress: 0,
+        status: 'uploading',
+        deviceId,
+        startTime: new Date()
+      })
+
+      // 添加到上传队列
+      uploadQueue.value.push({
+        id: uploadId,
+        deviceId,
+        filename: file.name
+      })
+
+      const response = await recordingApi.uploadRecording(deviceId, file)
+      
+      if (response.success) {
+        // 上传成功
+        uploadProgress.value.set(uploadId, {
+          ...uploadProgress.value.get(uploadId),
+          progress: 100,
+          status: 'success',
+          endTime: new Date(),
+          recordingId: response.body.recording_id
+        })
+
+        // 从上传队列移除
+        uploadQueue.value = uploadQueue.value.filter(item => item.id !== uploadId)
+
+        // 刷新录像列表和统计数据
+        await Promise.all([fetchRecordings(), fetchStatistics()])
+
+        return response
+      }
+      throw new Error(response.message)
+    } catch (error) {
+      console.error('上传录像失败:', error)
+      
+      // 上传失败
+      if (uploadProgress.value.has(uploadId)) {
+        uploadProgress.value.set(uploadId, {
+          ...uploadProgress.value.get(uploadId),
+          status: 'error',
+          error: error.message,
+          endTime: new Date()
+        })
+      }
+
+      // 从上传队列移除
+      uploadQueue.value = uploadQueue.value.filter(item => item.id !== uploadId)
+      
+      throw error
+    }
+  }
+
+  /**
+   * 批量上传录像文件
+   * @param {number} deviceId - 设备ID
+   * @param {FileList} files - 录像文件列表
+   */
+  const batchUploadRecordings = async (deviceId, files) => {
+    const results = []
+    const filesArray = Array.from(files)
+
+    for (const file of filesArray) {
+      try {
+        const result = await uploadRecording(deviceId, file)
+        results.push({
+          filename: file.name,
+          success: true,
+          result
+        })
+      } catch (error) {
+        results.push({
+          filename: file.name,
+          success: false,
+          error: error.message
+        })
+      }
+    }
+
+    return results
+  }
+
+  /**
+   * 获取上传进度
+   * @param {string} uploadId - 上传ID
+   */
+  const getUploadProgress = (uploadId) => {
+    return uploadProgress.value.get(uploadId) || { progress: 0, status: 'pending' }
+  }
+
+  /**
+   * 清理上传状态
+   */
+  const clearUploadStates = () => {
+    uploadProgress.value.clear()
+    uploadQueue.value = []
+  }
+
+  /**
    * 添加新录像（用于实时告警触发时）
    * @param {Object} recordingData - 录像数据
    */
@@ -418,6 +531,7 @@ export const useRecordingStore = defineStore('recording', () => {
     clearFilters()
     clearPlayingStates()
     clearDownloadStates()
+    clearUploadStates()
     statistics.value = {
       total_recordings: 0,
       total_size: '',
@@ -438,6 +552,8 @@ export const useRecordingStore = defineStore('recording', () => {
     statistics,
     playingRecordings,
     downloadProgress,
+    uploadProgress,
+    uploadQueue,
     
     // Getters
     totalRecordings,
@@ -468,6 +584,10 @@ export const useRecordingStore = defineStore('recording', () => {
     getDownloadProgress,
     clearPlayingStates,
     clearDownloadStates,
+    uploadRecording,
+    batchUploadRecordings,
+    getUploadProgress,
+    clearUploadStates,
     addNewRecording,
     autoCleanupExpired,
     resetState

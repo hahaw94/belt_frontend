@@ -189,7 +189,7 @@ class SystemMockData {
     }
   }
 
-  updateDeviceParams(params) {
+  updateDeviceParams() {
     // 模拟更新设备参数
     return {
       updated_devices: Math.floor(Math.random() * 20) + 10, // 10-30台设备

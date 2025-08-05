@@ -16,8 +16,16 @@ const app = createApp(App)
 // 创建 Pinia 实例
 const pinia = createPinia()
 
-// 挂载路由和 Pinia
-app.use(pinia).use(router)
+// 挂载 Pinia
+app.use(pinia)
+
+// 初始化认证状态
+import { useAuthStore } from '@/stores/auth'
+const authStore = useAuthStore()
+authStore.initAuth()
+
+// 挂载路由
+app.use(router)
 
 // 注册 Element Plus
 app.use(ElementPlus)

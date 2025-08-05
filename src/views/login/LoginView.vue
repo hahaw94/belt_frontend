@@ -34,14 +34,16 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const loading = ref(false)
 const loginFormRef = ref(null)
+const authStore = useAuthStore()
 
 const loginForm = reactive({
-  username: '',
-  password: ''
+  username: 'admin', // 预填默认用户名
+  password: 'admin123' // 预填默认密码（可选，正式环境中删除）
 })
 
 const loginRules = {
@@ -52,15 +54,29 @@ const loginRules = {
 const handleLogin = async () => {
   if (!loginFormRef.value) return
   
-  await loginFormRef.value.validate((valid) => {
+  await loginFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
-      // TODO: 实现登录逻辑
-      setTimeout(() => {
+      try {
+        // 使用auth store进行登录
+        const response = await authStore.login({
+          username: loginForm.username,
+          password: loginForm.password
+        })
+        
+        if (response.success) {
+          ElMessage.success('登录成功')
+          // 跳转到首页
+          router.push('/')
+        } else {
+          ElMessage.error(response.message || '登录失败')
+        }
+      } catch (error) {
+        console.error('登录失败:', error)
+        ElMessage.error(error.message || '登录失败，请检查用户名和密码')
+      } finally {
         loading.value = false
-        router.push('/')
-        ElMessage.success('登录成功')
-      }, 1000)
+      }
     }
   })
 }

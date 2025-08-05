@@ -1,7 +1,7 @@
 import MockAdapter from 'axios-mock-adapter'
-import { userMockData } from './modules/user'
+
 import { deviceMockData } from './modules/device'
-import { recordingMockData } from './modules/recording'
+
 import { statisticsMockData } from './modules/statistics'
 import { logMockData } from './modules/log'
 import { dashboardMockData } from './modules/dashboard'
@@ -21,9 +21,9 @@ export function setupMock(axiosInstance) {
   mock = new MockAdapter(axiosInstance, { delayResponse: 200 })
 
   // 注册所有mock路由
-  setupUserMock(mock)
+
   setupDeviceMock(mock)
-  setupRecordingMock(mock)
+
   setupStatisticsMock(mock)
   setupLogMock(mock)
   setupDashboardMock(mock)
@@ -49,159 +49,7 @@ export function disableMock() {
   }
 }
 
-/**
- * 用户管理Mock
- */
-function setupUserMock(mock) {
-  // 获取用户列表
-  mock.onGet(/\/api\/users/).reply(config => {
-    const params = config.params || {}
-    const page = parseInt(params.page) || 1
-    const pageSize = parseInt(params.page_size) || 10
-    
-    let users = userMockData.getAllUsers()
-    
-    // 搜索过滤
-    if (params.username) {
-      users = users.filter(user => 
-        user.username.toLowerCase().includes(params.username.toLowerCase())
-      )
-    }
-    if (params.role) {
-      users = users.filter(user => user.role === params.role)
-    }
-    if (params.status) {
-      users = users.filter(user => user.status === params.status)
-    }
-    
-    // 分页
-    const start = (page - 1) * pageSize
-    const end = start + pageSize
-    const paginatedUsers = users.slice(start, end)
-    
-    return [200, {
-      error: 0,
-      body: {
-        users: paginatedUsers,
-        total: users.length,
-        page,
-        page_size: pageSize
-      },
-      message: '获取用户列表成功',
-      success: true
-    }]
-  })
 
-  // 添加用户
-  mock.onPost('/api/users').reply(config => {
-    const userData = JSON.parse(config.data)
-    const newUser = userMockData.addUser(userData)
-    
-    return [200, {
-      error: 0,
-      body: {
-        user_id: newUser.id
-      },
-      message: '用户添加成功',
-      success: true
-    }]
-  })
-
-  // 更新用户
-  mock.onPut(/\/api\/users\/\d+/).reply(config => {
-    const userId = parseInt(config.url.match(/\/api\/users\/(\d+)/)[1])
-    const userData = JSON.parse(config.data)
-    
-    const success = userMockData.updateUser(userId, userData)
-    
-    return [200, {
-      error: success ? 0 : 2001,
-      body: {},
-      message: success ? '用户更新成功' : '用户不存在',
-      success
-    }]
-  })
-
-  // 删除用户
-  mock.onDelete(/\/api\/users\/\d+/).reply(config => {
-    const userId = parseInt(config.url.match(/\/api\/users\/(\d+)/)[1])
-    const success = userMockData.deleteUser(userId)
-    
-    return [200, {
-      error: success ? 0 : 2001,
-      body: {},
-      message: success ? '用户删除成功' : '用户不存在',
-      success
-    }]
-  })
-
-  // 重置密码
-  mock.onPost(/\/api\/users\/\d+\/reset-password/).reply(config => {
-    const userId = parseInt(config.url.match(/\/api\/users\/(\d+)\/reset-password/)[1])
-    
-    return [200, {
-      error: 0,
-      body: {},
-      message: '密码重置成功',
-      success: true
-    }]
-  })
-
-  // 获取角色列表
-  mock.onGet('/api/roles').reply(() => {
-    return [200, {
-      error: 0,
-      body: {
-        roles: userMockData.getAllRoles()
-      },
-      message: '获取角色列表成功',
-      success: true
-    }]
-  })
-
-  // 添加角色
-  mock.onPost('/api/roles').reply(config => {
-    const roleData = JSON.parse(config.data)
-    const newRole = userMockData.addRole(roleData)
-    
-    return [200, {
-      error: 0,
-      body: {
-        role_id: newRole.id
-      },
-      message: '角色添加成功',
-      success: true
-    }]
-  })
-
-  // 更新角色
-  mock.onPut(/\/api\/roles\/\d+/).reply(config => {
-    const roleId = parseInt(config.url.match(/\/api\/roles\/(\d+)/)[1])
-    const roleData = JSON.parse(config.data)
-    
-    const success = userMockData.updateRole(roleId, roleData)
-    
-    return [200, {
-      error: success ? 0 : 2004,
-      body: {},
-      message: success ? '角色更新成功' : '角色不存在',
-      success
-    }]
-  })
-
-  // 删除角色
-  mock.onDelete(/\/api\/roles\/\d+/).reply(config => {
-    const roleId = parseInt(config.url.match(/\/api\/roles\/(\d+)/)[1])
-    const success = userMockData.deleteRole(roleId)
-    
-    return [200, {
-      error: success ? 0 : 2005,
-      body: {},
-      message: success ? '角色删除成功' : '默认角色无法删除',
-      success
-    }]
-  })
-}
 
 /**
  * 设备管理Mock
@@ -310,115 +158,7 @@ function setupDeviceMock(mock) {
   })
 }
 
-/**
- * 录像管理Mock
- */
-function setupRecordingMock(mock) {
-  // 获取录像列表
-  mock.onPost('/api/recordings/list').reply(config => {
-    const params = JSON.parse(config.data) || {}
-    const page = parseInt(params.page) || 1
-    const pageSize = parseInt(params.page_size) || 10
-    
-    let recordings = recordingMockData.getAllRecordings()
-    
-    // 过滤
-    if (params.device_id) {
-      recordings = recordings.filter(recording => recording.device_id === params.device_id)
-    }
-    if (params.start_time && params.end_time) {
-      recordings = recordings.filter(recording => 
-        recording.start_time >= params.start_time && recording.start_time <= params.end_time
-      )
-    }
-    if (params.alarm_type) {
-      recordings = recordings.filter(recording => recording.alarm_type === params.alarm_type)
-    }
-    
-    // 分页
-    const start = (page - 1) * pageSize
-    const end = start + pageSize
-    const paginatedRecordings = recordings.slice(start, end)
-    
-    return [200, {
-      error: 0,
-      body: {
-        data: paginatedRecordings,
-        total: recordings.length,
-        page,
-        page_size: pageSize
-      },
-      message: '获取录像列表成功',
-      success: true
-    }]
-  })
 
-  // 上传录像
-  mock.onPost('/api/recordings/upload').reply(() => {
-    const newRecording = recordingMockData.addRecording()
-    
-    return [200, {
-      error: 0,
-      body: {
-        recording_id: newRecording.id
-      },
-      message: '录像上传成功',
-      success: true
-    }]
-  })
-
-  // 获取录像播放地址
-  mock.onGet(/\/api\/recordings\/\d+\/play/).reply(config => {
-    const recordingId = parseInt(config.url.match(/\/api\/recordings\/(\d+)\/play/)[1])
-    const recording = recordingMockData.getRecording(recordingId)
-    
-    if (!recording) {
-      return [200, {
-        error: 5002,
-        body: {},
-        message: '录像文件不存在',
-        success: false
-      }]
-    }
-    
-    return [200, {
-      error: 0,
-      body: {
-        recording_id: recordingId,
-        play_url: `http://localhost:8080${recording.file_path}`,
-        duration: recording.duration,
-        resolution: recording.resolution,
-        fps: recording.fps,
-        has_tracking_box: recording.has_tracking_box
-      },
-      message: '获取录像播放地址成功',
-      success: true
-    }]
-  })
-
-  // 删除录像
-  mock.onDelete(/\/api\/recordings\/\d+/).reply(config => {
-    const recordingId = parseInt(config.url.match(/\/api\/recordings\/(\d+)/)[1])
-    const success = recordingMockData.deleteRecording(recordingId)
-    
-    return [200, {
-      error: success ? 0 : 5002,
-      body: {},
-      message: success ? '录像删除成功' : '录像文件不存在',
-      success
-    }]
-  })
-
-  // 获取录像统计
-  mock.onGet('/api/recordings/statistics').reply(() => {
-    return [200, {
-      error: 0,
-      body: recordingMockData.getStatistics(),
-      message: '获取录像统计成功',
-      success: true
-    }]
-  })
-}
 
 /**
  * 统计分析Mock

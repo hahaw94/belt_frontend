@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { authAPI } from '@/api/auth'
+import { authApi } from '@/api/auth'
 
 /**
  * 用户认证与管理Store
@@ -34,7 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const login = async (credentials) => {
     try {
-      const response = await authAPI.login(credentials)
+      const response = await authApi.login(credentials)
       if (response.success) {
         token.value = response.body.token
         userInfo.value = response.body.user_info
@@ -71,7 +71,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const refreshToken = async () => {
     try {
-      const response = await authAPI.refreshToken()
+      const response = await authApi.refreshToken()
       if (response.success) {
         token.value = response.body.token
         localStorage.setItem('token', token.value)
@@ -105,7 +105,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const fetchUsers = async (params = {}) => {
     try {
-      const response = await authAPI.getUsers(params)
+      const response = await authApi.getUsers(params)
       if (response.success) {
         users.value = response.body.users
         return response
@@ -123,7 +123,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const addUser = async (userData) => {
     try {
-      const response = await authAPI.addUser(userData)
+      const response = await authApi.addUser(userData)
       if (response.success) {
         // 重新获取用户列表
         await fetchUsers()
@@ -142,7 +142,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const batchAddUsers = async (file) => {
     try {
-      const response = await authAPI.batchAddUsers(file)
+      const response = await authApi.batchAddUsers(file)
       if (response.success) {
         // 重新获取用户列表
         await fetchUsers()
@@ -162,7 +162,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const updateUser = async (userId, userData) => {
     try {
-      const response = await authAPI.updateUser(userId, userData)
+      const response = await authApi.updateUser(userId, userData)
       if (response.success) {
         // 更新本地用户列表
         const index = users.value.findIndex(user => user.id === userId)
@@ -184,7 +184,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const deleteUser = async (userId) => {
     try {
-      const response = await authAPI.deleteUser(userId)
+      const response = await authApi.deleteUser(userId)
       if (response.success) {
         // 从本地列表移除
         users.value = users.value.filter(user => user.id !== userId)
@@ -203,7 +203,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const resetUserPassword = async (userId) => {
     try {
-      const response = await authAPI.resetUserPassword(userId)
+      const response = await authApi.resetUserPassword(userId)
       if (response.success) {
         return response
       }
@@ -219,7 +219,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const fetchRoles = async () => {
     try {
-      const response = await authAPI.getRoles()
+      const response = await authApi.getRoles()
       if (response.success) {
         roles.value = response.body.roles
         return response
@@ -237,7 +237,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const addRole = async (roleData) => {
     try {
-      const response = await authAPI.addRole(roleData)
+      const response = await authApi.addRole(roleData)
       if (response.success) {
         // 重新获取角色列表
         await fetchRoles()
@@ -257,7 +257,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const updateRole = async (roleId, roleData) => {
     try {
-      const response = await authAPI.updateRole(roleId, roleData)
+      const response = await authApi.updateRole(roleId, roleData)
       if (response.success) {
         // 更新本地角色列表
         const index = roles.value.findIndex(role => role.id === roleId)
@@ -279,7 +279,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const deleteRole = async (roleId) => {
     try {
-      const response = await authAPI.deleteRole(roleId)
+      const response = await authApi.deleteRole(roleId)
       if (response.success) {
         // 从本地列表移除
         roles.value = roles.value.filter(role => role.id !== roleId)

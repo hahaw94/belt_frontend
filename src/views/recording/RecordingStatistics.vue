@@ -1,6 +1,6 @@
 <template>
   <div class="recording-statistics">
-    <el-card>
+    <el-card v-loading="loading">
       <template #header>
         <span>录像统计</span>
       </template>
@@ -202,7 +202,7 @@
 </template>
 
 <script setup name="RecordingStatistics">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   VideoCamera, 
@@ -212,59 +212,52 @@ import {
   PieChart, 
   Delete 
 } from '@element-plus/icons-vue'
+import { useRecordingStore } from '@/stores/recording'
 
 const trendPeriod = ref('7d')
+const loading = ref(false)
+
+// 使用录像store
+const recordingStore = useRecordingStore()
 
 // 统计数据
-const statisticsData = reactive({
-  total_recordings: 1250,
-  total_size: '25.6 GB',
-  available_space: '150.2 GB',
-  retention_days: 180,
-  auto_cleanup: true,
-  daily_average: '142.3 MB'
-})
+const statisticsData = computed(() => recordingStore.statistics)
 
 // 设备统计
-const deviceStats = ref([
-  {
-    device_name: '前门摄像头',
-    recording_count: 320,
-    total_size: '6.2 GB',
-    average_duration: '18.5s',
-    last_recording: '2024-01-20 16:30:00'
-  },
-  {
-    device_name: '后门摄像头',
-    recording_count: 280,
-    total_size: '5.8 GB',
-    average_duration: '19.2s',
-    last_recording: '2024-01-20 16:25:00'
-  },
-  {
-    device_name: '侧门摄像头',
-    recording_count: 195,
-    total_size: '4.1 GB',
-    average_duration: '20.1s',
-    last_recording: '2024-01-20 16:20:00'
-  },
-  {
-    device_name: '皮带头部摄像头',
-    recording_count: 225,
-    total_size: '4.8 GB',
-    average_duration: '19.8s',
-    last_recording: '2024-01-20 16:15:00'
-  },
-  {
-    device_name: '皮带尾部摄像头',
-    recording_count: 230,
-    total_size: '4.7 GB',
-    average_duration: '18.9s',
-    last_recording: '2024-01-20 16:10:00'
-  }
-])
+const deviceStats = computed(() => {
+  const deviceMap = recordingStore.recordingsByDevice
+  const stats = []
+  
+  Object.keys(deviceMap).forEach(deviceId => {
+    const recordings = deviceMap[deviceId]
+    const totalSize = recordings.reduce((sum, recording) => {
+      const sizeInMB = parseFloat(recording.file_size?.replace(' MB', '') || '0')
+      return sum + sizeInMB
+    }, 0)
+    
+    const averageDuration = recordings.length > 0 
+      ? (recordings.reduce((sum, recording) => sum + recording.duration, 0) / recordings.length).toFixed(1)
+      : 0
+    
+    const lastRecording = recordings.length > 0 
+      ? recordings[0].create_time 
+      : '无录像'
+    
+    const deviceName = recordings[0]?.device_name || `设备${deviceId}`
+    
+    stats.push({
+      device_name: deviceName,
+      recording_count: recordings.length,
+      total_size: `${(totalSize / 1024).toFixed(2)} GB`,
+      average_duration: `${averageDuration}s`,
+      last_recording: lastRecording
+    })
+  })
+  
+  return stats
+})
 
-// 清理历史
+// 清理历史（这里可以考虑添加到store或者单独的API）
 const cleanupHistory = ref([
   {
     cleanup_time: '2024-01-15 02:00:00',
@@ -294,10 +287,10 @@ const cleanupHistory = ref([
 
 // 计算存储使用率
 const storageUsagePercentage = computed(() => {
-  const totalSizeGB = parseFloat(statisticsData.total_size.replace(' GB', ''))
-  const availableSpaceGB = parseFloat(statisticsData.available_space.replace(' GB', ''))
+  const totalSizeGB = parseFloat(statisticsData.value.total_size?.replace(' GB', '') || '0')
+  const availableSpaceGB = parseFloat(statisticsData.value.available_space?.replace(' GB', '') || '0')
   const totalCapacity = totalSizeGB + availableSpaceGB
-  return Math.round((totalSizeGB / totalCapacity) * 100)
+  return totalCapacity > 0 ? Math.round((totalSizeGB / totalCapacity) * 100) : 0
 })
 
 // 获取存储使用率颜色
@@ -351,19 +344,41 @@ const executeCleanup = async () => {
 
 // 加载统计数据
 const loadStatistics = async () => {
+  loading.value = true
   try {
-    // TODO: 调用实际的API
-    // const response = await recordingApi.getStatistics()
-    // statisticsData = response.data
-    
+    await Promise.all([
+      recordingStore.fetchStatistics(),
+      recordingStore.fetchRecordings()
+    ])
     ElMessage.success('统计数据加载完成')
   } catch (error) {
     ElMessage.error('加载统计数据失败')
+  } finally {
+    loading.value = false
   }
+}
+
+// 监听store中的统计数据变化，实现实时更新
+watch(() => recordingStore.statistics, (newStats) => {
+  console.log('统计数据更新:', newStats)
+}, { deep: true })
+
+// 监听录像上传事件，自动刷新统计数据
+const handleRecordingUploaded = (event) => {
+  console.log('检测到录像上传完成，刷新统计数据', event.detail)
+  loadStatistics()
 }
 
 onMounted(() => {
   loadStatistics()
+  
+  // 添加录像上传事件监听器
+  window.addEventListener('recordingUploaded', handleRecordingUploaded)
+})
+
+// 组件卸载时清理事件监听器
+onUnmounted(() => {
+  window.removeEventListener('recordingUploaded', handleRecordingUploaded)
 })
 </script>
 

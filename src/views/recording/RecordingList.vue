@@ -4,10 +4,28 @@
       <template #header>
         <div class="card-header">
           <span>录像管理</span>
-          <el-button type="danger" @click="cleanupOldRecordings">
-            <el-icon><Delete /></el-icon>
-            清理过期录像
-          </el-button>
+          <div class="header-actions">
+            <el-upload
+              ref="uploadRef"
+              :before-upload="beforeUpload"
+              :on-success="onUploadSuccess"
+              :on-error="onUploadError"
+              :show-file-list="false"
+              :multiple="true"
+              accept="video/*"
+              action=""
+              :http-request="customUpload"
+            >
+              <el-button type="primary">
+                <el-icon><Upload /></el-icon>
+                上传录像
+              </el-button>
+            </el-upload>
+            <el-button type="danger" @click="cleanupOldRecordings">
+              <el-icon><Delete /></el-icon>
+              清理过期录像
+            </el-button>
+          </div>
         </div>
       </template>
 
@@ -131,19 +149,65 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 设备选择对话框 -->
+    <el-dialog v-model="deviceSelectVisible" title="选择设备" width="500px">
+      <div class="device-select-content">
+        <p>请选择要上传录像的设备：</p>
+        <el-radio-group v-model="selectedDeviceId" class="device-list">
+          <el-radio
+            v-for="device in deviceOptions"
+            :key="device.id"
+            :label="device.id"
+            class="device-item"
+          >
+            <div class="device-info">
+              <span class="device-name">{{ device.name }}</span>
+              <span class="device-id">ID: {{ device.id }}</span>
+            </div>
+          </el-radio>
+        </el-radio-group>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="deviceSelectVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmDeviceSelection" :disabled="!selectedDeviceId">
+            确定上传
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup name="RecordingList">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, Download, VideoPlay, Loading } from '@element-plus/icons-vue'
+import { Delete, Download, VideoPlay, Loading, Upload } from '@element-plus/icons-vue'
 import { recordingApi } from '@/api/recording'
+import { useRecordingStore } from '@/stores/recording'
 
 const loading = ref(false)
 const videoDialogVisible = ref(false)
 const currentVideoUrl = ref('')
 const currentRecording = ref({})
+const uploadRef = ref()
+const deviceSelectVisible = ref(false)
+const selectedDeviceId = ref('')
+const pendingUploadFiles = ref([])
+
+// 使用录像store
+const recordingStore = useRecordingStore()
+
+// 监听store中录像数据的变化，实现实时同步
+watch(() => recordingStore.recordings, (newRecordings) => {
+  recordingList.value = newRecordings
+}, { deep: true })
+
+// 监听分页数据变化
+watch(() => recordingStore.pagination, (newPagination) => {
+  pagination.total = newPagination.total
+}, { deep: true })
 
 // 搜索表单
 const searchForm = reactive({
@@ -186,26 +250,26 @@ const getAlarmTypeColor = (type) => {
 const loadRecordingList = async () => {
   loading.value = true
   try {
-    const params = {
+    // 设置搜索条件
+    recordingStore.setFilters({
+      device_id: searchForm.device_id || null,
+      start_time: searchForm.timeRange?.[0] || '',
+      end_time: searchForm.timeRange?.[1] || '',
+      alarm_type: searchForm.alarm_type || ''
+    })
+
+    // 设置分页
+    recordingStore.setPagination({
       page: pagination.page,
       page_size: pagination.pageSize
-    }
+    })
 
-    // 添加搜索条件
-    if (searchForm.device_id) {
-      params.device_id = searchForm.device_id
-    }
-    if (searchForm.timeRange && searchForm.timeRange.length === 2) {
-      params.start_time = searchForm.timeRange[0]
-      params.end_time = searchForm.timeRange[1]
-    }
-    if (searchForm.alarm_type) {
-      params.alarm_type = searchForm.alarm_type
-    }
-
-    const response = await recordingApi.getRecordingList(params)
-    recordingList.value = response.body.data
-    pagination.total = response.body.total
+    // 使用store加载数据
+    await recordingStore.fetchRecordings()
+    
+    // 更新本地数据
+    recordingList.value = recordingStore.recordings
+    pagination.total = recordingStore.pagination.total
   } catch (error) {
     ElMessage.error('加载录像列表失败')
   } finally {
@@ -289,6 +353,77 @@ const deleteRecording = async (recording) => {
   }
 }
 
+// 上传前验证
+const beforeUpload = (file) => {
+  // 检查文件类型
+  const isVideo = file.type.startsWith('video/')
+  if (!isVideo) {
+    ElMessage.error('只能上传视频文件！')
+    return false
+  }
+
+  // 检查文件大小（限制1GB）
+  const isLt1GB = file.size / 1024 / 1024 / 1024 < 1
+  if (!isLt1GB) {
+    ElMessage.error('上传文件大小不能超过 1GB！')
+    return false
+  }
+
+  return true
+}
+
+// 自定义上传方法
+const customUpload = async (options) => {
+  const { file } = options
+  
+  // 将文件添加到待上传列表
+  pendingUploadFiles.value = [file]
+  selectedDeviceId.value = ''
+  deviceSelectVisible.value = true
+}
+
+// 确认设备选择并开始上传
+const confirmDeviceSelection = async () => {
+  if (!selectedDeviceId.value || pendingUploadFiles.value.length === 0) {
+    return
+  }
+
+  deviceSelectVisible.value = false
+  
+  try {
+    for (const file of pendingUploadFiles.value) {
+      ElMessage.info(`开始上传录像文件：${file.name}`)
+      
+      // 使用store中的上传方法
+      await recordingStore.uploadRecording(selectedDeviceId.value, file)
+      
+      ElMessage.success(`录像文件 ${file.name} 上传成功`)
+    }
+
+    // 上传完成后发送全局事件，通知其他页面数据已更新
+    window.dispatchEvent(new CustomEvent('recordingUploaded', {
+      detail: { count: pendingUploadFiles.value.length, deviceId: selectedDeviceId.value }
+    }))
+  } catch (error) {
+    ElMessage.error(`上传失败：${error.message}`)
+  } finally {
+    // 清理状态
+    pendingUploadFiles.value = []
+    selectedDeviceId.value = ''
+  }
+}
+
+// 上传成功回调
+const onUploadSuccess = (response, file) => {
+  ElMessage.success(`${file.name} 上传成功`)
+  loadRecordingList() // 刷新列表
+}
+
+// 上传失败回调
+const onUploadError = (error, file) => {
+  ElMessage.error(`${file.name} 上传失败`)
+}
+
 // 清理过期录像
 const cleanupOldRecordings = async () => {
   try {
@@ -326,6 +461,12 @@ onMounted(() => {
 .card-header {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
   align-items: center;
 }
 
@@ -367,5 +508,52 @@ onMounted(() => {
 .video-info p {
   margin: 8px 0;
   color: #606266;
+}
+
+.device-select-content {
+  padding: 20px 0;
+}
+
+.device-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.device-item {
+  width: 100%;
+  margin-right: 0;
+  padding: 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.device-item:hover {
+  border-color: #409eff;
+  background-color: #f0f8ff;
+}
+
+.device-item.is-checked {
+  border-color: #409eff;
+  background-color: #f0f8ff;
+}
+
+.device-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.device-name {
+  font-weight: 500;
+  color: #303133;
+}
+
+.device-id {
+  font-size: 12px;
+  color: #909399;
 }
 </style> 
