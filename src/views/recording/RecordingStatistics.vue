@@ -365,7 +365,8 @@ watch(() => recordingStore.statistics, (newStats) => {
 
 // 监听录像上传事件，自动刷新统计数据
 const handleRecordingUploaded = (event) => {
-  console.log('检测到录像上传完成，刷新统计数据', event.detail)
+  console.log('=== 录像统计页面：检测到录像上传完成 ===', event.detail)
+  ElMessage.info(`新录像已上传：${event.detail.fileName}，正在刷新统计数据...`)
   loadStatistics()
 }
 

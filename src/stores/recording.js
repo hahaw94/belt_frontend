@@ -18,9 +18,11 @@ export const useRecordingStore = defineStore('recording', () => {
   })
   const filters = ref({
     device_id: null,
-    start_time: '',
-    end_time: '',
-    alarm_type: ''
+    alarm_id: null,
+    start_time: null,
+    end_time: null,
+    alarm_type: null,
+    has_tracking: null
   })
   const statistics = ref({
     total_recordings: 0,
@@ -78,26 +80,60 @@ export const useRecordingStore = defineStore('recording', () => {
    * @param {Object} params - 查询参数
    */
   const fetchRecordings = async (params = {}) => {
+    console.log('=== Store: 开始获取录像列表 ===')
     loading.value = true
     try {
+      // 构建符合后端RecordingFilter格式的参数
       const queryParams = {
-        page: pagination.value.page,
-        page_size: pagination.value.page_size,
-        ...filters.value,
+        page: Math.max(1, pagination.value.page || 1),
+        page_size: Math.min(100, Math.max(1, pagination.value.page_size || 10)),
+        // 只有非空值才发送，空值发送null或不发送
+        device_id: filters.value.device_id || null,
+        alarm_id: filters.value.alarm_id || null,
+        start_time: filters.value.start_time || null,
+        end_time: filters.value.end_time || null,
+        alarm_type: filters.value.alarm_type || null,
+        has_tracking: filters.value.has_tracking || null,
         ...params
       }
       
+      // 移除null和undefined值，让后端正确处理
+      Object.keys(queryParams).forEach(key => {
+        if (queryParams[key] === null || queryParams[key] === '' || queryParams[key] === undefined) {
+          if (key !== 'page' && key !== 'page_size') {
+            delete queryParams[key]
+          }
+        }
+      })
+      
+      console.log('=== Store: 请求参数 ===', queryParams)
+      
       const response = await recordingApi.getRecordingList(queryParams)
+      console.log('=== Store: API响应 ===', response)
+      
       if (response.success) {
-        recordings.value = response.body.data
-        pagination.value.total = response.body.total
-        pagination.value.page = response.body.page
-        pagination.value.page_size = response.body.page_size
+        console.log('=== Store: 解析响应数据 ===', {
+          data: response.body.data,
+          total: response.body.total,
+          page: response.body.page,
+          page_size: response.body.page_size
+        })
+        
+        recordings.value = response.body.data || []
+        pagination.value.total = response.body.total || 0
+        pagination.value.page = response.body.page || 1
+        pagination.value.page_size = response.body.page_size || 10
+        
+        console.log('=== Store: 更新后的状态 ===', {
+          recordingsCount: recordings.value.length,
+          pagination: pagination.value
+        })
+        
         return response
       }
       throw new Error(response.message)
     } catch (error) {
-      console.error('获取录像列表失败:', error)
+      console.error('=== Store: 获取录像列表失败 ===', error)
       throw error
     } finally {
       loading.value = false
@@ -273,9 +309,11 @@ export const useRecordingStore = defineStore('recording', () => {
   const clearFilters = () => {
     filters.value = {
       device_id: null,
-      start_time: '',
-      end_time: '',
-      alarm_type: ''
+      alarm_id: null,
+      start_time: null,
+      end_time: null,
+      alarm_type: null,
+      has_tracking: null
     }
     pagination.value.page = 1
   }

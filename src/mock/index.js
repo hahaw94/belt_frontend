@@ -10,6 +10,7 @@ import { detectionMockData } from './modules/detection'
 import { eventMockData } from './modules/event'
 import { systemMockData } from './modules/system'
 
+
 let mock = null
 
 /**
@@ -31,6 +32,7 @@ export function setupMock(axiosInstance) {
   setupDetectionMock(mock)
   setupEventMock(mock)
   setupSystemMock(mock)
+
 
   // 其他未匹配的请求通过（主要是登录相关）
   mock.onAny().passThrough()
@@ -590,3 +592,4 @@ function setupSystemMock(mock) {
     }]
   })
 }
+

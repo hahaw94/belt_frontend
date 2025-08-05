@@ -95,9 +95,19 @@ export const recordingApi = {
     return api.upload('/api/recordings/batch-upload', formData)
   },
 
-  // 获取录像播放地址
+  // 获取录像播放地址 - 确保与后端API路径一致
   getPlayUrl(recordingId) {
-    return api.get(`/api/recordings/${recordingId}/play`)
+    console.log('=== API: 获取播放地址 ===', { recordingId, type: typeof recordingId })
+    
+    // 确保recordingId是字符串格式（MongoDB ObjectID）
+    const id = String(recordingId)
+    
+    // 验证ObjectID格式（24位十六进制字符）
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      console.warn('=== API: 录像ID格式可能不正确 ===', { id, length: id.length })
+    }
+    
+    return api.get(`/api/recordings/${id}/play`)
   },
 
   // 获取录像流地址（用于视频播放）
