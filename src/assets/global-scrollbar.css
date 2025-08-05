@@ -1,0 +1,92 @@
+/* 全局滚动条样式 */
+.sub-page-content {
+  height: calc(100vh - 140px);
+  overflow-y: auto;
+  padding-bottom: 40px;
+  /* 自定义滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.sub-page-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sub-page-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.sub-page-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.sub-page-content::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* 为其他可能的滚动容器添加样式 */
+.page-container {
+  height: calc(100vh - 60px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c1c1c1 #f1f1f1;
+}
+
+.page-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.page-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.page-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.page-container::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* 表格滚动条样式 */
+.el-table__body-wrapper::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.el-table__body-wrapper::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.el-table__body-wrapper::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.el-table__body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* 对话框内容滚动条 */
+.el-dialog__body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.el-dialog__body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.el-dialog__body::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.el-dialog__body::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}

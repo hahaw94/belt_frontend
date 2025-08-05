@@ -405,11 +405,20 @@ onMounted(() => {
 const getDeviceList = async () => {
   try {
     loading.value = true
-    const response = await deviceApi.getDeviceList()
-    if (response.data.success) {
-      deviceList.value = response.data.body.devices
+    const response = await deviceApi.getDeviceList({
+      page: pagination.currentPage,
+      page_size: pagination.pageSize
+    })
+    console.log('设备API响应:', response)
+    if (response.success) {
+      deviceList.value = response.body.devices || []
+      pagination.total = response.body.total || 0
+      console.log('设备列表数据:', deviceList.value)
+    } else {
+      ElMessage.error(response.message || '获取设备列表失败')
     }
   } catch (error) {
+    console.error('设备API错误:', error)
     ElMessage.error('获取设备列表失败：' + error.message)
   } finally {
     loading.value = false

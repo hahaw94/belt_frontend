@@ -1,7 +1,7 @@
 import MockAdapter from 'axios-mock-adapter'
 
 import { deviceMockData } from './modules/device'
-
+import { userMockData } from './modules/user'
 import { statisticsMockData } from './modules/statistics'
 import { logMockData } from './modules/log'
 import { dashboardMockData } from './modules/dashboard'
@@ -21,23 +21,35 @@ export function setupMock(axiosInstance) {
   // 创建Mock适配器实例
   mock = new MockAdapter(axiosInstance, { delayResponse: 200 })
 
+  console.log('正在设置Mock拦截器...')
+
   // 注册所有mock路由
-
-  setupDeviceMock(mock)
-
-  setupStatisticsMock(mock)
-  setupLogMock(mock)
-  setupDashboardMock(mock)
-  setupAlgorithmMock(mock)
-  setupDetectionMock(mock)
-  setupEventMock(mock)
-  setupSystemMock(mock)
-
+  try {
+    setupUserMock(mock)
+    console.log('✓ 用户管理Mock已注册')
+    
+    setupDeviceMock(mock)
+    console.log('✓ 设备管理Mock已注册')
+    
+    setupAlgorithmMock(mock)
+    console.log('✓ 算法管理Mock已注册')
+    
+    setupStatisticsMock(mock)
+    setupLogMock(mock)
+    setupDashboardMock(mock)
+    setupDetectionMock(mock)
+    setupEventMock(mock)
+    setupSystemMock(mock)
+    
+    console.log('✓ 所有Mock模块已注册')
+  } catch (error) {
+    console.error('Mock设置错误:', error)
+  }
 
   // 其他未匹配的请求通过（主要是登录相关）
   mock.onAny().passThrough()
 
-  console.log('Mock 拦截器已启用')
+  console.log('🎉 Mock 拦截器已启用')
 }
 
 /**
@@ -51,7 +63,184 @@ export function disableMock() {
   }
 }
 
+/**
+ * 用户管理Mock
+ */
+function setupUserMock(mock) {
+  // 获取用户列表
+  mock.onGet(/\/api\/users/).reply(config => {
+    const params = config.params || {}
+    const page = parseInt(params.page) || 1
+    const pageSize = parseInt(params.page_size) || 10
+    
+    let users = userMockData.getAllUsers()
+    
+    // 搜索过滤
+    if (params.username) {
+      users = users.filter(user => 
+        user.username.toLowerCase().includes(params.username.toLowerCase())
+      )
+    }
+    if (params.role) {
+      users = users.filter(user => user.role === params.role)
+    }
+    if (params.status) {
+      users = users.filter(user => user.status === params.status)
+    }
+    
+    // 分页
+    const start = (page - 1) * pageSize
+    const end = start + pageSize
+    const paginatedUsers = users.slice(start, end)
+    
+    return [200, {
+      error: 0,
+      body: {
+        users: paginatedUsers,
+        total: users.length,
+        page,
+        page_size: pageSize
+      },
+      message: '获取用户列表成功',
+      success: true
+    }]
+  })
 
+  // 添加用户
+  mock.onPost('/api/users').reply(config => {
+    const userData = JSON.parse(config.data)
+    const newUser = userMockData.addUser(userData)
+    
+    return [200, {
+      error: 0,
+      body: {
+        user_id: newUser.id
+      },
+      message: '用户添加成功',
+      success: true
+    }]
+  })
+
+  // 更新用户
+  mock.onPut(/\/api\/users\/\d+/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/users\/(\d+)/)[1])
+    const userData = JSON.parse(config.data)
+    
+    const success = userMockData.updateUser(userId, userData)
+    
+    return [200, {
+      error: success ? 0 : 2001,
+      body: {},
+      message: success ? '用户更新成功' : '用户不存在',
+      success
+    }]
+  })
+
+  // 删除用户
+  mock.onDelete(/\/api\/users\/\d+/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/users\/(\d+)/)[1])
+    const success = userMockData.deleteUser(userId)
+    
+    return [200, {
+      error: success ? 0 : 2001,
+      body: {},
+      message: success ? '用户删除成功' : '用户不存在',
+      success
+    }]
+  })
+
+  // 重置用户密码
+  mock.onPost(/\/api\/users\/\d+\/reset-password/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/users\/(\d+)\/reset-password/)[1])
+    const user = userMockData.getUserById(userId)
+    
+    return [200, {
+      error: user ? 0 : 2001,
+      body: {},
+      message: user ? '密码重置成功' : '用户不存在',
+      success: !!user
+    }]
+  })
+
+  // 批量添加用户
+  mock.onPost('/api/users/batch').reply(() => {
+    return [200, {
+      error: 0,
+      body: {
+        success_count: 5,
+        failed_count: 0
+      },
+      message: '批量添加用户成功',
+      success: true
+    }]
+  })
+
+  // 获取角色列表
+  mock.onGet(/\/api\/roles/).reply(config => {
+    const params = config.params || {}
+    let roles = userMockData.getAllRoles()
+    
+    // 搜索过滤
+    if (params.name) {
+      roles = roles.filter(role => 
+        role.name.toLowerCase().includes(params.name.toLowerCase())
+      )
+    }
+    
+    return [200, {
+      error: 0,
+      body: {
+        roles: roles,
+        total: roles.length
+      },
+      message: '获取角色列表成功',
+      success: true
+    }]
+  })
+
+  // 添加角色
+  mock.onPost('/api/roles').reply(config => {
+    const roleData = JSON.parse(config.data)
+    const newRole = userMockData.addRole(roleData)
+    
+    return [200, {
+      error: 0,
+      body: {
+        role_id: newRole.id
+      },
+      message: '角色添加成功',
+      success: true
+    }]
+  })
+
+  // 更新角色
+  mock.onPut(/\/api\/roles\/\d+/).reply(config => {
+    const roleId = parseInt(config.url.match(/\/api\/roles\/(\d+)/)[1])
+    const roleData = JSON.parse(config.data)
+    
+    const success = userMockData.updateRole(roleId, roleData)
+    
+    return [200, {
+      error: success ? 0 : 2002,
+      body: {},
+      message: success ? '角色更新成功' : '角色不存在',
+      success
+    }]
+  })
+
+  // 删除角色
+  mock.onDelete(/\/api\/roles\/\d+/).reply(config => {
+    const roleId = parseInt(config.url.match(/\/api\/roles\/(\d+)/)[1])
+    const success = userMockData.deleteRole(roleId)
+    
+    return [200, {
+      error: success ? 0 : 2002,
+      body: {},
+      message: success ? '角色删除成功' : '角色不存在或为默认角色',
+      success
+    }]
+  })
+}
 
 /**
  * 设备管理Mock
@@ -156,6 +345,188 @@ function setupDeviceMock(mock) {
       body: {},
       message: success ? '设备状态切换成功' : '设备不存在',
       success
+    }]
+  })
+
+  // 获取设备详细信息
+  mock.onGet(/\/api\/devices\/\d+$/).reply(config => {
+    const deviceId = parseInt(config.url.match(/\/api\/devices\/(\d+)$/)[1])
+    const device = deviceMockData.getDeviceById(deviceId)
+    
+    return [200, {
+      error: device ? 0 : 3001,
+      body: device || {},
+      message: device ? '获取设备详情成功' : '设备不存在',
+      success: !!device
+    }]
+  })
+
+  // 获取智能分析板卡列表
+  mock.onGet('/api/devices/analysis-cards').reply(() => {
+    const analysisCards = deviceMockData.getAnalysisCards()
+    
+    return [200, {
+      error: 0,
+      body: {
+        analysis_cards: analysisCards,
+        total: analysisCards.length
+      },
+      message: '获取分析板卡列表成功',
+      success: true
+    }]
+  })
+
+  // 获取摄像机列表
+  mock.onGet('/api/devices/cameras').reply(() => {
+    const cameras = deviceMockData.getCameras()
+    
+    return [200, {
+      error: 0,
+      body: {
+        cameras: cameras,
+        total: cameras.length
+      },
+      message: '获取摄像机列表成功',
+      success: true
+    }]
+  })
+
+  // 批量添加设备
+  mock.onPost('/api/devices/batch').reply((_config) => { // eslint-disable-line no-unused-vars
+    // 模拟从文件中解析的设备数据
+    const mockDevicesFromFile = [
+      { device_name: '批量设备01', device_sn: 'BATCH001', device_type: 'IPC摄像机', manufacturer: '海康威视' },
+      { device_name: '批量设备02', device_sn: 'BATCH002', device_type: '球型摄像机', manufacturer: '大华' },
+      { device_name: '批量设备03', device_sn: 'BATCH003', device_type: '枪型摄像机', manufacturer: '宇视' }
+    ]
+    
+    try {
+      const addedDevices = deviceMockData.batchAddDevices(mockDevicesFromFile)
+      return [200, {
+        error: 0,
+        body: {
+          success_count: addedDevices.length,
+          failed_count: 0,
+          added_devices: addedDevices.map(d => ({ id: d.id, name: d.device_name }))
+        },
+        message: '批量添加设备完成',
+        success: true
+      }]
+    } catch (error) {
+      return [200, {
+        error: 3003,
+        body: {
+          success_count: 0,
+          failed_count: mockDevicesFromFile.length
+        },
+        message: '批量添加设备失败',
+        success: false
+      }]
+    }
+  })
+
+  // 平台设备自动同步
+  mock.onPost('/api/devices/sync').reply(() => {
+    const syncedDevices = deviceMockData.syncDevicesFromPlatform()
+    
+    return [200, {
+      error: 0,
+      body: {
+        synced_count: syncedDevices.length,
+        new_count: syncedDevices.length,
+        updated_count: 0,
+        synced_devices: syncedDevices.map(d => ({ id: d.id, name: d.device_name, status: d.status }))
+      },
+      message: '设备同步成功',
+      success: true
+    }]
+  })
+
+  // 导出设备列表
+  mock.onGet('/api/devices/export').reply(() => {
+    const exportData = deviceMockData.exportDevicesData()
+    const csvContent = [
+      Object.keys(exportData[0]).join(','),
+      ...exportData.map(row => Object.values(row).join(','))
+    ].join('\n')
+    
+    return [200, new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })]
+  })
+
+  // 配置设备接入协议
+  mock.onPut(/\/api\/devices\/\d+\/protocol/).reply(() => {
+    return [200, {
+      error: 0,
+      body: {},
+      message: '设备协议配置成功',
+      success: true
+    }]
+  })
+
+  // 绑定智能分析板卡与摄像机
+  mock.onPost('/api/devices/bind-analysis-card').reply(() => {
+    return [200, {
+      error: 0,
+      body: {},
+      message: '绑定分析板卡成功',
+      success: true
+    }]
+  })
+
+  // 测试设备连接
+  mock.onPost(/\/api\/devices\/\d+\/test-connection/).reply(config => {
+    const deviceId = parseInt(config.url.match(/\/api\/devices\/(\d+)\/test-connection/)[1])
+    const testResult = deviceMockData.testDeviceConnection(deviceId)
+    
+    if (!testResult) {
+      return [200, {
+        error: 3001,
+        body: {},
+        message: '设备不存在',
+        success: false
+      }]
+    }
+    
+    return [200, {
+      error: testResult.connected ? 0 : 3002,
+      body: testResult,
+      message: testResult.connected ? '设备连接正常' : '设备连接失败',
+      success: testResult.connected
+    }]
+  })
+
+  // 获取设备日志
+  mock.onGet(/\/api\/devices\/\d+\/logs/).reply(config => {
+    const deviceId = parseInt(config.url.match(/\/api\/devices\/(\d+)\/logs/)[1])
+    const params = config.params || {}
+    const page = parseInt(params.page) || 1
+    const pageSize = parseInt(params.page_size) || 10
+    
+    const logs = []
+    for (let i = 1; i <= 50; i++) {
+      logs.push({
+        id: i,
+        device_id: deviceId,
+        level: ['INFO', 'WARN', 'ERROR'][Math.floor(Math.random() * 3)],
+        message: `设备日志消息 ${i}`,
+        timestamp: new Date(Date.now() - i * 60000).toISOString().replace('T', ' ').split('.')[0]
+      })
+    }
+    
+    const start = (page - 1) * pageSize
+    const end = start + pageSize
+    const paginatedLogs = logs.slice(start, end)
+    
+    return [200, {
+      error: 0,
+      body: {
+        logs: paginatedLogs,
+        total: logs.length,
+        page,
+        page_size: pageSize
+      },
+      message: '获取设备日志成功',
+      success: true
     }]
   })
 }
@@ -363,28 +734,162 @@ function setupAlgorithmMock(mock) {
 
   // 批量下发算法
   mock.onPost('/api/algorithms/batch-dispatch').reply(config => {
-    const { target_cards } = JSON.parse(config.data)
+    const { algorithm_ids, target_cards } = JSON.parse(config.data)
+    
+    const batchResult = algorithmMockData.batchDispatchAlgorithms(algorithm_ids, target_cards)
     
     return [200, {
       error: 0,
-      body: {
-        success_count: target_cards.length,
-        failed_count: 0
-      },
+      body: batchResult,
       message: '批量下发算法成功',
       success: true
     }]
   })
 
   // 获取下发日志
-  mock.onGet('/api/algorithms/dispatch-logs').reply(() => {
+  mock.onGet('/api/algorithms/dispatch-logs').reply(config => {
+    const params = config.params || {}
+    const dispatchLogs = algorithmMockData.getDispatchLogs()
+    
+    let logs = dispatchLogs.logs
+    
+    // 过滤
+    if (params.algorithm_id) {
+      logs = logs.filter(log => log.algorithm_id == params.algorithm_id)
+    }
+    if (params.result) {
+      logs = logs.filter(log => log.result === params.result)
+    }
+    if (params.target_card) {
+      logs = logs.filter(log => log.target_card === params.target_card)
+    }
+    
     return [200, {
       error: 0,
-      body: algorithmMockData.getDispatchLogs(),
+      body: {
+        logs: logs,
+        total: logs.length
+      },
       message: '获取下发日志成功',
       success: true
     }]
   })
+
+  // 更新算法信息
+  mock.onPut(/\/api\/algorithms\/\d+/).reply(config => {
+    const algorithmId = parseInt(config.url.match(/\/api\/algorithms\/(\d+)/)[1])
+    const algorithmData = JSON.parse(config.data)
+    
+    const success = algorithmMockData.updateAlgorithm(algorithmId, algorithmData)
+    
+    return [200, {
+      error: success ? 0 : 4001,
+      body: {},
+      message: success ? '算法更新成功' : '算法不存在',
+      success
+    }]
+  })
+
+  // 删除算法模型
+  mock.onDelete(/\/api\/algorithms\/\d+/).reply(config => {
+    const algorithmId = parseInt(config.url.match(/\/api\/algorithms\/(\d+)/)[1])
+    const success = algorithmMockData.deleteAlgorithm(algorithmId)
+    
+    return [200, {
+      error: success ? 0 : 4001,
+      body: {},
+      message: success ? '算法删除成功' : '算法不存在',
+      success
+    }]
+  })
+
+  // 同步规则到分析板
+  mock.onPost('/api/algorithms/sync-rules').reply(config => {
+    const { algorithm_id, target_cards, rules } = JSON.parse(config.data)
+    
+    const syncResult = algorithmMockData.syncRulesToAnalysisCards(algorithm_id, target_cards, rules)
+    
+    if (!syncResult) {
+      return [200, {
+        error: 4001,
+        body: {},
+        message: '算法不存在',
+        success: false
+      }]
+    }
+    
+    return [200, {
+      error: 0,
+      body: syncResult,
+      message: '规则同步成功',
+      success: true
+    }]
+  })
+
+  // 配置智能分析规则
+  mock.onPost('/api/algorithms/config').reply(config => {
+    const { algorithm_id, device_id, config_data } = JSON.parse(config.data)
+    
+    const configResult = algorithmMockData.configureAlgorithmRules(algorithm_id, device_id, config_data)
+    
+    if (!configResult) {
+      return [200, {
+        error: 4001,
+        body: {},
+        message: '算法不存在',
+        success: false
+      }]
+    }
+    
+    return [200, {
+      error: 0,
+      body: {
+        config_id: configResult.id,
+        config_details: configResult
+      },
+      message: '算法配置成功',
+      success: true
+    }]
+  })
+
+  // 获取算法统计信息
+  mock.onGet('/api/algorithms/statistics').reply(() => {
+    const statistics = algorithmMockData.getAlgorithmStatistics()
+    
+    return [200, {
+      error: 0,
+      body: statistics,
+      message: '获取算法统计成功',
+      success: true
+    }]
+  })
+
+  // 获取算法版本历史
+  mock.onGet(/\/api\/algorithms\/\d+\/versions/).reply(config => {
+    const algorithmId = parseInt(config.url.match(/\/api\/algorithms\/(\d+)\/versions/)[1])
+    const versions = algorithmMockData.getAlgorithmVersionHistory(algorithmId)
+    
+    if (!versions) {
+      return [200, {
+        error: 4001,
+        body: {},
+        message: '算法不存在',
+        success: false
+      }]
+    }
+    
+    return [200, {
+      error: 0,
+      body: {
+        versions: versions,
+        total: versions.length
+      },
+      message: '获取版本历史成功',
+      success: true
+    }]
+  })
+
+  // 注意：分析卡和摄像机列表接口已在设备管理Mock中定义，这里不重复定义以避免冲突
 }
 
 /**

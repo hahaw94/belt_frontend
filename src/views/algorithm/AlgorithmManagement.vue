@@ -357,10 +357,15 @@ onMounted(() => {
 const getAlgorithmList = async () => {
   try {
     const response = await algorithmApi.getAlgorithmList()
-    if (response.data.success) {
-      algorithmList.value = response.data.body.algorithms
+    console.log('算法API响应:', response)
+    if (response.success) {
+      algorithmList.value = response.body.algorithms || []
+      console.log('算法列表数据:', algorithmList.value)
+    } else {
+      ElMessage.error(response.message || '获取算法列表失败')
     }
   } catch (error) {
+    console.error('算法API错误:', error)
     ElMessage.error('获取算法列表失败：' + error.message)
   }
 }
@@ -368,10 +373,15 @@ const getAlgorithmList = async () => {
 const getAnalysisCards = async () => {
   try {
     const response = await algorithmApi.getAnalysisCards()
-    if (response.data.success) {
-      analysisCards.value = response.data.body.cards || []
+    console.log('分析板卡API响应:', response)
+    if (response.success) {
+      analysisCards.value = response.body.analysis_cards || []
+      console.log('分析板卡数据:', analysisCards.value)
+    } else {
+      ElMessage.error(response.message || '获取分析板卡失败')
     }
   } catch (error) {
+    console.error('分析板卡API错误:', error)
     ElMessage.error('获取分析板卡失败：' + error.message)
   }
 }
@@ -547,13 +557,10 @@ const getRuleTypeText = (ruleType) => {
 </script>
 
 <style scoped>
-.sub-page-content {
-  min-height: calc(100vh - 140px);
-  padding-bottom: 40px;
-}
-
+/* 算法管理页面样式 */
 .algorithm-management-container {
   padding: 20px;
+  max-width: 100%;
 }
 
 .card-header {
@@ -603,3 +610,4 @@ const getRuleTypeText = (ruleType) => {
   margin: 0 10px;
 }
 </style>
+

@@ -266,10 +266,15 @@ const getDeviceList = async () => {
   try {
     loading.value = true
     const response = await deviceApi.getDeviceList()
-    if (response.data.success) {
-      deviceList.value = response.data.body.devices
+    console.log('设备详情页API响应:', response)
+    if (response.success) {
+      deviceList.value = response.body.devices || []
+      console.log('设备详情页数据:', deviceList.value)
+    } else {
+      ElMessage.error(response.message || '获取设备列表失败')
     }
   } catch (error) {
+    console.error('设备详情页API错误:', error)
     ElMessage.error('获取设备列表失败：' + error.message)
   } finally {
     loading.value = false
@@ -296,10 +301,15 @@ const onDeviceChange = async (deviceId) => {
 const getAnalysisCards = async () => {
   try {
     const response = await deviceApi.getAnalysisCards()
-    if (response.data.success) {
-      analysisCards.value = response.data.body.cards || []
+    console.log('设备详情页分析板卡API响应:', response)
+    if (response.success) {
+      analysisCards.value = response.body.analysis_cards || []
+      console.log('设备详情页分析板卡数据:', analysisCards.value)
+    } else {
+      ElMessage.error(response.message || '获取分析板卡失败')
     }
   } catch (error) {
+    console.error('设备详情页分析板卡API错误:', error)
     ElMessage.error('获取分析板卡失败：' + error.message)
   }
 }

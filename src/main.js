@@ -10,6 +10,14 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css' // 引入 Element Plus 的样式文件
 import * as ElementPlusIconsVue from '@element-plus/icons-vue' // 引入 Element Plus 的图标
 
+// 引入全局滚动条样式
+import '@/assets/global-scrollbar.css'
+
+// 在开发环境中导入Mock测试
+if (process.env.NODE_ENV === 'development') {
+  import('./test-mock.js')
+}
+
 // 创建 Vue 应用实例
 const app = createApp(App)
 

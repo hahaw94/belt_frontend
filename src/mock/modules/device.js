@@ -121,6 +121,104 @@ class DeviceMockData {
       online_rate: total > 0 ? (online / total).toFixed(3) : 0
     }
   }
+
+  // 批量添加设备
+  batchAddDevices(devicesData) {
+    const addedDevices = []
+    devicesData.forEach(deviceData => {
+      const newDevice = this.addDevice(deviceData)
+      addedDevices.push(newDevice)
+    })
+    return addedDevices
+  }
+
+  // 导出设备列表数据
+  exportDevicesData() {
+    return this.devices.map(device => ({
+      设备名称: device.device_name,
+      设备序列号: device.device_sn,
+      设备类型: device.device_type,
+      制造商: device.manufacturer,
+      IP地址: device.ip_address,
+      状态: device.status,
+      区域: device.area,
+      安装位置: device.install_location,
+      创建时间: device.create_time
+    }))
+  }
+
+  // 同步设备数据
+  syncDevicesFromPlatform() {
+    // 模拟从平台同步的新设备
+    const syncedDevices = []
+    for (let i = 1; i <= 5; i++) {
+      const syncedDevice = {
+        device_name: `同步设备${i.toString().padStart(2, '0')}`,
+        device_sn: `SYNC${new Date().getFullYear()}${i.toString().padStart(4, '0')}`,
+        device_type: 'IPC摄像机',
+        manufacturer: '海康威视',
+        ip_address: `192.168.2.${100 + i}`,
+        status: '在线',
+        area: '同步区域',
+        internal_code: `SYNC-${i.toString().padStart(4, '0')}`,
+        install_location: `同步位置${i}`,
+        install_time: new Date().toISOString().split('T')[0],
+        line_info: `同步网线${i}号`,
+        direction: '朝向东',
+        related_camera_sn: `SYNC-CAM-${i.toString().padStart(4, '0')}`,
+        related_camera_name: `同步摄像头-${i}`,
+        algorithm_model: '人脸识别',
+        model_version: 'V1.0.0'
+      }
+      const newDevice = this.addDevice(syncedDevice)
+      syncedDevices.push(newDevice)
+    }
+    return syncedDevices
+  }
+
+  // 获取分析板卡数据
+  getAnalysisCards() {
+    return [
+      { id: 1, name: '分析卡001', ip: '192.168.1.201', status: '在线', algorithm_count: 3, cpu_usage: '45%', memory_usage: '60%' },
+      { id: 2, name: '分析卡002', ip: '192.168.1.202', status: '离线', algorithm_count: 1, cpu_usage: '0%', memory_usage: '0%' },
+      { id: 3, name: '分析卡003', ip: '192.168.1.203', status: '在线', algorithm_count: 5, cpu_usage: '78%', memory_usage: '85%' },
+      { id: 4, name: '分析卡004', ip: '192.168.1.204', status: '在线', algorithm_count: 2, cpu_usage: '32%', memory_usage: '45%' },
+      { id: 5, name: '分析卡005', ip: '192.168.1.205', status: '在线', algorithm_count: 4, cpu_usage: '65%', memory_usage: '70%' }
+    ]
+  }
+
+  // 获取摄像机列表（简化版）
+  getCameras() {
+    return this.devices.map(device => ({
+      id: device.id,
+      name: device.device_name,
+      sn: device.device_sn,
+      ip: device.ip_address,
+      status: device.status,
+      type: device.device_type,
+      area: device.area,
+      manufacturer: device.manufacturer
+    }))
+  }
+
+  // 测试设备连接
+  testDeviceConnection(deviceId) {
+    const device = this.getDeviceById(deviceId)
+    if (!device) return null
+
+    // 模拟连接测试结果
+    const isConnected = Math.random() > 0.2 // 80% 成功率
+    const responseTime = Math.floor(Math.random() * 150) + 30 // 30-180ms
+
+    return {
+      device_id: deviceId,
+      device_name: device.device_name,
+      connected: isConnected,
+      response_time: responseTime,
+      test_time: new Date().toISOString().replace('T', ' ').split('.')[0],
+      error_message: isConnected ? null : ['网络超时', '设备离线', '认证失败'][Math.floor(Math.random() * 3)]
+    }
+  }
 }
 
 export const deviceMockData = new DeviceMockData()

@@ -133,6 +133,122 @@ class AlgorithmMockData {
       total: this.dispatchLogs.length
     }
   }
+
+  // 获取算法统计信息
+  getAlgorithmStatistics() {
+    const total = this.algorithms.length
+    const published = this.algorithms.filter(a => a.status === '已发布').length
+    const testing = this.algorithms.filter(a => a.status === '测试中').length
+    const disabled = this.algorithms.filter(a => a.status === '已停用').length
+
+    return {
+      total_algorithms: total,
+      published_count: published,
+      testing_count: testing,
+      disabled_count: disabled,
+      recent_uploads: this.algorithms.slice(0, 5).map(a => ({
+        name: a.name,
+        version: a.version,
+        upload_time: a.upload_time
+      }))
+    }
+  }
+
+  // 同步算法规则到分析板
+  syncRulesToAnalysisCards(algorithmId, targetCards, rules) {
+    const algorithm = this.getAlgorithmById(algorithmId)
+    if (!algorithm) return null
+
+    const syncResults = targetCards.map(cardId => ({
+      card_id: cardId,
+      algorithm_id: algorithmId,
+      algorithm_name: algorithm.name,
+      sync_time: new Date().toISOString().replace('T', ' ').split('.')[0],
+      status: Math.random() > 0.1 ? '成功' : '失败', // 90% 成功率
+      synced_rules: rules ? rules.length : Math.floor(Math.random() * 5) + 1
+    }))
+
+    return {
+      total_cards: targetCards.length,
+      success_count: syncResults.filter(r => r.status === '成功').length,
+      failed_count: syncResults.filter(r => r.status === '失败').length,
+      sync_results: syncResults
+    }
+  }
+
+  // 配置算法规则
+  configureAlgorithmRules(algorithmId, deviceId, configData) {
+    const algorithm = this.getAlgorithmById(algorithmId)
+    if (!algorithm) return null
+
+    const configId = Math.floor(Math.random() * 10000) + 1
+    const config = {
+      id: configId,
+      algorithm_id: algorithmId,
+      algorithm_name: algorithm.name,
+      device_id: deviceId,
+      config_data: configData,
+      create_time: new Date().toISOString().replace('T', ' ').split('.')[0],
+      status: '已启用',
+      last_update: new Date().toISOString().replace('T', ' ').split('.')[0]
+    }
+
+    return config
+  }
+
+  // 批量下发算法
+  batchDispatchAlgorithms(algorithmIds, targetCards) {
+    const results = []
+    
+    algorithmIds.forEach(algorithmId => {
+      const algorithm = this.getAlgorithmById(algorithmId)
+      if (algorithm) {
+        targetCards.forEach(cardId => {
+          const result = Math.random() > 0.15 ? '成功' : '失败' // 85% 成功率
+          const newLog = this.addDispatchLog(algorithmId, cardId, result)
+          results.push({
+            algorithm_id: algorithmId,
+            algorithm_name: algorithm.name,
+            target_card: cardId,
+            result: result,
+            dispatch_time: newLog.dispatch_time
+          })
+        })
+      }
+    })
+
+    return {
+      total_dispatches: results.length,
+      success_count: results.filter(r => r.result === '成功').length,
+      failed_count: results.filter(r => r.result === '失败').length,
+      dispatch_results: results
+    }
+  }
+
+  // 获取算法版本历史
+  getAlgorithmVersionHistory(algorithmId) {
+    const algorithm = this.getAlgorithmById(algorithmId)
+    if (!algorithm) return null
+
+    // 模拟版本历史
+    const versions = []
+    const baseVersion = algorithm.version
+    const majorVersion = parseInt(baseVersion.split('.')[0].substring(1))
+    
+    for (let i = majorVersion; i >= 1; i--) {
+      for (let j = 4; j >= 0; j--) {
+        versions.push({
+          version: `V${i}.${j}.0`,
+          upload_time: new Date(Date.now() - (majorVersion - i + 1) * 30 * 24 * 60 * 60 * 1000 - j * 7 * 24 * 60 * 60 * 1000).toISOString().replace('T', ' ').split('.')[0],
+          status: i === majorVersion && j === parseInt(baseVersion.split('.')[1]) ? algorithm.status : '已停用',
+          size: `${(Math.random() * 40 + 15).toFixed(1)} MB`,
+          description: `${algorithm.name}算法 V${i}.${j} 版本`
+        })
+      }
+    }
+
+    return versions.slice(0, 10) // 返回最近10个版本
+  }
 }
 
 export const algorithmMockData = new AlgorithmMockData()

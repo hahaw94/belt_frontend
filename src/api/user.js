@@ -4,7 +4,7 @@ import { api } from './index'
 export const userApi = {
   // 获取用户列表
   getUserList(params) {
-    return api.get('/api/users', params)
+    return api.get('/api/users', { params })
   },
 
   // 添加用户
@@ -36,7 +36,7 @@ export const userApi = {
 
   // 获取角色列表
   getRoleList(params) {
-    return api.get('/api/roles', params)
+    return api.get('/api/roles', { params })
   },
 
   // 添加角色
