@@ -220,8 +220,18 @@ const loading = ref(false)
 // 使用录像store
 const recordingStore = useRecordingStore()
 
-// 统计数据
-const statisticsData = computed(() => recordingStore.statistics)
+// 统计数据 - 添加默认值防止数据为空
+const statisticsData = computed(() => {
+  const stats = recordingStore.statistics || {}
+  return {
+    total_recordings: stats.total_recordings || 0,
+    total_size: stats.total_size || '0 GB',
+    available_space: stats.available_space || '0 GB',
+    retention_days: stats.retention_days || 180,
+    auto_cleanup: stats.auto_cleanup !== undefined ? stats.auto_cleanup : true,
+    daily_average: stats.daily_average || '0 MB'
+  }
+})
 
 // 设备统计
 const deviceStats = computed(() => {
@@ -231,12 +241,23 @@ const deviceStats = computed(() => {
   Object.keys(deviceMap).forEach(deviceId => {
     const recordings = deviceMap[deviceId]
     const totalSize = recordings.reduce((sum, recording) => {
-      const sizeInMB = parseFloat(recording.file_size?.replace(' MB', '') || '0')
+      // 安全处理文件大小
+      let sizeInMB = 0
+      if (recording.file_size !== null && recording.file_size !== undefined) {
+        if (typeof recording.file_size === 'string') {
+          sizeInMB = parseFloat(recording.file_size.replace(' MB', '') || '0')
+        } else if (typeof recording.file_size === 'number') {
+          sizeInMB = recording.file_size
+        }
+      }
       return sum + sizeInMB
     }, 0)
     
     const averageDuration = recordings.length > 0 
-      ? (recordings.reduce((sum, recording) => sum + recording.duration, 0) / recordings.length).toFixed(1)
+      ? (recordings.reduce((sum, recording) => {
+          const duration = typeof recording.duration === 'number' ? recording.duration : parseFloat(recording.duration) || 0
+          return sum + duration
+        }, 0) / recordings.length).toFixed(1)
       : 0
     
     const lastRecording = recordings.length > 0 
@@ -287,8 +308,26 @@ const cleanupHistory = ref([
 
 // 计算存储使用率
 const storageUsagePercentage = computed(() => {
-  const totalSizeGB = parseFloat(statisticsData.value.total_size?.replace(' GB', '') || '0')
-  const availableSpaceGB = parseFloat(statisticsData.value.available_space?.replace(' GB', '') || '0')
+  // 安全处理 total_size
+  let totalSizeGB = 0
+  if (statisticsData.value.total_size !== null && statisticsData.value.total_size !== undefined) {
+    if (typeof statisticsData.value.total_size === 'string') {
+      totalSizeGB = parseFloat(statisticsData.value.total_size.replace(' GB', '') || '0')
+    } else if (typeof statisticsData.value.total_size === 'number') {
+      totalSizeGB = statisticsData.value.total_size
+    }
+  }
+  
+  // 安全处理 available_space
+  let availableSpaceGB = 0
+  if (statisticsData.value.available_space !== null && statisticsData.value.available_space !== undefined) {
+    if (typeof statisticsData.value.available_space === 'string') {
+      availableSpaceGB = parseFloat(statisticsData.value.available_space.replace(' GB', '') || '0')
+    } else if (typeof statisticsData.value.available_space === 'number') {
+      availableSpaceGB = statisticsData.value.available_space
+    }
+  }
+  
   const totalCapacity = totalSizeGB + availableSpaceGB
   return totalCapacity > 0 ? Math.round((totalSizeGB / totalCapacity) * 100) : 0
 })

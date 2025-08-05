@@ -26,11 +26,11 @@ export const useRecordingStore = defineStore('recording', () => {
   })
   const statistics = ref({
     total_recordings: 0,
-    total_size: '',
-    available_space: '',
+    total_size: '0 GB',
+    available_space: '0 GB',
     retention_days: 180,
     auto_cleanup: true,
-    daily_average: ''
+    daily_average: '0 MB'
   })
   const playingRecordings = ref(new Map()) // 记录正在播放的录像
   const downloadProgress = ref(new Map()) // 记录下载进度
