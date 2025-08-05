@@ -5,22 +5,10 @@
         <div class="card-header">
           <span>录像管理</span>
           <div class="header-actions">
-            <el-upload
-              ref="uploadRef"
-              :before-upload="beforeUpload"
-              :on-success="onUploadSuccess"
-              :on-error="onUploadError"
-              :show-file-list="false"
-              :multiple="true"
-              accept="video/*"
-              action=""
-              :http-request="customUpload"
-            >
-              <el-button type="primary">
-                <el-icon><Upload /></el-icon>
-                上传录像
-              </el-button>
-            </el-upload>
+            <el-button type="primary" @click="showUploadDialog">
+              <el-icon><Upload /></el-icon>
+              上传录像
+            </el-button>
             <el-button type="danger" @click="cleanupOldRecordings">
               <el-icon><Delete /></el-icon>
               清理过期录像
@@ -150,29 +138,58 @@
       </template>
     </el-dialog>
 
-    <!-- 设备选择对话框 -->
-    <el-dialog v-model="deviceSelectVisible" title="选择设备" width="500px">
-      <div class="device-select-content">
-        <p>请选择要上传录像的设备：</p>
-        <el-radio-group v-model="selectedDeviceId" class="device-list">
-          <el-radio
-            v-for="device in deviceOptions"
-            :key="device.id"
-            :label="device.id"
-            class="device-item"
-          >
-            <div class="device-info">
-              <span class="device-name">{{ device.name }}</span>
-              <span class="device-id">ID: {{ device.id }}</span>
-            </div>
-          </el-radio>
-        </el-radio-group>
+    <!-- 上传录像对话框 -->
+    <el-dialog v-model="uploadDialogVisible" title="上传录像" width="600px">
+      <div class="upload-form">
+        <!-- 设备选择 -->
+        <div class="form-item">
+          <label class="form-label">选择设备：</label>
+          <el-select v-model="selectedDeviceId" placeholder="请选择设备" style="width: 100%">
+            <el-option
+              v-for="device in deviceOptions"
+              :key="device.id"
+              :label="device.name"
+              :value="device.id"
+            />
+          </el-select>
+        </div>
+        
+        <!-- 文件选择 -->
+        <div class="form-item">
+          <label class="form-label">选择文件：</label>
+          <input 
+            ref="fileInput"
+            type="file" 
+            accept="video/*,audio/*,.mp4,.avi,.mov,.mkv,.wmv,.flv,.webm,.m4v"
+            @change="handleFileSelect"
+            style="width: 100%; padding: 8px; border: 1px solid #dcdfe6; border-radius: 4px;"
+          />
+        </div>
+        
+        <!-- 文件信息显示 -->
+        <div v-if="selectedFile" class="file-info">
+          <p><strong>文件名：</strong>{{ selectedFile.name }}</p>
+          <p><strong>文件大小：</strong>{{ formatFileSize(selectedFile.size) }}</p>
+          <p><strong>文件类型：</strong>{{ selectedFile.type || '未知' }}</p>
+        </div>
+        
+        <!-- 上传进度 -->
+        <div v-if="uploadProgress > 0" class="upload-progress">
+          <el-progress :percentage="uploadProgress" :status="uploadStatus" />
+          <p>{{ uploadMessage }}</p>
+        </div>
       </div>
+      
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="deviceSelectVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmDeviceSelection" :disabled="!selectedDeviceId">
-            确定上传
+          <el-button @click="cancelUpload">取消</el-button>
+          <el-button 
+            type="primary" 
+            @click="startUpload" 
+            :disabled="!selectedDeviceId || !selectedFile || uploading"
+            :loading="uploading"
+          >
+            {{ uploading ? '上传中...' : '开始上传' }}
           </el-button>
         </div>
       </template>
@@ -191,10 +208,15 @@ const loading = ref(false)
 const videoDialogVisible = ref(false)
 const currentVideoUrl = ref('')
 const currentRecording = ref({})
-const uploadRef = ref()
-const deviceSelectVisible = ref(false)
+// 上传相关状态
+const uploadDialogVisible = ref(false)
 const selectedDeviceId = ref('')
-const pendingUploadFiles = ref([])
+const selectedFile = ref(null)
+const uploading = ref(false)
+const uploadProgress = ref(0)
+const uploadStatus = ref('')
+const uploadMessage = ref('')
+const fileInput = ref()
 
 // 使用录像store
 const recordingStore = useRecordingStore()
@@ -353,75 +375,126 @@ const deleteRecording = async (recording) => {
   }
 }
 
-// 上传前验证
-const beforeUpload = (file) => {
-  // 检查文件类型
-  const isVideo = file.type.startsWith('video/')
-  if (!isVideo) {
-    ElMessage.error('只能上传视频文件！')
-    return false
-  }
-
-  // 检查文件大小（限制1GB）
-  const isLt1GB = file.size / 1024 / 1024 / 1024 < 1
-  if (!isLt1GB) {
-    ElMessage.error('上传文件大小不能超过 1GB！')
-    return false
-  }
-
-  return true
-}
-
-// 自定义上传方法
-const customUpload = async (options) => {
-  const { file } = options
-  
-  // 将文件添加到待上传列表
-  pendingUploadFiles.value = [file]
+// 显示上传对话框
+const showUploadDialog = () => {
+  console.log('=== 显示上传对话框 ===')
+  uploadDialogVisible.value = true
   selectedDeviceId.value = ''
-  deviceSelectVisible.value = true
+  selectedFile.value = null
+  uploadProgress.value = 0
+  uploadStatus.value = ''
+  uploadMessage.value = ''
 }
 
-// 确认设备选择并开始上传
-const confirmDeviceSelection = async () => {
-  if (!selectedDeviceId.value || pendingUploadFiles.value.length === 0) {
+// 处理文件选择
+const handleFileSelect = (event) => {
+  const file = event.target.files[0]
+  console.log('=== 文件选择 ===', file)
+  
+  if (!file) {
+    selectedFile.value = null
     return
   }
+  
+  // 验证文件大小（限制1GB）
+  if (file.size > 1024 * 1024 * 1024) {
+    ElMessage.error('文件大小不能超过 1GB！')
+    event.target.value = '' // 清空文件选择
+    return
+  }
+  
+  // 验证文件类型
+  const fileExt = file.name.toLowerCase().split('.').pop()
+  const validExts = ['mp4', 'avi', 'mov', 'mkv', 'wmv', 'flv', 'webm', 'm4v']
+  
+  if (!validExts.includes(fileExt)) {
+    ElMessage.error('只能上传视频文件（mp4、avi、mov、mkv、wmv、flv、webm、m4v）！')
+    event.target.value = '' // 清空文件选择
+    return
+  }
+  
+  selectedFile.value = file
+  console.log('文件验证通过:', {
+    name: file.name,
+    size: file.size,
+    type: file.type
+  })
+}
 
-  deviceSelectVisible.value = false
+// 开始上传
+const startUpload = async () => {
+  if (!selectedDeviceId.value || !selectedFile.value) {
+    ElMessage.error('请选择设备和文件')
+    return
+  }
+  
+  console.log('=== 开始上传流程 ===')
+  console.log('设备ID:', selectedDeviceId.value)
+  console.log('文件:', selectedFile.value.name)
+  
+  uploading.value = true
+  uploadProgress.value = 0
+  uploadStatus.value = 'active'
+  uploadMessage.value = '正在上传...'
   
   try {
-    for (const file of pendingUploadFiles.value) {
-      ElMessage.info(`开始上传录像文件：${file.name}`)
-      
-      // 使用store中的上传方法
-      await recordingStore.uploadRecording(selectedDeviceId.value, file)
-      
-      ElMessage.success(`录像文件 ${file.name} 上传成功`)
-    }
-
-    // 上传完成后发送全局事件，通知其他页面数据已更新
-    window.dispatchEvent(new CustomEvent('recordingUploaded', {
-      detail: { count: pendingUploadFiles.value.length, deviceId: selectedDeviceId.value }
-    }))
+    // 直接调用API上传，不再使用store的复杂逻辑
+    const response = await recordingApi.uploadRecording(selectedDeviceId.value, selectedFile.value)
+    
+    console.log('=== 上传成功 ===', response)
+    
+    uploadProgress.value = 100
+    uploadStatus.value = 'success'
+    uploadMessage.value = '上传成功！'
+    
+    ElMessage.success('录像上传成功！')
+    
+    // 刷新列表
+    loadRecordingList()
+    
+    // 延迟关闭对话框
+    setTimeout(() => {
+      cancelUpload()
+    }, 1500)
+    
   } catch (error) {
-    ElMessage.error(`上传失败：${error.message}`)
+    console.error('=== 上传失败 ===', error)
+    
+    uploadProgress.value = 0
+    uploadStatus.value = 'exception'
+    uploadMessage.value = `上传失败: ${error.message}`
+    
+    ElMessage.error(`上传失败: ${error.message}`)
   } finally {
-    // 清理状态
-    pendingUploadFiles.value = []
-    selectedDeviceId.value = ''
+    uploading.value = false
   }
 }
 
-// 上传成功回调
-const onUploadSuccess = (response, file) => {
-  ElMessage.success(`${file.name} 上传成功`)
-  loadRecordingList() // 刷新列表
+// 取消上传
+const cancelUpload = () => {
+  console.log('=== 取消上传 ===')
+  
+  uploadDialogVisible.value = false
+  selectedDeviceId.value = ''
+  selectedFile.value = null
+  uploading.value = false
+  uploadProgress.value = 0
+  uploadStatus.value = ''
+  uploadMessage.value = ''
+  
+  // 清空文件输入
+  if (fileInput.value) {
+    fileInput.value.value = ''
+  }
 }
 
-// 上传失败回调
-const onUploadError = (error, file) => {
-  ElMessage.error(`${file.name} 上传失败`)
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 // 清理过期录像
@@ -555,5 +628,42 @@ onMounted(() => {
 .device-id {
   font-size: 12px;
   color: #909399;
+}
+
+.upload-form {
+  padding: 20px 0;
+}
+
+.upload-form .form-item {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #606266;
+}
+
+.file-info {
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  margin: 16px 0;
+}
+
+.file-info p {
+  margin: 8px 0;
+  color: #606266;
+}
+
+.upload-progress {
+  margin: 16px 0;
+}
+
+.upload-progress p {
+  margin-top: 8px;
+  text-align: center;
+  color: #606266;
 }
 </style> 
