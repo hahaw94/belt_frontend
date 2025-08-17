@@ -287,8 +287,8 @@ export default {
 }
 
 .layout-main {
-  background-color: #f0f2f5; /* 主内容区域背景色 */
-  padding: 20px;
+  background: transparent; /* 透明背景，让科技感背景显示 */
+  padding: 0; /* 移除内边距，让子组件自己控制 */
   flex: 1; /* 让 main 区域占据剩余空间 */
   overflow-y: auto; /* 当内容溢出时显示滚动条 */
 }

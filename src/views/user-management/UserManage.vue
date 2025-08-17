@@ -1,19 +1,23 @@
 <template>
-  <div class="user-management-integrated-container sub-page-content">
-    <h2>用户管理</h2>
+  <div class="user-management-integrated-container tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background">
+    </div>
+    
 
-    <el-card class="user-list-card mb-20" shadow="hover">
+
+    <el-card class="user-list-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>用户列表</span>
           <div>
-            <el-button type="success" :icon="Plus" size="small" @click="handleAddUser">添加用户</el-button>
-            <el-button type="primary" :icon="Refresh" size="small" @click="getUsers">刷新列表</el-button>
+            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddUser">添加用户</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getUsers">刷新列表</el-button>
           </div>
         </div>
       </template>
 
-      <el-table :data="paginatedUsers" v-loading="loading" border stripe style="width: 100%;">
+      <el-table :data="paginatedUsers" v-loading="loading" border stripe class="tech-table" style="width: 100%;">
         <el-table-column prop="id" label="ID" width="80" align="center"></el-table-column>
         <el-table-column prop="username" label="用户名" min-width="120"></el-table-column>
         <el-table-column prop="email" label="邮箱" min-width="150"></el-table-column>
@@ -48,18 +52,19 @@
         <el-table-column prop="lastLogin" label="上次登录" width="180"></el-table-column>
         <el-table-column label="操作" width="340" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button type="primary" :icon="Edit" size="small" @click="handleEditUser(row)">编辑</el-button>
-            <el-button type="info" :icon="Key" size="small" @click="handleResetPassword(row)">重置密码</el-button>
+            <el-button type="primary" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditUser(row)">编辑</el-button>
+            <el-button type="info" :icon="Key" size="small" class="tech-button-xs" @click="handleResetPassword(row)">重置密码</el-button>
             <el-button 
               :type="row.status === 'active' ? 'warning' : 'success'" 
               :icon="row.status === 'active' ? CircleClose : Select" 
               size="small" 
+              class="tech-button-xs"
               @click="toggleUserStatus(row)"
             >
               {{ row.status === 'active' ? '锁定' : '解锁' }}
             </el-button>
-            <el-button type="danger" :icon="Delete" size="small" @click="handleDeleteUser(row)">删除</el-button>
-            <el-button type="warning" size="small" @click="handleManageRoles(row)">分配角色</el-button>
+            <el-button type="danger" :icon="Delete" size="small" class="tech-button-xs" @click="handleDeleteUser(row)">删除</el-button>
+            <el-button type="warning" size="small" class="tech-button-xs" @click="handleManageRoles(row)">分配角色</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -129,6 +134,7 @@
       width="500px"
       :close-on-click-modal="false"
       destroy-on-close
+      class="tech-dialog"
     >
       <div class="role-assign-content">
         <h4>为用户 "{{ selectedUser.username }}" 分配角色</h4>
@@ -538,6 +544,8 @@ const submitRoleAssign = async () => {
   }
 };
 
+
+
 // ===================== 生命周期钩子 =====================
 onMounted(() => {
   getUserList(); // 组件挂载时加载用户数据
@@ -546,25 +554,54 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 继承父级页面容器的基础样式 */
-.sub-page-content {
-  padding: 15px;
-  border-radius: 6px;
-  margin-top: 0;
-  min-height: auto;
+/* ==================== 科技感主题样式 ==================== */
+
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  padding: 20px;
+  background: transparent; /* 使用全局背景 */
+  overflow: auto;
 }
 
-h2 {
-  color: #333;
-  margin-bottom: 20px;
-  font-size: 24px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 10px;
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
 
-.user-list-card {
-  border-radius: 8px;
+
+
+
+
+
+
+/* 科技感卡片 */
+.tech-card {
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   margin-bottom: 20px;
+}
+
+.tech-card :deep(.el-card__header) {
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 0;
+}
+
+.tech-card :deep(.el-card__body) {
+  background: transparent;
+  padding: 0;
 }
 
 .mb-20 {
@@ -576,68 +613,327 @@ h2 {
   justify-content: space-between;
   align-items: center;
   font-weight: bold;
-  color: #333;
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
-/* 调整表格头部样式 */
-:deep(.el-table__header-wrapper .el-table__header th) {
-  background-color: #f5f7fa;
-  color: #606266;
-  font-weight: bold;
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
 }
 
-/* 分页组件居中 */
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.tech-button-xs {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.08) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  margin: 0 2px !important;
+}
+
+.tech-button-xs:hover {
+  background: rgba(0, 255, 255, 0.15) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 科技感表格 */
+.tech-table {
+  background: transparent !important;
+}
+
+/* 表格头部样式 */
+.tech-table :deep(.el-table__header-wrapper) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: rgba(26, 26, 46, 0.8) !important;
+  color: #00ffff !important;
+  font-weight: bold !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+/* 表格主体样式 */
+.tech-table :deep(.el-table__body-wrapper) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__body) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 移除斑马纹效果 */
+.tech-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
+  background: transparent !important;
+}
+
+/* 悬停效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
+  background: transparent !important;
+}
+
+/* 单元格样式 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
+  background-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-table :deep(.el-table--border td) {
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+/* 确保整个表格容器透明 */
+.tech-table :deep(.el-table) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  background-color: transparent !important;
+}
+
+/* 分页组件样式 */
 .flex-center {
   display: flex;
   justify-content: center;
   margin-top: 20px;
 }
 
-/* 权限勾选组样式 */
-.permission-checkbox-group {
+:deep(.el-pagination) {
+  color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pager li) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  margin: 0 2px !important;
+}
+
+:deep(.el-pagination .el-pager li.is-active) {
+  background: rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+}
+
+/* 科技感对话框 */
+:deep(.tech-dialog .el-dialog) {
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 15px !important;
+  box-shadow: 
+    0 0 50px rgba(0, 255, 255, 0.2),
+    inset 0 0 50px rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.tech-dialog .el-dialog__header) {
+  background: rgba(0, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 15px 15px 0 0;
+}
+
+:deep(.tech-dialog .el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  font-weight: bold;
+}
+
+:deep(.tech-dialog .el-dialog__body) {
+  background: transparent;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 科技感表单 */
+:deep(.el-form-item__label) {
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+:deep(.el-input__wrapper) {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    0 0 15px rgba(0, 255, 255, 0.1),
+    inset 0 0 15px rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.2),
+    inset 0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.3),
+    inset 0 0 25px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+:deep(.el-textarea__inner) {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.el-select .el-select__wrapper) {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 科技感标签 */
+:deep(.el-tag) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+}
+
+:deep(.el-tag.el-tag--success) {
+  background: rgba(103, 194, 58, 0.2) !important;
+  border-color: rgba(103, 194, 58, 0.5) !important;
+  color: #67c23a !important;
+}
+
+:deep(.el-tag.el-tag--danger) {
+  background: rgba(245, 108, 108, 0.2) !important;
+  border-color: rgba(245, 108, 108, 0.5) !important;
+  color: #f56c6c !important;
+}
+
+/* 权限和角色分配样式 */
+.permission-checkbox-group,
+.role-checkbox-group {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 每行3列 */
-  gap: 10px; /* 间距 */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
   width: 100%;
-  border: 1px dashed #e0e0e0;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  background: rgba(0, 255, 255, 0.05);
   padding: 15px;
-  border-radius: 4px;
-}
-
-.permission-tip {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 5px;
-}
-
-/* 角色分配对话框样式 */
-.role-assign-content h4 {
-  color: #333;
-  margin-bottom: 15px;
-  font-size: 16px;
-  border-bottom: 1px solid #eee;
-  padding-bottom: 8px;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .role-checkbox-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  width: 100%;
-  border: 1px dashed #e0e0e0;
-  padding: 15px;
-  border-radius: 4px;
-  max-height: 300px;
-  overflow-y: auto;
 }
 
-.role-checkbox-group .el-checkbox {
-  margin-right: 0;
-  margin-bottom: 0;
+:deep(.el-checkbox) {
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
-.role-checkbox-group .el-checkbox__label {
-  font-size: 14px;
-  color: #606266;
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background-color: #00ffff !important;
+  border-color: #00ffff !important;
+}
+
+:deep(.el-checkbox__inner:hover) {
+  border-color: #00ffff !important;
+}
+
+.permission-tip {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 8px;
+  text-align: center;
+}
+
+.role-assign-content h4 {
+  color: #00ffff;
+  margin-bottom: 15px;
+  font-size: 16px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+  padding-bottom: 8px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .tech-page-container {
+    padding: 10px;
+  }
+  
+  .title-main {
+    font-size: 24px;
+  }
+  
+  .title-sub {
+    font-size: 12px;
+    letter-spacing: 2px;
+  }
+  
+  .permission-checkbox-group {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .permission-checkbox-group {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
