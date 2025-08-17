@@ -20,20 +20,20 @@
         <el-table-column prop="permissions" label="权限模块" min-width="300">
           <template #default="{ row }">
             <el-tag
-              v-for="permission in row.displayPermissions.slice(0, 3)"
-              :key="permission"
+              v-for="permission in row.permissions?.slice(0, 3)"
+              :key="permission.id"
               size="small"
               style="margin-right: 5px; margin-bottom: 2px;"
             >
-              {{ getPermissionDisplayName(permission) }}
+              {{ permission.name }}
             </el-tag>
             <el-tag
-              v-if="row.displayPermissions.length > 3"
+              v-if="row.permissions?.length > 3"
               size="small"
               type="info"
               style="margin-right: 5px;"
             >
-              +{{ row.displayPermissions.length - 3 }}个权限
+              +{{ row.permissions.length - 3 }}个权限
             </el-tag>
           </template>
         </el-table-column>
@@ -63,14 +63,14 @@
       </el-table>
 
         <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
+        v-model:current-page="pagination.page"
+        v-model:page-size="pagination.pageSize"
         :page-sizes="[5, 10, 20]"
         :small="false"
         :disabled="loading"
         :background="true"
           layout="total, sizes, prev, pager, next, jumper"
-        :total="mockRoles.length"
+        :total="pagination.total"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
         class="mt-20 flex-center"
@@ -99,11 +99,11 @@
 
         <el-form-item label="权限模块">
           <el-checkbox-group v-model="currentRole.permissions" class="permission-checkbox-group">
-            <el-checkbox v-for="route in allParentRoutesForPermission" :key="route.name" :label="route.name">
-              {{ route.meta?.title || route.name }}
+            <el-checkbox v-for="permission in availablePermissions" :key="permission.id" :label="permission.id">
+              {{ permission.name }} - {{ permission.description }}
             </el-checkbox>
           </el-checkbox-group>
-          <div class="permission-tip">请勾选该角色可以访问的页面模块（仅包含主要功能模块）。</div>
+          <div class="permission-tip">请勾选该角色可以访问的权限模块。</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -120,15 +120,15 @@
         <h4>{{ selectedRole.name }} - 权限模块</h4>
       <div class="permission-list">
           <el-tag
-            v-for="permission in selectedRole.displayPermissions"
-            :key="permission"
+            v-for="permission in selectedRole.permissions"
+            :key="permission.id"
             size="large"
             style="margin: 5px;"
           >
-            {{ getPermissionDisplayName(permission) }}
+            {{ permission.name }}
         </el-tag>
         </div>
-        <div v-if="selectedRole.displayPermissions.length === 0" class="empty-permission">
+        <div v-if="!selectedRole.permissions || selectedRole.permissions.length === 0" class="empty-permission">
           该角色暂无分配权限
         </div>
       </div>
@@ -140,7 +140,7 @@
 import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Edit, View, Delete } from '@element-plus/icons-vue';
-import router from '@/router';
+import { roleApi } from '@/api/user';
 
 // ===================== 数据定义 =====================
 const loading = ref(false);
@@ -156,12 +156,15 @@ const currentRole = reactive({
   createTime: '',
 });
 
-// 模拟角色数据
-const mockRoles = ref([]);
+// 角色数据
+const roleList = ref([]);
 
 // 分页数据
-const currentPage = ref(1);
-const pageSize = ref(10);
+const pagination = reactive({
+  page: 1,
+  pageSize: 10,
+  total: 0
+});
 
 // 表单验证规则
 const roleFormRef = ref(null);
@@ -179,116 +182,76 @@ const roleRules = reactive({
 // 选中的角色（用于查看权限）
 const selectedRole = ref({});
 
-// 用于权限勾选的所有父路由（仅包含主要功能模块）
-const allParentRoutesForPermission = computed(() => {
-  // 只获取带有children的父路由，且不包含根路径
-  const parentRoutes = router.getRoutes().filter(route => {
-    return route.meta?.title && 
-           route.children && 
-           route.children.length > 0 && 
-           route.path !== '/' &&
-           !route.meta?.hidden;
-  });
-  
-  return parentRoutes;
-});
+// 可用权限列表
+const availablePermissions = ref([]);
 
 // ===================== Computed 属性 =====================
-// 根据分页信息获取当前页的角色数据
+// 当前页角色数据（直接使用API返回的分页数据）
 const paginatedRoles = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-  return mockRoles.value.slice(start, end);
+  return roleList.value;
 });
 
 // ===================== 方法 =====================
 
 /**
- * 获取权限显示名称
+ * 获取角色列表
  */
-const getPermissionDisplayName = (permissionName) => {
-  const route = router.getRoutes().find(r => r.name === permissionName);
-  return route?.meta?.title || permissionName;
+const getRoleList = async () => {
+  try {
+    loading.value = true;
+    const response = await roleApi.getRoleList({
+      page: pagination.page,
+      page_size: pagination.pageSize
+    });
+    
+    // 处理返回的角色数据，获取每个角色的权限详情
+    const processedRoles = await Promise.all(
+      response.body.roles.map(async (role) => {
+        try {
+          const permissionsResponse = await roleApi.getRolePermissions(role.id);
+          const permissions = permissionsResponse.body.permissions || [];
+          return {
+            ...role,
+            permissions,
+            createTime: role.create_time || new Date().toLocaleString('zh-CN')
+          };
+        } catch (error) {
+          console.warn(`获取角色 ${role.id} 权限失败:`, error);
+          return {
+            ...role,
+            permissions: [],
+            createTime: role.create_time || new Date().toLocaleString('zh-CN')
+          };
+        }
+      })
+    );
+    
+    roleList.value = processedRoles;
+    pagination.total = response.body.total || processedRoles.length;
+  } catch (error) {
+    ElMessage.error('获取角色列表失败');
+  } finally {
+    loading.value = false;
+  }
 };
 
 /**
- * 模拟初始化角色数据
+ * 获取权限列表
  */
-const initMockRoles = () => {
-  const roles = [];
-  const routeNames = allParentRoutesForPermission.value.map(r => r.name);
-
-  // 添加默认角色
-  roles.push(
-        {
-          id: 1,
-          name: '管理员',
-          description: '系统管理员，拥有所有权限',
-      permissions: [...routeNames], // 所有权限
-      displayPermissions: [...routeNames],
-      is_default: true,
-      createTime: '2024-01-01 10:00:00'
-        },
-        {
-          id: 2,
-          name: '操作员',
-      description: '普通操作员，拥有基础操作权限',
-      permissions: ['access', 'detection', 'recording'], // 部分权限
-      displayPermissions: ['access', 'detection', 'recording'],
-      is_default: true,
-      createTime: '2024-01-01 10:00:00'
-        },
-        {
-          id: 3,
-      name: '访客',
-      description: '访客角色，仅可查看基础信息',
-      permissions: ['detection'], // 最少权限
-      displayPermissions: ['detection'],
-      is_default: false,
-      createTime: '2024-01-01 10:00:00'
-    }
-  );
-
-  // 添加一些自定义角色
-  for (let i = 4; i <= 8; i++) {
-    const numPermissions = Math.floor(Math.random() * routeNames.length) + 1;
-    const randomPermissions = [];
-    
-    for (let j = 0; j < numPermissions; j++) {
-      const randomRoute = routeNames[Math.floor(Math.random() * routeNames.length)];
-      if (!randomPermissions.includes(randomRoute)) {
-        randomPermissions.push(randomRoute);
-      }
-    }
-
-    const createTime = new Date(Date.now() - Math.floor(Math.random() * 90 * 24 * 60 * 60 * 1000))
-      .toLocaleString('zh-CN');
-
-    roles.push({
-      id: i,
-      name: `自定义角色${i - 3}`,
-      description: `这是自定义角色${i - 3}的描述信息`,
-      permissions: randomPermissions,
-      displayPermissions: randomPermissions,
-      is_default: false,
-      createTime: createTime
-    });
+const getPermissionList = async () => {
+  try {
+    const response = await roleApi.getPermissionList();
+    availablePermissions.value = response.body.permissions || [];
+  } catch (error) {
+    ElMessage.error('获取权限列表失败');
   }
-
-  mockRoles.value = roles;
 };
 
 /**
  * 刷新角色列表
  */
 const getRoles = () => {
-  loading.value = true;
-  ElMessage.info('正在刷新角色列表...');
-  setTimeout(() => {
-    initMockRoles();
-    loading.value = false;
-    ElMessage.success('角色列表已刷新！');
-  }, 500);
+  getRoleList();
 };
 
 /**
@@ -314,13 +277,29 @@ const handleAddRole = () => {
 /**
  * 处理编辑角色按钮点击
  */
-const handleEditRole = (row) => {
+const handleEditRole = async (row) => {
   isEditMode.value = true;
-  Object.assign(currentRole, { ...row });
-  roleDialogVisible.value = true;
   
-  if (roleFormRef.value) {
-    roleFormRef.value.clearValidate();
+  try {
+    loading.value = true;
+    // 获取角色的权限列表
+    const permissionsResponse = await roleApi.getRolePermissions(row.id);
+    const permissions = permissionsResponse.body.permissions || [];
+    
+    Object.assign(currentRole, { 
+      ...row, 
+      permissions: permissions.map(p => p.id) 
+    });
+    
+    roleDialogVisible.value = true;
+    
+    if (roleFormRef.value) {
+      roleFormRef.value.clearValidate();
+    }
+  } catch (error) {
+    ElMessage.error('获取角色权限失败');
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -340,36 +319,43 @@ const submitRoleForm = async () => {
   
   await roleFormRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true;
-      const messagePrefix = isEditMode.value ? '更新' : '添加';
-      ElMessage.info(`正在${messagePrefix}角色: ${currentRole.name}...`);
-
-      setTimeout(() => {
-        loading.value = false;
+      try {
+        loading.value = true;
+        // eslint-disable-next-line no-unused-vars
+        const { id, createTime, ...roleData } = currentRole;
+        
         if (isEditMode.value) {
-          // 编辑角色
-          const index = mockRoles.value.findIndex(r => r.id === currentRole.id);
-          if (index !== -1) {
-            const updatedRole = { ...currentRole };
-            updatedRole.displayPermissions = [...currentRole.permissions];
-            Object.assign(mockRoles.value[index], updatedRole);
-            ElMessage.success(`角色 ${currentRole.name} 更新成功！`);
-          }
+          // 编辑角色 - 分别更新基本信息和权限
+          // 更新基本信息
+          // eslint-disable-next-line no-unused-vars
+          const { permissions, ...basicData } = roleData;
+          await roleApi.updateRole(currentRole.id, basicData);
+          
+          // 更新权限
+          await roleApi.setRolePermissions(currentRole.id, { permission_ids: currentRole.permissions });
+          
+          ElMessage.success(`角色 ${currentRole.name} 更新成功！`);
         } else {
           // 添加角色
-          const newId = Math.max(0, ...mockRoles.value.map(r => r.id)) + 1;
-          const newRole = {
-            ...currentRole,
-            id: newId,
-            createTime: new Date().toLocaleString('zh-CN'),
-            displayPermissions: [...currentRole.permissions]
-          };
-          mockRoles.value.unshift(newRole);
+          const response = await roleApi.createRole(roleData);
+          const newRoleId = response.body.role.id;
+          
+          // 设置权限
+          if (currentRole.permissions && currentRole.permissions.length > 0) {
+            await roleApi.setRolePermissions(newRoleId, { permission_ids: currentRole.permissions });
+          }
+          
           ElMessage.success(`角色 ${currentRole.name} 添加成功！`);
         }
+        
         roleDialogVisible.value = false;
-      }, 1000);
-        } else {
+        getRoleList(); // 重新加载角色列表
+      } catch (error) {
+        ElMessage.error(error.message || '操作失败');
+      } finally {
+        loading.value = false;
+      }
+    } else {
       ElMessage.error('请检查表单输入！');
     }
   });
@@ -378,48 +364,50 @@ const submitRoleForm = async () => {
 /**
  * 处理删除角色操作
  */
-const handleDeleteRole = (row) => {
-  ElMessageBox.confirm(`确定要删除角色 "${row.name}" 吗？此操作不可逆！`, '警告', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning',
-  })
-    .then(() => {
-      loading.value = true;
-      setTimeout(() => {
-        mockRoles.value = mockRoles.value.filter(role => role.id !== row.id);
-        loading.value = false;
-        ElMessage.success(`角色 ${row.name} 删除成功！`);
-        
-        // 检查当前页是否为空
-        if (paginatedRoles.value.length === 0 && currentPage.value > 1) {
-          currentPage.value--;
-        }
-      }, 300);
-    })
-    .catch(() => {
-      ElMessage.info('已取消删除操作。');
+const handleDeleteRole = async (row) => {
+  try {
+    await ElMessageBox.confirm(`确定要删除角色 "${row.name}" 吗？此操作不可逆！`, '警告', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
     });
+    
+    loading.value = true;
+    await roleApi.deleteRole(row.id);
+    ElMessage.success(`角色 ${row.name} 删除成功！`);
+    getRoleList(); // 重新加载角色列表
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('删除角色失败');
+    } else {
+      ElMessage.info('已取消删除操作。');
+    }
+  } finally {
+    loading.value = false;
+  }
 };
 
 /**
  * 处理每页显示条数变化
  */
 const handleSizeChange = (val) => {
-  pageSize.value = val;
-  currentPage.value = 1;
+  pagination.pageSize = val;
+  pagination.page = 1;
+  getRoleList();
 };
 
 /**
  * 处理当前页码变化
  */
 const handleCurrentChange = (val) => {
-  currentPage.value = val;
+  pagination.page = val;
+  getRoleList();
 };
 
 // ===================== 生命周期钩子 =====================
 onMounted(() => {
-  initMockRoles();
+  getRoleList();
+  getPermissionList();
 });
 </script>
 

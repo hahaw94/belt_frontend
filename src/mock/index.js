@@ -64,81 +64,114 @@ export function disableMock() {
 }
 
 /**
- * 用户管理Mock
+ * 用户管理和角色管理Mock
  */
 function setupUserMock(mock) {
+  // ==================== 认证API ====================
+  
+  // Token验证
+  mock.onPost('/api/v1/auth/verify').reply(200, {
+    error: 0,
+    body: {
+      user: {
+        id: 1,
+        username: 'admin',
+        email: 'admin@company.com',
+        real_name: '管理员',
+        roles: [{ id: 1, name: '超级管理员' }]
+      }
+    },
+    message: 'Token验证成功',
+    success: true
+  })
+
+  // 获取当前用户信息
+  mock.onGet('/api/v1/auth/userinfo').reply(200, {
+    error: 0,
+    body: {
+      user: {
+        id: 1,
+        username: 'admin',
+        email: 'admin@company.com',
+        real_name: '管理员',
+        roles: [{ id: 1, name: '超级管理员' }],
+        permissions: userMockData.getAllPermissions()
+      }
+    },
+    message: '获取用户信息成功',
+    success: true
+  })
+
+  // 修改密码
+  mock.onPut('/api/v1/auth/change-password').reply(200, {
+    error: 0,
+    body: {},
+    message: '密码修改成功',
+    success: true
+  })
+
+  // ==================== 用户管理API ====================
+  
   // 获取用户列表
-  mock.onGet(/\/api\/users/).reply(config => {
+  mock.onGet('/api/v1/users').reply(config => {
     const params = config.params || {}
     const page = parseInt(params.page) || 1
     const pageSize = parseInt(params.page_size) || 10
     
-    let users = userMockData.getAllUsers()
-    
-    // 搜索过滤
-    if (params.username) {
-      users = users.filter(user => 
-        user.username.toLowerCase().includes(params.username.toLowerCase())
-      )
-    }
-    if (params.role) {
-      users = users.filter(user => user.role === params.role)
-    }
-    if (params.status) {
-      users = users.filter(user => user.status === params.status)
-    }
-    
-    // 分页
-    const start = (page - 1) * pageSize
-    const end = start + pageSize
-    const paginatedUsers = users.slice(start, end)
+    const result = userMockData.getAllUsers(page, pageSize)
     
     return [200, {
       error: 0,
-      body: {
-        users: paginatedUsers,
-        total: users.length,
-        page,
-        page_size: pageSize
-      },
+      body: result,
       message: '获取用户列表成功',
       success: true
     }]
   })
 
-  // 添加用户
-  mock.onPost('/api/users').reply(config => {
+  // 获取用户详情
+  mock.onGet(/\/api\/v1\/users\/\d+$/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/v1\/users\/(\d+)$/)[1])
+    const user = userMockData.getUserById(userId)
+    
+    return [200, {
+      error: user ? 0 : 2001,
+      body: { user },
+      message: user ? '获取用户详情成功' : '用户不存在',
+      success: !!user
+    }]
+  })
+
+  // 创建用户
+  mock.onPost('/api/v1/users').reply(config => {
     const userData = JSON.parse(config.data)
-    const newUser = userMockData.addUser(userData)
+    const newUser = userMockData.createUser(userData)
     
     return [200, {
       error: 0,
-      body: {
-        user_id: newUser.id
-      },
-      message: '用户添加成功',
+      body: { user: newUser },
+      message: '用户创建成功',
       success: true
     }]
   })
 
-  // 更新用户
-  mock.onPut(/\/api\/users\/\d+/).reply(config => {
-    const userId = parseInt(config.url.match(/\/api\/users\/(\d+)/)[1])
+  // 更新用户信息
+  mock.onPut(/\/api\/v1\/users\/\d+$/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/v1\/users\/(\d+)$/)[1])
     const userData = JSON.parse(config.data)
     
-    const success = userMockData.updateUser(userId, userData)
+    const updatedUser = userMockData.updateUser(userId, userData)
     
     return [200, {
-      error: success ? 0 : 2001,
-      body: {},
-      message: success ? '用户更新成功' : '用户不存在',
-      success
+      error: updatedUser ? 0 : 2001,
+      body: { user: updatedUser },
+      message: updatedUser ? '用户更新成功' : '用户不存在',
+      success: !!updatedUser
     }]
   })
 
   // 删除用户
-  mock.onDelete(/\/api\/users\/\d+/).reply(config => {
-    const userId = parseInt(config.url.match(/\/api\/users\/(\d+)/)[1])
+  mock.onDelete(/\/api\/v1\/users\/\d+$/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/v1\/users\/(\d+)$/)[1])
     const success = userMockData.deleteUser(userId)
     
     return [200, {
@@ -149,94 +182,241 @@ function setupUserMock(mock) {
     }]
   })
 
-  // 重置用户密码
-  mock.onPost(/\/api\/users\/\d+\/reset-password/).reply(config => {
-    const userId = parseInt(config.url.match(/\/api\/users\/(\d+)\/reset-password/)[1])
-    const user = userMockData.getUserById(userId)
+  // 批量删除用户
+  mock.onDelete('/api/v1/users/batch').reply(config => {
+    const { user_ids } = JSON.parse(config.data)
+    const deletedCount = userMockData.batchDeleteUsers(user_ids)
     
     return [200, {
-      error: user ? 0 : 2001,
-      body: {},
-      message: user ? '密码重置成功' : '用户不存在',
-      success: !!user
-    }]
-  })
-
-  // 批量添加用户
-  mock.onPost('/api/users/batch').reply(() => {
-    return [200, {
       error: 0,
-      body: {
-        success_count: 5,
-        failed_count: 0
-      },
-      message: '批量添加用户成功',
+      body: { deleted_count: deletedCount },
+      message: `成功删除${deletedCount}个用户`,
       success: true
     }]
   })
 
-  // 获取角色列表
-  mock.onGet(/\/api\/roles/).reply(config => {
-    const params = config.params || {}
-    let roles = userMockData.getAllRoles()
+  // 锁定用户
+  mock.onPut(/\/api\/v1\/users\/\d+\/lock/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/v1\/users\/(\d+)\/lock/)[1])
+    const success = userMockData.lockUser(userId)
     
-    // 搜索过滤
-    if (params.name) {
-      roles = roles.filter(role => 
-        role.name.toLowerCase().includes(params.name.toLowerCase())
-      )
-    }
+    return [200, {
+      error: success ? 0 : 2001,
+      body: {},
+      message: success ? '用户锁定成功' : '用户不存在',
+      success: !!success
+    }]
+  })
+
+  // 解锁用户
+  mock.onPut(/\/api\/v1\/users\/\d+\/unlock/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/v1\/users\/(\d+)\/unlock/)[1])
+    const success = userMockData.unlockUser(userId)
+    
+    return [200, {
+      error: success ? 0 : 2001,
+      body: {},
+      message: success ? '用户解锁成功' : '用户不存在',
+      success: !!success
+    }]
+  })
+
+  // 重置用户密码
+  mock.onPut(/\/api\/v1\/users\/\d+\/reset-password/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/v1\/users\/(\d+)\/reset-password/)[1])
+    const success = userMockData.resetUserPassword(userId)
+    
+    return [200, {
+      error: success ? 0 : 2001,
+      body: {},
+      message: success ? '密码重置成功' : '用户不存在',
+      success
+    }]
+  })
+
+  // ==================== 角色管理API ====================
+  
+  // 获取角色列表
+  mock.onGet('/api/v1/roles').reply(config => {
+    const params = config.params || {}
+    const page = parseInt(params.page) || 1
+    const pageSize = parseInt(params.page_size) || 10
+    
+    const result = userMockData.getAllRoles(page, pageSize)
     
     return [200, {
       error: 0,
-      body: {
-        roles: roles,
-        total: roles.length
-      },
+      body: result,
       message: '获取角色列表成功',
       success: true
     }]
   })
 
-  // 添加角色
-  mock.onPost('/api/roles').reply(config => {
+  // 获取角色详情
+  mock.onGet(/\/api\/v1\/roles\/\d+$/).reply(config => {
+    const roleId = parseInt(config.url.match(/\/api\/v1\/roles\/(\d+)$/)[1])
+    const role = userMockData.getRoleById(roleId)
+    
+    return [200, {
+      error: role ? 0 : 2004,
+      body: { role },
+      message: role ? '获取角色详情成功' : '角色不存在',
+      success: !!role
+    }]
+  })
+
+  // 创建角色
+  mock.onPost('/api/v1/roles').reply(config => {
     const roleData = JSON.parse(config.data)
-    const newRole = userMockData.addRole(roleData)
+    const newRole = userMockData.createRole(roleData)
     
     return [200, {
       error: 0,
-      body: {
-        role_id: newRole.id
-      },
-      message: '角色添加成功',
+      body: { role: newRole },
+      message: '角色创建成功',
       success: true
     }]
   })
 
-  // 更新角色
-  mock.onPut(/\/api\/roles\/\d+/).reply(config => {
-    const roleId = parseInt(config.url.match(/\/api\/roles\/(\d+)/)[1])
+  // 更新角色信息
+  mock.onPut(/\/api\/v1\/roles\/\d+$/).reply(config => {
+    const roleId = parseInt(config.url.match(/\/api\/v1\/roles\/(\d+)$/)[1])
     const roleData = JSON.parse(config.data)
     
-    const success = userMockData.updateRole(roleId, roleData)
+    const updatedRole = userMockData.updateRole(roleId, roleData)
     
     return [200, {
-      error: success ? 0 : 2002,
-      body: {},
-      message: success ? '角色更新成功' : '角色不存在',
-      success
+      error: updatedRole ? 0 : 2004,
+      body: { role: updatedRole },
+      message: updatedRole ? '角色更新成功' : '角色不存在',
+      success: !!updatedRole
     }]
   })
 
   // 删除角色
-  mock.onDelete(/\/api\/roles\/\d+/).reply(config => {
-    const roleId = parseInt(config.url.match(/\/api\/roles\/(\d+)/)[1])
+  mock.onDelete(/\/api\/v1\/roles\/\d+$/).reply(config => {
+    const roleId = parseInt(config.url.match(/\/api\/v1\/roles\/(\d+)$/)[1])
     const success = userMockData.deleteRole(roleId)
     
     return [200, {
-      error: success ? 0 : 2002,
+      error: success ? 0 : 2005,
       body: {},
-      message: success ? '角色删除成功' : '角色不存在或为默认角色',
+      message: success ? '角色删除成功' : '默认角色无法删除',
+      success
+    }]
+  })
+
+  // ==================== 用户角色关联API ====================
+  
+  // 获取用户角色列表
+  mock.onGet(/\/api\/v1\/users\/\d+\/roles/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/v1\/users\/(\d+)\/roles/)[1])
+    const roles = userMockData.getUserRoles(userId)
+    
+    return [200, {
+      error: 0,
+      body: { roles },
+      message: '获取用户角色成功',
+      success: true
+    }]
+  })
+
+  // 分配用户角色
+  mock.onPost(/\/api\/v1\/users\/\d+\/roles/).reply(config => {
+    const userId = parseInt(config.url.match(/\/api\/v1\/users\/(\d+)\/roles/)[1])
+    const { role_id } = JSON.parse(config.data)
+    
+    const success = userMockData.assignUserRole(userId, role_id)
+    
+    return [200, {
+      error: 0,
+      body: {},
+      message: '角色分配成功',
+      success
+    }]
+  })
+
+  // 移除用户角色
+  mock.onDelete(/\/api\/v1\/users\/\d+\/roles\/\d+/).reply(config => {
+    const matches = config.url.match(/\/api\/v1\/users\/(\d+)\/roles\/(\d+)/)
+    const userId = parseInt(matches[1])
+    const roleId = parseInt(matches[2])
+    
+    const success = userMockData.removeUserRole(userId, roleId)
+    
+    return [200, {
+      error: 0,
+      body: {},
+      message: '角色移除成功',
+      success
+    }]
+  })
+
+  // ==================== 权限管理API ====================
+  
+  // 获取权限列表
+  mock.onGet('/api/v1/permissions').reply(200, {
+    error: 0,
+    body: { permissions: userMockData.getAllPermissions() },
+    message: '获取权限列表成功',
+    success: true
+  })
+
+  // 获取角色权限列表
+  mock.onGet(/\/api\/v1\/roles\/\d+\/permissions/).reply(config => {
+    const roleId = parseInt(config.url.match(/\/api\/v1\/roles\/(\d+)\/permissions/)[1])
+    const permissions = userMockData.getRolePermissions(roleId)
+    
+    return [200, {
+      error: 0,
+      body: { permissions },
+      message: '获取角色权限成功',
+      success: true
+    }]
+  })
+
+  // 批量设置角色权限
+  mock.onPut(/\/api\/v1\/roles\/\d+\/permissions/).reply(config => {
+    const roleId = parseInt(config.url.match(/\/api\/v1\/roles\/(\d+)\/permissions/)[1])
+    const { permission_ids } = JSON.parse(config.data)
+    
+    const success = userMockData.setRolePermissions(roleId, permission_ids)
+    
+    return [200, {
+      error: 0,
+      body: {},
+      message: '角色权限设置成功',
+      success
+    }]
+  })
+
+  // 添加角色权限
+  mock.onPost(/\/api\/v1\/roles\/\d+\/permissions/).reply(config => {
+    const roleId = parseInt(config.url.match(/\/api\/v1\/roles\/(\d+)\/permissions/)[1])
+    const { permission_id } = JSON.parse(config.data)
+    
+    const success = userMockData.addRolePermission(roleId, permission_id)
+    
+    return [200, {
+      error: 0,
+      body: {},
+      message: '权限添加成功',
+      success
+    }]
+  })
+
+  // 移除角色权限
+  mock.onDelete(/\/api\/v1\/roles\/\d+\/permissions\/\d+/).reply(config => {
+    const matches = config.url.match(/\/api\/v1\/roles\/(\d+)\/permissions\/(\d+)/)
+    const roleId = parseInt(matches[1])
+    const permissionId = parseInt(matches[2])
+    
+    const success = userMockData.removeRolePermission(roleId, permissionId)
+    
+    return [200, {
+      error: 0,
+      body: {},
+      message: '权限移除成功',
       success
     }]
   })
