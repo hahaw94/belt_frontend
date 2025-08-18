@@ -200,9 +200,9 @@ export const roleApi = {
     return api.delete(`/api/v1/roles/${roleId}/permissions/${permissionId}`)
   },
 
-  // 获取角色权限列表
+  // 获取角色权限列表 - 使用角色详情接口，因为后端角色详情已包含权限信息
   getRolePermissions(roleId) {
-    return api.get(`/api/v1/roles/${roleId}/permissions`)
+    return this.getRoleDetail(roleId)
   }
 }
 

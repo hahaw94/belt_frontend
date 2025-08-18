@@ -29,7 +29,7 @@
               size="small"
               style="margin-right: 5px; margin-bottom: 2px;"
             >
-              {{ permission.name }}
+              {{ permission.permission_name }}
             </el-tag>
             <el-tag
               v-if="row.permissions?.length > 3"
@@ -108,7 +108,7 @@
         <el-form-item label="权限模块">
           <el-checkbox-group v-model="currentRole.permissions" class="permission-checkbox-group">
             <el-checkbox v-for="permission in availablePermissions" :key="permission.id" :label="permission.id">
-              {{ permission.name }} - {{ permission.description }}
+              {{ permission.permission_name }} - {{ permission.resource }}:{{ permission.action }}
             </el-checkbox>
           </el-checkbox-group>
           <div class="permission-tip">请勾选该角色可以访问的权限模块。</div>
@@ -133,7 +133,7 @@
             size="large"
             style="margin: 5px;"
           >
-            {{ permission.name }}
+            {{ permission.permission_name }}
         </el-tag>
         </div>
         <div v-if="!selectedRole.permissions || selectedRole.permissions.length === 0" class="empty-permission">
@@ -236,39 +236,18 @@ const getRoleList = async () => {
         size: response.size
       });
       
-      // 处理返回的角色数据，获取每个角色的权限详情
-      const processedRoles = Array.isArray(roleListData) ? await Promise.all(
-        roleListData.map(async (role) => {
-          try {
-            const roleId = role.id;
-            const permissionsResponse = await roleApi.getRolePermissions(roleId);
-            let permissions = [];
-            if (permissionsResponse.code === 200 && permissionsResponse.success) {
-              permissions = Array.isArray(permissionsResponse.data) ? permissionsResponse.data : [];
-            }
-            return {
-              ...role,
-              id: roleId,
-              name: role.role_name,
-              description: role.description,
-              is_default: role.role_type === 0, // 系统角色为默认角色
-              permissions,
-              createTime: role.create_time ? new Date(role.create_time).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN')
-            };
-          } catch (error) {
-            console.warn(`获取角色 ${role.id} 权限失败:`, error);
-            return {
-              ...role,
-              id: role.id,
-              name: role.role_name,
-              description: role.description,
-              is_default: role.role_type === 0,
-              permissions: [],
-              createTime: role.create_time ? new Date(role.create_time).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN')
-            };
-          }
-        })
-      ) : [];
+      // 处理返回的角色数据，后端角色列表已包含权限信息，无需额外请求
+      const processedRoles = Array.isArray(roleListData) ? roleListData.map((role) => {
+        return {
+          ...role,
+          id: role.id,
+          name: role.role_name,
+          description: role.description,
+          is_default: role.role_type === 0, // 系统角色为默认角色
+          permissions: role.permissions || [], // 后端已返回权限信息
+          createTime: role.create_time ? new Date(role.create_time).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN')
+        };
+      }) : [];
       
       roleList.value = processedRoles;
       pagination.total = response.total || processedRoles.length;
@@ -301,9 +280,11 @@ const getPermissionList = async () => {
       const processedPermissions = Array.isArray(permissionListData) ? permissionListData.map(permission => ({
         ...permission,
         id: permission.id,
-        name: permission.permission_name,
-        code: permission.permission_code,
-        description: permission.resource + ':' + permission.action
+        permission_name: permission.permission_name,
+        permission_code: permission.permission_code,
+        resource: permission.resource,
+        action: permission.action,
+        category: permission.category
       })) : [];
       
       availablePermissions.value = processedPermissions;
@@ -352,16 +333,16 @@ const handleEditRole = async (row) => {
   
   try {
     loading.value = true;
-    // 获取角色的权限列表
-    const permissionsResponse = await roleApi.getRolePermissions(row.id);
+    // 获取角色详情（包含权限信息）
+    const roleDetailResponse = await roleApi.getRoleDetail(row.id);
     let permissions = [];
-    if (permissionsResponse.code === 200 && permissionsResponse.success) {
-      permissions = permissionsResponse.data.permissions || [];
+    if (roleDetailResponse.code === 200 && roleDetailResponse.success) {
+      permissions = roleDetailResponse.data.permissions || [];
     }
     
     Object.assign(currentRole, { 
       ...row, 
-      permissions: permissions.map(p => p.permissionId) 
+      permissions: permissions.map(p => p.id) // 使用权限ID
     });
     
     roleDialogVisible.value = true;
@@ -370,7 +351,7 @@ const handleEditRole = async (row) => {
       roleFormRef.value.clearValidate();
     }
   } catch (error) {
-    ElMessage.error(error.message || '获取角色权限失败');
+    ElMessage.error(error.message || '获取角色详情失败');
   } finally {
     loading.value = false;
   }
