@@ -167,7 +167,7 @@ export const roleApi = {
 
   // 分配用户角色
   assignUserRole(userId, roleIds) {
-    return api.post(`/api/v1/users/${userId}/roles`, { role_ids: roleIds })
+    return api.put(`/api/v1/users/${userId}/roles`, { role_ids: roleIds })
   },
 
   // 移除用户角色
@@ -175,10 +175,10 @@ export const roleApi = {
     return api.delete(`/api/v1/users/${userId}/roles/${roleId}`)
   },
 
-  // 获取用户角色列表
-  getUserRoles(userId) {
-    return api.get(`/api/v1/users/${userId}/roles`)
-  },
+  // 获取用户角色列表 - 已废弃，请直接使用 userApi.getUserDetail
+  // getUserRoles(userId) {
+  //   return userApi.getUserDetail(userId)
+  // },
 
   // 获取权限列表
   getPermissionList(params) {

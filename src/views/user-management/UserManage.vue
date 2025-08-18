@@ -18,39 +18,32 @@
       </template>
 
       <el-table :data="paginatedUsers" v-loading="loading" border stripe class="tech-table" style="width: 100%;">
-        <el-table-column prop="id" label="ID" width="80" align="center"></el-table-column>
-        <el-table-column prop="username" label="用户名" min-width="120"></el-table-column>
-        <el-table-column prop="email" label="邮箱" min-width="150"></el-table-column>
-        <el-table-column prop="phone" label="电话" width="120"></el-table-column>
-        <el-table-column prop="roles" label="角色" width="150">
+        <el-table-column prop="id" label="ID" width="80" align="center" header-align="center"></el-table-column>
+        <el-table-column prop="username" label="用户名" min-width="120" header-align="center"></el-table-column>
+        <el-table-column prop="email" label="邮箱" min-width="150" header-align="center"></el-table-column>
+        <el-table-column prop="phone" label="电话" width="120" header-align="center"></el-table-column>
+        <el-table-column prop="roles" label="角色" min-width="200" header-align="center">
           <template #default="{ row }">
             <el-tag
-              v-for="role in row.roles?.slice(0, 2)"
+              v-for="role in row.roles"
               :key="role.id"
               size="small"
-              style="margin-right: 4px;"
+              style="margin-right: 4px; margin-bottom: 2px;"
             >
               {{ role.name }}
             </el-tag>
-            <el-tag
-              v-if="row.roles?.length > 2"
-              size="small"
-              type="info"
-            >
-              +{{ row.roles.length - 2 }}
-            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center">
+        <el-table-column prop="status" label="状态" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 'active' ? 'success' : 'danger'">
               {{ row.status === 'active' ? '正常' : '锁定' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180"></el-table-column>
-        <el-table-column prop="lastLogin" label="上次登录" width="180"></el-table-column>
-        <el-table-column label="操作" width="340" fixed="right" align="center">
+        <el-table-column prop="createTime" label="创建时间" width="180" header-align="center"></el-table-column>
+        <el-table-column prop="lastLogin" label="上次登录" width="180" header-align="center"></el-table-column>
+        <el-table-column label="操作" width="340" fixed="right" align="center" header-align="center">
           <template #default="{ row }">
             <el-button type="primary" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditUser(row)">编辑</el-button>
             <el-button type="info" :icon="Key" size="small" class="tech-button-xs" @click="handleResetPassword(row)">重置密码</el-button>
@@ -90,22 +83,53 @@
         width="600px"
         :close-on-click-modal="false"
         destroy-on-close
+        class="tech-dialog user-form-dialog"
+        :style="{
+          '--el-dialog-bg-color': 'rgba(45, 55, 75, 0.92)',
+          '--el-dialog-header-bg-color': 'rgba(45, 55, 75, 0.92)',
+          '--el-dialog-content-bg-color': 'rgba(45, 55, 75, 0.92)'
+        }"
     >
       <el-form :model="currentUser" :rules="userRules" ref="userFormRef" label-width="100px">
         <el-form-item label="用户名" prop="username">
-          <el-input v-model="currentUser.username" :disabled="isEditMode" placeholder="请输入用户名"></el-input>
+          <el-input 
+            v-model="currentUser.username" 
+            :disabled="isEditMode" 
+            placeholder="请输入用户名"
+            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
+          ></el-input>
         </el-form-item>
         <el-form-item label="邮箱" prop="email">
-          <el-input v-model="currentUser.email" placeholder="请输入邮箱"></el-input>
+          <el-input 
+            v-model="currentUser.email" 
+            placeholder="请输入邮箱"
+            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
+          ></el-input>
         </el-form-item>
         <el-form-item label="电话" prop="phone">
-          <el-input v-model="currentUser.phone" placeholder="请输入电话号码（11位手机号）"></el-input>
+          <el-input 
+            v-model="currentUser.phone" 
+            placeholder="请输入电话号码（11位手机号）"
+            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
+          ></el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password" v-if="passwordResetMode">
-          <el-input type="password" v-model="currentUser.password" show-password placeholder="请输入新密码"></el-input>
+          <el-input 
+            type="password" 
+            v-model="currentUser.password" 
+            show-password 
+            placeholder="请输入新密码"
+            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
+          ></el-input>
         </el-form-item>
         <el-form-item label="确认密码" prop="confirmPassword" v-if="passwordResetMode">
-          <el-input type="password" v-model="currentUser.confirmPassword" show-password placeholder="请再次输入新密码"></el-input>
+          <el-input 
+            type="password" 
+            v-model="currentUser.confirmPassword" 
+            show-password 
+            placeholder="请再次输入新密码"
+            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
+          ></el-input>
         </el-form-item>
         <div v-if="!isEditMode" class="password-notice">
           <el-alert
@@ -121,7 +145,7 @@
             v-model="currentUser.roleIds"
             multiple
             placeholder="请选择用户角色"
-            style="width: 100%"
+            style="width: 100%; --el-select-input-bg-color: rgba(45, 55, 75, 0.8); --el-border-color: rgba(0, 255, 255, 0.3); --el-text-color-regular: rgba(255, 255, 255, 0.95);"
           >
             <el-option
               v-for="role in availableRoles"
@@ -132,7 +156,7 @@
               {{ role.name }} - {{ role.description }}
             </el-option>
           </el-select>
-          <div style="font-size: 12px; color: #999; margin-top: 4px;">
+          <div class="form-hint">
             添加用户时必须分配至少一个角色
           </div>
         </el-form-item>
@@ -142,6 +166,7 @@
             type="textarea" 
             :rows="3"
             placeholder="请输入用户备注信息"
+            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
         </el-form-item>
       </el-form>
@@ -160,7 +185,12 @@
       width="500px"
       :close-on-click-modal="false"
       destroy-on-close
-      class="tech-dialog"
+      class="tech-dialog role-assign-dialog"
+      :style="{
+        '--el-dialog-bg-color': 'rgba(45, 55, 75, 0.92)',
+        '--el-dialog-header-bg-color': 'rgba(45, 55, 75, 0.92)',
+        '--el-dialog-content-bg-color': 'rgba(45, 55, 75, 0.92)'
+      }"
     >
       <div class="role-assign-content">
         <h4>为用户 "{{ selectedUser.username }}" 分配角色</h4>
@@ -302,6 +332,11 @@ const getUserList = async () => {
         size: response.size
       });
       
+      // 调试角色数据结构
+      if (userListData.length > 0 && userListData[0].roles) {
+        console.log('第一个用户的角色数据结构:', userListData[0].roles);
+      }
+      
       // 处理API返回的字段名称映射
       const processedUsers = Array.isArray(userListData) ? userListData.map(user => ({
         ...user,
@@ -312,7 +347,12 @@ const getUserList = async () => {
         createTime: user.create_time ? new Date(user.create_time).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN'),
         lastLogin: user.last_login_at ? new Date(user.last_login_at).toLocaleString('zh-CN') : '从未登录',
         status: user.status === 1 ? 'active' : 'locked',
-        roles: user.roles || []
+        roles: (user.roles || []).map(role => ({
+          ...role,
+          id: role.id,
+          name: role.role_name || role.name, // 兼容不同的角色名称字段
+          description: role.description
+        }))
       })) : [];
       
       userList.value = processedUsers;
@@ -615,13 +655,14 @@ const handleManageRoles = async (row) => {
   try {
     loading.value = true;
     
-    // 获取用户当前角色
-    const userRolesResponse = await roleApi.getUserRoles(row.id);
-    if (userRolesResponse.code === 200 && userRolesResponse.success) {
-      const userRoles = userRolesResponse.data.roles || [];
-      selectedRoles.value = userRoles.map(role => role.roleId);
+    // 获取用户当前角色（通过用户详情）
+    const userDetailResponse = await userApi.getUserDetail(row.id);
+    if (userDetailResponse.code === 200 && userDetailResponse.success) {
+      const userRoles = userDetailResponse.data.roles || [];
+      // 后端返回的角色ID字段是 id，不是 roleId
+      selectedRoles.value = userRoles.map(role => role.id);
     } else {
-      throw new Error(userRolesResponse.message || '获取用户角色失败');
+      throw new Error(userDetailResponse.message || '获取用户角色失败');
     }
     
     roleAssignDialogVisible.value = true;
@@ -639,32 +680,17 @@ const submitRoleAssign = async () => {
   try {
     loading.value = true;
     
-    // 获取当前用户角色
-    const currentRolesResponse = await roleApi.getUserRoles(selectedUser.value.id);
-    let currentRoleIds = [];
-    if (currentRolesResponse.code === 200 && currentRolesResponse.success) {
-      const currentRoles = currentRolesResponse.data.roles || [];
-      currentRoleIds = currentRoles.map(role => role.roleId);
-    }
+    // 直接使用分配用户角色API，因为它是替换操作（PUT方法），会完全替换用户的所有角色
+    console.log('分配角色参数:', {
+      userId: selectedUser.value.id,
+      roleIds: selectedRoles.value
+    });
     
-    // 找出需要添加和移除的角色
-    const rolesToAdd = selectedRoles.value.filter(roleId => !currentRoleIds.includes(roleId));
-    const rolesToRemove = currentRoleIds.filter(roleId => !selectedRoles.value.includes(roleId));
+    const response = await roleApi.assignUserRole(selectedUser.value.id, selectedRoles.value);
+    console.log('分配角色响应:', response);
     
-    // 移除角色
-    for (const roleId of rolesToRemove) {
-      const response = await roleApi.removeUserRole(selectedUser.value.id, roleId);
-      if (response.code !== 200 || !response.success) {
-        throw new Error(response.message || '移除角色失败');
-      }
-    }
-    
-    // 添加角色 - 使用批量分配
-    if (rolesToAdd.length > 0) {
-      const response = await roleApi.assignUserRole(selectedUser.value.id, rolesToAdd);
-      if (response.code !== 200 || !response.success) {
-        throw new Error(response.message || '分配角色失败');
-      }
+    if (response.code !== 200 || !response.success) {
+      throw new Error(response.message || '分配角色失败');
     }
     
     ElMessage.success(`用户 ${selectedUser.value.username} 角色分配成功！`);
@@ -803,6 +829,7 @@ onMounted(() => {
   font-weight: bold !important;
   border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  text-align: center !important;
 }
 
 /* 表格主体样式 */
@@ -896,19 +923,21 @@ onMounted(() => {
   border-radius: 4px !important;
 }
 
-/* 科技感对话框 */
-:deep(.tech-dialog .el-dialog) {
-  background: rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+/* 科技感对话框 - 增强权重 */
+.tech-dialog :deep(.el-dialog),
+:deep(.tech-dialog.el-dialog),
+:deep(.el-dialog.tech-dialog) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
   border-radius: 15px !important;
   box-shadow: 
-    0 0 50px rgba(0, 255, 255, 0.2),
-    inset 0 0 50px rgba(0, 255, 255, 0.05) !important;
+    0 0 50px rgba(0, 255, 255, 0.3),
+    inset 0 0 50px rgba(0, 255, 255, 0.08) !important;
 }
 
 :deep(.tech-dialog .el-dialog__header) {
-  background: rgba(0, 255, 255, 0.1);
+  background: rgba(45, 55, 75, 0.92);
   border-bottom: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 15px 15px 0 0;
 }
@@ -920,59 +949,135 @@ onMounted(() => {
 }
 
 :deep(.tech-dialog .el-dialog__body) {
-  background: transparent;
+  background: rgba(45, 55, 75, 0.92);
   color: rgba(255, 255, 255, 0.9);
 }
 
-/* 科技感表单 */
-:deep(.el-form-item__label) {
+/* 科技感表单 - 增强权重 */
+.tech-dialog :deep(.el-form-item__label),
+:deep(.tech-dialog .el-form-item__label) {
   color: #00ffff !important;
   font-weight: 500 !important;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
 }
 
-:deep(.el-input__wrapper) {
-  background: rgba(0, 0, 0, 0.3) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+.tech-dialog :deep(.el-input__wrapper),
+:deep(.tech-dialog .el-input__wrapper),
+.tech-dialog :deep(.el-input .el-input__wrapper) {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
   border-radius: 6px !important;
   box-shadow: 
-    0 0 15px rgba(0, 255, 255, 0.1),
-    inset 0 0 15px rgba(0, 255, 255, 0.05) !important;
+    0 0 15px rgba(0, 255, 255, 0.15),
+    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
 }
 
-:deep(.el-input__wrapper:hover) {
-  border-color: rgba(0, 255, 255, 0.5) !important;
+.tech-dialog :deep(.el-input__wrapper:hover),
+:deep(.tech-dialog .el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
   box-shadow: 
-    0 0 20px rgba(0, 255, 255, 0.2),
-    inset 0 0 20px rgba(0, 255, 255, 0.1) !important;
+    0 0 20px rgba(0, 255, 255, 0.25),
+    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
 }
 
-:deep(.el-input__wrapper.is-focus) {
+.tech-dialog :deep(.el-input__wrapper.is-focus),
+:deep(.tech-dialog .el-input__wrapper.is-focus) {
   border-color: #00ffff !important;
   box-shadow: 
-    0 0 25px rgba(0, 255, 255, 0.3),
-    inset 0 0 25px rgba(0, 255, 255, 0.1) !important;
+    0 0 25px rgba(0, 255, 255, 0.4),
+    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
 }
 
-:deep(.el-input__inner) {
+.tech-dialog :deep(.el-input__inner),
+:deep(.tech-dialog .el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.tech-dialog :deep(.el-input__inner::placeholder),
+:deep(.tech-dialog .el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.tech-dialog :deep(.el-textarea__inner),
+:deep(.tech-dialog .el-textarea__inner) {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    0 0 15px rgba(0, 255, 255, 0.15),
+    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
+}
+
+.tech-dialog :deep(.el-textarea__inner:hover),
+:deep(.tech-dialog .el-textarea__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.25),
+    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
+}
+
+.tech-dialog :deep(.el-textarea__inner:focus),
+:deep(.tech-dialog .el-textarea__inner:focus) {
+  border-color: #00ffff !important;
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.4),
+    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
+}
+
+.tech-dialog :deep(.el-select .el-select__wrapper),
+:deep(.tech-dialog .el-select .el-select__wrapper) {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    0 0 15px rgba(0, 255, 255, 0.15),
+    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
+}
+
+.tech-dialog :deep(.el-select .el-select__wrapper:hover),
+:deep(.tech-dialog .el-select .el-select__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.25),
+    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
+}
+
+.tech-dialog :deep(.el-select .el-select__wrapper.is-focused),
+:deep(.tech-dialog .el-select .el-select__wrapper.is-focused) {
+  border-color: #00ffff !important;
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.4),
+    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
+}
+
+:deep(.el-select-dropdown) {
+  background: rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(10px);
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
   color: rgba(255, 255, 255, 0.9) !important;
   background: transparent !important;
 }
 
-:deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.5) !important;
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
 }
 
-:deep(.el-textarea__inner) {
-  background: rgba(0, 0, 0, 0.3) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  border-radius: 6px !important;
+:deep(.el-select-dropdown .el-select-dropdown__item.is-selected) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
 }
 
-:deep(.el-select .el-select__wrapper) {
-  background: rgba(0, 0, 0, 0.3) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+/* 表单提示文字样式 */
+.form-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6) !important;
+  margin-top: 4px;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
 }
 
 /* 科技感标签 */
@@ -1067,6 +1172,62 @@ onMounted(() => {
   color: #00ffff !important;
 }
 
+/* 对话框按钮样式 */
+:deep(.tech-dialog .dialog-footer .el-button) {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.tech-dialog .dialog-footer .el-button:hover) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+:deep(.tech-dialog .dialog-footer .el-button--primary) {
+  background: rgba(0, 255, 255, 0.3) !important;
+  border-color: #00ffff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.tech-dialog .dialog-footer .el-button--primary:hover) {
+  background: rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.5) !important;
+}
+
+/* 选择框中文字的颜色 */
+:deep(.el-select .el-select__selected-item) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-select .el-select__placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+:deep(.el-select .el-select__input) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 多选标签样式 */
+:deep(.el-select .el-tag) {
+  background: rgba(0, 255, 255, 0.15) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-select .el-tag .el-tag__close) {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+:deep(.el-select .el-tag .el-tag__close:hover) {
+  color: #ff4757 !important;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .tech-page-container {
@@ -1091,5 +1252,285 @@ onMounted(() => {
   .permission-checkbox-group {
     grid-template-columns: 1fr;
   }
+}
+
+/* 强制覆盖 Element Plus 默认样式 */
+.el-dialog.tech-dialog {
+  background: rgba(45, 55, 75, 0.92) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  border-radius: 12px !important;
+}
+
+.el-dialog.tech-dialog .el-dialog__header {
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.el-dialog.tech-dialog .el-dialog__title {
+  color: #00ffff !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.el-dialog.tech-dialog .el-dialog__body {
+  background: rgba(45, 55, 75, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.el-dialog.tech-dialog .el-form-item__label {
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-dialog.tech-dialog .el-input__wrapper {
+  background: rgba(45, 55, 75, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.el-dialog.tech-dialog .el-input__wrapper:hover {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.el-dialog.tech-dialog .el-input__wrapper.is-focus {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-dialog.tech-dialog .el-input__inner {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.el-dialog.tech-dialog .el-input__inner::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.el-dialog.tech-dialog .el-textarea__inner {
+  background: rgba(45, 55, 75, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.el-dialog.tech-dialog .el-textarea__inner:hover {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.el-dialog.tech-dialog .el-textarea__inner:focus {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-dialog.tech-dialog .el-select .el-select__wrapper {
+  background: rgba(45, 55, 75, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.el-dialog.tech-dialog .el-select .el-select__wrapper:hover {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.el-dialog.tech-dialog .el-select .el-select__wrapper.is-focused {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-dialog.tech-dialog .form-hint {
+  color: rgba(255, 255, 255, 0.6) !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-dialog.tech-dialog .el-button {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(45, 55, 75, 0.8) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+.el-dialog.tech-dialog .el-button:hover {
+  background: rgba(0, 255, 255, 0.15) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.el-dialog.tech-dialog .el-button--primary {
+  background: rgba(0, 150, 200, 0.8) !important;
+  border-color: rgba(0, 200, 255, 0.6) !important;
+  color: #ffffff !important;
+}
+
+.el-dialog.tech-dialog .el-button--primary:hover {
+  background: rgba(0, 180, 230, 0.9) !important;
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4) !important;
+}
+
+/* 选择框内的选项和标签样式 */
+.el-dialog.tech-dialog .el-select .el-select__selected-item,
+.el-dialog.tech-dialog .el-select .el-select__placeholder {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.el-dialog.tech-dialog .el-tag {
+  background: rgba(0, 200, 255, 0.2) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+}
+
+/* 密码提示框样式 */
+.el-dialog.tech-dialog .password-notice .el-alert {
+  background: rgba(45, 55, 75, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+}
+
+.el-dialog.tech-dialog .password-notice .el-alert__title {
+  color: #00ffff !important;
+}
+
+.el-dialog.tech-dialog .password-notice .el-alert__description {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.el-dialog.tech-dialog .password-notice .el-alert__icon {
+  color: #00ffff !important;
+}
+
+/* 最高优先级样式覆盖 */
+.user-form-dialog.el-dialog,
+.user-form-dialog .el-dialog,
+div.el-dialog.user-form-dialog {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.user-form-dialog .el-dialog__header {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.user-form-dialog .el-dialog__body {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.user-form-dialog .el-dialog__title {
+  color: #00ffff !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.user-form-dialog .el-form-item__label {
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+.user-form-dialog .el-input__wrapper {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  background: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.user-form-dialog .el-input__inner {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.user-form-dialog .el-textarea__inner {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  background: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 6px !important;
+}
+
+.user-form-dialog .el-select .el-select__wrapper {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  background: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+}
+
+.user-form-dialog .el-button {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background-color: rgba(45, 55, 75, 0.8) !important;
+  background: rgba(45, 55, 75, 0.8) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+}
+
+.user-form-dialog .el-button--primary {
+  background-color: rgba(0, 150, 200, 0.8) !important;
+  background: rgba(0, 150, 200, 0.8) !important;
+  border-color: rgba(0, 200, 255, 0.6) !important;
+  color: #ffffff !important;
+}
+
+/* 角色分配对话框样式 */
+.role-assign-dialog.el-dialog,
+.role-assign-dialog .el-dialog,
+div.el-dialog.role-assign-dialog {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.role-assign-dialog .el-dialog__header {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.role-assign-dialog .el-dialog__body {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.role-assign-dialog .el-dialog__title {
+  color: #00ffff !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.role-assign-dialog .el-button {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background-color: rgba(45, 55, 75, 0.8) !important;
+  background: rgba(45, 55, 75, 0.8) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+}
+
+.role-assign-dialog .el-button--primary {
+  background-color: rgba(0, 150, 200, 0.8) !important;
+  background: rgba(0, 150, 200, 0.8) !important;
+  border-color: rgba(0, 200, 255, 0.6) !important;
+  color: #ffffff !important;
 }
 </style>

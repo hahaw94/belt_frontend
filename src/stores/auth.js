@@ -70,13 +70,26 @@ export const useAuthStore = defineStore('auth', () => {
    * 用户登出
    */
   const logout = async () => {
+    console.log('开始用户登出流程')
     try {
-      await authApi.logout()
+      // 如果有token，调用后端登出接口
+      if (token.value) {
+        await authApi.logout()
+        console.log('后端登出请求成功')
+      }
     } catch (error) {
       console.warn('登出请求失败:', error)
     } finally {
-      // 清除所有认证信息
+      // 无论后端请求是否成功，都要清除本地认证信息
       clearAuthStorage()
+      
+      // 验证清除结果
+      console.log('登出完成，当前认证状态:', {
+        token: token.value,
+        isLoggedIn: isLoggedIn.value,
+        userInfo: userInfo.value,
+        isAuthenticated: isAuthenticated.value
+      })
     }
   }
 
@@ -131,13 +144,28 @@ export const useAuthStore = defineStore('auth', () => {
    * 清除认证相关的localStorage数据
    */
   const clearAuthStorage = () => {
+    console.log('清除所有认证信息')
+    
+    // 清除localStorage中的认证信息
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('userInfo')
+    // 清除可能存在的其他相关信息
+    localStorage.removeItem('user')
+    localStorage.removeItem('currentUser')
+    localStorage.removeItem('authToken')
+    
+    // 重置store状态
     token.value = ''
     refreshToken.value = ''
     userInfo.value = null
     isLoggedIn.value = false
+    users.value = []
+    roles.value = []
+    permissions.value = []
+    currentUser.value = null
+    
+    console.log('认证信息清除完成')
   }
 
   /**

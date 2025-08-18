@@ -88,8 +88,8 @@ const loginFormRef = ref(null)
 const authStore = useAuthStore()
 
 const loginForm = reactive({
-  username: 'admin', // 预填默认用户名
-  password: '123456' // 预填默认密码（可选，正式环境中删除）
+  username: '',
+  password: ''
 })
 
 const loginRules = {

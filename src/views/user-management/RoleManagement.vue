@@ -18,10 +18,10 @@
       </template>
 
       <el-table :data="paginatedRoles" v-loading="loading" border stripe class="tech-table" style="width: 100%;">
-        <el-table-column prop="id" label="ID" width="80" align="center"></el-table-column>
-        <el-table-column prop="name" label="角色名称" min-width="120"></el-table-column>
-        <el-table-column prop="description" label="角色描述" min-width="200"></el-table-column>
-        <el-table-column prop="permissions" label="权限模块" min-width="300">
+        <el-table-column prop="id" label="ID" width="80" align="center" header-align="center"></el-table-column>
+        <el-table-column prop="name" label="角色名称" min-width="120" header-align="center"></el-table-column>
+        <el-table-column prop="description" label="角色描述" min-width="200" header-align="center"></el-table-column>
+        <el-table-column prop="permissions" label="权限模块" min-width="300" header-align="center">
           <template #default="{ row }">
             <el-tag
               v-for="permission in row.permissions?.slice(0, 3)"
@@ -41,15 +41,15 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="is_default" label="默认角色" width="100" align="center">
+        <el-table-column prop="is_default" label="默认角色" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="row.is_default ? 'success' : 'info'" size="small">
               {{ row.is_default ? '是' : '否' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180"></el-table-column>
-        <el-table-column label="操作" width="280" fixed="right" align="center">
+        <el-table-column prop="createTime" label="创建时间" width="180" header-align="center"></el-table-column>
+        <el-table-column label="操作" width="280" fixed="right" align="center" header-align="center">
           <template #default="{ row }">
             <el-button type="primary" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditRole(row)">编辑</el-button>
             <el-button type="info" :icon="View" size="small" class="tech-button-xs" @click="handleViewPermissions(row)">权限</el-button>
@@ -88,13 +88,27 @@
       width="600px"
       :close-on-click-modal="false"
       destroy-on-close
+      class="tech-dialog role-form-dialog"
+      :style="{
+        '--el-dialog-bg-color': 'rgba(45, 55, 75, 0.92)',
+        '--el-dialog-header-bg-color': 'rgba(45, 55, 75, 0.92)',
+        '--el-dialog-content-bg-color': 'rgba(45, 55, 75, 0.92)'
+      }"
     >
       <el-form :model="currentRole" :rules="roleRules" ref="roleFormRef" label-width="100px">
         <el-form-item label="角色名称" prop="name">
-          <el-input v-model="currentRole.name" placeholder="请输入角色名称"></el-input>
+          <el-input 
+            v-model="currentRole.name" 
+            placeholder="请输入角色名称"
+            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
+          ></el-input>
         </el-form-item>
         <el-form-item label="角色编码" prop="code">
-          <el-input v-model="currentRole.code" placeholder="请输入角色编码（如：security）"></el-input>
+          <el-input 
+            v-model="currentRole.code" 
+            placeholder="请输入角色编码（如：security）"
+            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
+          ></el-input>
         </el-form-item>
         <el-form-item label="角色描述" prop="description">
           <el-input 
@@ -102,13 +116,14 @@
             type="textarea" 
             placeholder="请输入角色描述"
             :rows="3"
+            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
         </el-form-item>
 
         <el-form-item label="权限模块">
           <el-checkbox-group v-model="currentRole.permissions" class="permission-checkbox-group">
             <el-checkbox v-for="permission in availablePermissions" :key="permission.id" :label="permission.id">
-              {{ permission.permission_name }} - {{ permission.resource }}:{{ permission.action }}
+              {{ permission.permission_name }}
             </el-checkbox>
           </el-checkbox-group>
           <div class="permission-tip">请勾选该角色可以访问的权限模块。</div>
@@ -123,7 +138,17 @@
     </el-dialog>
 
     <!-- 权限详情对话框 -->
-    <el-dialog v-model="permissionDialogVisible" title="权限详情" width="500px" class="tech-dialog">
+    <el-dialog 
+      v-model="permissionDialogVisible" 
+      title="权限详情" 
+      width="500px" 
+      class="tech-dialog permission-detail-dialog"
+      :style="{
+        '--el-dialog-bg-color': 'rgba(45, 55, 75, 0.92)',
+        '--el-dialog-header-bg-color': 'rgba(45, 55, 75, 0.92)',
+        '--el-dialog-content-bg-color': 'rgba(45, 55, 75, 0.92)'
+      }"
+    >
       <div class="permission-detail">
         <h4>{{ selectedRole.name }} - 权限模块</h4>
       <div class="permission-list">
@@ -602,6 +627,7 @@ onMounted(() => {
   font-weight: bold !important;
   border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  text-align: center !important;
 }
 
 /* 表格主体样式 */
@@ -665,7 +691,7 @@ onMounted(() => {
 
 /* 科技感对话框 */
 :deep(.tech-dialog .el-dialog) {
-  background: rgba(0, 0, 0, 0.8) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
   border-radius: 15px !important;
@@ -675,7 +701,7 @@ onMounted(() => {
 }
 
 :deep(.tech-dialog .el-dialog__header) {
-  background: rgba(0, 255, 255, 0.1);
+  background: rgba(45, 55, 75, 0.92);
   border-bottom: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 15px 15px 0 0;
 }
@@ -687,7 +713,7 @@ onMounted(() => {
 }
 
 :deep(.tech-dialog .el-dialog__body) {
-  background: transparent;
+  background: rgba(45, 55, 75, 0.92);
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -879,5 +905,107 @@ onMounted(() => {
   .permission-checkbox-group {
     grid-template-columns: 1fr;
   }
+}
+
+/* 角色表单对话框样式 */
+.role-form-dialog.el-dialog,
+.role-form-dialog .el-dialog,
+div.el-dialog.role-form-dialog {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.role-form-dialog .el-dialog__header {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.role-form-dialog .el-dialog__body {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.role-form-dialog .el-dialog__title {
+  color: #00ffff !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.role-form-dialog .el-form-item__label {
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+.role-form-dialog .el-input__wrapper {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  background: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.role-form-dialog .el-input__inner {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.role-form-dialog .el-textarea__inner {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  background: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 6px !important;
+}
+
+.role-form-dialog .el-button {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background-color: rgba(45, 55, 75, 0.8) !important;
+  background: rgba(45, 55, 75, 0.8) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+}
+
+.role-form-dialog .el-button--primary {
+  background-color: rgba(0, 150, 200, 0.8) !important;
+  background: rgba(0, 150, 200, 0.8) !important;
+  border-color: rgba(0, 200, 255, 0.6) !important;
+  color: #ffffff !important;
+}
+
+/* 权限详情对话框样式 */
+.permission-detail-dialog.el-dialog,
+.permission-detail-dialog .el-dialog,
+div.el-dialog.permission-detail-dialog {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.permission-detail-dialog .el-dialog__header {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.permission-detail-dialog .el-dialog__body {
+  background-color: rgba(45, 55, 75, 0.92) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.permission-detail-dialog .el-dialog__title {
+  color: #00ffff !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
 }
 </style> 

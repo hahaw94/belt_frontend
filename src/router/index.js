@@ -263,30 +263,48 @@ router.beforeEach((to, from, next) => {
     document.title = '智能监控系统';
   }
 
-  // 检查登录状态
+  // 检查登录状态 - 更严格的验证
   const token = localStorage.getItem('token')
+  const userInfo = localStorage.getItem('userInfo')
   const isLoginPage = to.path === '/login'
+  
+  // 验证认证信息的完整性
+  let isValidAuth = false
+  if (token && userInfo && userInfo !== 'null' && userInfo !== 'undefined') {
+    try {
+      const parsedUserInfo = JSON.parse(userInfo)
+      isValidAuth = parsedUserInfo && parsedUserInfo.username && parsedUserInfo.id
+    } catch (error) {
+      console.error('用户信息解析失败:', error)
+      // 清除无效的认证信息
+      localStorage.removeItem('token')
+      localStorage.removeItem('userInfo')
+      localStorage.removeItem('refreshToken')
+    }
+  }
 
   // 如果访问登录页面
   if (isLoginPage) {
-    if (token) {
-      // 已经登录，重定向到首页
+    if (isValidAuth) {
+      // 已经登录且认证有效，重定向到首页
+      console.log('已登录用户访问登录页，重定向到首页')
       next('/')
     } else {
-      // 未登录，允许访问登录页
+      // 未登录或认证无效，允许访问登录页
       next()
     }
     return
   }
 
   // 访问其他页面需要登录验证
-  if (!token) {
-    // 未登录，重定向到登录页
+  if (!isValidAuth) {
+    console.log('认证无效，重定向到登录页')
+    // 未登录或认证无效，重定向到登录页
     next('/login')
     return
   }
 
-  // 已登录，允许访问
+  // 已登录且认证有效，允许访问
   next()
 });
 

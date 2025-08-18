@@ -152,7 +152,11 @@ export default {
 
     // 显示用户名
     const displayUsername = computed(() => {
-      return authStore.username || authStore.userInfo?.username || '管理员';
+      // 如果没有认证信息，不显示任何用户名
+      if (!authStore.isAuthenticated || !authStore.userInfo) {
+        return '未登录';
+      }
+      return authStore.username || authStore.userInfo?.username || '游客';
     });
 
     // 退出登录方法
@@ -169,12 +173,24 @@ export default {
         );
 
         // 调用store的登出方法
-        authStore.logout();
+        await authStore.logout();
+        
+        // 确保状态完全清除
+        console.log('退出登录后的认证状态:', {
+          isAuthenticated: authStore.isAuthenticated,
+          userInfo: authStore.userInfo,
+          token: authStore.token
+        });
         
         ElMessage.success('已退出登录');
         
-        // 重定向到登录页
-        router.push('/login');
+        // 强制跳转到登录页并清除历史记录
+        await router.replace('/login');
+        
+        // 强制刷新页面以确保完全清除状态
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       } catch (error) {
         // 用户取消登出
         if (error !== 'cancel') {
