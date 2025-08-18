@@ -99,16 +99,42 @@
           <el-input v-model="currentUser.email" placeholder="请输入邮箱"></el-input>
         </el-form-item>
         <el-form-item label="电话" prop="phone">
-          <el-input v-model="currentUser.phone" placeholder="请输入电话号码"></el-input>
+          <el-input v-model="currentUser.phone" placeholder="请输入电话号码（11位手机号）"></el-input>
         </el-form-item>
-        <el-form-item label="真实姓名" prop="real_name">
-          <el-input v-model="currentUser.real_name" placeholder="请输入真实姓名"></el-input>
+        <el-form-item label="密码" prop="password" v-if="passwordResetMode">
+          <el-input type="password" v-model="currentUser.password" show-password placeholder="请输入新密码"></el-input>
         </el-form-item>
-        <el-form-item label="密码" prop="password" v-if="!isEditMode || passwordResetMode">
-          <el-input type="password" v-model="currentUser.password" show-password placeholder="请输入密码"></el-input>
+        <el-form-item label="确认密码" prop="confirmPassword" v-if="passwordResetMode">
+          <el-input type="password" v-model="currentUser.confirmPassword" show-password placeholder="请再次输入新密码"></el-input>
         </el-form-item>
-        <el-form-item label="确认密码" prop="confirmPassword" v-if="!isEditMode || passwordResetMode">
-          <el-input type="password" v-model="currentUser.confirmPassword" show-password placeholder="请再次输入密码"></el-input>
+        <div v-if="!isEditMode" class="password-notice">
+          <el-alert
+            title="密码说明"
+            description="系统将自动为新用户生成初始密码，创建成功后会显示初始密码"
+            type="info"
+            :closable="false"
+            show-icon
+          />
+        </div>
+        <el-form-item label="分配角色" prop="roleIds" v-if="!isEditMode">
+          <el-select
+            v-model="currentUser.roleIds"
+            multiple
+            placeholder="请选择用户角色"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="role in availableRoles"
+              :key="role.id"
+              :label="role.name"
+              :value="role.id"
+            >
+              {{ role.name }} - {{ role.description }}
+            </el-option>
+          </el-select>
+          <div style="font-size: 12px; color: #999; margin-top: 4px;">
+            添加用户时必须分配至少一个角色
+          </div>
         </el-form-item>
         <el-form-item label="备注" prop="description">
           <el-input 
@@ -175,10 +201,10 @@ const currentUser = reactive({
   username: '',
   email: '',
   phone: '',
-  real_name: '',
   description: '',
   password: '',
   confirmPassword: '',
+  roleIds: [], // 添加角色ID数组
   status: 'active', // 默认正常状态
   createTime: '',
   lastLogin: '',
@@ -211,16 +237,14 @@ const userRules = reactive({
     { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
   ],
   phone: [
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的手机号码', trigger: 'blur' }
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的11位手机号码', trigger: 'blur' }
   ],
-  real_name: [
-    { required: true, message: '请输入真实姓名', trigger: 'blur' },
-    { min: 2, max: 10, message: '长度在 2 到 10 个字符', trigger: 'blur' }
+  roleIds: [
+    { required: true, type: 'array', min: 1, message: '请至少选择一个角色', trigger: 'change' }
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于 6 位', trigger: 'blur' },
-    { pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{6,}$/, message: '密码必须包含大小写字母和数字', trigger: 'blur' }
+    { min: 6, message: '密码长度不能少于 6 位', trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, message: '请再次输入密码', trigger: 'blur' },
@@ -254,23 +278,51 @@ const paginatedUsers = computed(() => {
 const getUserList = async () => {
   try {
     loading.value = true;
-    const response = await userApi.getUserList({
+    console.log('正在获取用户列表...', {
       page: pagination.page,
-      page_size: pagination.pageSize
+      pageSize: pagination.pageSize,
+      token: localStorage.getItem('token') ? '已设置' : '未设置'
     });
     
-    // 处理API返回的字段名称映射
-    const processedUsers = response.body.users.map(user => ({
-      ...user,
-      createTime: user.create_time || new Date().toLocaleString('zh-CN'),
-      lastLogin: user.last_login || '从未登录',
-      roles: user.roles || []
-    }));
+    const response = await userApi.getUserList({
+      pageNum: pagination.page,
+      pageSize: pagination.pageSize
+    });
     
-    userList.value = processedUsers;
-    pagination.total = response.body.total;
+    console.log('用户列表API响应:', response);
+    
+    if (response.code === 200 && response.success) {
+      // 后端使用PageResponse格式：{code, message, data: [...], total, page, size}
+      const userListData = response.data || [];
+      
+      console.log('原始用户数据:', {
+        data: response.data,
+        total: response.total,
+        page: response.page,
+        size: response.size
+      });
+      
+      // 处理API返回的字段名称映射
+      const processedUsers = Array.isArray(userListData) ? userListData.map(user => ({
+        ...user,
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        createTime: user.create_time ? new Date(user.create_time).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN'),
+        lastLogin: user.last_login_at ? new Date(user.last_login_at).toLocaleString('zh-CN') : '从未登录',
+        status: user.status === 1 ? 'active' : 'locked',
+        roles: user.roles || []
+      })) : [];
+      
+      userList.value = processedUsers;
+      pagination.total = response.total || processedUsers.length;
+    } else {
+      throw new Error(response.message || '获取用户列表失败');
+    }
   } catch (error) {
-    ElMessage.error('获取用户列表失败');
+    console.error('获取用户列表失败详情:', error);
+    ElMessage.error(error.message || '获取用户列表失败');
   } finally {
     loading.value = false;
   }
@@ -281,10 +333,30 @@ const getUserList = async () => {
  */
 const getRoleList = async () => {
   try {
+    console.log('正在获取可用角色列表...');
     const response = await roleApi.getRoleList();
-    availableRoles.value = response.body.roles || [];
+    console.log('角色列表API响应:', response);
+    
+    if (response.code === 200 && response.success) {
+      // 角色列表使用PageResponse格式：{code, message, data: [...], total, page, size}
+      const roleListData = response.data || [];
+      console.log('可用角色数据:', roleListData);
+      
+      // 处理角色数据字段映射
+      const processedRoles = Array.isArray(roleListData) ? roleListData.map(role => ({
+        ...role,
+        id: role.id,
+        name: role.role_name,
+        description: role.description
+      })) : [];
+      
+      availableRoles.value = processedRoles;
+    } else {
+      throw new Error(response.message || '获取角色列表失败');
+    }
   } catch (error) {
-    ElMessage.error('获取角色列表失败');
+    console.error('获取角色列表失败详情:', error);
+    ElMessage.error(error.message || '获取角色列表失败');
   }
 };
 
@@ -307,10 +379,10 @@ const handleAddUser = () => {
     username: '',
     email: '',
     phone: '',
-    real_name: '',
     description: '',
     password: '',
     confirmPassword: '',
+    roleIds: [], // 重置角色选择
     status: 'active',
     createTime: '',
     lastLogin: '',
@@ -354,19 +426,57 @@ const submitUserForm = async () => {
           // 编辑用户
           if (passwordResetMode.value) {
             // 重置密码
-            await userApi.resetPassword(currentUser.id, { new_password: currentUser.password });
-            ElMessage.success(`用户 ${currentUser.username} 密码重置成功！`);
+            const response = await userApi.resetPassword(currentUser.id, currentUser.password);
+            if (response.code === 200 && response.success) {
+              ElMessage.success(`用户 ${currentUser.username} 密码重置成功！`);
+            } else {
+              throw new Error(response.message || '密码重置失败');
+            }
           } else {
             // 更新用户信息（不包含密码）
             // eslint-disable-next-line no-unused-vars
             const { password, ...updateData } = userData;
-            await userApi.updateUser(currentUser.id, updateData);
-            ElMessage.success(`用户 ${currentUser.username} 更新成功！`);
+            const response = await userApi.updateUser(currentUser.id, updateData);
+            if (response.code === 200 && response.success) {
+              ElMessage.success(`用户 ${currentUser.username} 更新成功！`);
+            } else {
+              throw new Error(response.message || '更新用户失败');
+            }
           }
         } else {
-          // 添加用户
-          await userApi.createUser(userData);
-          ElMessage.success(`用户 ${currentUser.username} 添加成功！`);
+          // 添加用户 - 添加调试信息
+          // 添加用户 - 后端会自动生成初始密码
+          const createUserData = {
+            username: userData.username,
+            email: userData.email,
+            phone: userData.phone,
+            roleIds: userData.roleIds // 确保角色ID数组正确传递
+          };
+          
+          console.log('正在添加用户，提交数据:', createUserData);
+          const response = await userApi.createUser(createUserData);
+          console.log('添加用户API响应:', response);
+          
+          if (response.code === 200 && response.success) {
+            const initialPassword = response.data.initial_password;
+            ElMessage.success({
+              message: `用户 ${currentUser.username} 添加成功！初始密码：${initialPassword}`,
+              duration: 10000, // 显示10秒
+              showClose: true
+            });
+            
+            // 显示初始密码对话框
+            ElMessageBox.alert(
+              `用户创建成功！\n\n用户名：${currentUser.username}\n初始密码：${initialPassword}\n\n请妥善保管初始密码，并提醒用户首次登录后修改密码。`,
+              '用户创建成功',
+              {
+                confirmButtonText: '我已记录',
+                type: 'success'
+              }
+            );
+          } else {
+            throw new Error(response.message || '添加用户失败');
+          }
         }
         
         userDialogVisible.value = false;
@@ -415,13 +525,19 @@ const toggleUserStatus = async (row) => {
     });
     
     loading.value = true;
+    let response;
     if (isLock) {
-      await userApi.lockUser(row.id);
+      response = await userApi.lockUser(row.id, '管理员操作');
     } else {
-      await userApi.unlockUser(row.id);
+      response = await userApi.unlockUser(row.id);
     }
-    ElMessage.success(`用户 ${row.username} 已${action}！`);
-    getUserList(); // 重新加载用户列表
+    
+    if (response.code === 200 && response.success) {
+      ElMessage.success(`用户 ${row.username} 已${action}！`);
+      getUserList(); // 重新加载用户列表
+    } else {
+      throw new Error(response.message || `${action}操作失败`);
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(`${action}操作失败`);
@@ -446,15 +562,19 @@ const handleDeleteUser = async (row) => {
     });
     
     loading.value = true;
-    await userApi.deleteUser(row.id);
-    ElMessage.success(`用户 ${row.username} 删除成功！`);
-    
-    // 检查当前页是否为空，如果为空且不是第一页，则跳转到上一页
-    if (userList.value.length === 1 && pagination.page > 1) {
-      pagination.page--;
+    const response = await userApi.deleteUser(row.id);
+    if (response.code === 200 && response.success) {
+      ElMessage.success(`用户 ${row.username} 删除成功！`);
+      
+      // 检查当前页是否为空，如果为空且不是第一页，则跳转到上一页
+      if (userList.value.length === 1 && pagination.page > 1) {
+        pagination.page--;
+      }
+      
+      getUserList(); // 重新加载用户列表
+    } else {
+      throw new Error(response.message || '删除用户失败');
     }
-    
-    getUserList(); // 重新加载用户列表
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('删除用户失败');
@@ -497,12 +617,16 @@ const handleManageRoles = async (row) => {
     
     // 获取用户当前角色
     const userRolesResponse = await roleApi.getUserRoles(row.id);
-    const userRoles = userRolesResponse.body.roles || [];
-    selectedRoles.value = userRoles.map(role => role.id);
+    if (userRolesResponse.code === 200 && userRolesResponse.success) {
+      const userRoles = userRolesResponse.data.roles || [];
+      selectedRoles.value = userRoles.map(role => role.roleId);
+    } else {
+      throw new Error(userRolesResponse.message || '获取用户角色失败');
+    }
     
     roleAssignDialogVisible.value = true;
   } catch (error) {
-    ElMessage.error('获取用户角色失败');
+    ElMessage.error(error.message || '获取用户角色失败');
   } finally {
     loading.value = false;
   }
@@ -517,8 +641,11 @@ const submitRoleAssign = async () => {
     
     // 获取当前用户角色
     const currentRolesResponse = await roleApi.getUserRoles(selectedUser.value.id);
-    const currentRoles = currentRolesResponse.body.roles || [];
-    const currentRoleIds = currentRoles.map(role => role.id);
+    let currentRoleIds = [];
+    if (currentRolesResponse.code === 200 && currentRolesResponse.success) {
+      const currentRoles = currentRolesResponse.data.roles || [];
+      currentRoleIds = currentRoles.map(role => role.roleId);
+    }
     
     // 找出需要添加和移除的角色
     const rolesToAdd = selectedRoles.value.filter(roleId => !currentRoleIds.includes(roleId));
@@ -526,12 +653,18 @@ const submitRoleAssign = async () => {
     
     // 移除角色
     for (const roleId of rolesToRemove) {
-      await roleApi.removeUserRole(selectedUser.value.id, roleId);
+      const response = await roleApi.removeUserRole(selectedUser.value.id, roleId);
+      if (response.code !== 200 || !response.success) {
+        throw new Error(response.message || '移除角色失败');
+      }
     }
     
-    // 添加角色
-    for (const roleId of rolesToAdd) {
-      await roleApi.assignUserRole(selectedUser.value.id, { role_id: roleId });
+    // 添加角色 - 使用批量分配
+    if (rolesToAdd.length > 0) {
+      const response = await roleApi.assignUserRole(selectedUser.value.id, rolesToAdd);
+      if (response.code !== 200 || !response.success) {
+        throw new Error(response.message || '分配角色失败');
+      }
     }
     
     ElMessage.success(`用户 ${selectedUser.value.username} 角色分配成功！`);
@@ -909,6 +1042,29 @@ onMounted(() => {
   border-bottom: 1px solid rgba(0, 255, 255, 0.3);
   padding-bottom: 8px;
   text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+/* 密码说明样式 */
+.password-notice {
+  margin: 15px 0;
+}
+
+.password-notice :deep(.el-alert) {
+  background: rgba(0, 255, 255, 0.05) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+}
+
+.password-notice :deep(.el-alert__title) {
+  color: #00ffff !important;
+}
+
+.password-notice :deep(.el-alert__description) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.password-notice :deep(.el-alert__icon) {
+  color: #00ffff !important;
 }
 
 /* 响应式设计 */

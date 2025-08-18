@@ -1,5 +1,4 @@
 // Mock拦截器测试文件
-import { userApi } from './api/user'
 import { deviceApi } from './api/device'
 import { algorithmApi } from './api/algorithm'
 
@@ -8,12 +7,6 @@ export async function testMockInterceptors() {
   console.log('🧪 开始测试Mock拦截器...')
   
   try {
-    // 测试用户API
-    console.log('测试用户API...')
-    const userResponse = await userApi.getUserList({ page: 1, page_size: 5 })
-    console.log('✓ 用户API响应:', userResponse)
-    console.log(`✓ 用户数据数量: ${userResponse.body?.users?.length || 0}`)
-    
     // 测试设备API
     console.log('测试设备API...')
     const deviceResponse = await deviceApi.getDeviceList({ page: 1, page_size: 5 })
@@ -34,10 +27,10 @@ export async function testMockInterceptors() {
     
     console.log('🎉 所有Mock拦截器测试通过！')
     console.log('📊 数据统计:')
-    console.log(`  - 用户数据: ${userResponse.body?.total || 0} 条`)
     console.log(`  - 设备数据: ${deviceResponse.body?.total || 0} 台`)
     console.log(`  - 算法数据: ${algorithmResponse.body?.total || 0} 个`)
     console.log(`  - 分析板卡: ${cardsResponse.body?.analysis_cards?.length || 0} 个`)
+    console.log('💡 注意: 登录、用户管理、角色管理已使用真实后端接口')
     
     return true
   } catch (error) {
@@ -101,7 +94,6 @@ async function updateMockDataPanel() {
     const result = await testMockInterceptors()
     if (result) {
       // 获取最新数据
-      const userResponse = await userApi.getUserList({ page: 1, page_size: 1 })
       const deviceResponse = await deviceApi.getDeviceList({ page: 1, page_size: 1 })
       const algorithmResponse = await algorithmApi.getAlgorithmList()
       
@@ -109,12 +101,11 @@ async function updateMockDataPanel() {
         <div style="color: #00ff00;">✅ Mock拦截器运行正常</div>
         <hr style="border-color: #333;">
         <div><strong>📊 数据统计:</strong></div>
-        <div>👥 用户数据: ${userResponse.body?.total || 0} 条</div>
         <div>📱 设备数据: ${deviceResponse.body?.total || 0} 台</div>
         <div>🤖 算法数据: ${algorithmResponse.body?.total || 0} 个</div>
         <hr style="border-color: #333;">
         <div style="color: #ffff00;">💡 Mock数据正常显示</div>
-        <div style="color: #ffff00;">💡 滚动条已启用</div>
+        <div style="color: #ffff00;">💡 登录/用户/角色使用真实接口</div>
       `
     } else {
       statusDiv.innerHTML = `<div style="color: #ff0000;">❌ Mock拦截器异常</div>`

@@ -89,7 +89,7 @@ const authStore = useAuthStore()
 
 const loginForm = reactive({
   username: 'admin', // 预填默认用户名
-  password: 'admin123' // 预填默认密码（可选，正式环境中删除）
+  password: '123456' // 预填默认密码（可选，正式环境中删除）
 })
 
 const loginRules = {
@@ -128,7 +128,7 @@ const handleLogin = async () => {
           password: loginForm.password
         })
         
-        if (response.success) {
+        if (response.code === 200 && response.success) {
           ElMessage.success('登录成功')
           // 跳转到首页
           router.push('/')

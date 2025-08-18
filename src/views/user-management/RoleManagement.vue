@@ -93,6 +93,9 @@
         <el-form-item label="角色名称" prop="name">
           <el-input v-model="currentRole.name" placeholder="请输入角色名称"></el-input>
         </el-form-item>
+        <el-form-item label="角色编码" prop="code">
+          <el-input v-model="currentRole.code" placeholder="请输入角色编码（如：security）"></el-input>
+        </el-form-item>
         <el-form-item label="角色描述" prop="description">
           <el-input 
             v-model="currentRole.description"
@@ -155,6 +158,7 @@ const isEditMode = ref(false);
 const currentRole = reactive({
   id: null,
   name: '',
+  code: '',
   description: '',
   permissions: [],
   is_default: false,
@@ -176,11 +180,15 @@ const roleFormRef = ref(null);
 const roleRules = reactive({
   name: [
     { required: true, message: '请输入角色名称', trigger: 'blur' },
-    { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
+    { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
+  ],
+  code: [
+    { required: true, message: '请输入角色编码', trigger: 'blur' },
+    { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' },
+    { pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/, message: '角色编码必须以字母开头，只能包含字母、数字和下划线', trigger: 'blur' }
   ],
   description: [
-    { required: true, message: '请输入角色描述', trigger: 'blur' },
-    { min: 5, max: 100, message: '长度在 5 到 100 个字符', trigger: 'blur' }
+    { max: 200, message: '描述不能超过 200 个字符', trigger: 'blur' }
   ]
 });
 
@@ -204,37 +212,72 @@ const paginatedRoles = computed(() => {
 const getRoleList = async () => {
   try {
     loading.value = true;
-    const response = await roleApi.getRoleList({
+    console.log('正在获取角色列表...', {
       page: pagination.page,
-      page_size: pagination.pageSize
+      pageSize: pagination.pageSize,
+      token: localStorage.getItem('token') ? '已设置' : '未设置'
     });
     
-    // 处理返回的角色数据，获取每个角色的权限详情
-    const processedRoles = await Promise.all(
-      response.body.roles.map(async (role) => {
-        try {
-          const permissionsResponse = await roleApi.getRolePermissions(role.id);
-          const permissions = permissionsResponse.body.permissions || [];
-          return {
-            ...role,
-            permissions,
-            createTime: role.create_time || new Date().toLocaleString('zh-CN')
-          };
-        } catch (error) {
-          console.warn(`获取角色 ${role.id} 权限失败:`, error);
-          return {
-      ...role,
-            permissions: [],
-      createTime: role.create_time || new Date().toLocaleString('zh-CN')
-          };
-        }
-      })
-    );
+    const response = await roleApi.getRoleList({
+      pageNum: pagination.page,
+      pageSize: pagination.pageSize
+    });
     
-    roleList.value = processedRoles;
-    pagination.total = response.body.total || processedRoles.length;
+    console.log('角色列表API响应:', response);
+    
+    if (response.code === 200 && response.success) {
+      // 后端使用PageResponse格式：{code, message, data: [...], total, page, size}
+      const roleListData = response.data || [];
+      
+      console.log('原始角色数据:', {
+        data: response.data,
+        total: response.total,
+        page: response.page,
+        size: response.size
+      });
+      
+      // 处理返回的角色数据，获取每个角色的权限详情
+      const processedRoles = Array.isArray(roleListData) ? await Promise.all(
+        roleListData.map(async (role) => {
+          try {
+            const roleId = role.id;
+            const permissionsResponse = await roleApi.getRolePermissions(roleId);
+            let permissions = [];
+            if (permissionsResponse.code === 200 && permissionsResponse.success) {
+              permissions = Array.isArray(permissionsResponse.data) ? permissionsResponse.data : [];
+            }
+            return {
+              ...role,
+              id: roleId,
+              name: role.role_name,
+              description: role.description,
+              is_default: role.role_type === 0, // 系统角色为默认角色
+              permissions,
+              createTime: role.create_time ? new Date(role.create_time).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN')
+            };
+          } catch (error) {
+            console.warn(`获取角色 ${role.id} 权限失败:`, error);
+            return {
+              ...role,
+              id: role.id,
+              name: role.role_name,
+              description: role.description,
+              is_default: role.role_type === 0,
+              permissions: [],
+              createTime: role.create_time ? new Date(role.create_time).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN')
+            };
+          }
+        })
+      ) : [];
+      
+      roleList.value = processedRoles;
+      pagination.total = response.total || processedRoles.length;
+    } else {
+      throw new Error(response.message || '获取角色列表失败');
+    }
   } catch (error) {
-    ElMessage.error('获取角色列表失败');
+    console.error('获取角色列表失败详情:', error);
+    ElMessage.error(error.message || '获取角色列表失败');
   } finally {
     loading.value = false;
   }
@@ -245,10 +288,31 @@ const getRoleList = async () => {
  */
 const getPermissionList = async () => {
   try {
+    console.log('正在获取权限列表...');
     const response = await roleApi.getPermissionList();
-    availablePermissions.value = response.body.permissions || [];
+    console.log('权限列表API响应:', response);
+    
+    if (response.code === 200 && response.success) {
+      // 权限列表使用普通响应格式：{code, message, data: [...]}
+      const permissionListData = response.data || [];
+      console.log('原始权限数据:', permissionListData);
+      
+      // 处理权限数据字段映射
+      const processedPermissions = Array.isArray(permissionListData) ? permissionListData.map(permission => ({
+        ...permission,
+        id: permission.id,
+        name: permission.permission_name,
+        code: permission.permission_code,
+        description: permission.resource + ':' + permission.action
+      })) : [];
+      
+      availablePermissions.value = processedPermissions;
+    } else {
+      throw new Error(response.message || '获取权限列表失败');
+    }
   } catch (error) {
-    ElMessage.error('获取权限列表失败');
+    console.error('获取权限列表失败详情:', error);
+    ElMessage.error(error.message || '获取权限列表失败');
   }
 };
 
@@ -267,6 +331,7 @@ const handleAddRole = () => {
   Object.assign(currentRole, {
     id: null,
     name: '',
+    code: '',
     description: '',
     permissions: [],
     is_default: false,
@@ -289,20 +354,23 @@ const handleEditRole = async (row) => {
     loading.value = true;
     // 获取角色的权限列表
     const permissionsResponse = await roleApi.getRolePermissions(row.id);
-    const permissions = permissionsResponse.body.permissions || [];
+    let permissions = [];
+    if (permissionsResponse.code === 200 && permissionsResponse.success) {
+      permissions = permissionsResponse.data.permissions || [];
+    }
     
     Object.assign(currentRole, { 
       ...row, 
-      permissions: permissions.map(p => p.id) 
+      permissions: permissions.map(p => p.permissionId) 
     });
     
-  roleDialogVisible.value = true;
-  
-  if (roleFormRef.value) {
-    roleFormRef.value.clearValidate();
+    roleDialogVisible.value = true;
+    
+    if (roleFormRef.value) {
+      roleFormRef.value.clearValidate();
     }
   } catch (error) {
-    ElMessage.error('获取角色权限失败');
+    ElMessage.error(error.message || '获取角色权限失败');
   } finally {
     loading.value = false;
   }
@@ -334,20 +402,34 @@ const submitRoleForm = async () => {
           // 更新基本信息
           // eslint-disable-next-line no-unused-vars
           const { permissions, ...basicData } = roleData;
-          await roleApi.updateRole(currentRole.id, basicData);
+          // 映射字段名
+          const updateData = {
+            roleName: basicData.name,
+            description: basicData.description
+          };
+          const updateResponse = await roleApi.updateRole(currentRole.id, updateData);
+          if (updateResponse.code !== 200 || !updateResponse.success) {
+            throw new Error(updateResponse.message || '更新角色基本信息失败');
+          }
           
           // 更新权限
-          await roleApi.setRolePermissions(currentRole.id, { permission_ids: currentRole.permissions });
+          const permissionResponse = await roleApi.setRolePermissions(currentRole.id, currentRole.permissions);
+          if (permissionResponse.code !== 200 || !permissionResponse.success) {
+            throw new Error(permissionResponse.message || '设置角色权限失败');
+          }
           
           ElMessage.success(`角色 ${currentRole.name} 更新成功！`);
         } else {
-          // 添加角色
-          const response = await roleApi.createRole(roleData);
-          const newRoleId = response.body.role.id;
-          
-          // 设置权限
-          if (currentRole.permissions && currentRole.permissions.length > 0) {
-            await roleApi.setRolePermissions(newRoleId, { permission_ids: currentRole.permissions });
+          // 添加角色 - 映射字段名到API文档要求的格式
+          const createData = {
+            roleName: roleData.name,
+            roleCode: roleData.code,
+            description: roleData.description,
+            permissionIds: roleData.permissions || []
+          };
+          const response = await roleApi.createRole(createData);
+          if (response.code !== 200 || !response.success) {
+            throw new Error(response.message || '创建角色失败');
           }
           
           ElMessage.success(`角色 ${currentRole.name} 添加成功！`);
@@ -378,9 +460,13 @@ const handleDeleteRole = async (row) => {
     });
     
     loading.value = true;
-    await roleApi.deleteRole(row.id);
-    ElMessage.success(`角色 ${row.name} 删除成功！`);
-    getRoleList(); // 重新加载角色列表
+    const response = await roleApi.deleteRole(row.id);
+    if (response.code === 200 && response.success) {
+      ElMessage.success(`角色 ${row.name} 删除成功！`);
+      getRoleList(); // 重新加载角色列表
+    } else {
+      throw new Error(response.message || '删除角色失败');
+    }
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('删除角色失败');

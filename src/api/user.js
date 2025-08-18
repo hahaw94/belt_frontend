@@ -14,7 +14,7 @@ export const authApi = {
 
   // 刷新Token
   refreshToken(refreshToken) {
-    return api.post('/api/v1/auth/refresh', { refresh_token: refreshToken })
+    return api.post('/api/v1/auth/refresh', { refreshToken })
   },
 
   // 用户登出
@@ -33,11 +33,18 @@ export const authApi = {
   }
 }
 
-// 用户管理API
+// 用户管理API - 对齐API文档v1接口
 export const userApi = {
   // 创建用户
   createUser(data) {
-    return api.post('/api/v1/users', data)
+    // 后端期望的字段格式
+    const backendData = {
+      username: data.username,
+      email: data.email || null,
+      phone: data.phone || null,
+      role_ids: data.role_ids || data.roleIds || []
+    }
+    return api.post('/api/v1/users', backendData)
   },
 
   // 删除用户
@@ -47,17 +54,23 @@ export const userApi = {
 
   // 批量删除用户
   batchDeleteUsers(userIds) {
-    return api.delete('/api/v1/users/batch', { user_ids: userIds })
+    return api.delete('/api/v1/users/batch', { data: { userIds } })
   },
 
   // 编辑用户信息
   updateUser(userId, data) {
-    return api.put(`/api/v1/users/${userId}`, data)
+    // 后端期望的字段格式
+    const backendData = {
+      email: data.email || null,
+      phone: data.phone || null,
+      role_ids: data.role_ids || data.roleIds || []
+    }
+    return api.put(`/api/v1/users/${userId}`, backendData)
   },
 
   // 锁定用户
-  lockUser(userId) {
-    return api.put(`/api/v1/users/${userId}/lock`)
+  lockUser(userId, reason) {
+    return api.put(`/api/v1/users/${userId}/lock`, { reason })
   },
 
   // 解锁用户
@@ -66,13 +79,21 @@ export const userApi = {
   },
 
   // 重置用户密码
-  resetPassword(userId, data) {
-    return api.put(`/api/v1/users/${userId}/reset-password`, data)
+  resetPassword(userId, newPassword) {
+    return api.put(`/api/v1/users/${userId}/reset-password`, { new_password: newPassword })
   },
 
   // 获取用户列表
   getUserList(params) {
-    return api.get('/api/v1/users', params)
+    // 后端期望的参数格式：page, size（不是pageNum, pageSize）
+    const backendParams = {
+      page: params.pageNum || params.page || 1,
+      size: params.pageSize || params.size || 10,
+      username: params.username,
+      email: params.email,
+      status: params.status
+    }
+    return api.get('/api/v1/users', { params: backendParams })
   },
 
   // 获取用户详情
@@ -96,11 +117,18 @@ export const userApi = {
   }
 }
 
-// 角色管理API
+// 角色管理API - 对齐API文档v1接口
 export const roleApi = {
   // 创建角色
   createRole(data) {
-    return api.post('/api/v1/roles', data)
+    // 后端期望的字段格式
+    const backendData = {
+      role_code: data.roleCode || data.code,
+      role_name: data.roleName || data.name,
+      description: data.description || null,
+      permission_ids: data.permissionIds || data.permission_ids || []
+    }
+    return api.post('/api/v1/roles', backendData)
   },
 
   // 删除角色
@@ -110,12 +138,26 @@ export const roleApi = {
 
   // 编辑角色基本信息
   updateRole(roleId, data) {
-    return api.put(`/api/v1/roles/${roleId}`, data)
+    // 后端期望的字段格式
+    const backendData = {
+      role_name: data.roleName || data.name,
+      description: data.description || null,
+      permission_ids: data.permissionIds || data.permission_ids || []
+    }
+    return api.put(`/api/v1/roles/${roleId}`, backendData)
   },
 
   // 获取角色列表
   getRoleList(params) {
-    return api.get('/api/v1/roles', params)
+    // 后端期望的参数格式：page, size（不是pageNum, pageSize）
+    const backendParams = {
+      page: params?.pageNum || params?.page || 1,
+      size: params?.pageSize || params?.size || 10,
+      role_name: params?.role_name,
+      role_type: params?.role_type,
+      status: params?.status
+    }
+    return api.get('/api/v1/roles', { params: backendParams })
   },
 
   // 获取角色详情
@@ -124,8 +166,8 @@ export const roleApi = {
   },
 
   // 分配用户角色
-  assignUserRole(userId, data) {
-    return api.post(`/api/v1/users/${userId}/roles`, data)
+  assignUserRole(userId, roleIds) {
+    return api.post(`/api/v1/users/${userId}/roles`, { role_ids: roleIds })
   },
 
   // 移除用户角色
@@ -139,18 +181,18 @@ export const roleApi = {
   },
 
   // 获取权限列表
-  getPermissionList() {
-    return api.get('/api/v1/permissions')
+  getPermissionList(params) {
+    return api.get('/api/v1/permissions', { params })
   },
 
   // 批量设置角色权限
-  setRolePermissions(roleId, data) {
-    return api.put(`/api/v1/roles/${roleId}/permissions`, data)
+  setRolePermissions(roleId, permissionIds) {
+    return api.put(`/api/v1/roles/${roleId}/permissions`, { permission_ids: permissionIds })
   },
 
   // 添加角色权限
-  addRolePermission(roleId, data) {
-    return api.post(`/api/v1/roles/${roleId}/permissions`, data)
+  addRolePermission(roleId, permissionIds) {
+    return api.post(`/api/v1/roles/${roleId}/permissions`, { permission_ids: permissionIds })
   },
 
   // 移除角色权限
