@@ -37,14 +37,22 @@ request.interceptors.response.use(
       data: res
     })
     
-    // 根据后端响应格式处理 {code: 200, message: "success", data: {...}}
+    // 根据后端响应格式处理 {code: 200, message: "success", data: {...}, total?, page?, size?}
     if (res.code === 200) {
-      // 成功响应，添加 success 标志以保持与前端 store 的兼容性
+      // 成功响应，保留完整的响应信息包括分页数据
       return {
         code: res.code,
         success: true,
         message: res.message,
-        data: res.data || {}
+        data: res.data || {},
+        // 保留分页信息
+        total: res.total,
+        page: res.page,
+        size: res.size,
+        current_page: res.current_page,
+        per_page: res.per_page,
+        totalCount: res.totalCount,
+        pageSize: res.pageSize
       }
     } else {
       // 显示错误消息
@@ -139,8 +147,13 @@ request.interceptors.response.use(
 // 封装通用请求方法
 export const api = {
   // GET请求
-  get(url, params = {}) {
-    return request.get(url, { params })
+  get(url, config = {}) {
+    // 如果config已经是一个包含params的配置对象，直接使用
+    if (config.params) {
+      return request.get(url, config)
+    }
+    // 否则将config作为params使用（向后兼容）
+    return request.get(url, { params: config })
   },
   
   // POST请求

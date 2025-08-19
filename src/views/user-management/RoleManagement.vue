@@ -17,6 +17,63 @@
         </div>
       </template>
 
+      <!-- 角色搜索和筛选 -->
+      <div class="search-filters-card tech-card mb-20">
+        <div class="search-filters-header">
+          <span class="filter-title">搜索筛选</span>
+        </div>
+        <div class="search-filters-content">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label for="roleNameFilter">角色名称</label>
+              <el-input
+                v-model="searchFilters.roleName"
+                id="roleNameFilter"
+                placeholder="搜索角色名称"
+                class="tech-input"
+                clearable
+                @keyup.enter="searchRoles"
+                @clear="searchRoles"
+              />
+            </div>
+            <div class="filter-item">
+              <label for="roleTypeFilter">角色类型</label>
+              <el-select
+                v-model="searchFilters.roleType"
+                id="roleTypeFilter"
+                placeholder="全部"
+                class="tech-select"
+                clearable
+                @change="searchRoles"
+              >
+                <el-option label="全部" value="" />
+                <el-option label="系统角色" value="0" />
+                <el-option label="自定义角色" value="1" />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label for="roleStatusFilter">状态</label>
+              <el-select
+                v-model="searchFilters.status"
+                id="roleStatusFilter"
+                placeholder="全部"
+                class="tech-select"
+                clearable
+                @change="searchRoles"
+              >
+                <el-option label="全部" value="" />
+                <el-option label="启用" value="1" />
+                <el-option label="禁用" value="0" />
+              </el-select>
+            </div>
+            <div class="filter-actions">
+              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="searchRoles">搜索</el-button>
+              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetRoleFilters">重置</el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <el-table :data="paginatedRoles" v-loading="loading" border stripe class="tech-table" style="width: 100%;">
         <el-table-column prop="id" label="ID" width="80" align="center" header-align="center"></el-table-column>
         <el-table-column prop="name" label="角色名称" min-width="120" header-align="center"></el-table-column>
@@ -67,19 +124,70 @@
         </el-table-column>
       </el-table>
 
-        <el-pagination
-        v-model:current-page="pagination.page"
-        v-model:page-size="pagination.pageSize"
-        :page-sizes="[5, 10, 20]"
-        :small="false"
-        :disabled="loading"
-        :background="true"
-          layout="total, sizes, prev, pager, next, jumper"
-        :total="pagination.total"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        class="mt-20 flex-center"
-        />
+      <!-- 增强型分页组件 -->
+      <div class="pagination-container tech-pagination">
+        <div class="pagination-info">
+          <span>共 <span class="total-count">{{ pagination.total }}</span> 条记录，每页显示 
+            <el-select 
+              v-model="pagination.pageSize" 
+              @change="handleSizeChange"
+              class="page-size-select"
+              size="small"
+            >
+              <el-option label="5" :value="5" />
+              <el-option label="10" :value="10" />
+              <el-option label="20" :value="20" />
+              <el-option label="50" :value="50" />
+            </el-select> 条
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === 1 || loading"
+            @click="goToRolePage(1)"
+          >
+            首页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === 1 || loading"
+            @click="goToRolePage(pagination.page - 1)"
+          >
+            上一页
+          </el-button>
+          <div class="pagination-pages">
+            <button 
+              v-for="page in visiblePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: page === pagination.page }"
+              @click="goToRolePage(page)"
+              :disabled="loading"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === totalRolePages || loading"
+            @click="goToRolePage(pagination.page + 1)"
+          >
+            下一页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === totalRolePages || loading"
+            @click="goToRolePage(totalRolePages)"
+          >
+            末页
+          </el-button>
+        </div>
+      </div>
     </el-card>
 
     <el-dialog
@@ -180,7 +288,7 @@
 <script setup name="RoleManagementIntegrated">
 import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh, Edit, View, Delete } from '@element-plus/icons-vue';
+import { Plus, Refresh, Edit, View, Delete, Search, RefreshRight } from '@element-plus/icons-vue';
 import { roleApi } from '@/api/user';
 
 // ===================== 数据定义 =====================
@@ -200,6 +308,13 @@ const currentRole = reactive({
 
 // 角色数据
 const roleList = ref([]);
+
+// 搜索筛选数据
+const searchFilters = reactive({
+  roleName: '',
+  roleType: '',
+  status: ''
+});
 
 // 分页数据
 const pagination = reactive({
@@ -237,6 +352,32 @@ const paginatedRoles = computed(() => {
   return roleList.value;
 });
 
+// 总页数
+const totalRolePages = computed(() => {
+  return Math.ceil(pagination.total / pagination.pageSize) || 1;
+});
+
+// 可见页码（类似HTML版本的分页逻辑）
+const visiblePages = computed(() => {
+  const maxVisiblePages = 5;
+  const totalPages = totalRolePages.value;
+  const currentPage = pagination.page;
+  
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  
+  // 调整起始页
+  if (endPage - startPage + 1 < maxVisiblePages) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
+  
+  const pages = [];
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+  return pages;
+});
+
 // ===================== 方法 =====================
 
 /**
@@ -245,16 +386,35 @@ const paginatedRoles = computed(() => {
 const getRoleList = async () => {
   try {
     loading.value = true;
+    
+    // 构建查询参数 - 与HTML版本保持一致
+    const params = {
+      page: pagination.page,
+      size: pagination.pageSize
+    };
+    
+    // 添加搜索筛选参数 - 修复类型不匹配问题
+    if (searchFilters.roleName.trim()) {
+      params.role_name = searchFilters.roleName.trim();
+    }
+    if (searchFilters.roleType !== '') {
+      // 确保role_type参数为数字类型，符合后端期望
+      params.role_type = parseInt(searchFilters.roleType);
+    }
+    if (searchFilters.status !== '') {
+      // 确保status参数为数字类型，符合后端期望
+      params.status = parseInt(searchFilters.status);
+    }
+    
     console.log('正在获取角色列表...', {
       page: pagination.page,
       pageSize: pagination.pageSize,
+      filters: searchFilters,
+      params,
       token: localStorage.getItem('token') ? '已设置' : '未设置'
     });
     
-    const response = await roleApi.getRoleList({
-      pageNum: pagination.page,
-      pageSize: pagination.pageSize
-    });
+    const response = await roleApi.getRoleList(params);
     
     console.log('角色列表API响应:', response);
     
@@ -334,6 +494,25 @@ const getPermissionList = async () => {
  * 刷新角色列表
  */
 const getRoles = () => {
+  getRoleList();
+};
+
+/**
+ * 搜索角色
+ */
+const searchRoles = () => {
+  pagination.page = 1; // 重置到第一页
+  getRoleList();
+};
+
+/**
+ * 重置角色筛选条件
+ */
+const resetRoleFilters = () => {
+  searchFilters.roleName = '';
+  searchFilters.roleType = '';
+  searchFilters.status = '';
+  pagination.page = 1;
   getRoleList();
 };
 
@@ -502,11 +681,17 @@ const handleSizeChange = (val) => {
   getRoleList();
 };
 
+
+
 /**
- * 处理当前页码变化
+ * 跳转到指定页面（类似HTML版本的goToRolePage）
+ * @param {number} page - 目标页码
  */
-const handleCurrentChange = (val) => {
-  pagination.page = val;
+const goToRolePage = (page) => {
+  if (page < 1 || page > totalRolePages.value || page === pagination.page || loading.value) {
+    return;
+  }
+  pagination.page = page;
   getRoleList();
 };
 
@@ -526,10 +711,85 @@ onMounted(() => {
 .tech-page-container {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  min-height: 100vh; /* 最小高度为视口高度，允许内容撑开 */
+  max-height: 100vh; /* 最大高度为视口高度，超出时滚动 */
   padding: 20px;
+  padding-bottom: 40px; /* 底部额外留白，确保分页控件可见 */
   background: transparent; /* 使用全局背景 */
-  overflow: auto;
+  overflow-y: auto; /* 垂直滚动 */
+  overflow-x: hidden; /* 隐藏水平滚动 */
+  box-sizing: border-box; /* 包含padding在内的盒子模型 */
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 优化表格容器，避免双滚动条 */
+.tech-table {
+  background: transparent !important;
+  max-height: none; /* 取消最大高度限制 */
+}
+
+/* 确保对话框内也有合适的滚动 */
+:deep(.el-dialog__body) {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* 对话框内的滚动条样式 */
+:deep(.el-dialog__body)::-webkit-scrollbar {
+  width: 6px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-dialog__body)::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+:deep(.el-dialog__body)::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 3px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+:deep(.el-dialog__body)::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
 }
 
 /* 科技感背景 */
@@ -892,10 +1152,214 @@ onMounted(() => {
   border-radius: 4px !important;
 }
 
+/* 搜索筛选样式 */
+.search-filters-card {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+}
+
+.search-filters-header {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.filter-title {
+  color: #00ffff;
+  font-weight: bold;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.search-filters-content {
+  padding: 0;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-item label {
+  color: #00ffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.tech-input :deep(.el-input__wrapper),
+.tech-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-input :deep(.el-input__inner),
+.tech-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 增强型分页样式 */
+.tech-pagination {
+  margin-top: 20px;
+  margin-bottom: 20px; /* 确保底部有足够空间 */
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  position: relative; /* 确保分页组件在正确的层级 */
+  z-index: 1; /* 确保分页组件不被其他元素遮挡 */
+}
+
+.pagination-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.pagination-info .total-count {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.page-size-select {
+  margin: 0 5px;
+  width: 80px;
+}
+
+.page-size-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  height: 28px !important;
+}
+
+.page-size-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 12px !important;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.pagination-btn:disabled {
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
+}
+
+.page-btn {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.page-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  color: white;
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.page-btn:disabled {
+  background: rgba(0, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.1);
+  cursor: not-allowed;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .tech-page-container {
     padding: 10px;
+  }
+  
+  .filter-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  
+  .filter-actions {
+    grid-column: span 2;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  
+  .pagination-container {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .title-main {

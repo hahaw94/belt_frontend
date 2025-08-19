@@ -85,14 +85,21 @@ export const userApi = {
 
   // 获取用户列表
   getUserList(params) {
-    // 后端期望的参数格式：page, size（不是pageNum, pageSize）
+    // 后端期望的参数格式：page, size
     const backendParams = {
-      page: params.pageNum || params.page || 1,
-      size: params.pageSize || params.size || 10,
-      username: params.username,
-      email: params.email,
-      status: params.status
+      page: params.page || 1,
+      size: params.size || 10
     }
+    
+    // 添加搜索筛选参数（只添加非空值，确保类型正确）
+    if (params.username) backendParams.username = params.username
+    if (params.email) backendParams.email = params.email
+    if (params.status !== undefined && params.status !== '') {
+      // 确保status为数字类型，符合后端int8期望
+      backendParams.status = typeof params.status === 'string' ? parseInt(params.status) : params.status
+    }
+    
+    console.log('发送到后端的用户列表参数:', backendParams)
     return api.get('/api/v1/users', { params: backendParams })
   },
 
@@ -172,14 +179,24 @@ export const roleApi = {
 
   // 获取角色列表
   getRoleList(params) {
-    // 后端期望的参数格式：page, size（不是pageNum, pageSize）
+    // 后端期望的参数格式：page, size
     const backendParams = {
-      page: params?.pageNum || params?.page || 1,
-      size: params?.pageSize || params?.size || 10,
-      role_name: params?.role_name,
-      role_type: params?.role_type,
-      status: params?.status
+      page: params?.page || 1,
+      size: params?.size || 10
     }
+    
+    // 添加搜索筛选参数（只添加非空值，确保类型正确）
+    if (params?.role_name) backendParams.role_name = params.role_name
+    if (params?.role_type !== undefined && params?.role_type !== '') {
+      // 确保role_type为数字类型，符合后端int8期望
+      backendParams.role_type = typeof params.role_type === 'string' ? parseInt(params.role_type) : params.role_type
+    }
+    if (params?.status !== undefined && params?.status !== '') {
+      // 确保status为数字类型，符合后端int8期望
+      backendParams.status = typeof params.status === 'string' ? parseInt(params.status) : params.status
+    }
+    
+    console.log('发送到后端的角色列表参数:', backendParams)
     return api.get('/api/v1/roles', { params: backendParams })
   },
 

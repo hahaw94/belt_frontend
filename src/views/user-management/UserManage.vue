@@ -18,6 +18,60 @@
         </div>
       </template>
 
+      <!-- 用户搜索和筛选 -->
+      <div class="search-filters-card tech-card mb-20">
+        <div class="search-filters-header">
+          <span class="filter-title">搜索筛选</span>
+        </div>
+        <div class="search-filters-content">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label for="userNameFilter">用户名</label>
+              <el-input
+                v-model="searchFilters.username"
+                id="userNameFilter"
+                placeholder="搜索用户名"
+                class="tech-input"
+                clearable
+                @keyup.enter="searchUsers"
+                @clear="searchUsers"
+              />
+            </div>
+            <div class="filter-item">
+              <label for="userEmailFilter">邮箱</label>
+              <el-input
+                v-model="searchFilters.email"
+                id="userEmailFilter"
+                placeholder="搜索邮箱"
+                class="tech-input"
+                clearable
+                @keyup.enter="searchUsers"
+                @clear="searchUsers"
+              />
+            </div>
+            <div class="filter-item">
+              <label for="userStatusFilter">状态</label>
+              <el-select
+                v-model="searchFilters.status"
+                id="userStatusFilter"
+                placeholder="全部"
+                class="tech-select"
+                clearable
+                @change="searchUsers"
+              >
+                <el-option label="全部" value="" />
+                <el-option label="正常" value="1" />
+                <el-option label="锁定" value="0" />
+              </el-select>
+            </div>
+            <div class="filter-actions">
+              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="searchUsers">搜索</el-button>
+              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetUserFilters">重置</el-button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <el-table :data="paginatedUsers" v-loading="loading" border stripe class="tech-table" style="width: 100%;">
         <el-table-column prop="id" label="ID" width="80" align="center" header-align="center"></el-table-column>
         <el-table-column prop="username" label="用户名" min-width="120" header-align="center"></el-table-column>
@@ -63,19 +117,69 @@
         </el-table-column>
       </el-table>
 
-      <el-pagination
-                  v-model:current-page="pagination.page"
-        v-model:page-size="pagination.pageSize"
-          :page-sizes="[5, 10, 20]"
-          :small="false"
-          :disabled="loading"
-          :background="true"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="pagination.total"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-          class="mt-20 flex-center"
-      />
+      <!-- 增强型分页组件 -->
+      <div class="pagination-container tech-pagination">
+        <div class="pagination-info">
+          <span>共 <span class="total-count">{{ pagination.total }}</span> 条记录，每页显示 
+            <el-select 
+              v-model="pagination.pageSize" 
+              @change="handleSizeChange"
+              class="page-size-select"
+              size="small"
+            >
+              <el-option label="10" :value="10" />
+              <el-option label="20" :value="20" />
+              <el-option label="50" :value="50" />
+            </el-select> 条
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === 1 || loading"
+            @click="goToUserPage(1)"
+          >
+            首页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === 1 || loading"
+            @click="goToUserPage(pagination.page - 1)"
+          >
+            上一页
+          </el-button>
+          <div class="pagination-pages">
+            <button 
+              v-for="page in visiblePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: page === pagination.page }"
+              @click="goToUserPage(page)"
+              :disabled="loading"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === totalUserPages || loading"
+            @click="goToUserPage(pagination.page + 1)"
+          >
+            下一页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === totalUserPages || loading"
+            @click="goToUserPage(totalUserPages)"
+          >
+            末页
+          </el-button>
+        </div>
+      </div>
     </el-card>
 
     <el-dialog
@@ -402,7 +506,7 @@
 <script setup name="UserManagementIntegrated">
 import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh, Edit, Key, CircleClose, Select, Delete, Upload, Download } from '@element-plus/icons-vue';
+import { Plus, Refresh, Edit, Key, CircleClose, Select, Delete, Upload, Download, Search, RefreshRight } from '@element-plus/icons-vue';
 import { userApi, roleApi } from '@/api/user';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -446,10 +550,17 @@ const availableRoles = ref([]);
 // 用户数据
 const userList = ref([]);
 
-// 分页数据
+// 搜索筛选数据
+const searchFilters = reactive({
+  username: '',
+  email: '',
+  status: ''
+});
+
+// 分页数据（按照HTML版本的分页配置）
 const pagination = reactive({
   page: 1,
-  pageSize: 10,
+  pageSize: 10, // 修复为10，与HTML版本保持一致，这样12条数据会分为2页
   total: 0
 });
 
@@ -498,6 +609,52 @@ const paginatedUsers = computed(() => {
   return userList.value;
 });
 
+// 总页数（完全按照HTML版本的计算逻辑）
+const totalUserPages = computed(() => {
+  const totalPages = Math.ceil(pagination.total / pagination.pageSize) || 1;
+  
+  // 调试信息
+  console.log('========== 总页数计算 ==========');
+  console.log('总数据量:', pagination.total);
+  console.log('每页条数:', pagination.pageSize);
+  console.log('计算的总页数:', totalPages);
+  
+  return totalPages;
+});
+
+// 可见页码（完全按照HTML版本的分页逻辑实现）
+const visiblePages = computed(() => {
+  const maxVisiblePages = 5;
+  const totalPages = totalUserPages.value;
+  const currentPage = pagination.page;
+  
+  console.log('========== 可见页码计算 ==========');
+  console.log('总页数:', totalPages);
+  console.log('当前页码:', currentPage);
+  console.log('最大可见页数:', maxVisiblePages);
+  
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+  
+  // 调整起始页 - 与HTML版本保持一致
+  if (endPage - startPage + 1 < maxVisiblePages) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
+  
+  const pages = [];
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+  
+  console.log('可见页码范围:', {
+    startPage,
+    endPage,
+    pages
+  });
+  
+  return pages;
+});
+
 // 是否可以提交批量创建
 const canSubmitBatch = computed(() => {
   if (batchCreateActiveTab.value === 'manual') {
@@ -510,41 +667,54 @@ const canSubmitBatch = computed(() => {
 // ===================== 方法 =====================
 
 /**
- * 获取用户列表
+ * 获取用户列表（完全按照HTML版本的分页逻辑实现）
  */
-const getUserList = async () => {
+const getUserList = async (page = pagination.page) => {
   try {
     loading.value = true;
-    console.log('正在获取用户列表...', {
-      page: pagination.page,
-      pageSize: pagination.pageSize,
-      token: localStorage.getItem('token') ? '已设置' : '未设置'
-    });
     
-    const response = await userApi.getUserList({
-      pageNum: pagination.page,
-      pageSize: pagination.pageSize
-    });
+    // 确保分页参数的正确性
+    if (page < 1) page = 1;
+    pagination.page = page;
     
-    console.log('用户列表API响应:', response);
+    // 构建查询参数 - 完全按照HTML版本的参数格式
+    const params = {
+      page: page,
+      size: pagination.pageSize
+    };
+    
+    // 添加搜索筛选参数 - 修复类型不匹配问题
+    if (searchFilters.username.trim()) {
+      params.username = searchFilters.username.trim();
+    }
+    if (searchFilters.email.trim()) {
+      params.email = searchFilters.email.trim();
+    }
+    if (searchFilters.status !== '') {
+      // 确保status参数为数字类型，符合后端期望
+      params.status = parseInt(searchFilters.status);
+    }
+    
+    console.log('========== 用户分页API调用 ==========');
+    console.log('请求参数:', params);
+    console.log('当前页码:', page);
+    console.log('每页大小:', pagination.pageSize);
+    console.log('期望总数据: 12条');
+    
+    const response = await userApi.getUserList(params);
+    
+    console.log('========== API响应分析 ==========');
+    console.log('完整响应:', response);
+    console.log('数据列表长度:', response.data?.length);
+    console.log('分页信息:');
+    console.log('  total:', response.total);
+    console.log('  page:', response.page);
+    console.log('  size:', response.size);
     
     if (response.code === 200 && response.success) {
-      // 后端使用PageResponse格式：{code, message, data: [...], total, page, size}
       const userListData = response.data || [];
       
-      console.log('原始用户数据:', {
-        data: response.data,
-        total: response.total,
-        page: response.page,
-        size: response.size
-      });
-      
-      // 调试角色数据结构
-      if (userListData.length > 0 && userListData[0].roles) {
-        console.log('第一个用户的角色数据结构:', userListData[0].roles);
-      }
-      
-      // 处理API返回的字段名称映射
+      // 处理用户数据 - 与HTML版本保持一致的数据处理
       const processedUsers = Array.isArray(userListData) ? userListData.map(user => ({
         ...user,
         id: user.id,
@@ -557,18 +727,50 @@ const getUserList = async () => {
         roles: (user.roles || []).map(role => ({
           ...role,
           id: role.id,
-          name: role.role_name || role.name, // 兼容不同的角色名称字段
+          name: role.role_name || role.name,
           description: role.description
         }))
       })) : [];
       
+      // 更新数据和分页信息 - 按照HTML版本的逻辑
       userList.value = processedUsers;
-      pagination.total = response.total || processedUsers.length;
+      pagination.total = response.total || 0;
+      pagination.page = response.page || page;
+      
+      // 计算总页数 - 与HTML版本保持一致
+      const calculatedTotalPages = Math.ceil(pagination.total / pagination.pageSize) || 1;
+      
+      console.log('========== 分页数据更新结果 ==========');
+      console.log('当前页数据量:', processedUsers.length);
+      console.log('总数据量:', pagination.total);
+      console.log('当前页码:', pagination.page);
+      console.log('每页大小:', pagination.pageSize);
+      console.log('计算的总页数:', calculatedTotalPages);
+      console.log('当前是否在第二页:', pagination.page === 2);
+      
+      // 如果是12条数据，每页10条，应该有2页
+      if (pagination.total === 12 && pagination.pageSize === 10) {
+        console.log('🔍 12条数据，每页10条的分页测试:');
+        console.log('  第1页应显示: 10条数据');
+        console.log('  第2页应显示: 2条数据');
+        console.log('  当前页码:', pagination.page);
+        console.log('  当前页数据量:', processedUsers.length);
+        
+        if (pagination.page === 2 && processedUsers.length === 0) {
+          console.error('❌ 问题：第二页没有数据！可能的原因：');
+          console.error('1. 后端分页逻辑问题');
+          console.error('2. API参数传递问题');
+          console.error('3. 数据库查询问题');
+        } else if (pagination.page === 2 && processedUsers.length === 2) {
+          console.log('✅ 正确：第二页显示了剩余的2条数据');
+        }
+      }
+      
     } else {
       throw new Error(response.message || '获取用户列表失败');
     }
   } catch (error) {
-    console.error('获取用户列表失败详情:', error);
+    console.error('获取用户列表失败:', error);
     ElMessage.error(error.message || '获取用户列表失败');
   } finally {
     loading.value = false;
@@ -581,7 +783,8 @@ const getUserList = async () => {
 const getRoleList = async () => {
   try {
     console.log('正在获取可用角色列表...');
-    const response = await roleApi.getRoleList();
+    // 获取所有角色，设置较大的size值确保获取所有可用角色
+    const response = await roleApi.getRoleList({ page: 1, size: 100 });
     console.log('角色列表API响应:', response);
     
     if (response.code === 200 && response.success) {
@@ -615,6 +818,39 @@ const getRoleList = async () => {
  */
 const getUsers = () => {
   getUserList();
+};
+
+
+
+/**
+ * 搜索用户（按照HTML版本的searchUsers实现）
+ */
+const searchUsers = () => {
+  console.log('========== 搜索用户 ==========');
+  console.log('搜索条件:', searchFilters);
+  
+  pagination.page = 1; // 重置到第一页 - 与HTML版本保持一致
+  console.log('重置页码到第1页');
+  
+  getUserList(1);
+};
+
+/**
+ * 重置用户筛选条件（按照HTML版本的resetUserFilters实现）
+ */
+const resetUserFilters = () => {
+  console.log('========== 重置筛选条件 ==========');
+  console.log('原筛选条件:', { ...searchFilters });
+  
+  searchFilters.username = '';
+  searchFilters.email = '';
+  searchFilters.status = '';
+  pagination.page = 1;
+  
+  console.log('重置后筛选条件:', { ...searchFilters });
+  console.log('重置页码到第1页');
+  
+  getUserList(1);
 };
 
 /**
@@ -837,22 +1073,50 @@ const handleDeleteUser = async (row) => {
 };
 
 /**
- * 处理每页显示条数变化
+ * 处理每页显示条数变化（按照HTML版本的changeUsersPageSize实现）
  * @param {number} val - 新的每页条数
  */
 const handleSizeChange = (val) => {
-  pagination.pageSize = val;
-  pagination.page = 1; // 改变每页大小时，重置到第一页
-  getUserList();
+  console.log('========== 每页条数变化 ==========');
+  console.log('原每页条数:', pagination.pageSize);
+  console.log('新每页条数:', val);
+  console.log('原页码:', pagination.page);
+  
+  pagination.pageSize = parseInt(val);
+  pagination.page = 1; // 重置到第一页 - 与HTML版本保持一致
+  
+  console.log('更新后每页条数:', pagination.pageSize);
+  console.log('重置页码到:', pagination.page);
+  
+  getUserList(1);
 };
 
+
+
 /**
- * 处理当前页码变化
- * @param {number} val - 新的当前页码
+ * 跳转到指定页面（完全按照HTML版本的goToUserPage实现）
+ * @param {number} page - 目标页码
  */
-const handleCurrentChange = (val) => {
-  pagination.page = val;
-  getUserList();
+const goToUserPage = (page) => {
+  console.log('========== 页码跳转 ==========');
+  console.log('目标页码:', page);
+  console.log('当前页码:', pagination.page);
+  console.log('总页数:', totalUserPages.value);
+  console.log('是否正在加载:', loading.value);
+  
+  // 页码验证 - 与HTML版本保持一致
+  if (page < 1 || page > totalUserPages.value || page === pagination.page || loading.value) {
+    console.log('页码跳转被阻止 - 原因:', {
+      pageInvalid: page < 1,
+      pageExceedsMax: page > totalUserPages.value,
+      sameAsCurrentPage: page === pagination.page,
+      isLoading: loading.value
+    });
+    return;
+  }
+  
+  console.log('✅ 执行页码跳转到第', page, '页');
+  getUserList(page);
 };
 
 /**
@@ -1394,7 +1658,14 @@ const submitBatchCreate = async () => {
 
 // ===================== 生命周期钩子 =====================
 onMounted(() => {
-  getUserList(); // 组件挂载时加载用户数据
+  console.log('========== 组件初始化 ==========');
+  console.log('初始分页配置:', {
+    page: pagination.page,
+    pageSize: pagination.pageSize,
+    total: pagination.total
+  });
+  
+  getUserList(1); // 组件挂载时加载第一页用户数据
   getRoleList(); // 组件挂载时加载角色数据
 });
 </script>
@@ -1406,10 +1677,85 @@ onMounted(() => {
 .tech-page-container {
   position: relative;
   width: 100%;
-  min-height: 100vh;
+  min-height: 100vh; /* 最小高度为视口高度，允许内容撑开 */
+  max-height: 100vh; /* 最大高度为视口高度，超出时滚动 */
   padding: 20px;
+  padding-bottom: 40px; /* 底部额外留白，确保分页控件可见 */
   background: transparent; /* 使用全局背景 */
-  overflow: auto;
+  overflow-y: auto; /* 垂直滚动 */
+  overflow-x: hidden; /* 隐藏水平滚动 */
+  box-sizing: border-box; /* 包含padding在内的盒子模型 */
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 优化表格容器，避免双滚动条 */
+.tech-table {
+  background: transparent !important;
+  max-height: none; /* 取消最大高度限制 */
+}
+
+/* 确保对话框内也有合适的滚动 */
+:deep(.el-dialog__body) {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* 对话框内的滚动条样式 */
+:deep(.el-dialog__body)::-webkit-scrollbar {
+  width: 6px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+:deep(.el-dialog__body)::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+:deep(.el-dialog__body)::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 3px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+:deep(.el-dialog__body)::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
 }
 
 /* 科技感背景 */
@@ -1915,10 +2261,214 @@ onMounted(() => {
   color: #ff4757 !important;
 }
 
+/* 搜索筛选样式 */
+.search-filters-card {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+}
+
+.search-filters-header {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.filter-title {
+  color: #00ffff;
+  font-weight: bold;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.search-filters-content {
+  padding: 0;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-item label {
+  color: #00ffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.tech-input :deep(.el-input__wrapper),
+.tech-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-input :deep(.el-input__inner),
+.tech-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 增强型分页样式 */
+.tech-pagination {
+  margin-top: 20px;
+  margin-bottom: 20px; /* 确保底部有足够空间 */
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  position: relative; /* 确保分页组件在正确的层级 */
+  z-index: 1; /* 确保分页组件不被其他元素遮挡 */
+}
+
+.pagination-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.pagination-info .total-count {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.page-size-select {
+  margin: 0 5px;
+  width: 80px;
+}
+
+.page-size-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  height: 28px !important;
+}
+
+.page-size-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 12px !important;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.pagination-btn:disabled {
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
+}
+
+.page-btn {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.page-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  color: white;
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.page-btn:disabled {
+  background: rgba(0, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.1);
+  cursor: not-allowed;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .tech-page-container {
     padding: 10px;
+  }
+  
+  .filter-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  
+  .filter-actions {
+    grid-column: span 2;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  
+  .pagination-container {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
   }
   
   .title-main {
