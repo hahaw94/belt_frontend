@@ -114,6 +114,29 @@ export const userApi = {
   // 用户个人资料管理 - 删除
   deleteUserProfile(userId) {
     return api.delete(`/api/v1/users/${userId}/profile`)
+  },
+
+  // 批量创建用户
+  batchCreateUsers(data) {
+    return api.post('/api/v1/users/batch', data)
+  },
+
+  // 从文件批量创建用户
+  batchCreateUsersFromFile(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post('/api/v1/users/batch/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  // 下载用户导入模板
+  downloadUserTemplate() {
+    return api.get('/api/v1/users/template', {
+      responseType: 'blob'
+    })
   }
 }
 

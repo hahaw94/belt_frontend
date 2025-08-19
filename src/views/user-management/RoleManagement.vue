@@ -99,16 +99,24 @@
         <el-form-item label="角色名称" prop="name">
           <el-input 
             v-model="currentRole.name" 
+            :disabled="isEditMode"
             placeholder="请输入角色名称"
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
+          <div v-if="isEditMode" class="form-hint">
+            编辑模式下角色名称不可修改
+          </div>
         </el-form-item>
         <el-form-item label="角色编码" prop="code">
           <el-input 
             v-model="currentRole.code" 
+            :disabled="isEditMode"
             placeholder="请输入角色编码（如：security）"
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
+          <div v-if="isEditMode" class="form-hint">
+            编辑模式下角色编码不可修改
+          </div>
         </el-form-item>
         <el-form-item label="角色描述" prop="description">
           <el-input 
@@ -367,6 +375,7 @@ const handleEditRole = async (row) => {
     
     Object.assign(currentRole, { 
       ...row, 
+      code: roleDetailResponse.data.role_code || row.role_code || '', // 确保显示正确的角色编码
       permissions: permissions.map(p => p.id) // 使用权限ID
     });
     
@@ -815,6 +824,14 @@ onMounted(() => {
   color: rgba(255, 255, 255, 0.6);
   margin-top: 8px;
   text-align: center;
+}
+
+/* 表单提示文字样式 */
+.form-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6) !important;
+  margin-top: 4px;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
 }
 
 .permission-detail h4 {

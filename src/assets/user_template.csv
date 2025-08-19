@@ -1,0 +1,4 @@
+用户名,邮箱,手机号,角色代码
+zhansan1,zhangsan@example.com,13800138001,operator
+lisi1,lisi@example.com,13800138002,admin;operator
+wangwu1,wangwu@example.com,13800138003,root
