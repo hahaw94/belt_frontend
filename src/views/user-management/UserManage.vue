@@ -61,7 +61,7 @@
               >
                 <el-option label="全部" value="" />
                 <el-option label="正常" value="1" />
-                <el-option label="锁定" value="0" />
+                <el-option label="锁定" value="2" />
               </el-select>
             </div>
             <div class="filter-actions">
@@ -76,7 +76,6 @@
         <el-table-column prop="id" label="ID" width="80" align="center" header-align="center"></el-table-column>
         <el-table-column prop="username" label="用户名" min-width="120" header-align="center"></el-table-column>
         <el-table-column prop="email" label="邮箱" min-width="150" header-align="center"></el-table-column>
-        <el-table-column prop="phone" label="电话" width="120" header-align="center"></el-table-column>
         <el-table-column prop="roles" label="角色" min-width="200" header-align="center">
           <template #default="{ row }">
             <el-tag
@@ -91,28 +90,27 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center" header-align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'success' : 'danger'">
-              {{ row.status === 'active' ? '正常' : '锁定' }}
+            <el-tag :type="getStatusType(row.status)">
+              {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" header-align="center"></el-table-column>
         <el-table-column prop="lastLogin" label="上次登录" width="180" header-align="center"></el-table-column>
-        <el-table-column label="操作" width="340" fixed="right" align="center" header-align="center">
+        <el-table-column label="操作" width="240" align="center" header-align="center">
           <template #default="{ row }">
             <el-button type="primary" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditUser(row)">编辑</el-button>
-            <el-button type="info" :icon="Key" size="small" class="tech-button-xs" @click="handleResetPassword(row)">重置密码</el-button>
             <el-button 
-              :type="row.status === 'active' ? 'warning' : 'success'" 
-              :icon="row.status === 'active' ? CircleClose : Select" 
+              :type="row.status === 1 ? 'warning' : 'success'" 
+              :icon="row.status === 1 ? CircleClose : Select" 
               size="small" 
               class="tech-button-xs"
               @click="toggleUserStatus(row)"
+              :disabled="row.status === 0"
             >
-              {{ row.status === 'active' ? '锁定' : '解锁' }}
+              {{ getStatusActionText(row.status) }}
             </el-button>
             <el-button type="danger" :icon="Delete" size="small" class="tech-button-xs" @click="handleDeleteUser(row)">删除</el-button>
-            <el-button type="warning" size="small" class="tech-button-xs" @click="handleManageRoles(row)">分配角色</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -218,6 +216,15 @@
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
         </el-form-item>
+        <!-- 编辑模式下的密码重置选项 -->
+        <el-form-item v-if="isEditMode" label="密码重置">
+          <el-checkbox v-model="passwordResetMode" @change="onPasswordResetModeChange">
+            重置用户密码
+          </el-checkbox>
+          <div class="form-hint" v-if="passwordResetMode">
+            勾选后可以为用户设置新密码
+          </div>
+        </el-form-item>
         <el-form-item label="密码" prop="password" v-if="passwordResetMode">
           <el-input 
             type="password" 
@@ -245,7 +252,7 @@
             show-icon
           />
         </div>
-        <el-form-item label="分配角色" prop="roleIds" v-if="!isEditMode">
+        <el-form-item label="分配角色" prop="roleIds">
           <el-select
             v-model="currentUser.roleIds"
             multiple
@@ -262,7 +269,7 @@
             </el-option>
           </el-select>
           <div class="form-hint">
-            添加用户时必须分配至少一个角色
+            {{ isEditMode ? '可以修改用户的角色分配' : '添加用户时必须分配至少一个角色' }}
           </div>
         </el-form-item>
         <el-form-item label="备注" prop="description">
@@ -283,39 +290,7 @@
       </template>
     </el-dialog>
 
-    <!-- 角色分配对话框 -->
-    <el-dialog
-      v-model="roleAssignDialogVisible"
-      title="分配角色"
-      width="500px"
-      :close-on-click-modal="false"
-      destroy-on-close
-      class="tech-dialog role-assign-dialog"
-      :style="{
-        '--el-dialog-bg-color': 'rgba(45, 55, 75, 0.92)',
-        '--el-dialog-header-bg-color': 'rgba(45, 55, 75, 0.92)',
-        '--el-dialog-content-bg-color': 'rgba(45, 55, 75, 0.92)'
-      }"
-    >
-      <div class="role-assign-content">
-        <h4>为用户 "{{ selectedUser.username }}" 分配角色</h4>
-        <el-checkbox-group v-model="selectedRoles" class="role-checkbox-group">
-          <el-checkbox
-            v-for="role in availableRoles"
-            :key="role.id"
-            :label="role.id"
-          >
-            {{ role.name }} - {{ role.description }}
-          </el-checkbox>
-        </el-checkbox-group>
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="roleAssignDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitRoleAssign" :loading="loading">保存</el-button>
-        </span>
-      </template>
-    </el-dialog>
+
 
     <!-- 批量创建用户对话框 -->
     <el-dialog
@@ -506,7 +481,7 @@
 <script setup name="UserManagementIntegrated">
 import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh, Edit, Key, CircleClose, Select, Delete, Upload, Download, Search, RefreshRight } from '@element-plus/icons-vue';
+import { Plus, Refresh, Edit, CircleClose, Select, Delete, Upload, Download, Search, RefreshRight } from '@element-plus/icons-vue';
 import { userApi, roleApi } from '@/api/user';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
@@ -514,7 +489,7 @@ import * as XLSX from 'xlsx';
 // ===================== 数据定义 =====================
 const loading = ref(false); // 表格加载状态
 const userDialogVisible = ref(false); // 控制添加/编辑用户弹窗的显示
-const roleAssignDialogVisible = ref(false); // 控制角色分配弹窗的显示
+
 const isEditMode = ref(false); // 是否是编辑模式
 const passwordResetMode = ref(false); // 是否处于密码重置模式（编辑用户时可选择重置密码）
 
@@ -537,14 +512,12 @@ const currentUser = reactive({
   password: '',
   confirmPassword: '',
   roleIds: [], // 添加角色ID数组
-  status: 'active', // 默认正常状态
+  status: 1, // 默认正常状态：0=禁用，1=正常，2=锁定
   createTime: '',
   lastLogin: '',
 });
 
-// 角色分配相关数据
-const selectedUser = ref({});
-const selectedRoles = ref([]);
+// 角色数据
 const availableRoles = ref([]);
 
 // 用户数据
@@ -690,10 +663,18 @@ const getUserList = async (page = pagination.page) => {
     if (searchFilters.email.trim()) {
       params.email = searchFilters.email.trim();
     }
-    if (searchFilters.status !== '') {
+    if (searchFilters.status !== '' && searchFilters.status !== null && searchFilters.status !== undefined) {
       // 确保status参数为数字类型，符合后端期望
-      params.status = parseInt(searchFilters.status);
-    }
+      const statusValue = parseInt(searchFilters.status);
+      if (!isNaN(statusValue)) {
+        params.status = statusValue;
+        console.log('状态搜索参数:', {
+          原始值: searchFilters.status,
+          转换后: params.status,
+          类型: typeof params.status
+        });
+      }
+       }
     
     console.log('========== 用户分页API调用 ==========');
     console.log('请求参数:', params);
@@ -723,7 +704,7 @@ const getUserList = async (page = pagination.page) => {
         phone: user.phone,
         createTime: user.create_time ? new Date(user.create_time).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN'),
         lastLogin: user.last_login_at ? new Date(user.last_login_at).toLocaleString('zh-CN') : '从未登录',
-        status: user.status === 1 ? 'active' : 'locked',
+        status: user.status, // 保持原始数字状态值：0=禁用，1=正常，2=锁定
         roles: (user.roles || []).map(role => ({
           ...role,
           id: role.id,
@@ -828,6 +809,13 @@ const getUsers = () => {
 const searchUsers = () => {
   console.log('========== 搜索用户 ==========');
   console.log('搜索条件:', searchFilters);
+  console.log('状态搜索详情:', {
+    状态值: searchFilters.status,
+    状态类型: typeof searchFilters.status,
+    是否为空字符串: searchFilters.status === '',
+    是否为null: searchFilters.status === null,
+    是否为undefined: searchFilters.status === undefined
+  });
   
   pagination.page = 1; // 重置到第一页 - 与HTML版本保持一致
   console.log('重置页码到第1页');
@@ -869,7 +857,7 @@ const handleAddUser = () => {
     password: '',
     confirmPassword: '',
     roleIds: [], // 重置角色选择
-    status: 'active',
+    status: 1, // 默认正常状态
     createTime: '',
     lastLogin: '',
   });
@@ -887,11 +875,35 @@ const handleAddUser = () => {
 const handleEditUser = (row) => {
   isEditMode.value = true;
   passwordResetMode.value = false; // 编辑时默认不重置密码，可后续单独重置
-  Object.assign(currentUser, { ...row, password: '', confirmPassword: '' }); // 复制数据，密码清空不显示
+  
+  // 复制数据，密码清空不显示，并设置角色ID数组
+  const userRoleIds = (row.roles || []).map(role => role.id);
+  Object.assign(currentUser, { 
+    ...row, 
+    password: '', 
+    confirmPassword: '', // 清空确认密码字段
+    roleIds: userRoleIds // 设置当前用户的角色ID数组
+  });
+  
   userDialogVisible.value = true;
   // 清除上次的表单验证
   if (userFormRef.value) {
     userFormRef.value.clearValidate();
+  }
+};
+
+/**
+ * 密码重置模式切换处理
+ */
+const onPasswordResetModeChange = () => {
+  if (!passwordResetMode.value) {
+    // 取消密码重置时清空密码字段
+    currentUser.password = '';
+    currentUser.confirmPassword = '';
+    // 清除密码相关的验证错误
+    if (userFormRef.value) {
+      userFormRef.value.clearValidate(['password', 'confirmPassword']);
+    }
   }
 };
 
@@ -909,26 +921,40 @@ const submitUserForm = async () => {
         const { confirmPassword, ...userData } = currentUser;
         
         if (isEditMode.value) {
-          // 编辑用户
-          if (passwordResetMode.value) {
-            // 重置密码
-            const response = await userApi.resetPassword(currentUser.id, currentUser.password);
-            if (response.code === 200 && response.success) {
-              ElMessage.success(`用户 ${currentUser.username} 密码重置成功！`);
-            } else {
-              throw new Error(response.message || '密码重置失败');
-            }
+          // 编辑用户 - 需要处理用户信息更新、角色分配和密码重置
+          let successMessages = [];
+          
+          // 1. 更新用户基本信息
+          // eslint-disable-next-line no-unused-vars
+          const { password, confirmPassword, roleIds, ...updateData } = userData;
+          const userUpdateResponse = await userApi.updateUser(currentUser.id, updateData);
+          if (userUpdateResponse.code === 200 && userUpdateResponse.success) {
+            successMessages.push('用户信息更新成功');
           } else {
-            // 更新用户信息（不包含密码）
-            // eslint-disable-next-line no-unused-vars
-            const { password, ...updateData } = userData;
-            const response = await userApi.updateUser(currentUser.id, updateData);
-            if (response.code === 200 && response.success) {
-              ElMessage.success(`用户 ${currentUser.username} 更新成功！`);
+            throw new Error(userUpdateResponse.message || '更新用户信息失败');
+          }
+          
+          // 2. 更新角色分配
+          if (roleIds && roleIds.length > 0) {
+            const roleResponse = await roleApi.assignUserRole(currentUser.id, roleIds);
+            if (roleResponse.code === 200 && roleResponse.success) {
+              successMessages.push('角色分配成功');
             } else {
-              throw new Error(response.message || '更新用户失败');
+              throw new Error(roleResponse.message || '角色分配失败');
             }
           }
+          
+          // 3. 重置密码（如果需要）
+          if (passwordResetMode.value && password) {
+            const passwordResponse = await userApi.resetPassword(currentUser.id, password);
+            if (passwordResponse.code === 200 && passwordResponse.success) {
+              successMessages.push('密码重置成功');
+            } else {
+              throw new Error(passwordResponse.message || '密码重置失败');
+            }
+          }
+          
+          ElMessage.success(`用户 ${currentUser.username} ${successMessages.join('，')}！`);
         } else {
           // 添加用户 - 添加调试信息
           // 添加用户 - 后端会自动生成初始密码
@@ -978,21 +1004,7 @@ const submitUserForm = async () => {
   });
 };
 
-/**
- * 处理重置密码按钮点击
- * @param {Object} row - 当前行用户数据
- */
-const handleResetPassword = (row) => {
-  isEditMode.value = true;
-  passwordResetMode.value = true; // 启用密码重置模式
-  Object.assign(currentUser, { ...row, password: '', confirmPassword: '' }); // 清空密码字段以便重新输入
-  userDialogVisible.value = true;
-  // 清除上次的表单验证
-  if (userFormRef.value) {
-    userFormRef.value.clearValidate();
-  }
-  ElMessage.info(`正在为用户 ${row.username} 重置密码，请设置新密码。`);
-};
+
 
 
 /**
@@ -1000,7 +1012,14 @@ const handleResetPassword = (row) => {
  * @param {Object} row - 当前行用户数据
  */
 const toggleUserStatus = async (row) => {
-  const isLock = row.status === 'active';
+  // 状态值：0=禁用，1=正常，2=锁定
+  // 只能在正常(1)和锁定(2)之间切换，禁用(0)状态不可操作
+  if (row.status === 0) {
+    ElMessage.warning('禁用状态的用户无法进行锁定/解锁操作');
+    return;
+  }
+  
+  const isLock = row.status === 1; // 正常状态可以锁定
   const action = isLock ? '锁定' : '解锁';
   
   try {
@@ -1119,63 +1138,9 @@ const goToUserPage = (page) => {
   getUserList(page);
 };
 
-/**
- * 处理分配角色按钮点击
- * @param {Object} row - 当前行用户数据
- */
-const handleManageRoles = async (row) => {
-  selectedUser.value = { ...row };
-  
-  try {
-    loading.value = true;
-    
-    // 获取用户当前角色（通过用户详情）
-    const userDetailResponse = await userApi.getUserDetail(row.id);
-    if (userDetailResponse.code === 200 && userDetailResponse.success) {
-      const userRoles = userDetailResponse.data.roles || [];
-      // 后端返回的角色ID字段是 id，不是 roleId
-      selectedRoles.value = userRoles.map(role => role.id);
-    } else {
-      throw new Error(userDetailResponse.message || '获取用户角色失败');
-    }
-    
-    roleAssignDialogVisible.value = true;
-  } catch (error) {
-    ElMessage.error(error.message || '获取用户角色失败');
-  } finally {
-    loading.value = false;
-  }
-};
 
-/**
- * 提交角色分配
- */
-const submitRoleAssign = async () => {
-  try {
-    loading.value = true;
-    
-    // 直接使用分配用户角色API，因为它是替换操作（PUT方法），会完全替换用户的所有角色
-    console.log('分配角色参数:', {
-      userId: selectedUser.value.id,
-      roleIds: selectedRoles.value
-    });
-    
-    const response = await roleApi.assignUserRole(selectedUser.value.id, selectedRoles.value);
-    console.log('分配角色响应:', response);
-    
-    if (response.code !== 200 || !response.success) {
-      throw new Error(response.message || '分配角色失败');
-    }
-    
-    ElMessage.success(`用户 ${selectedUser.value.username} 角色分配成功！`);
-    roleAssignDialogVisible.value = false;
-    getUserList(); // 重新加载用户列表
-  } catch (error) {
-    ElMessage.error(error.message || '角色分配失败');
-  } finally {
-    loading.value = false;
-  }
-};
+
+
 
 /**
  * 处理批量创建用户按钮点击
@@ -1655,6 +1620,49 @@ const submitBatchCreate = async () => {
   }
 };
 
+// ===================== 状态辅助函数 =====================
+/**
+ * 获取状态对应的标签类型
+ * @param {number} status - 状态值：0=禁用，1=正常，2=锁定
+ * @returns {string} - Element Plus标签类型
+ */
+const getStatusType = (status) => {
+  switch (status) {
+    case 0: return 'info';    // 禁用 - 灰色
+    case 1: return 'success'; // 正常 - 绿色
+    case 2: return 'danger';  // 锁定 - 红色
+    default: return 'info';
+  }
+};
+
+/**
+ * 获取状态对应的文本
+ * @param {number} status - 状态值：0=禁用，1=正常，2=锁定
+ * @returns {string} - 状态文本
+ */
+const getStatusText = (status) => {
+  switch (status) {
+    case 0: return '禁用';
+    case 1: return '正常';
+    case 2: return '锁定';
+    default: return '未知';
+  }
+};
+
+/**
+ * 获取状态操作按钮文本
+ * @param {number} status - 状态值：0=禁用，1=正常，2=锁定
+ * @returns {string} - 操作按钮文本
+ */
+const getStatusActionText = (status) => {
+  switch (status) {
+    case 0: return '禁用'; // 禁用状态不可操作
+    case 1: return '锁定'; // 正常状态可以锁定
+    case 2: return '解锁'; // 锁定状态可以解锁
+    default: return '操作';
+  }
+};
+
 
 // ===================== 生命周期钩子 =====================
 onMounted(() => {
@@ -1664,6 +1672,27 @@ onMounted(() => {
     pageSize: pagination.pageSize,
     total: pagination.total
   });
+  
+  // 处理ResizeObserver错误 - 这是Element Plus表格组件的已知问题
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    if (args[0] && typeof args[0] === 'string' && args[0].includes('ResizeObserver loop completed')) {
+      // 忽略ResizeObserver错误，这是Element Plus表格的已知无害错误
+      return;
+    }
+    originalConsoleError.apply(console, args);
+  };
+  
+  // 处理未捕获的错误
+  const handleError = (event) => {
+    if (event.error && event.error.message && 
+        event.error.message.includes('ResizeObserver loop completed')) {
+      event.preventDefault();
+      return;
+    }
+  };
+  
+  window.addEventListener('error', handleError);
   
   getUserList(1); // 组件挂载时加载第一页用户数据
   getRoleList(); // 组件挂载时加载角色数据
@@ -1842,30 +1871,138 @@ onMounted(() => {
   transform: translateY(-1px) !important;
 }
 
-/* 科技感表格 */
+/* 科技感表格 - 彻底解决白线问题 */
 .tech-table {
-  background: transparent !important;
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
 }
 
-/* 表格头部样式 */
+/* 表格整体容器 - 彻底移除所有边框 */
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+  border-collapse: separate !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table::after) {
+  display: none !important;
+}
+
+/* 移除所有可能的白色边框和分隔线 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::before) {
+  display: none !important;
+}
+
+/* 移除表格外层的所有边框元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+}
+
+/* 强制移除Element Plus的默认边框样式 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table--border::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table--border::after) {
+  display: none !important;
+}
+
+/* 表格头部样式 - 参考图片的头部设计 */
 .tech-table :deep(.el-table__header-wrapper) {
-  background: transparent !important;
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
 }
 
 .tech-table :deep(.el-table__header-wrapper .el-table__header) {
-  background: transparent !important;
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border: none !important;
 }
 
 .tech-table :deep(.el-table__header-wrapper .el-table__header th) {
-  background: rgba(26, 26, 46, 0.8) !important;
-  color: #00ffff !important;
-  font-weight: bold !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-  text-align: center !important;
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px 12px !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
 }
 
-/* 表格主体样式 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+/* 表格头部发光效果 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.6) 50%, 
+    transparent 100%);
+  opacity: 0.8;
+}
+
+/* 表格主体样式 - 参考图片的行设计 */
 .tech-table :deep(.el-table__body-wrapper) {
   background: transparent !important;
 }
@@ -1875,53 +2012,220 @@ onMounted(() => {
 }
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
 }
 
-/* 移除斑马纹效果 */
-.tech-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
-  background: transparent !important;
-}
-
+/* 交替行颜色 - 创建微妙的斑马纹效果 */
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
-  background: transparent !important;
+  background: rgba(20, 30, 50, 0.7) !important;
 }
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
-  background: transparent !important;
+  background: rgba(25, 35, 55, 0.6) !important;
 }
 
-/* 悬停效果 */
+/* 悬停效果 - 参考图片的交互效果 */
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
-  background: rgba(0, 255, 255, 0.1) !important;
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
 }
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
   background: transparent !important;
+  color: rgba(255, 255, 255, 1) !important;
 }
 
-/* 单元格样式 */
+/* 单元格样式 - 参考图片的单元格设计 */
 .tech-table :deep(.el-table__body-wrapper .el-table__body td) {
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
   background: transparent !important;
+  padding: 14px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 彻底移除所有表格边框 - 最终解决方案 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
 }
 
 .tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
-  background-color: rgba(0, 255, 255, 0.2) !important;
+  display: none !important;
+  content: none !important;
 }
 
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::before) {
+  display: none !important;
+  content: none !important;
+}
+
+/* 移除所有边框补丁元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 单元格边框控制 */
 .tech-table :deep(.el-table--border td) {
+  border: none !important;
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border th) {
+  border: none !important;
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+/* 移除表格外围的所有可能边框 */
+.tech-table :deep(.el-table__body-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 最强力的边框移除 - 覆盖所有可能的边框样式 */
+.tech-table :deep(*) {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+}
+
+.tech-table :deep(th) {
+  border: none !important;
   border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
 }
 
-/* 确保整个表格容器透明 */
-.tech-table :deep(.el-table) {
-  background: transparent !important;
+.tech-table :deep(td:last-child),
+.tech-table :deep(th:last-child) {
+  border-right: none !important;
 }
 
-.tech-table :deep(.el-table::before) {
-  background-color: transparent !important;
+/* 移除表格容器本身的边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 专门针对左右边框的强力移除 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__header),
+.tech-table :deep(.el-table__body),
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__body-wrapper) {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* 强制移除表格左右的所有可能边框元素 */
+.tech-table::before,
+.tech-table::after,
+.tech-table :deep(.el-table)::before,
+.tech-table :deep(.el-table)::after,
+.tech-table :deep(.el-table__inner-wrapper)::before,
+.tech-table :deep(.el-table__inner-wrapper)::after {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
+/* 确保表格外层容器没有任何边框 */
+.tech-table {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+/* 数据为空时的样式 */
+.tech-table :deep(.el-table__empty-block) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__empty-text) {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 14px !important;
 }
 
 /* 分页组件样式 */
@@ -2482,6 +2786,47 @@ onMounted(() => {
   
   .permission-checkbox-group {
     grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* 小屏幕表格适配 */
+  .tech-table {
+    min-width: 800px; /* 确保表格有最小宽度，触发水平滚动 */
+  }
+  
+  /* 表格容器添加水平滚动 */
+  .tech-card :deep(.el-card__body) {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+  
+  /* 表格水平滚动条样式 */
+  .tech-card :deep(.el-card__body)::-webkit-scrollbar {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.1);
+  }
+  
+  .tech-card :deep(.el-card__body)::-webkit-scrollbar-track {
+    background: rgba(0, 255, 255, 0.05);
+    border-radius: 4px;
+    border: 1px solid rgba(0, 255, 255, 0.1);
+  }
+  
+  .tech-card :deep(.el-card__body)::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, 
+      rgba(0, 255, 255, 0.3) 0%, 
+      rgba(0, 200, 255, 0.5) 50%, 
+      rgba(0, 255, 255, 0.3) 100%);
+    border-radius: 4px;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+  }
+  
+  .tech-card :deep(.el-card__body)::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, 
+      rgba(0, 255, 255, 0.5) 0%, 
+      rgba(0, 200, 255, 0.7) 50%, 
+      rgba(0, 255, 255, 0.5) 100%);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
   }
 }
 

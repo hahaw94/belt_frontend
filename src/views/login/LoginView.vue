@@ -161,7 +161,7 @@ const handleLogin = async () => {
   align-items: center;
   background: 
     linear-gradient(135deg, rgba(12, 12, 12, 0.7) 0%, rgba(26, 26, 46, 0.8) 50%, rgba(22, 33, 62, 0.7) 100%),
-    url('@/assets/login.png');
+    url('@/assets/images/login.png');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

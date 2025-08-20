@@ -17,62 +17,7 @@
         </div>
       </template>
 
-      <!-- 角色搜索和筛选 -->
-      <div class="search-filters-card tech-card mb-20">
-        <div class="search-filters-header">
-          <span class="filter-title">搜索筛选</span>
-        </div>
-        <div class="search-filters-content">
-          <div class="filter-row">
-            <div class="filter-item">
-              <label for="roleNameFilter">角色名称</label>
-              <el-input
-                v-model="searchFilters.roleName"
-                id="roleNameFilter"
-                placeholder="搜索角色名称"
-                class="tech-input"
-                clearable
-                @keyup.enter="searchRoles"
-                @clear="searchRoles"
-              />
-            </div>
-            <div class="filter-item">
-              <label for="roleTypeFilter">角色类型</label>
-              <el-select
-                v-model="searchFilters.roleType"
-                id="roleTypeFilter"
-                placeholder="全部"
-                class="tech-select"
-                clearable
-                @change="searchRoles"
-              >
-                <el-option label="全部" value="" />
-                <el-option label="系统角色" value="0" />
-                <el-option label="自定义角色" value="1" />
-              </el-select>
-            </div>
-            <div class="filter-item">
-              <label for="roleStatusFilter">状态</label>
-              <el-select
-                v-model="searchFilters.status"
-                id="roleStatusFilter"
-                placeholder="全部"
-                class="tech-select"
-                clearable
-                @change="searchRoles"
-              >
-                <el-option label="全部" value="" />
-                <el-option label="启用" value="1" />
-                <el-option label="禁用" value="0" />
-              </el-select>
-            </div>
-            <div class="filter-actions">
-              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="searchRoles">搜索</el-button>
-              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetRoleFilters">重置</el-button>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       <el-table :data="paginatedRoles" v-loading="loading" border stripe class="tech-table" style="width: 100%;">
         <el-table-column prop="id" label="ID" width="80" align="center" header-align="center"></el-table-column>
@@ -98,15 +43,9 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="is_default" label="默认角色" width="100" align="center" header-align="center">
-          <template #default="{ row }">
-            <el-tag :type="row.is_default ? 'success' : 'info'" size="small">
-              {{ row.is_default ? '是' : '否' }}
-            </el-tag>
-          </template>
-        </el-table-column>
+
         <el-table-column prop="createTime" label="创建时间" width="180" header-align="center"></el-table-column>
-        <el-table-column label="操作" width="280" fixed="right" align="center" header-align="center">
+        <el-table-column label="操作" width="280" align="center" header-align="center">
           <template #default="{ row }">
             <el-button type="primary" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditRole(row)">编辑</el-button>
             <el-button type="info" :icon="View" size="small" class="tech-button-xs" @click="handleViewPermissions(row)">权限</el-button>
@@ -288,7 +227,7 @@
 <script setup name="RoleManagementIntegrated">
 import { ref, reactive, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { Plus, Refresh, Edit, View, Delete, Search, RefreshRight } from '@element-plus/icons-vue';
+import { Plus, Refresh, Edit, View, Delete } from '@element-plus/icons-vue';
 import { roleApi } from '@/api/user';
 
 // ===================== 数据定义 =====================
@@ -309,12 +248,7 @@ const currentRole = reactive({
 // 角色数据
 const roleList = ref([]);
 
-// 搜索筛选数据
-const searchFilters = reactive({
-  roleName: '',
-  roleType: '',
-  status: ''
-});
+
 
 // 分页数据
 const pagination = reactive({
@@ -393,23 +327,9 @@ const getRoleList = async () => {
       size: pagination.pageSize
     };
     
-    // 添加搜索筛选参数 - 修复类型不匹配问题
-    if (searchFilters.roleName.trim()) {
-      params.role_name = searchFilters.roleName.trim();
-    }
-    if (searchFilters.roleType !== '') {
-      // 确保role_type参数为数字类型，符合后端期望
-      params.role_type = parseInt(searchFilters.roleType);
-    }
-    if (searchFilters.status !== '') {
-      // 确保status参数为数字类型，符合后端期望
-      params.status = parseInt(searchFilters.status);
-    }
-    
     console.log('正在获取角色列表...', {
       page: pagination.page,
       pageSize: pagination.pageSize,
-      filters: searchFilters,
       params,
       token: localStorage.getItem('token') ? '已设置' : '未设置'
     });
@@ -497,24 +417,7 @@ const getRoles = () => {
   getRoleList();
 };
 
-/**
- * 搜索角色
- */
-const searchRoles = () => {
-  pagination.page = 1; // 重置到第一页
-  getRoleList();
-};
 
-/**
- * 重置角色筛选条件
- */
-const resetRoleFilters = () => {
-  searchFilters.roleName = '';
-  searchFilters.roleType = '';
-  searchFilters.status = '';
-  pagination.page = 1;
-  getRoleList();
-};
 
 /**
  * 处理添加角色按钮点击
@@ -876,30 +779,91 @@ onMounted(() => {
   transform: translateY(-1px) !important;
 }
 
-/* 科技感表格 */
+/* 科技感表格 - 参考图片设计 */
 .tech-table {
-  background: transparent !important;
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
 }
 
-/* 表格头部样式 */
+/* 表格整体容器 */
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+/* 移除所有可能的白色边框 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::after) {
+  display: none !important;
+}
+
+/* 表格头部样式 - 参考图片的头部设计 */
 .tech-table :deep(.el-table__header-wrapper) {
-  background: transparent !important;
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
 }
 
 .tech-table :deep(.el-table__header-wrapper .el-table__header) {
-  background: transparent !important;
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border: none !important;
 }
 
 .tech-table :deep(.el-table__header-wrapper .el-table__header th) {
-  background: rgba(26, 26, 46, 0.8) !important;
-  color: #00ffff !important;
-  font-weight: bold !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-  text-align: center !important;
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px 12px !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
 }
 
-/* 表格主体样式 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+/* 表格头部发光效果 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.6) 50%, 
+    transparent 100%);
+  opacity: 0.8;
+}
+
+/* 表格主体样式 - 参考图片的行设计 */
 .tech-table :deep(.el-table__body-wrapper) {
   background: transparent !important;
 }
@@ -909,53 +873,220 @@ onMounted(() => {
 }
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.9) !important;
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
 }
 
-/* 移除斑马纹效果 */
-.tech-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
-  background: transparent !important;
-}
-
+/* 交替行颜色 - 创建微妙的斑马纹效果 */
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
-  background: transparent !important;
+  background: rgba(20, 30, 50, 0.7) !important;
 }
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
-  background: transparent !important;
+  background: rgba(25, 35, 55, 0.6) !important;
 }
 
-/* 悬停效果 */
+/* 悬停效果 - 参考图片的交互效果 */
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
-  background: rgba(0, 255, 255, 0.1) !important;
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
 }
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
   background: transparent !important;
+  color: rgba(255, 255, 255, 1) !important;
 }
 
-/* 单元格样式 */
+/* 单元格样式 - 参考图片的单元格设计 */
 .tech-table :deep(.el-table__body-wrapper .el-table__body td) {
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
   background: transparent !important;
+  padding: 14px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 彻底移除所有表格边框 - 最终解决方案 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
 }
 
 .tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
-  background-color: rgba(0, 255, 255, 0.2) !important;
+  display: none !important;
+  content: none !important;
 }
 
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::before) {
+  display: none !important;
+  content: none !important;
+}
+
+/* 移除所有边框补丁元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 单元格边框控制 */
 .tech-table :deep(.el-table--border td) {
+  border: none !important;
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border th) {
+  border: none !important;
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+/* 移除表格外围的所有可能边框 */
+.tech-table :deep(.el-table__body-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 最强力的边框移除 - 覆盖所有可能的边框样式 */
+.tech-table :deep(*) {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+}
+
+.tech-table :deep(th) {
+  border: none !important;
   border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
 }
 
-/* 确保整个表格容器透明 */
-.tech-table :deep(.el-table) {
-  background: transparent !important;
+.tech-table :deep(td:last-child),
+.tech-table :deep(th:last-child) {
+  border-right: none !important;
 }
 
-.tech-table :deep(.el-table::before) {
-  background-color: transparent !important;
+/* 移除表格容器本身的边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 专门针对左右边框的强力移除 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__header),
+.tech-table :deep(.el-table__body),
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__body-wrapper) {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* 强制移除表格左右的所有可能边框元素 */
+.tech-table::before,
+.tech-table::after,
+.tech-table :deep(.el-table)::before,
+.tech-table :deep(.el-table)::after,
+.tech-table :deep(.el-table__inner-wrapper)::before,
+.tech-table :deep(.el-table__inner-wrapper)::after {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+}
+
+/* 确保表格外层容器没有任何边框 */
+.tech-table {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+/* 数据为空时的样式 */
+.tech-table :deep(.el-table__empty-block) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__empty-text) {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 14px !important;
 }
 
 /* 科技感对话框 */
@@ -1152,71 +1283,7 @@ onMounted(() => {
   border-radius: 4px !important;
 }
 
-/* 搜索筛选样式 */
-.search-filters-card {
-  margin-bottom: 20px;
-  padding: 15px;
-  background: rgba(0, 255, 255, 0.03) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 8px !important;
-}
 
-.search-filters-header {
-  margin-bottom: 15px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-  padding-bottom: 8px;
-}
-
-.filter-title {
-  color: #00ffff;
-  font-weight: bold;
-  font-size: 16px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-}
-
-.search-filters-content {
-  padding: 0;
-}
-
-.filter-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
-  gap: 15px;
-  align-items: end;
-}
-
-.filter-item {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.filter-item label {
-  color: #00ffff;
-  font-size: 14px;
-  font-weight: 500;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
-}
-
-.tech-input :deep(.el-input__wrapper),
-.tech-select :deep(.el-select__wrapper) {
-  background-color: rgba(65, 75, 95, 0.85) !important;
-  border: 1px solid rgba(0, 255, 255, 0.4) !important;
-  border-radius: 6px !important;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
-}
-
-.tech-input :deep(.el-input__inner),
-.tech-select :deep(.el-select__input) {
-  color: rgba(255, 255, 255, 0.95) !important;
-  background: transparent !important;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
 
 /* 增强型分页样式 */
 .tech-pagination {
@@ -1340,16 +1407,7 @@ onMounted(() => {
     padding: 10px;
   }
   
-  .filter-row {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  
-  .filter-actions {
-    grid-column: span 2;
-    justify-content: center;
-    margin-top: 10px;
-  }
+
   
   .pagination-container {
     flex-direction: column;
@@ -1379,6 +1437,47 @@ onMounted(() => {
     flex-direction: column;
     gap: 10px;
     align-items: stretch;
+  }
+  
+  /* 小屏幕表格适配 */
+  .tech-table {
+    min-width: 900px; /* 确保表格有最小宽度，触发水平滚动 */
+  }
+  
+  /* 表格容器添加水平滚动 */
+  .tech-card :deep(.el-card__body) {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+  
+  /* 表格水平滚动条样式 */
+  .tech-card :deep(.el-card__body)::-webkit-scrollbar {
+    height: 8px;
+    background: rgba(0, 0, 0, 0.1);
+  }
+  
+  .tech-card :deep(.el-card__body)::-webkit-scrollbar-track {
+    background: rgba(0, 255, 255, 0.05);
+    border-radius: 4px;
+    border: 1px solid rgba(0, 255, 255, 0.1);
+  }
+  
+  .tech-card :deep(.el-card__body)::-webkit-scrollbar-thumb {
+    background: linear-gradient(90deg, 
+      rgba(0, 255, 255, 0.3) 0%, 
+      rgba(0, 200, 255, 0.5) 50%, 
+      rgba(0, 255, 255, 0.3) 100%);
+    border-radius: 4px;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+  }
+  
+  .tech-card :deep(.el-card__body)::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(90deg, 
+      rgba(0, 255, 255, 0.5) 0%, 
+      rgba(0, 200, 255, 0.7) 50%, 
+      rgba(0, 255, 255, 0.5) 100%);
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
   }
 }
 
