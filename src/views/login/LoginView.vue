@@ -19,35 +19,33 @@
       
       <div class="login-form-wrapper">
         <el-form :model="loginForm" :rules="loginRules" ref="loginFormRef" class="tech-form">
-          <el-form-item prop="username">
-            <div class="input-wrapper">
-              <el-input 
-                v-model="loginForm.username" 
-                placeholder="用户名 / Username"
-                class="tech-input"
-                size="large"
-              >
-                <template #prefix>
-                  <el-icon class="input-icon"><User /></el-icon>
-                </template>
-              </el-input>
-            </div>
+          <el-form-item prop="username" class="form-item-wrapper">
+            <el-input 
+              v-model="loginForm.username" 
+              placeholder="用户名 / Username"
+              class="tech-input"
+              size="large"
+              @keyup.enter="handleLogin"
+            >
+              <template #prefix>
+                <el-icon class="input-icon"><User /></el-icon>
+              </template>
+            </el-input>
           </el-form-item>
           
-          <el-form-item prop="password">
-            <div class="input-wrapper">
-              <el-input 
-                v-model="loginForm.password" 
-                type="password" 
-                placeholder="密码 / Password"
-                class="tech-input"
-                size="large"
-              >
-                <template #prefix>
-                  <el-icon class="input-icon"><Lock /></el-icon>
-                </template>
-              </el-input>
-            </div>
+          <el-form-item prop="password" class="form-item-wrapper">
+            <el-input 
+              v-model="loginForm.password" 
+              type="password" 
+              placeholder="密码 / Password"
+              class="tech-input"
+              size="large"
+              @keyup.enter="handleLogin"
+            >
+              <template #prefix>
+                <el-icon class="input-icon"><Lock /></el-icon>
+              </template>
+            </el-input>
           </el-form-item>
           
           <el-form-item>
@@ -93,8 +91,8 @@ const loginForm = reactive({
 })
 
 const loginRules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+  username: [{ required: true, message: '请输入用户名', trigger: ['blur', 'change'] }],
+  password: [{ required: true, message: '请输入密码', trigger: ['blur', 'change'] }]
 }
 
 // 生成粒子样式
@@ -118,7 +116,9 @@ const getParticleStyle = (index) => {
 const handleLogin = async () => {
   if (!loginFormRef.value) return
   
-  await loginFormRef.value.validate(async (valid) => {
+  try {
+    // 先进行表单验证
+    const valid = await loginFormRef.value.validate()
     if (valid) {
       loading.value = true
       try {
@@ -141,8 +141,14 @@ const handleLogin = async () => {
       } finally {
         loading.value = false
       }
+    } else {
+      // 验证失败时，确保错误信息显示
+      console.log('表单验证失败')
     }
-  })
+  } catch (error) {
+    // 表单验证出错，通常是验证失败
+    console.log('表单验证失败:', error)
+  }
 }
 </script>
 
@@ -278,8 +284,7 @@ const handleLogin = async () => {
   width: 100%;
 }
 
-.input-wrapper {
-  margin-bottom: 25px;
+.form-item-wrapper {
   width: 100%;
 }
 
@@ -430,13 +435,29 @@ const handleLogin = async () => {
 
 /* 表单项间距调整 */
 .tech-form :deep(.el-form-item) {
-  margin-bottom: 0 !important;
+  margin-bottom: 30px !important;
 }
 
 .tech-form :deep(.el-form-item__error) {
   color: #ff4757 !important;
   font-size: 12px !important;
-  margin-top: 5px !important;
+  margin-top: 8px !important;
+  margin-left: 0 !important;
+  margin-bottom: 0 !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  z-index: 10 !important;
+}
+
+/* 确保表单项有足够的相对定位空间 */
+.tech-form :deep(.form-item-wrapper) {
+  position: relative !important;
 }
 
 /* 响应式设计 */
