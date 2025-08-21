@@ -74,7 +74,7 @@
 </template>
 
 <script setup name="LoginView">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
@@ -84,16 +84,20 @@ const router = useRouter()
 const loading = ref(false)
 const loginFormRef = ref(null)
 const authStore = useAuthStore()
+const loginError = ref('')
 
 const loginForm = reactive({
   username: '',
   password: ''
 })
 
-const loginRules = {
+const loginRules = computed(() => ({
   username: [{ required: true, message: '请输入用户名', trigger: ['blur', 'change'] }],
-  password: [{ required: true, message: '请输入密码', trigger: ['blur', 'change'] }]
-}
+  password: [
+    { required: true, message: '请输入密码', trigger: ['blur', 'change'] },
+    ...(loginError.value ? [{ validator: () => false, message: loginError.value }] : [])
+  ]
+}))
 
 // 生成粒子样式
 const getParticleStyle = (index) => {
@@ -116,6 +120,9 @@ const getParticleStyle = (index) => {
 const handleLogin = async () => {
   if (!loginFormRef.value) return
   
+  // 清除之前的登录错误
+  loginError.value = ''
+  
   try {
     // 先进行表单验证
     const valid = await loginFormRef.value.validate()
@@ -133,11 +140,17 @@ const handleLogin = async () => {
           // 跳转到首页
           router.push('/')
         } else {
-          ElMessage.error(response.message || '登录失败')
+          // 设置表单错误而不是弹窗
+          loginError.value = '账号或密码错误'
+          // 手动触发表单验证以显示错误
+          await loginFormRef.value.validateField('password')
         }
       } catch (error) {
         console.error('登录失败:', error)
-        ElMessage.error(error.message || '登录失败，请检查用户名和密码')
+        // 设置表单错误而不是弹窗
+        loginError.value = '账号或密码错误'
+        // 手动触发表单验证以显示错误
+        await loginFormRef.value.validateField('password')
       } finally {
         loading.value = false
       }
@@ -150,6 +163,13 @@ const handleLogin = async () => {
     console.log('表单验证失败:', error)
   }
 }
+
+// 监听表单输入，清除登录错误
+watch([() => loginForm.username, () => loginForm.password], () => {
+  if (loginError.value) {
+    loginError.value = ''
+  }
+})
 </script>
 
 <style scoped>

@@ -58,13 +58,13 @@ const routes = [
       }
     ]
   },
-  // 算法配置
+  // 算法管理
   {
     path: '/algorithm',
     name: 'algorithm',
     redirect: '/algorithm/upload',
     component: Layout,
-    meta: { title: '算法配置', requiresAuth: true },
+    meta: { title: '算法管理', requiresAuth: true },
     children: [
       {
         path: 'upload',
@@ -92,13 +92,13 @@ const routes = [
         path: 'user-management-manage',
         name: 'UserManage',
         component: () => import('../views/user-management/UserManage.vue'),
-        meta: { title: '用户管理' }
+        meta: { title: '用户列表' }
       },
       {
         path: 'role-management',
         name: 'RoleManagement',
         component: () => import('../views/user-management/RoleManagement.vue'),
-        meta: { title: '角色管理' }
+        meta: { title: '角色列表' }
       }
     ]
   },
@@ -142,7 +142,7 @@ const routes = [
         path: 'realtime',
         name: 'detection-realtime',
         component: () => import('../views/detection/RealtimeDetection.vue'),
-        meta: { title: '实时检测' }
+        meta: { title: '实时画面' }
       },
       {
         path: 'playback',

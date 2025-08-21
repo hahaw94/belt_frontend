@@ -95,8 +95,8 @@ request.interceptors.response.use(
       
       switch (status) {
         case 400:
-          message = '请求参数错误'
-          break
+          // 不显示弹窗，静默处理400错误
+          return Promise.reject(error)
         case 401:
           message = '未授权，请重新登录'
           localStorage.removeItem('token')

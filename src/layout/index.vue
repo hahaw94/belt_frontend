@@ -28,7 +28,7 @@
             <el-icon v-if="isCollapse"><Expand /></el-icon>
             <el-icon v-else><Fold /></el-icon>
           </div>
-          <div class="menu-container">
+          <div class="menu-container" ref="menuContainer">
             <el-menu
                 :default-active="$route.path"
                 class="el-menu-vertical-demo"
@@ -57,7 +57,7 @@
             <el-sub-menu index="/algorithm">
               <template #title>
                 <el-icon><Cpu /></el-icon>
-                <span>算法配置</span>
+                <span>算法管理</span>
               </template>
               <el-menu-item index="/algorithm/upload">算法仓</el-menu-item>
               <el-menu-item index="/algorithm/config">算法配置</el-menu-item>
@@ -68,8 +68,8 @@
                 <el-icon><User /></el-icon>
                 <span>用户管理</span>
               </template>
-              <el-menu-item index="/usermanagement/user-management-manage">用户管理</el-menu-item>
-              <el-menu-item index="/usermanagement/role-management">角色管理</el-menu-item>
+              <el-menu-item index="/usermanagement/user-management-manage">用户列表</el-menu-item>
+              <el-menu-item index="/usermanagement/role-management">角色列表</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu index="/access">
@@ -87,7 +87,7 @@
                 <el-icon><Monitor /></el-icon>
                 <span>实时检测</span>
               </template>
-              <el-menu-item index="/detection/realtime">实时检测</el-menu-item>
+              <el-menu-item index="/detection/realtime">实时画面</el-menu-item>
               <el-menu-item index="/detection/playback">录像回放</el-menu-item>
             </el-sub-menu>
 
@@ -135,7 +135,7 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
@@ -148,6 +148,7 @@ export default {
     
     const userAvatarUrl = ref('https://cube.elemecdn.com/0/88/03b0d4153c31b21f7da7534d36da500d.jpeg');
     const isCollapse = ref(false);
+    const menuContainer = ref(null);
 
     // 显示用户名
     const displayUsername = computed(() => {
@@ -202,12 +203,33 @@ export default {
       isCollapse.value = !isCollapse.value;
     };
 
+    // 动态调整菜单容器高度
+    const adjustMenuHeight = () => {
+      if (menuContainer.value) {
+        const headerHeight = 60; // 头部高度
+        const toggleHeight = 50; // 折叠按钮高度
+        const availableHeight = window.innerHeight - headerHeight - toggleHeight;
+        menuContainer.value.style.maxHeight = `${availableHeight}px`;
+      }
+    };
+
+    // 监听窗口大小变化
+    onMounted(() => {
+      adjustMenuHeight();
+      window.addEventListener('resize', adjustMenuHeight);
+    });
+
+    onUnmounted(() => {
+      window.removeEventListener('resize', adjustMenuHeight);
+    });
+
     return {
       userAvatarUrl,
       isCollapse,
       displayUsername,
       handleLogout,
       toggleCollapse,
+      menuContainer,
     };
   },
 };
@@ -289,6 +311,8 @@ export default {
   scrollbar-color: #606266 #434a50;
   /* 确保滚动条始终可见 */
   scrollbar-gutter: stable;
+  /* 高度由JavaScript动态管理 */
+  height: 100%;
 }
 
 .el-menu-vertical-demo:not(.el-menu--collapse) {
@@ -298,7 +322,8 @@ export default {
 .el-menu-vertical-demo {
   border-right: none; /* 移除菜单右边框 */
   height: auto; /* 让菜单根据内容自动调整高度 */
-  min-height: 100%; /* 确保菜单至少占满容器高度 */
+  min-height: fit-content; /* 根据内容自适应高度 */
+  padding-bottom: 20px; /* 添加底部内边距 */
 }
 
 .layout-main {
@@ -352,17 +377,6 @@ export default {
   position: relative;
 }
 
-/* 折叠状态下的菜单容器样式 */
-.layout-aside.collapsed .menu-container {
-  overflow-y: auto;
-}
-
-/* 确保菜单项有足够的padding，避免内容被遮挡 */
-.menu-container .el-menu-item:last-child,
-.menu-container .el-sub-menu:last-child {
-  margin-bottom: 20px;
-}
-
 
 
 /* 优化子菜单展开时的样式 */
@@ -398,49 +412,18 @@ export default {
 /* 菜单容器的滚动行为优化 */
 .menu-container {
   scroll-behavior: smooth;
-  /* 确保内容不会被截断 */
-  padding-bottom: 0;
-}
-
-/* 添加足够的底部空间，确保最后一个菜单项可见 */
-.el-menu-vertical-demo {
-  padding-bottom: 30px;
-}
-
-/* 针对最后一个子菜单项的特殊处理 */
-.el-menu-vertical-demo .el-sub-menu:last-child .el-menu-item:last-child {
-  margin-bottom: 30px;
-}
-
-/* 确保菜单项在视口底部也能完全显示 */
-.menu-container {
-  /* 添加内边距确保内容不会被截断 */
-  padding-top: 0;
-  margin-bottom: 0;
-  /* 确保滚动条出现时不影响布局 */
   box-sizing: border-box;
+  padding-bottom: 20px; /* 统一的底部内边距 */
 }
 
-/* 防止菜单项被底部边界遮挡 */
-.el-menu-vertical-demo > .el-menu-item:last-of-type,
-.el-menu-vertical-demo > .el-sub-menu:last-of-type {
-  margin-bottom: 40px;
+/* 确保最后的菜单项有足够的空间 */
+.el-menu-vertical-demo > .el-menu-item:last-child,
+.el-menu-vertical-demo > .el-sub-menu:last-child {
+  margin-bottom: 20px;
 }
 
-/* 事件中心子菜单特殊处理（因为它是最长的子菜单） */
-.el-menu-vertical-demo .el-sub-menu[index="/event"] .el-menu-item:last-child {
-  margin-bottom: 50px;
-}
-
-/* 确保展开的子菜单完全可见 */
-.el-menu-vertical-demo .el-sub-menu .el-menu {
+/* 子菜单展开时的底部空间 */
+.el-menu-vertical-demo .el-sub-menu .el-menu-item:last-child {
   margin-bottom: 10px;
-}
-
-/* 添加视觉缓冲区 */
-.menu-container::after {
-  content: '';
-  display: block;
-  height: 50px; /* 增加底部缓冲区 */
 }
 </style>
