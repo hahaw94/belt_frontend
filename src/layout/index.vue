@@ -40,85 +40,85 @@
                 active-text-color="#00ffff"
             >
 
-            <el-menu-item index="/dashboard">
+            <el-menu-item v-if="checkMenuPermission('/dashboard')" index="/dashboard">
               <el-icon><HomeFilled /></el-icon>
               <template #title>首页/总览</template>
             </el-menu-item>
 
-            <el-sub-menu index="/system-config">
+            <el-sub-menu v-if="checkChildPermission('/system-config')" index="/system-config">
               <template #title>
                 <el-icon><Setting /></el-icon>
                 <span>系统配置</span>
               </template>
-              <el-menu-item index="/system-config/basic-management">基础管理</el-menu-item>
-              <el-menu-item index="/system-config/version-management">版本管理</el-menu-item>
-              <el-menu-item index="/system-config/map-management">地理管理</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/system-config/basic-management')" index="/system-config/basic-management">基础管理</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/system-config/version-management')" index="/system-config/version-management">版本管理</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/system-config/map-management')" index="/system-config/map-management">地理管理</el-menu-item>
             </el-sub-menu>
 
-            <el-sub-menu index="/algorithm">
+            <el-sub-menu v-if="checkChildPermission('/algorithm')" index="/algorithm">
               <template #title>
                 <el-icon><Cpu /></el-icon>
                 <span>算法管理</span>
               </template>
-              <el-menu-item index="/algorithm/upload">算法仓</el-menu-item>
-              <el-menu-item index="/algorithm/config">算法配置</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/algorithm/upload')" index="/algorithm/upload">算法仓</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/algorithm/config')" index="/algorithm/config">算法配置</el-menu-item>
             </el-sub-menu>
 
-            <el-sub-menu index="/usermanagement">
+            <el-sub-menu v-if="checkChildPermission('/usermanagement')" index="/usermanagement">
               <template #title>
                 <el-icon><User /></el-icon>
                 <span>用户管理</span>
               </template>
-              <el-menu-item index="/usermanagement/user-management-manage">用户列表</el-menu-item>
-              <el-menu-item index="/usermanagement/role-management">角色列表</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/usermanagement/user-management-manage')" index="/usermanagement/user-management-manage">用户列表</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/usermanagement/role-management')" index="/usermanagement/role-management">角色列表</el-menu-item>
             </el-sub-menu>
 
-            <el-sub-menu index="/access">
+            <el-sub-menu v-if="checkChildPermission('/access')" index="/access">
               <template #title>
                 <el-icon><Connection /></el-icon>
                 <span>接入管理</span>
               </template>
-              <el-menu-item index="/access/device">设备管理</el-menu-item>
-<!--              <el-menu-item index="/access/info">设备信息</el-menu-item>-->
-<!--              <el-menu-item index="/access/protocol">设备接入协议</el-menu-item>-->
+              <el-menu-item v-if="checkMenuPermission('/access/device')" index="/access/device">设备管理</el-menu-item>
+<!--              <el-menu-item v-if="checkMenuPermission('/access/info')" index="/access/info">设备信息</el-menu-item>-->
+<!--              <el-menu-item v-if="checkMenuPermission('/access/protocol')" index="/access/protocol">设备接入协议</el-menu-item>-->
             </el-sub-menu>
 
-            <el-sub-menu index="/detection">
+            <el-sub-menu v-if="checkChildPermission('/detection')" index="/detection">
               <template #title>
                 <el-icon><Monitor /></el-icon>
                 <span>实时检测</span>
               </template>
-              <el-menu-item index="/detection/realtime">实时画面</el-menu-item>
-              <el-menu-item index="/detection/playback">录像回放</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/detection/realtime')" index="/detection/realtime">实时画面</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/detection/playback')" index="/detection/playback">录像回放</el-menu-item>
             </el-sub-menu>
 
-            <el-sub-menu index="/recording">
+            <el-sub-menu v-if="checkChildPermission('/recording')" index="/recording">
               <template #title>
                 <el-icon><VideoCamera /></el-icon>
                 <span>录像管理</span>
               </template>
-              <el-menu-item index="/recording/list">录像列表</el-menu-item>
-              <el-menu-item index="/recording/statistics">录像统计</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/recording/list')" index="/recording/list">录像列表</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/recording/statistics')" index="/recording/statistics">录像统计</el-menu-item>
             </el-sub-menu>
 
-            <el-sub-menu index="/event">
+            <el-sub-menu v-if="checkChildPermission('/event')" index="/event">
               <template #title>
                 <el-icon><Bell /></el-icon>
                 <span>事件中心</span>
               </template>
-              <el-menu-item index="/event/alarm-display">告警信息展示</el-menu-item>
-              <el-menu-item index="/event/data-collection">告警数据收集</el-menu-item>
-              <el-menu-item index="/event/immediate-command">即时告警批示</el-menu-item>
-              <el-menu-item index="/event/linkage-settings">告警联动设置</el-menu-item>
-              <el-menu-item index="/event/warning-push">预警推送</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/event/alarm-display')" index="/event/alarm-display">告警信息展示</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/event/data-collection')" index="/event/data-collection">告警数据收集</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/event/immediate-command')" index="/event/immediate-command">即时告警批示</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/event/linkage-settings')" index="/event/linkage-settings">告警联动设置</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/event/warning-push')" index="/event/warning-push">预警推送</el-menu-item>
             </el-sub-menu>
 
-            <el-menu-item index="/log">
+            <el-menu-item v-if="checkMenuPermission('/log')" index="/log">
               <el-icon><Document /></el-icon>
               <template #title>日志中心</template>
             </el-menu-item>
 
-            <el-menu-item index="/statistics">
+            <el-menu-item v-if="checkMenuPermission('/statistics')" index="/statistics">
               <el-icon><TrendCharts /></el-icon>
               <template #title>统计分析</template>
             </el-menu-item>
@@ -147,6 +147,7 @@ import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import ProfileModal from '@/components/ProfileModal.vue';
+import { usePermissions } from '@/composables/usePermissions';
 
 export default {
   name: 'LayoutIndex',
@@ -156,6 +157,7 @@ export default {
   setup() {
     const router = useRouter();
     const authStore = useAuthStore();
+    const { checkMenuPermission, checkChildPermission } = usePermissions();
     
     const userAvatarUrl = ref('https://cube.elemecdn.com/0/88/03b0d4153c31b21f7da7534d36da500d.jpeg');
     const isCollapse = ref(false);
@@ -250,6 +252,8 @@ export default {
       userAvatarUrl,
       isCollapse,
       displayUsername,
+      checkMenuPermission,
+      checkChildPermission,
       handleLogout,
       toggleCollapse,
       menuContainer,

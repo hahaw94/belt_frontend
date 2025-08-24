@@ -9,6 +9,7 @@ import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css' // 引入 Element Plus 的样式文件
 import * as ElementPlusIconsVue from '@element-plus/icons-vue' // 引入 Element Plus 的图标
+import { ElMessage } from 'element-plus'
 
 // 引入全局滚动条样式
 import '@/assets/global-scrollbar.css'
@@ -42,6 +43,9 @@ app.use(ElementPlus)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     app.component(key, component)
 }
+
+// 将 ElMessage 挂载到 window 对象上，供路由守卫使用
+window.ElMessage = ElMessage
 
 // 将应用实例挂载到 public/index.html 中的 #app 元素上
 app.mount('#app')

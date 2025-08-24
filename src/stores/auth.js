@@ -22,7 +22,18 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value && isLoggedIn.value)
   const hasPermission = computed(() => (permission) => {
     if (!userInfo.value) return false
-    return userInfo.value.permissions?.includes(permission) || userInfo.value.permissions?.includes('*')
+    const permissions = userInfo.value.permissions || []
+    // 支持超级管理员权限
+    if (permissions.some(p => p === '*' || p.permission_code === '*' || p.permission_name === '超级管理员')) {
+      return true
+    }
+    // 检查权限数组中是否包含指定权限
+    return permissions.some(p => 
+      p === permission || 
+      p.permission_code === permission || 
+      p.permission_name === permission ||
+      (typeof p === 'string' && p === permission)
+    )
   })
   const isAdmin = computed(() => userInfo.value?.roles?.includes('管理员') || userInfo.value?.roles?.includes('超级管理员'))
   const username = computed(() => userInfo.value?.username || '')
@@ -147,13 +158,18 @@ export const useAuthStore = defineStore('auth', () => {
     console.log('清除所有认证信息')
     
     // 清除localStorage中的认证信息
-    localStorage.removeItem('token')
-    localStorage.removeItem('refreshToken')
-    localStorage.removeItem('userInfo')
-    // 清除可能存在的其他相关信息
-    localStorage.removeItem('user')
-    localStorage.removeItem('currentUser')
-    localStorage.removeItem('authToken')
+    const keysToRemove = [
+      'token',
+      'refreshToken', 
+      'userInfo',
+      'user',
+      'currentUser',
+      'authToken'
+    ]
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key)
+    })
     
     // 重置store状态
     token.value = ''
