@@ -108,6 +108,16 @@ export const userApi = {
     return api.get(`/api/v1/users/${userId}`)
   },
 
+  // 获取当前用户个人资料
+  getMyProfile() {
+    return api.get('/api/v1/users/profile')
+  },
+
+  // 更新当前用户个人资料
+  updateMyProfile(data) {
+    return api.put('/api/v1/users/profile', data)
+  },
+
   // 用户个人资料管理 - 获取
   getUserProfile(userId) {
     return api.get(`/api/v1/users/${userId}/profile`)

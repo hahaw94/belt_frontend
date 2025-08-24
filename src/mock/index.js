@@ -1,6 +1,7 @@
 import MockAdapter from 'axios-mock-adapter'
 
 import { deviceMockData } from './modules/device'
+// import setupUserMock from './modules/user' // 已禁用，直接调用后端API
 
 import { statisticsMockData } from './modules/statistics'
 import { logMockData } from './modules/log'
@@ -31,6 +32,9 @@ export function setupMock(axiosInstance) {
     setupAlgorithmMock(mock)
     console.log('✓ 算法管理Mock已注册')
     
+    // setupUserMock(mock) // 已禁用，直接调用后端API
+    // console.log('✓ 用户管理Mock已注册')
+    
     setupStatisticsMock(mock)
     setupLogMock(mock)
     setupDashboardMock(mock)
@@ -43,11 +47,27 @@ export function setupMock(axiosInstance) {
     console.error('Mock设置错误:', error)
   }
 
-  // 其他未匹配的请求通过（登录、用户管理、角色管理使用真实后端接口）
+  // 确保认证和用户相关接口不被拦截，直接通过到真实后端
+  mock.onPost('/api/v1/auth/login').passThrough()
+  mock.onPost('/api/v1/auth/logout').passThrough()
+  mock.onPost('/api/v1/auth/refresh').passThrough()
+  mock.onPost('/api/v1/auth/verify').passThrough()
+  mock.onGet('/api/v1/auth/userinfo').passThrough()
+  
+  // 用户管理相关接口也不拦截，直接调用后端API
+  mock.onGet('/api/v1/users/profile').passThrough()
+  mock.onPut('/api/v1/users/profile').passThrough()
+  mock.onGet(/\/api\/v1\/users\/\d+/).passThrough()
+  mock.onGet('/api/v1/users').passThrough()
+  mock.onPost('/api/v1/users').passThrough()
+  mock.onPut(/\/api\/v1\/users\/\d+/).passThrough()
+  mock.onDelete(/\/api\/v1\/users\/\d+/).passThrough()
+  
+  // 其他未匹配的请求通过
   mock.onAny().passThrough()
 
   console.log('🎉 Mock 拦截器已启用')
-  console.log('💡 注意: 登录、用户管理、角色管理接口已移除Mock拦截，将直接调用后端API')
+  console.log('💡 注意: 认证和用户管理接口直接调用后端API，其他模块使用Mock数据')
 }
 
 /**

@@ -15,6 +15,7 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item @click="showProfileModal">个人资料</el-dropdown-item>
                 <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -131,6 +132,12 @@
         </el-main>
       </el-container>
     </el-container>
+
+    <!-- 个人资料弹窗 -->
+    <ProfileModal 
+      v-model="showProfile" 
+      @profile-updated="handleProfileUpdated"
+    />
   </div>
 </template>
 
@@ -139,9 +146,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
+import ProfileModal from '@/components/ProfileModal.vue';
 
 export default {
   name: 'LayoutIndex',
+  components: {
+    ProfileModal
+  },
   setup() {
     const router = useRouter();
     const authStore = useAuthStore();
@@ -149,6 +160,7 @@ export default {
     const userAvatarUrl = ref('https://cube.elemecdn.com/0/88/03b0d4153c31b21f7da7534d36da500d.jpeg');
     const isCollapse = ref(false);
     const menuContainer = ref(null);
+    const showProfile = ref(false);
 
     // 显示用户名
     const displayUsername = computed(() => {
@@ -203,6 +215,17 @@ export default {
       isCollapse.value = !isCollapse.value;
     };
 
+    // 显示个人资料弹窗
+    const showProfileModal = () => {
+      showProfile.value = true;
+    };
+
+    // 处理个人资料更新事件
+    const handleProfileUpdated = () => {
+      // 可以在这里更新用户信息缓存或重新加载用户数据
+      console.log('个人资料已更新');
+    };
+
     // 动态调整菜单容器高度
     const adjustMenuHeight = () => {
       if (menuContainer.value) {
@@ -230,6 +253,9 @@ export default {
       handleLogout,
       toggleCollapse,
       menuContainer,
+      showProfile,
+      showProfileModal,
+      handleProfileUpdated,
     };
   },
 };
