@@ -35,9 +35,9 @@
                 class="el-menu-vertical-demo"
                 :collapse="isCollapse"
                 router
-                background-color="#545c64"
-                text-color="#fff"
-                active-text-color="#ffd04b"
+                background-color="transparent"
+                text-color="rgba(255, 255, 255, 0.9)"
+                active-text-color="#00ffff"
             >
 
             <el-menu-item index="/dashboard">
@@ -272,43 +272,88 @@ export default {
   flex: 1; /* 让 ElContainer 占据所有可用空间 */
 }
 
+/* 科技感头部样式 */
 .layout-header {
-  background-color: #2b3547; /* 深色头部 */
+  background: linear-gradient(135deg, 
+    rgba(15, 25, 45, 0.98) 0%, 
+    rgba(20, 35, 60, 0.98) 50%, 
+    rgba(25, 40, 65, 0.98) 100%);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 60px; /* 固定头部高度 */
   padding: 0 20px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.3),
+    0 0 40px rgba(0, 255, 255, 0.1),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 头部科技感背景效果 */
+.layout-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.1) 50%, 
+    transparent 100%);
+  animation: tech-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes tech-shimmer {
+  0% { left: -100%; }
+  50% { left: 100%; }
+  100% { left: 100%; }
 }
 
 .header-left {
   display: flex;
   align-items: center;
+  z-index: 2;
 }
 
 .app-logo {
   height: 35px;
   margin-right: 10px;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.4));
 }
 
 .app-title {
   font-size: 20px;
   font-weight: bold;
+  color: #00d4ff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 .header-right {
   display: flex;
   align-items: center;
+  z-index: 2;
 }
 
 .el-dropdown-link {
   cursor: pointer;
-  color: #fff;
+  color: #00d4ff;
   display: flex;
   align-items: center;
+  transition: all 0.3s ease;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
 }
+
+.el-dropdown-link:hover {
+  color: #ffffff;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  transform: translateY(-1px);
+}
+
 .el-icon--right {
   margin-left: 6px;
 }
@@ -318,13 +363,39 @@ export default {
   height: calc(100vh - 60px); /* 减去头部高度 */
 }
 
+/* 科技感侧边栏样式 */
 .layout-aside {
-  background-color: #545c64; /* 侧边栏背景色，与菜单背景色一致 */
+  background: linear-gradient(180deg, 
+    rgba(15, 25, 45, 0.95) 0%, 
+    rgba(20, 30, 50, 0.95) 50%, 
+    rgba(15, 25, 45, 0.95) 100%);
+  backdrop-filter: blur(10px);
   transition: width 0.3s ease; /* 添加宽度过渡效果 */
   display: flex;
   flex-direction: column;
   height: 100%; /* 确保侧边栏占满容器高度 */
   overflow: hidden; /* 防止整个侧边栏滚动 */
+  border-right: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 
+    4px 0 20px rgba(0, 0, 0, 0.3),
+    inset -1px 0 0 rgba(0, 255, 255, 0.1);
+  position: relative;
+}
+
+/* 侧边栏科技感背景纹理 */
+.layout-aside::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+    radial-gradient(circle at 80% 80%, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* 菜单容器样式 */
@@ -334,22 +405,206 @@ export default {
   overflow-x: hidden;
   /* Firefox 滚动条样式 */
   scrollbar-width: thin;
-  scrollbar-color: #606266 #434a50;
+  scrollbar-color: rgba(0, 255, 255, 0.3) rgba(0, 255, 255, 0.1);
   /* 确保滚动条始终可见 */
   scrollbar-gutter: stable;
   /* 高度由JavaScript动态管理 */
   height: 100%;
+  position: relative;
+  z-index: 2;
 }
 
 .el-menu-vertical-demo:not(.el-menu--collapse) {
   width: 100%;
 }
 
+/* 科技感菜单主体样式 */
 .el-menu-vertical-demo {
   border-right: none; /* 移除菜单右边框 */
   height: auto; /* 让菜单根据内容自动调整高度 */
   min-height: fit-content; /* 根据内容自适应高度 */
   padding-bottom: 20px; /* 添加底部内边距 */
+  background: transparent !important;
+}
+
+/* 菜单项科技感样式 */
+.el-menu-vertical-demo .el-menu-item {
+  height: 48px;
+  line-height: 48px;
+  padding: 0 20px;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.el-menu-vertical-demo .el-menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.8) 50%, 
+    transparent 100%);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.el-menu-vertical-demo .el-menu-item:hover {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 20px rgba(0, 255, 255, 0.1);
+  transform: translateX(5px);
+}
+
+.el-menu-vertical-demo .el-menu-item:hover::before {
+  transform: scaleY(1);
+}
+
+/* 激活状态的菜单项 */
+.el-menu-vertical-demo .el-menu-item.is-active {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.15) 0%, 
+    rgba(0, 255, 255, 0.2) 50%, 
+    rgba(0, 255, 255, 0.15) 100%) !important;
+  color: #00ffff !important;
+  box-shadow: 
+    inset 0 0 25px rgba(0, 255, 255, 0.2),
+    0 0 25px rgba(0, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+.el-menu-vertical-demo .el-menu-item.is-active::before {
+  transform: scaleY(1);
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 1) 0%, 
+    rgba(0, 255, 255, 0.8) 50%, 
+    rgba(0, 255, 255, 1) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
+/* 子菜单标题样式 */
+.el-menu-vertical-demo .el-sub-menu__title {
+  height: 48px;
+  line-height: 48px;
+  padding: 0 20px;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.el-menu-vertical-demo .el-sub-menu__title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.8) 50%, 
+    transparent 100%);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.el-menu-vertical-demo .el-sub-menu__title:hover {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 20px rgba(0, 255, 255, 0.1);
+  transform: translateX(5px);
+}
+
+.el-menu-vertical-demo .el-sub-menu__title:hover::before {
+  transform: scaleY(1);
+}
+
+/* 子菜单展开样式 */
+.el-menu-vertical-demo .el-sub-menu.is-opened > .el-sub-menu__title {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.1) 0%, 
+    rgba(0, 255, 255, 0.15) 50%, 
+    rgba(0, 255, 255, 0.1) 100%) !important;
+  color: #00ffff !important;
+}
+
+.el-menu-vertical-demo .el-sub-menu.is-opened > .el-sub-menu__title::before {
+  transform: scaleY(1);
+}
+
+/* 子菜单项样式 */
+.el-menu-vertical-demo .el-sub-menu .el-menu {
+  background: rgba(10, 20, 35, 0.8) !important;
+  backdrop-filter: blur(5px);
+  border-left: 2px solid rgba(0, 255, 255, 0.1);
+  margin-left: 10px;
+}
+
+.el-menu-vertical-demo .el-sub-menu .el-menu-item {
+  min-height: 40px;
+  line-height: 40px;
+  padding: 0 20px 0 30px;
+  font-size: 13px;
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.03);
+}
+
+.el-menu-vertical-demo .el-sub-menu .el-menu-item:hover {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.06) 0%, 
+    rgba(0, 255, 255, 0.1) 50%, 
+    rgba(0, 255, 255, 0.06) 100%) !important;
+  color: rgba(255, 255, 255, 1) !important;
+  transform: translateX(8px);
+}
+
+.el-menu-vertical-demo .el-sub-menu .el-menu-item.is-active {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.12) 0%, 
+    rgba(0, 255, 255, 0.18) 50%, 
+    rgba(0, 255, 255, 0.12) 100%) !important;
+  color: #00ffff !important;
+  font-weight: 600;
+}
+
+/* 图标样式优化 */
+.el-menu-vertical-demo .el-icon {
+  color: rgba(0, 255, 255, 0.7);
+  margin-right: 8px;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.3));
+}
+
+.el-menu-vertical-demo .el-menu-item:hover .el-icon,
+.el-menu-vertical-demo .el-sub-menu__title:hover .el-icon {
+  color: rgba(0, 255, 255, 1);
+  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.6));
+  transform: scale(1.1);
+}
+
+.el-menu-vertical-demo .el-menu-item.is-active .el-icon,
+.el-menu-vertical-demo .el-sub-menu.is-opened > .el-sub-menu__title .el-icon {
+  color: #00ffff;
+  filter: drop-shadow(0 0 10px rgba(0, 255, 255, 0.8));
 }
 
 .layout-main {
@@ -359,80 +614,86 @@ export default {
   overflow-y: auto; /* 当内容溢出时显示滚动条 */
 }
 
-/* 菜单折叠/展开按钮样式 */
+/* 科技感菜单折叠/展开按钮样式 */
 .collapse-toggle {
   height: 50px;
   line-height: 50px;
   text-align: center;
-  background-color: #434a50; /* 比菜单背景稍深的颜色 */
-  color: #fff;
+  background: linear-gradient(135deg, 
+    rgba(10, 20, 35, 0.9) 0%, 
+    rgba(15, 25, 40, 0.9) 100%);
+  color: rgba(0, 255, 255, 0.8);
   font-size: 20px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
   flex-shrink: 0; /* 防止按钮被压缩 */
-}
-.collapse-toggle:hover {
-  background-color: #383d42;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  position: relative;
+  z-index: 2;
+  box-shadow: inset 0 1px 0 rgba(0, 255, 255, 0.1);
 }
 
-/* 自定义滚动条样式 - Webkit内核 (Chrome, Safari, Edge) */
+.collapse-toggle:hover {
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 255, 0.1) 0%, 
+    rgba(0, 255, 255, 0.15) 100%);
+  color: #00ffff;
+  box-shadow: 
+    inset 0 1px 0 rgba(0, 255, 255, 0.2),
+    0 0 20px rgba(0, 255, 255, 0.2);
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.collapse-toggle .el-icon {
+  filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.3));
+  transition: all 0.3s ease;
+}
+
+.collapse-toggle:hover .el-icon {
+  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.6));
+  transform: scale(1.1);
+}
+
+/* 科技感滚动条样式 - Webkit内核 (Chrome, Safari, Edge) */
 .menu-container::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .menu-container::-webkit-scrollbar-track {
-  background: #434a50;
-  border-radius: 3px;
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
 }
 
 .menu-container::-webkit-scrollbar-thumb {
-  background: #606266;
-  border-radius: 3px;
-  transition: background 0.3s ease;
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: inset 0 0 6px rgba(0, 255, 255, 0.1);
 }
 
 .menu-container::-webkit-scrollbar-thumb:hover {
-  background: #909399;
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 
+    inset 0 0 6px rgba(0, 255, 255, 0.2),
+    0 0 15px rgba(0, 255, 255, 0.4);
 }
 
-
-
-/* 确保菜单项在滚动时不会被遮挡 */
-.el-menu-vertical-demo .el-menu-item,
-.el-menu-vertical-demo .el-sub-menu {
-  position: relative;
-}
-
-
-
-/* 优化子菜单展开时的样式 */
-.el-menu-vertical-demo .el-sub-menu .el-menu {
-  background-color: #434a50;
-}
-
-.el-menu-vertical-demo .el-sub-menu .el-menu-item:hover {
-  background-color: #383d42 !important;
-}
-
-/* 确保子菜单在展开时有足够的空间 */
-.el-menu-vertical-demo .el-sub-menu .el-menu-item {
-  min-height: 40px;
-  line-height: 40px;
-  padding: 0 20px 0 40px;
-}
-
-/* 优化菜单项的间距 */
-.el-menu-vertical-demo .el-menu-item {
-  height: 48px;
-  line-height: 48px;
-  padding: 0 20px;
-}
-
-/* 子菜单标题样式优化 */
-.el-menu-vertical-demo .el-sub-menu__title {
-  height: 48px;
-  line-height: 48px;
-  padding: 0 20px;
+.menu-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 
+    inset 0 0 6px rgba(0, 255, 255, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.6);
 }
 
 /* 菜单容器的滚动行为优化 */
@@ -451,5 +712,28 @@ export default {
 /* 子菜单展开时的底部空间 */
 .el-menu-vertical-demo .el-sub-menu .el-menu-item:last-child {
   margin-bottom: 10px;
+}
+
+/* 菜单折叠状态下的样式优化 */
+.el-menu-vertical-demo.el-menu--collapse .el-menu-item,
+.el-menu-vertical-demo.el-menu--collapse .el-sub-menu__title {
+  text-align: center;
+  padding: 0 !important;
+}
+
+.el-menu-vertical-demo.el-menu--collapse .el-menu-item .el-icon,
+.el-menu-vertical-demo.el-menu--collapse .el-sub-menu__title .el-icon {
+  margin-right: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .layout-aside {
+    width: 200px !important;
+  }
+  
+  .layout-aside.el-aside--collapsed {
+    width: 64px !important;
+  }
 }
 </style>
