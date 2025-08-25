@@ -219,29 +219,11 @@
         <!-- 编辑模式下的密码重置选项 -->
         <el-form-item v-if="isEditMode" label="密码重置">
           <el-checkbox v-model="passwordResetMode" @change="onPasswordResetModeChange">
-            重置用户密码
+            重置为原始密码
           </el-checkbox>
           <div class="form-hint" v-if="passwordResetMode">
-            勾选后可以为用户设置新密码
+            勾选后将重置用户密码为系统初始密码，用户需要重新登录
           </div>
-        </el-form-item>
-        <el-form-item label="密码" prop="password" v-if="passwordResetMode">
-          <el-input 
-            type="password" 
-            v-model="currentUser.password" 
-            show-password 
-            placeholder="请输入新密码"
-            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
-          ></el-input>
-        </el-form-item>
-        <el-form-item label="确认密码" prop="confirmPassword" v-if="passwordResetMode">
-          <el-input 
-            type="password" 
-            v-model="currentUser.confirmPassword" 
-            show-password 
-            placeholder="请再次输入新密码"
-            style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
-          ></el-input>
         </el-form-item>
         <div v-if="!isEditMode" class="password-notice">
           <el-alert
@@ -554,23 +536,7 @@ const userRules = reactive({
   roleIds: [
     { required: true, type: 'array', min: 1, message: '请至少选择一个角色', trigger: 'change' }
   ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于 6 位', trigger: 'blur' }
-  ],
-  confirmPassword: [
-    { required: true, message: '请再次输入密码', trigger: 'blur' },
-    {
-      validator: (rule, value, callback) => {
-        if (value !== currentUser.password) {
-          callback(new Error('两次输入的密码不一致！'));
-        } else {
-          callback();
-        }
-      },
-      trigger: 'blur'
-    }
-  ]
+
 });
 
 
@@ -854,8 +820,6 @@ const handleAddUser = () => {
     email: '',
     phone: '',
     description: '',
-    password: '',
-    confirmPassword: '',
     roleIds: [], // 重置角色选择
     status: 1, // 默认正常状态
     createTime: '',
@@ -876,12 +840,10 @@ const handleEditUser = (row) => {
   isEditMode.value = true;
   passwordResetMode.value = false; // 编辑时默认不重置密码，可后续单独重置
   
-  // 复制数据，密码清空不显示，并设置角色ID数组
+  // 复制数据，并设置角色ID数组
   const userRoleIds = (row.roles || []).map(role => role.id);
   Object.assign(currentUser, { 
     ...row, 
-    password: '', 
-    confirmPassword: '', // 清空确认密码字段
     roleIds: userRoleIds // 设置当前用户的角色ID数组
   });
   
@@ -896,15 +858,7 @@ const handleEditUser = (row) => {
  * 密码重置模式切换处理
  */
 const onPasswordResetModeChange = () => {
-  if (!passwordResetMode.value) {
-    // 取消密码重置时清空密码字段
-    currentUser.password = '';
-    currentUser.confirmPassword = '';
-    // 清除密码相关的验证错误
-    if (userFormRef.value) {
-      userFormRef.value.clearValidate(['password', 'confirmPassword']);
-    }
-  }
+  // 重置为初始密码模式不需要额外处理，只是一个开关
 };
 
 /**
@@ -917,16 +871,14 @@ const submitUserForm = async () => {
     if (valid) {
       try {
         loading.value = true;
-        // eslint-disable-next-line no-unused-vars
-        const { confirmPassword, ...userData } = currentUser;
+        const userData = currentUser;
         
         if (isEditMode.value) {
           // 编辑用户 - 需要处理用户信息更新、角色分配和密码重置
           let successMessages = [];
           
           // 1. 更新用户基本信息
-          // eslint-disable-next-line no-unused-vars
-          const { password, confirmPassword, roleIds, ...updateData } = userData;
+          const { roleIds, ...updateData } = userData;
           const userUpdateResponse = await userApi.updateUser(currentUser.id, updateData);
           if (userUpdateResponse.code === 200 && userUpdateResponse.success) {
             successMessages.push('用户信息更新成功');
@@ -944,11 +896,11 @@ const submitUserForm = async () => {
             }
           }
           
-          // 3. 重置密码（如果需要）
-          if (passwordResetMode.value && password) {
-            const passwordResponse = await userApi.resetPassword(currentUser.id, password);
+          // 3. 重置密码为初始密码（如果需要）
+          if (passwordResetMode.value) {
+            const passwordResponse = await userApi.resetPassword(currentUser.id);
             if (passwordResponse.code === 200 && passwordResponse.success) {
-              successMessages.push('密码重置成功');
+              successMessages.push('密码已重置为初始密码');
             } else {
               throw new Error(passwordResponse.message || '密码重置失败');
             }

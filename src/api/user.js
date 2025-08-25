@@ -78,9 +78,9 @@ export const userApi = {
     return api.put(`/api/v1/users/${userId}/unlock`)
   },
 
-  // 重置用户密码
-  resetPassword(userId, newPassword) {
-    return api.put(`/api/v1/users/${userId}/reset-password`, { new_password: newPassword })
+  // 重置用户密码为初始密码
+  resetPassword(userId) {
+    return api.put(`/api/v1/users/${userId}/reset-password`)
   },
 
   // 获取用户列表
