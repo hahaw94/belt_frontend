@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工业巡检AI平台 - 系统总览</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr 300px;
+            grid-template-rows: 80px 1fr;
+            height: 100vh;
+            gap: 15px;
+            padding: 15px;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            background: rgba(0, 150, 255, 0.1);
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            color: #00d4ff;
+            font-size: 24px;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 14px;
+        }
+
+        .left-panel, .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-height: calc(100vh - 110px);
+            overflow-y: auto;
+        }
+
+        .main-content {
+            position: relative;
+            background: linear-gradient(45deg, rgba(0, 50, 100, 0.3), rgba(0, 30, 60, 0.5));
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .factory-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%23001122;stop-opacity:1" /><stop offset="100%" style="stop-color:%23002244;stop-opacity:1" /></linearGradient></defs><rect fill="url(%23bg)" width="1200" height="800"/><g opacity="0.4"><rect x="100" y="300" width="200" height="100" fill="%23003366" rx="5"/><rect x="350" y="250" width="150" height="150" fill="%23004488" rx="5"/><rect x="550" y="280" width="300" height="80" fill="%23002244" rx="5"/><circle cx="200" cy="500" r="50" fill="%230066aa"/><circle cx="700" cy="450" r="40" fill="%230088cc"/><polygon points="900,200 950,150 1000,200 1000,350 900,350" fill="%23003366"/><polygon points="1050,180 1100,130 1150,180 1150,370 1050,370" fill="%23004488"/></g></svg>') center/cover no-repeat;
+            opacity: 0.6;
+        }
+
+        .widget {
+            background: rgba(0, 40, 80, 0.9);
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .widget-title {
+            color: #00d4ff;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .widget-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: linear-gradient(45deg, #00d4ff, #0099ff);
+            border-radius: 2px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: rgba(0, 150, 255, 0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .stat-item:hover {
+            background: rgba(0, 150, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #88ccff;
+            margin-top: 5px;
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            background: rgba(0, 100, 200, 0.1);
+            border-radius: 4px;
+            border-left: 3px solid #00d4ff;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .list-item:hover {
+            background: rgba(0, 150, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .status-online {
+            color: #00ff88;
+        }
+
+        .status-offline {
+            color: #ff4444;
+        }
+
+        .alert-popup {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 68, 68, 0.95);
+            border: 2px solid #ff4444;
+            border-radius: 10px;
+            padding: 25px;
+            min-width: 350px;
+            box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
+            animation: alertPulse 2s infinite;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+        }
+
+        @keyframes alertPulse {
+            0%, 100% { 
+                box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
+                transform: translate(-50%, -50%) scale(1);
+            }
+            50% { 
+                box-shadow: 0 0 50px rgba(255, 68, 68, 0.8);
+                transform: translate(-50%, -50%) scale(1.02);
+            }
+        }
+
+        .chart-container {
+            height: 180px;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(0, 150, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .task-algorithm {
+            font-size: 11px;
+            color: #88ccff;
+            margin-top: 5px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            animation: statusBlink 2s infinite;
+        }
+
+        .dot-online {
+            background: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .dot-offline {
+            background: #ff4444;
+            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+        }
+
+        @keyframes statusBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .alert-content h3 {
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .alert-content p {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .single-stat {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 150, 255, 0.1);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 150, 255, 0.2);
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 150, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0, 150, 255, 0.5);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 150, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>工业巡检AI平台</h1>
+            <div class="user-info">
+                <span>👤 超级管理员</span>
+                <span id="currentTime"></span>
+            </div>
+        </div>
+
+        <!-- 左侧面板 -->
+        <div class="left-panel">
+            <!-- 告警统计 -->
+            <div class="widget">
+                <div class="widget-title">📊 告警统计</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="totalAlerts">7</div>
+                        <div class="stat-label">今日告警数</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="processedAlerts">2</div>
+                        <div class="stat-label">已处理</div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="unprocessedAlerts">4</div>
+                        <div class="stat-label">未处理</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="processingAlerts">1</div>
+                        <div class="stat-label">处理中</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 任务统计 -->
+            <div class="widget">
+                <div class="widget-title">⚙️ 任务统计</div>
+                <div class="single-stat">
+                    <div class="stat-number">16</div>
+                    <div class="stat-label">在线任务</div>
+                    <div class="task-algorithm">安全帽检测、烟火检测、人员闯入</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 85%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 事件通知 -->
+            <div class="widget">
+                <div class="widget-title">🔔 事件通知</div>
+                <div class="list-item">
+                    <div>
+                        <div>演示61摄像机</div>
+                        <div style="font-size: 12px; color: #ff6666;">⚠️ 未戴安全帽</div>
+                    </div>
+                    <div style="font-size: 12px; color: #88ccff;">11:03:06</div>
+                </div>
+                <div class="list-item">
+                    <div>
+                        <div>演示253摄像机</div>
+                        <div style="font-size: 12px; color: #ff6666;">🔥 烟火检测</div>
+                    </div>
+                    <div style="font-size: 12px; color: #88ccff;">11:01:23</div>
+                </div>
+                <div class="list-item">
+                    <div>
+                        <div>演示211摄像机</div>
+                        <div style="font-size: 12px; color: #ff6666;">👤 人员闯入</div>
+                    </div>
+                    <div style="font-size: 12px; color: #88ccff;">10:56:31</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主要内容区域 -->
+        <div class="main-content">
+            <div class="factory-bg"></div>
+            
+            <!-- 告警弹窗 -->
+            <div class="alert-popup" id="alertPopup" onclick="showAlertDetails()">
+                <button class="close-btn" onclick="closeAlert(event)">&times;</button>
+                <div class="alert-content">
+                    <h3>🚨 实时告警</h3>
+                    <p><strong>设备名称:</strong> 摄像机1</p>
+                    <p><strong>事件名称:</strong> 未戴安全帽</p>
+                    <p><strong>告警时间:</strong> <span id="alertTime">2024-08-27 14:02:45</span></p>
+                    <p style="margin-top: 10px; font-size: 12px; opacity: 0.8;">点击查看详情 →</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧面板 -->
+        <div class="right-panel">
+            <!-- 设备统计 -->
+            <div class="widget">
+                <div class="widget-title">📹 设备统计</div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number status-online">7</div>
+                        <div class="stat-label">摄像机在线</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number status-offline">2</div>
+                        <div class="stat-label">摄像机离线</div>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number status-online">4</div>
+                        <div class="stat-label">算法服务在线</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number status-offline">1</div>
+                        <div class="stat-label">算法服务离线</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 高频告警排行 -->
+            <div class="widget">
+                <div class="widget-title">🏆 高频告警排行</div>
+                <div class="list-item">
+                    <div class="device-status">
+                        <span class="status-dot dot-online"></span>
+                        <span>TOP1 演示253摄像机</span>
+                    </div>
+                    <span class="stat-number" style="font-size: 16px;">15</span>
+                </div>
+                <div class="list-item">
+                    <div class="device-status">
+                        <span class="status-dot dot-online"></span>
+                        <span>TOP2 演示61摄像机</span>
+                    </div>
+                    <span class="stat-number" style="font-size: 16px;">12</span>
+                </div>
+                <div class="list-item">
+                    <div class="device-status">
+                        <span class="status-dot dot-online"></span>
+                        <span>TOP3 演示211摄像机</span>
+                    </div>
+                    <span class="stat-number" style="font-size: 16px;">8</span>
+                </div>
+                <div class="list-item">
+                    <div class="device-status">
+                        <span class="status-dot dot-offline"></span>
+                        <span>TOP4 演示102摄像机</span>
+                    </div>
+                    <span class="stat-number" style="font-size: 16px;">5</span>
+                </div>
+            </div>
+
+            <!-- 告警趋势 -->
+            <div class="widget">
+                <div class="widget-title">📈 告警趋势</div>
+                <div class="chart-container">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 更新当前时间
+        function updateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            document.getElementById('currentTime').textContent = `🕐 ${timeString}`;
+        }
+
+        // 初始化告警趋势图
+        function initTrendChart() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 180);
+            gradient.addColorStop(0, 'rgba(0, 212, 255, 0.4)');
+            gradient.addColorStop(1, 'rgba(0, 212, 255, 0.05)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+                    datasets: [{
+                        label: '告警数量',
+                        data: [2, 5, 3, 8, 12, 6, 4],
+                        borderColor: '#00d4ff',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#00d4ff',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 150, 255, 0.1)',
+                                borderColor: 'rgba(0, 150, 255, 0.3)'
+                            },
+                            ticks: {
+                                color: '#88ccff',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(0, 150, 255, 0.1)',
+                                borderColor: 'rgba(0, 150, 255, 0.3)'
+                            },
+                            ticks: {
+                                color: '#88ccff',
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // 关闭告警弹窗
+        function closeAlert(event) {
+            event.stopPropagation();
+            document.getElementById('alertPopup').style.display = 'none';
+        }
+
+        // 显示告警详情
+        function showAlertDetails() {
+            alert('🔍 跳转到告警详情页面...\n\n设备: 摄像机1\n事件: 未戴安全帽\n位置: 生产车间A区\n严重程度: 中等');
+        }
+
+        // 模拟实时数据更新
+        function updateRealTimeData() {
+            // 更新告警统计数据
+            const totalAlerts = Math.floor(Math.random() * 15) + 5;
+            const processedAlerts = Math.floor(totalAlerts * 0.4);
+            const processingAlerts = Math.floor(totalAlerts * 0.1);
+            const unprocessedAlerts = totalAlerts - processedAlerts - processingAlerts;
+            
+            document.getElementById('totalAlerts').textContent = totalAlerts;
+            document.getElementById('processedAlerts').textContent = processedAlerts;
+            document.getElementById('unprocessedAlerts').textContent = unprocessedAlerts;
+            document.getElementById('processingAlerts').textContent = processingAlerts;
+
+            // 随机显示告警弹窗
+            const alertPopup = document.getElementById('alertPopup');
+            if (Math.random() > 0.8) {
+                alertPopup.style.display = 'block';
+                document.getElementById('alertTime').textContent = new Date().toLocaleString('zh-CN');
+            }
+        }
+
+        // 添加页面加载动画
+        function addLoadingAnimation() {
+            const widgets = document.querySelectorAll('.widget');
+            widgets.forEach((widget, index) => {
+                widget.style.opacity = '0';
+                widget.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    widget.style.transition = 'all 0.5s ease';
+                    widget.style.opacity = '1';
+                    widget.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTime();
+            setInterval(updateTime, 1000);
+            
+            // 延迟初始化图表，确保DOM完全加载
+            setTimeout(() => {
+                initTrendChart();
+            }, 100);
+            
+            // 添加加载动画
+            addLoadingAnimation();
+            
+            // 每30秒更新一次实时数据
+            setInterval(updateRealTimeData, 30000);
+            
+            // 8秒后显示告警弹窗
+            setTimeout(() => {
+                document.getElementById('alertPopup').style.display = 'block';
+            }, 8000);
+
+            // 添加键盘快捷键
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeAlert(e);
+                }
+            });
+        });
+
+        // 添加窗口大小变化监听
+        window.addEventListener('resize', function() {
+            // 重新调整图表大小
+            setTimeout(() => {
+                Chart.getChart('trendChart')?.resize();
+            }, 100);
+        });
+    </script>
+</body>
+</html>
