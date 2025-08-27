@@ -334,6 +334,236 @@
       </el-tabs>
     </el-card>
 
+    <!-- 系统维护 -->
+    <el-card class="config-card mb-20" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <span>系统维护</span>
+          <el-button type="primary" :icon="Refresh" size="small" @click="loadSnapshotList" :loading="maintenanceLoading">刷新列表</el-button>
+        </div>
+      </template>
+      <div v-loading="maintenanceLoading">
+        <!-- 镜像点管理 -->
+        <el-row class="maintenance-section">
+          <el-col :span="24">
+            <h4>系统镜像点管理</h4>
+            <div class="maintenance-actions mb-20">
+              <el-button type="primary" @click="showCreateSnapshotDialog" :loading="creatingSnapshot">
+                <el-icon><Camera /></el-icon>
+                创建镜像点
+              </el-button>
+              <el-text class="ml-10" type="info">镜像点用于备份当前系统状态，包括配置文件和数据库</el-text>
+            </div>
+            
+            <!-- 镜像点列表 -->
+            <el-table :data="snapshotList" border style="width: 100%" empty-text="暂无镜像点">
+              <el-table-column prop="id" label="ID" width="80" />
+              <el-table-column prop="name" label="镜像点名称" min-width="150" />
+              <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="file_size" label="文件大小" width="120">
+                <template #default="scope">
+                  {{ formatFileSize(scope.row.file_size) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="created_at" label="创建时间" width="180">
+                <template #default="scope">
+                  {{ formatDateTime(scope.row.created_at) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="created_by" label="创建者" width="120" />
+              <el-table-column prop="status" label="状态" width="100">
+                <template #default="scope">
+                  <el-tag :type="getSnapshotStatusType(scope.row.status)">
+                    {{ getSnapshotStatusText(scope.row.status) }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="200" fixed="right">
+                <template #default="scope">
+                  <el-button type="primary" size="small" @click="confirmRestoreSnapshot(scope.row)" :loading="restoringSnapshot">
+                    恢复
+                  </el-button>
+                  <el-button type="danger" size="small" @click="confirmDeleteSnapshot(scope.row)" :loading="deletingSnapshot">
+                    删除
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-col>
+        </el-row>
+        
+        <el-divider />
+        
+        <!-- 系统重启管理 -->
+        <el-row class="maintenance-section">
+          <el-col :span="24">
+            <h4>系统重启管理</h4>
+            <div class="restart-actions">
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-card shadow="hover" class="restart-card">
+                    <div class="restart-item">
+                      <div class="restart-icon">
+                        <el-icon size="24" color="#409EFF"><Refresh /></el-icon>
+                      </div>
+                      <div class="restart-content">
+                        <h5>服务重启</h5>
+                        <p>重启应用服务，保持服务器运行</p>
+                        <el-button type="primary" @click="confirmRestartService" :loading="restartingService">
+                          重启服务
+                        </el-button>
+                      </div>
+                    </div>
+                  </el-card>
+                </el-col>
+                <el-col :span="12">
+                  <el-card shadow="hover" class="restart-card">
+                    <div class="restart-item">
+                      <div class="restart-icon">
+                        <el-icon size="24" color="#F56C6C"><PowerOff /></el-icon>
+                      </div>
+                      <div class="restart-content">
+                        <h5>服务器重启</h5>
+                        <p>重启整个服务器系统</p>
+                        <el-button type="danger" @click="confirmRebootServer" :loading="rebootingServer">
+                          重启服务器
+                        </el-button>
+                      </div>
+                    </div>
+                  </el-card>
+                </el-col>
+              </el-row>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
+    </el-card>
+
+    <!-- 创建镜像点对话框 -->
+    <el-dialog
+      v-model="createSnapshotDialogVisible"
+      title="创建系统镜像点"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="snapshotForm" :rules="snapshotRules" ref="snapshotFormRef" label-width="100px">
+        <el-form-item label="镜像点名称" prop="name">
+          <el-input v-model="snapshotForm.name" placeholder="请输入镜像点名称" maxlength="100" show-word-limit />
+        </el-form-item>
+        <el-form-item label="描述" prop="description">
+          <el-input
+            v-model="snapshotForm.description"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入描述信息（可选）"
+            maxlength="500"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-alert
+          title="提示：创建镜像点将备份当前系统的配置文件和数据库，请确保系统处于稳定状态"
+          type="info"
+          show-icon
+          :closable="false"
+        />
+      </el-form>
+      <template #footer>
+        <el-button @click="createSnapshotDialogVisible = false" :disabled="creatingSnapshot">取消</el-button>
+        <el-button type="primary" @click="createSnapshot" :loading="creatingSnapshot">创建镜像点</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 恢复镜像点确认对话框 -->
+    <el-dialog
+      v-model="restoreSnapshotDialogVisible"
+      title="确认恢复镜像点"
+      width="500px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+    >
+      <div>
+        <el-alert
+          title="警告：此操作将回滚所有数据到镜像点创建时的状态，无法撤销！"
+          type="warning"
+          show-icon
+          :closable="false"
+        />
+        <div style="margin: 20px 0;">
+          <p><strong>镜像点：</strong>{{ selectedSnapshot?.name }}</p>
+          <p><strong>创建时间：</strong>{{ formatDateTime(selectedSnapshot?.created_at) }}</p>
+          <p><strong>描述：</strong>{{ selectedSnapshot?.description || '无描述' }}</p>
+        </div>
+        <el-checkbox v-model="restoreConfirm">我已了解上述影响，确认执行恢复操作</el-checkbox>
+      </div>
+      <template #footer>
+        <el-button @click="restoreSnapshotDialogVisible = false" :disabled="restoringSnapshot">取消</el-button>
+        <el-button type="danger" @click="restoreSnapshot" :loading="restoringSnapshot" :disabled="!restoreConfirm">
+          确认恢复
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 重启确认对话框 -->
+    <el-dialog
+      v-model="restartConfirmDialogVisible"
+      :title="restartDialogTitle"
+      width="400px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+    >
+      <div>
+        <el-alert
+          :title="restartWarningMessage"
+          type="warning"
+          show-icon
+          :closable="false"
+        />
+        <div style="margin: 20px 0;">
+          <p>{{ restartDetailMessage }}</p>
+        </div>
+        <el-checkbox v-model="restartConfirm">我确认执行此操作</el-checkbox>
+      </div>
+      <template #footer>
+        <el-button @click="restartConfirmDialogVisible = false" :disabled="performingRestart">取消</el-button>
+        <el-button 
+          :type="restartType === 'service' ? 'primary' : 'danger'" 
+          @click="performRestart" 
+          :loading="performingRestart" 
+          :disabled="!restartConfirm"
+        >
+          确认{{ restartType === 'service' ? '重启服务' : '重启服务器' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 进度对话框（重启/恢复通用） -->
+    <el-dialog
+      v-model="restartProgressDialogVisible"
+      :title="restartProgressTitle"
+      width="400px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="restartProgress === 100 && restartProgressTitle === '镜像点恢复'"
+    >
+      <div class="progress-content">
+        <el-progress :percentage="restartProgress" :status="restartProgressStatus" />
+        <p style="margin-top: 15px; text-align: center;">{{ restartProgressMessage }}</p>
+        
+        <!-- 服务重启完成后的倒计时 -->
+        <div v-if="restartProgress === 100 && restartType === 'service'" style="text-align: center; margin-top: 20px;">
+          <p>服务重启完成，页面将在 <strong>{{ serviceRestartCountdown }}</strong> 秒后自动刷新</p>
+          <el-button type="primary" @click="refreshPage">立即刷新</el-button>
+        </div>
+        
+        <!-- 镜像点恢复完成后的提示 -->
+        <div v-if="restartProgress === 100 && restartProgressTitle === '镜像点恢复'" style="text-align: center; margin-top: 20px;">
+          <el-icon size="24" color="#67C23A" style="margin-bottom: 8px;"><SuccessFilled /></el-icon>
+          <p style="color: #67C23A; font-weight: 500; margin: 8px 0;">恢复完成！系统数据已回滚到镜像点状态</p>
+          <p style="color: #909399; font-size: 13px;">对话框将在 3 秒后自动关闭</p>
+        </div>
+      </div>
+    </el-dialog>
+
     <!-- IP修改确认对话框 -->
     <el-dialog
       v-model="ipChangeDialogVisible"
@@ -386,7 +616,7 @@
 <script setup>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Upload } from '@element-plus/icons-vue'
+import { Refresh, Upload, Camera, PowerOff, SuccessFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
 import { useSystemStore } from '@/stores/system'
 
@@ -405,6 +635,15 @@ const setTimeLoading = ref(false)
 const uploading = ref(false)
 const gb28181Loading = ref(false)
 const testingConnection = ref(false)
+
+// 系统维护相关加载状态
+const maintenanceLoading = ref(false)
+const creatingSnapshot = ref(false)
+const restoringSnapshot = ref(false)
+const deletingSnapshot = ref(false)
+const restartingService = ref(false)
+const rebootingServer = ref(false)
+const performingRestart = ref(false)
 
 // NTP配置
 const ntpConfig = reactive({
@@ -482,12 +721,44 @@ const gb28181Config = reactive({
   enabled: false
 })
 
+// 系统维护相关数据
+const snapshotList = ref([])
+const selectedSnapshot = ref(null)
+
+// 镜像点表单
+const snapshotForm = reactive({
+  name: '',
+  description: ''
+})
+
+// 对话框显示状态
+const createSnapshotDialogVisible = ref(false)
+const restoreSnapshotDialogVisible = ref(false)
+const restartConfirmDialogVisible = ref(false)
+const restartProgressDialogVisible = ref(false)
+
+// 确认状态
+const restoreConfirm = ref(false)
+const restartConfirm = ref(false)
+
+// 重启相关状态
+const restartType = ref('') // 'service' | 'server'
+const restartDialogTitle = ref('')
+const restartWarningMessage = ref('')
+const restartDetailMessage = ref('')
+const restartProgress = ref(0)
+const restartProgressStatus = ref('')
+const restartProgressMessage = ref('')
+const restartProgressTitle = ref('')
+const serviceRestartCountdown = ref(5)
+
 // 表单引用
 const ntpFormRef = ref(null)
 const networkFormRef = ref(null)
 const videoStorageFormRef = ref(null)
 const alarmDataFormRef = ref(null)
 const gb28181FormRef = ref(null)
+const snapshotFormRef = ref(null)
 
 // ===================== 验证规则 =====================
 
@@ -558,6 +829,16 @@ const gb28181Rules = {
   ],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' }
+  ]
+}
+
+const snapshotRules = {
+  name: [
+    { required: true, message: '请输入镜像点名称', trigger: 'blur' },
+    { min: 2, max: 100, message: '名称长度在 2 到 100 个字符', trigger: 'blur' }
+  ],
+  description: [
+    { max: 500, message: '描述长度不能超过 500 个字符', trigger: 'blur' }
   ]
 }
 
@@ -1016,6 +1297,302 @@ const resetGB28181Form = () => {
   loadGB28181Config()
 }
 
+// ===================== 系统维护方法 =====================
+
+// 加载镜像点列表
+const loadSnapshotList = async () => {
+  maintenanceLoading.value = true
+  try {
+    const response = await systemAPI.getSnapshots()
+    if (response.code === 200) {
+      snapshotList.value = response.data.snapshots || []
+    }
+  } catch (error) {
+    console.error('加载镜像点列表失败:', error)
+    ElMessage.error('加载镜像点列表失败')
+  } finally {
+    maintenanceLoading.value = false
+  }
+}
+
+// 显示创建镜像点对话框
+const showCreateSnapshotDialog = () => {
+  // 重置表单
+  snapshotForm.name = ''
+  snapshotForm.description = ''
+  
+  // 生成默认名称
+  const now = new Date()
+  const timestamp = now.toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '_')
+  snapshotForm.name = `镜像点_${timestamp}`
+  
+  createSnapshotDialogVisible.value = true
+}
+
+// 创建镜像点
+const createSnapshot = async () => {
+  if (!snapshotFormRef.value) return
+  
+  try {
+    await snapshotFormRef.value.validate()
+    creatingSnapshot.value = true
+    
+    const response = await systemAPI.createSnapshot(snapshotForm)
+    if (response.code === 200) {
+      ElMessage.success('镜像点创建成功')
+      createSnapshotDialogVisible.value = false
+      await loadSnapshotList()
+    }
+  } catch (error) {
+    console.error('创建镜像点失败:', error)
+    ElMessage.error('创建镜像点失败: ' + (error.response?.data?.message || error.message))
+  } finally {
+    creatingSnapshot.value = false
+  }
+}
+
+// 确认恢复镜像点
+const confirmRestoreSnapshot = (snapshot) => {
+  selectedSnapshot.value = snapshot
+  restoreConfirm.value = false
+  restoreSnapshotDialogVisible.value = true
+}
+
+// 恢复镜像点
+const restoreSnapshot = async () => {
+  if (!selectedSnapshot.value) return
+  
+  restoringSnapshot.value = true
+  try {
+    const response = await systemAPI.restoreSnapshot(selectedSnapshot.value.id)
+    if (response.code === 200) {
+      // 去除立即显示的成功提示，只在进度完成后显示
+      restoreSnapshotDialogVisible.value = false
+      
+      // 显示恢复进度（不是重启进度）
+      showRestoreProgress('镜像点恢复', '正在应用镜像点配置和数据...', 10)
+    }
+  } catch (error) {
+    console.error('恢复镜像点失败:', error)
+    ElMessage.error('恢复镜像点失败: ' + (error.response?.data?.message || error.message))
+  } finally {
+    restoringSnapshot.value = false
+  }
+}
+
+// 确认删除镜像点
+const confirmDeleteSnapshot = async (snapshot) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除镜像点 "${snapshot.name}" 吗？此操作无法撤销。`, 
+      '确认删除', 
+      {
+        type: 'warning',
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消'
+      }
+    )
+    
+    await deleteSnapshot(snapshot.id)
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除确认失败:', error)
+    }
+  }
+}
+
+// 删除镜像点
+const deleteSnapshot = async (snapshotId) => {
+  deletingSnapshot.value = true
+  try {
+    const response = await systemAPI.deleteSnapshot(snapshotId)
+    if (response.code === 200) {
+      ElMessage.success('镜像点删除成功')
+      await loadSnapshotList()
+    }
+  } catch (error) {
+    console.error('删除镜像点失败:', error)
+    ElMessage.error('删除镜像点失败: ' + (error.response?.data?.message || error.message))
+  } finally {
+    deletingSnapshot.value = false
+  }
+}
+
+// 确认重启服务
+const confirmRestartService = () => {
+  restartType.value = 'service'
+  restartDialogTitle.value = '确认重启服务'
+  restartWarningMessage.value = '警告：此操作将重启应用服务'
+  restartDetailMessage.value = '服务重启将中断正在进行的操作，大约需要10-30秒完成。'
+  restartConfirm.value = false
+  restartConfirmDialogVisible.value = true
+}
+
+// 确认重启服务器
+const confirmRebootServer = () => {
+  restartType.value = 'server'
+  restartDialogTitle.value = '确认重启服务器'
+  restartWarningMessage.value = '警告：此操作将重启整个服务器'
+  restartDetailMessage.value = '服务器重启将中断所有服务，大约需要1-3分钟完成。请确保保存所有工作。'
+  restartConfirm.value = false
+  restartConfirmDialogVisible.value = true
+}
+
+// 执行重启操作
+const performRestart = async () => {
+  performingRestart.value = true
+  restartConfirmDialogVisible.value = false
+  
+  try {
+    let response
+    if (restartType.value === 'service') {
+      response = await systemAPI.restartService()
+      if (response.code === 200) {
+        ElMessage.success('服务重启请求已发送')
+        showRestartProgress('服务重启', '服务正在重启...', response.data.delay || 3)
+      }
+    } else if (restartType.value === 'server') {
+      response = await systemAPI.rebootServer()
+      if (response.code === 200) {
+        ElMessage.success('服务器重启请求已发送')
+        showRestartProgress('服务器重启', '服务器正在重启...', response.data.delay || 30)
+      }
+    }
+  } catch (error) {
+    console.error('重启操作失败:', error)
+    ElMessage.error('重启操作失败: ' + (error.response?.data?.message || error.message))
+  } finally {
+    performingRestart.value = false
+  }
+}
+
+// 显示重启进度
+const showRestartProgress = (title, message, delaySeconds) => {
+  restartProgressTitle.value = title
+  restartProgressMessage.value = message
+  restartProgress.value = 0
+  restartProgressStatus.value = ''
+  restartProgressDialogVisible.value = true
+  
+  // 模拟进度更新
+  const progressInterval = setInterval(() => {
+    if (restartProgress.value < 90) {
+      restartProgress.value += 10
+    }
+  }, (delaySeconds * 1000) / 10)
+  
+  // 延迟后完成进度
+  setTimeout(() => {
+    clearInterval(progressInterval)
+    restartProgress.value = 100
+    restartProgressStatus.value = 'success'
+    restartProgressMessage.value = title + '完成'
+    
+    if (restartType.value === 'service') {
+      // 服务重启完成后开始倒计时刷新页面
+      startServiceRestartCountdown()
+    } else {
+      // 服务器重启完成
+      restartProgressMessage.value = '服务器重启完成，请等待系统恢复在线状态'
+    }
+  }, delaySeconds * 1000)
+}
+
+// 显示恢复进度（专门用于镜像点恢复）
+const showRestoreProgress = (title, message, delaySeconds) => {
+  restartProgressTitle.value = title
+  restartProgressMessage.value = message
+  restartProgress.value = 0
+  restartProgressStatus.value = ''
+  restartProgressDialogVisible.value = true
+  
+  // 模拟恢复进度更新
+  const progressInterval = setInterval(() => {
+    if (restartProgress.value < 90) {
+      restartProgress.value += 15  // 恢复过程相对较快
+    }
+  }, (delaySeconds * 1000) / 8)
+  
+  // 延迟后完成进度
+  setTimeout(() => {
+    clearInterval(progressInterval)
+    restartProgress.value = 100
+    restartProgressStatus.value = 'success'
+    restartProgressMessage.value = '镜像点恢复完成！系统数据已回滚'
+    
+    // 恢复完成后，3秒后自动关闭对话框
+    setTimeout(() => {
+      restartProgressDialogVisible.value = false
+      // 刷新镜像点列表以显示最新状态
+      loadSnapshotList()
+    }, 3000)
+  }, delaySeconds * 1000)
+}
+
+// 开始服务重启倒计时
+const startServiceRestartCountdown = () => {
+  serviceRestartCountdown.value = 5
+  const countdownInterval = setInterval(() => {
+    serviceRestartCountdown.value--
+    if (serviceRestartCountdown.value <= 0) {
+      clearInterval(countdownInterval)
+      refreshPage()
+    }
+  }, 1000)
+}
+
+// 刷新页面
+const refreshPage = () => {
+  window.location.reload()
+}
+
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (!bytes) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
+// 格式化日期时间
+const formatDateTime = (dateTimeStr) => {
+  if (!dateTimeStr) return '-'
+  try {
+    const date = new Date(dateTimeStr)
+    return date.toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    })
+  } catch (error) {
+    return dateTimeStr
+  }
+}
+
+// 获取镜像点状态类型
+const getSnapshotStatusType = (status) => {
+  switch (status) {
+    case 1: return 'success'  // 正常
+    case 2: return 'danger'   // 损坏
+    case 3: return 'info'     // 已删除
+    default: return 'warning'
+  }
+}
+
+// 获取镜像点状态文本
+const getSnapshotStatusText = (status) => {
+  switch (status) {
+    case 1: return '正常'
+    case 2: return '损坏'
+    case 3: return '已删除'
+    default: return '未知'
+  }
+}
+
 // ===================== 时间相关方法 =====================
 
 // 更新当前时间显示
@@ -1045,7 +1622,8 @@ onMounted(async () => {
     loadCurrentLogo(),
     loadVideoStorageConfig(),
     loadAlarmDataConfig(),
-    loadGB28181Config()
+    loadGB28181Config(),
+    loadSnapshotList()
   ])
 })
 
@@ -1210,5 +1788,144 @@ onUnmounted(() => {
 /* 选项卡内容区域 */
 .el-tabs__content {
   padding: 20px 0;
+}
+
+/* ===================== 系统维护样式 ===================== */
+
+.maintenance-section {
+  margin-bottom: 24px;
+}
+
+.maintenance-section h4 {
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.maintenance-actions {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ml-10 {
+  margin-left: 10px;
+}
+
+/* 重启卡片样式 */
+.restart-actions {
+  margin-top: 16px;
+}
+
+.restart-card {
+  height: 120px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.restart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.restart-item {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 16px;
+}
+
+.restart-icon {
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #f5f7fa;
+}
+
+.restart-content {
+  flex: 1;
+}
+
+.restart-content h5 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.restart-content p {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.4;
+}
+
+/* 表格样式优化 */
+.el-table {
+  font-size: 14px;
+}
+
+.el-table .el-button {
+  margin-right: 8px;
+}
+
+.el-table .el-button:last-child {
+  margin-right: 0;
+}
+
+/* 对话框内容样式 */
+.el-dialog__body {
+  padding: 20px 24px;
+}
+
+.el-dialog .el-form {
+  margin-top: 8px;
+}
+
+.el-dialog .el-alert {
+  margin-top: 16px;
+}
+
+/* 进度内容样式 */
+.progress-content {
+  text-align: center;
+  padding: 16px 0;
+}
+
+.progress-content .el-progress {
+  margin-bottom: 16px;
+}
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .restart-actions .el-col {
+    margin-bottom: 16px;
+  }
+  
+  .restart-item {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 16px;
+  }
+  
+  .restart-icon {
+    margin-right: 0;
+    margin-bottom: 12px;
+  }
+  
+  .maintenance-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .ml-10 {
+    margin-left: 0;
+  }
 }
 </style>
