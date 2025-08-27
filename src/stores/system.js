@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { systemAPI } from '@/api/system'
+import { createFaviconFromImage, resetFavicon } from '@/utils/favicon'
 
 /**
  * 系统配置Store
@@ -32,6 +33,14 @@ export const useSystemStore = defineStore('system', () => {
     width: 1920,
     height: 1080,
     camera_positions: []
+  })
+  
+  // LOGO配置
+  const logoConfig = ref({
+    url: '',
+    filename: '',
+    size: 0,
+    use_custom: false
   })
   
   const loading = ref(false)
@@ -74,6 +83,16 @@ export const useSystemStore = defineStore('system', () => {
   })
   const mapBackgroundUrl = computed(() => mapConfig.value.background_image)
   const cameraPositions = computed(() => mapConfig.value.camera_positions)
+  
+  // Logo相关计算属性
+  const currentLogoUrl = computed(() => {
+    if (logoConfig.value.use_custom && logoConfig.value.url) {
+      return logoConfig.value.url
+    }
+    return '/src/assets/logo.png' // 默认logo路径
+  })
+  
+  const hasCustomLogo = computed(() => logoConfig.value.use_custom && logoConfig.value.url)
 
   // Actions
   /**
@@ -438,6 +457,76 @@ export const useSystemStore = defineStore('system', () => {
   }
 
   /**
+   * 获取当前LOGO配置
+   */
+  const fetchLogoConfig = async () => {
+    try {
+      loading.value = true
+      const response = await systemAPI.getCurrentLogo()
+      if (response.code === 200) {
+        Object.assign(logoConfig.value, {
+          ...response.data,
+          use_custom: !!response.data.url
+        })
+        
+        // 同步更新favicon
+        await updateFaviconFromLogo()
+      }
+    } catch (error) {
+      console.error('获取LOGO配置失败:', error)
+    } finally {
+      loading.value = false
+    }
+  }
+
+  /**
+   * 更新LOGO配置（在LOGO上传后调用）
+   */
+  const updateLogoConfig = async (newLogoData) => {
+    Object.assign(logoConfig.value, {
+      ...newLogoData,
+      use_custom: !!newLogoData.url
+    })
+    
+    // 同步更新favicon
+    await updateFaviconFromLogo()
+  }
+
+  /**
+   * 删除自定义LOGO，恢复默认
+   */
+  const resetLogoConfig = async () => {
+    logoConfig.value = {
+      url: '',
+      filename: '',
+      size: 0,
+      use_custom: false
+    }
+    
+    // 恢复默认favicon
+    resetFavicon()
+  }
+
+  /**
+   * 根据当前logo更新favicon
+   */
+  const updateFaviconFromLogo = async () => {
+    try {
+      if (logoConfig.value.use_custom && logoConfig.value.url) {
+        // 使用自定义logo作为favicon
+        await createFaviconFromImage(logoConfig.value.url, 32)
+      } else {
+        // 使用默认favicon
+        resetFavicon()
+      }
+    } catch (error) {
+      console.error('更新favicon失败:', error)
+      // 如果更新失败，使用默认favicon
+      resetFavicon()
+    }
+  }
+
+  /**
    * 清空上传进度
    */
   const clearUploadProgress = () => {
@@ -514,6 +603,7 @@ export const useSystemStore = defineStore('system', () => {
       update_notes: ''
     }
     resetMapConfig()
+    resetLogoConfig()
     clearUploadProgress()
     clearBackupProgress()
     clearUpgradeProgress()
@@ -526,6 +616,7 @@ export const useSystemStore = defineStore('system', () => {
     basicConfig,
     versionInfo,
     mapConfig,
+    logoConfig,
     loading,
     ipChangeProgress,
     uploadProgress,
@@ -543,6 +634,8 @@ export const useSystemStore = defineStore('system', () => {
     cameraUsageRate,
     mapBackgroundUrl,
     cameraPositions,
+    currentLogoUrl,
+    hasCustomLogo,
     
     // Actions
     fetchBasicConfig,
@@ -561,6 +654,10 @@ export const useSystemStore = defineStore('system', () => {
     removeCameraPosition,
     updateSingleCameraPosition,
     resetMapConfig,
+    fetchLogoConfig,
+    updateLogoConfig,
+    resetLogoConfig,
+    updateFaviconFromLogo,
     clearUploadProgress,
     clearBackupProgress,
     clearUpgradeProgress,

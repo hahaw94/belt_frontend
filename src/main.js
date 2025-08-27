@@ -30,8 +30,13 @@ app.use(pinia)
 
 // 初始化认证状态
 import { useAuthStore } from '@/stores/auth'
+import { useSystemStore } from '@/stores/system'
 const authStore = useAuthStore()
+const systemStore = useSystemStore()
 authStore.initAuth()
+
+// 初始化系统配置（包括logo）
+systemStore.fetchLogoConfig()
 
 // 挂载路由
 app.use(router)

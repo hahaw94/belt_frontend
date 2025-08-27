@@ -3,7 +3,7 @@
     <el-container class="layout-container">
       <el-header class="layout-header">
         <div class="header-left">
-          <img src="../assets/logo.png" alt="Logo" class="app-logo" />
+          <img :src="currentLogoUrl" alt="Logo" class="app-logo" />
           <span class="app-title">智能监控系统</span>
         </div>
         <div class="header-right">
@@ -146,6 +146,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
+import { useSystemStore } from '@/stores/system';
 import ProfileModal from '@/components/ProfileModal.vue';
 import { usePermissions } from '@/composables/usePermissions';
 
@@ -157,6 +158,7 @@ export default {
   setup() {
     const router = useRouter();
     const authStore = useAuthStore();
+    const systemStore = useSystemStore();
     const { checkMenuPermission, checkChildPermission } = usePermissions();
     
     const userAvatarUrl = ref('https://cube.elemecdn.com/0/88/03b0d4153c31b21f7da7534d36da500d.jpeg');
@@ -172,6 +174,9 @@ export default {
       }
       return authStore.username || authStore.userInfo?.username || '游客';
     });
+
+    // 当前logo URL
+    const currentLogoUrl = computed(() => systemStore.currentLogoUrl);
 
     // 退出登录方法
     const handleLogout = async () => {
@@ -242,6 +247,8 @@ export default {
     onMounted(() => {
       adjustMenuHeight();
       window.addEventListener('resize', adjustMenuHeight);
+      // 加载logo配置
+      systemStore.fetchLogoConfig();
     });
 
     onUnmounted(() => {
@@ -252,6 +259,7 @@ export default {
       userAvatarUrl,
       isCollapse,
       displayUsername,
+      currentLogoUrl,
       checkMenuPermission,
       checkChildPermission,
       handleLogout,

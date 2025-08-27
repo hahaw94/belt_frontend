@@ -9,7 +9,7 @@ import { dashboardMockData } from './modules/dashboard'
 import { algorithmMockData } from './modules/algorithm'
 import { detectionMockData } from './modules/detection'
 import { eventMockData } from './modules/event'
-import { systemMockData } from './modules/system'
+
 
 
 let mock = null
@@ -40,7 +40,7 @@ export function setupMock(axiosInstance) {
     setupDashboardMock(mock)
     setupDetectionMock(mock)
     setupEventMock(mock)
-    setupSystemMock(mock)
+
     
     console.log('✓ 所有Mock模块已注册')
   } catch (error) {
@@ -63,11 +63,17 @@ export function setupMock(axiosInstance) {
   mock.onPut(/\/api\/v1\/users\/\d+/).passThrough()
   mock.onDelete(/\/api\/v1\/users\/\d+/).passThrough()
   
+  // 系统配置相关接口不拦截，直接调用后端API
+  mock.onGet(/\/api\/v1\/system\/.*/).passThrough()
+  mock.onPost(/\/api\/v1\/system\/.*/).passThrough()
+  mock.onPut(/\/api\/v1\/system\/.*/).passThrough()
+  mock.onDelete(/\/api\/v1\/system\/.*/).passThrough()
+  
   // 其他未匹配的请求通过
   mock.onAny().passThrough()
 
   console.log('🎉 Mock 拦截器已启用')
-  console.log('💡 注意: 认证和用户管理接口直接调用后端API，其他模块使用Mock数据')
+  console.log('💡 注意: 认证、用户管理和系统配置接口直接调用后端API，其他模块使用Mock数据')
 }
 
 /**
@@ -864,78 +870,5 @@ function setupEventMock(mock) {
   })
 }
 
-/**
- * 系统管理Mock
- */
-function setupSystemMock(mock) {
-  // 获取基础配置
-  mock.onGet('/api/system/config/basic').reply(() => {
-    return [200, {
-      error: 0,
-      body: systemMockData.getBasicConfig(),
-      message: '获取基础配置成功',
-      success: true
-    }]
-  })
 
-  // 更新基础配置
-  mock.onPut('/api/system/config/basic').reply(config => {
-    const configData = JSON.parse(config.data)
-    systemMockData.updateBasicConfig(configData)
-    
-    return [200, {
-      error: 0,
-      body: {},
-      message: '基础配置更新成功',
-      success: true
-    }]
-  })
-
-  // 获取版本信息
-  mock.onGet('/api/system/version').reply(() => {
-    return [200, {
-      error: 0,
-      body: systemMockData.getVersionInfo(),
-      message: '获取版本信息成功',
-      success: true
-    }]
-  })
-
-  // 创建版本备份
-  mock.onPost('/api/system/version/backup').reply(() => {
-    const backup = systemMockData.createBackup()
-    
-    return [200, {
-      error: 0,
-      body: {
-        backup_id: backup.id
-      },
-      message: '版本备份创建成功',
-      success: true
-    }]
-  })
-
-  // 获取地图配置
-  mock.onGet('/api/system/config/map').reply(() => {
-    return [200, {
-      error: 0,
-      body: systemMockData.getMapConfig(),
-      message: '获取地图配置成功',
-      success: true
-    }]
-  })
-
-  // 更新摄像机点位
-  mock.onPut('/api/system/config/map/update-positions').reply(config => {
-    const { positions } = JSON.parse(config.data)
-    systemMockData.updateCameraPositions(positions)
-    
-    return [200, {
-      error: 0,
-      body: {},
-      message: '摄像机点位更新成功',
-      success: true
-    }]
-  })
-}
 
