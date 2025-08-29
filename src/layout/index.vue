@@ -52,7 +52,7 @@
               </template>
               <el-menu-item v-if="checkMenuPermission('/system-config/basic-management')" index="/system-config/basic-management">基础管理</el-menu-item>
               <el-menu-item v-if="checkMenuPermission('/system-config/version-management')" index="/system-config/version-management">版本管理</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/system-config/map-management')" index="/system-config/map-management">地理管理</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/system-config/map-management')" index="/system-config/map-management">地图管理</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu v-if="checkChildPermission('/algorithm')" index="/algorithm">

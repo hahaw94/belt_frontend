@@ -73,7 +73,7 @@ export function setupMock(axiosInstance) {
   mock.onAny().passThrough()
 
   console.log('🎉 Mock 拦截器已启用')
-  console.log('💡 注意: 认证、用户管理和系统配置接口直接调用后端API，其他模块使用Mock数据')
+  console.log('💡 注意: 认证、用户管理和系统配置（版本管理、地图管理、基础管理）接口已完全移除Mock拦截，直接调用后端API，其他模块使用Mock数据')
 }
 
 /**

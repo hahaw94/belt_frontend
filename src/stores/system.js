@@ -21,11 +21,11 @@ export const useSystemStore = defineStore('system', () => {
   })
   
   const versionInfo = ref({
-    current_version: '',
-    build_time: '',
-    update_available: false,
-    latest_version: '',
-    update_notes: ''
+    version: '',        // 后端字段：软件版本号
+    build_time: '',     // 后端字段：构建时间  
+    go_version: '',     // 后端字段：Go运行时版本
+    mysql: '',          // 后端字段：MySQL版本
+    mongodb: ''         // 后端字段：MongoDB版本
   })
   
   const mapConfig = ref({
@@ -74,9 +74,7 @@ export const useSystemStore = defineStore('system', () => {
   const systemName = computed(() => basicConfig.value.system_name)
   const platformIp = computed(() => basicConfig.value.platform_ip)
   const platformPort = computed(() => basicConfig.value.platform_port)
-  const currentVersion = computed(() => versionInfo.value.current_version)
-  const hasUpdate = computed(() => versionInfo.value.update_available)
-  const latestVersion = computed(() => versionInfo.value.latest_version)
+  const currentVersion = computed(() => versionInfo.value.version)
   const cameraUsageRate = computed(() => {
     if (basicConfig.value.max_camera_count === 0) return 0
     return (basicConfig.value.current_camera_count / basicConfig.value.max_camera_count * 100).toFixed(1)
@@ -629,8 +627,6 @@ export const useSystemStore = defineStore('system', () => {
     platformIp,
     platformPort,
     currentVersion,
-    hasUpdate,
-    latestVersion,
     cameraUsageRate,
     mapBackgroundUrl,
     cameraPositions,

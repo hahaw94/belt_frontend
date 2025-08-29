@@ -129,51 +129,69 @@ export const systemAPI = {
     return request.post('/api/v1/system/maintenance/restart/server')
   },
 
-  // ===================== 版本管理 (待后端实现) =====================
-  // // 获取版本信息
-  // getVersionInfo() {
-  //   return request.get('/api/v1/system/version')
-  // },
+  // ===================== 版本管理 =====================
+  // 获取版本信息
+  getVersionInfo() {
+    return request.get('/api/v1/system/version')
+  },
 
-  // // 创建备份
-  // createBackup(data) {
-  //   return request.post('/api/v1/system/backup', data)
-  // },
+  // 获取MinIO桶信息
+  getMinioBucketsInfo() {
+    return request.get('/api/v1/system/backup/buckets')
+  },
 
-  // // 获取备份列表
-  // getBackupList() {
-  //   return request.get('/api/v1/system/backups')
-  // },
+  // 获取备份列表
+  getBackupList() {
+    return request.get('/api/v1/system/backups')
+  },
 
-  // // 下载备份文件
-  // downloadBackup(id) {
-  //   return request.get(`/api/v1/system/backup/${id}/download`, {
-  //     responseType: 'blob'
-  //   })
-  // },
+  // 下载备份文件
+  downloadBackup(filename) {
+    return request.get(`/api/v1/system/backups/${filename}/download`, {
+      responseType: 'blob',
+      timeout: 300000, // 5分钟超时，适用于大文件下载
+      onDownloadProgress: (progressEvent) => {
+        // 可以在这里添加下载进度处理
+        if (progressEvent.lengthComputable) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          console.log(`下载进度: ${percentCompleted}%`)
+        }
+      }
+    })
+  },
 
-  // // 上传并恢复备份
-  // restoreBackup(formData) {
-  //   return request.post('/api/v1/system/restore', formData, {
-  //     headers: {
-  //       'Content-Type': 'multipart/form-data'
-  //     }
-  //   })
-  // },
+  // 删除备份文件
+  deleteBackup(filename) {
+    return request.delete(`/api/v1/system/backups/${filename}`)
+  },
 
-  // // 一键升级
-  // upgradeSystem(formData) {
-  //   return request.post('/api/v1/system/upgrade', formData, {
-  //     headers: {
-  //       'Content-Type': 'multipart/form-data'
-  //     }
-  //   })
-  // },
+  // 创建备份
+  createBackup(data) {
+    return request.post('/api/v1/system/backup', data)
+  },
 
-  // // 获取升级状态
-  // getUpgradeStatus(id) {
-  //   return request.get(`/api/v1/system/upgrade/${id}`)
-  // }
+  // 上传并恢复备份
+  restoreSystem(formData) {
+    return request.post('/api/v1/system/restore', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  // 一键升级
+  upgradeSystem(formData) {
+    return request.post('/api/v1/system/upgrade', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  // 重启服务
+  restartSystemService() {
+    return request.post('/api/v1/system/restart')
+  }
 
   // ===================== 地图管理 (待后端实现) =====================
   // // 获取地图列表

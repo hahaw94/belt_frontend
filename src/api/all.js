@@ -12,6 +12,8 @@ export { systemApi } from './system'
 export { statisticsApi } from './statistics'
 export { logApi } from './log'
 export { websocketApi, wsManager } from './websocket'
+import * as mapApiModule from './map'
+export const mapApi = mapApiModule
 
 // 默认导出常用的API
 export default {
@@ -26,5 +28,6 @@ export default {
   system: systemApi,
   statistics: statisticsApi,
   log: logApi,
-  websocket: websocketApi
+  websocket: websocketApi,
+  map: mapApi
 } 

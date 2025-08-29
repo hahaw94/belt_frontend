@@ -37,6 +37,11 @@ request.interceptors.response.use(
       data: res
     })
     
+    // 检查是否是文件下载响应（blob类型）
+    if (res instanceof Blob) {
+      return response // 直接返回原始响应，保留blob数据
+    }
+    
     // 根据后端响应格式处理 {code: 200, message: "success", data: {...}, total?, page?, size?}
     if (res.code === 200) {
       // 成功响应，保留完整的响应信息包括分页数据

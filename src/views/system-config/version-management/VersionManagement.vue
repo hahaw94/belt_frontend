@@ -13,24 +13,19 @@
       <div v-loading="versionLoading">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="应用版本">
-            <el-tag type="primary" size="large">{{ versionInfo.app_version || 'N/A' }}</el-tag>
+            <el-tag type="primary" size="large">{{ versionInfo.version || 'N/A' }}</el-tag>
           </el-descriptions-item>
           <el-descriptions-item label="构建时间">
             {{ versionInfo.build_time || 'N/A' }}
           </el-descriptions-item>
-          <el-descriptions-item label="Git提交ID">
-            <el-tag type="info">{{ versionInfo.git_commit || 'N/A' }}</el-tag>
-          </el-descriptions-item>
           <el-descriptions-item label="Go版本">
             {{ versionInfo.go_version || 'N/A' }}
           </el-descriptions-item>
-          <el-descriptions-item label="系统状态">
-            <el-tag :type="getStatusType(versionInfo.system_status)" size="large">
-              {{ getStatusText(versionInfo.system_status) }}
-            </el-tag>
+          <el-descriptions-item label="MySQL版本">
+            {{ versionInfo.mysql || 'N/A' }}
           </el-descriptions-item>
-          <el-descriptions-item label="运行时间">
-            {{ formatUptime(versionInfo.uptime) }}
+          <el-descriptions-item label="MongoDB版本">
+            {{ versionInfo.mongodb || 'N/A' }}
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -58,30 +53,28 @@
         <!-- 备份列表 -->
         <div class="backup-list">
           <h4>备份历史</h4>
-          <el-table :data="backupList" style="width: 100%" v-loading="backupListLoading">
-            <el-table-column prop="id" label="ID" width="80"></el-table-column>
-            <el-table-column prop="name" label="备份名称" min-width="200"></el-table-column>
+          <el-table :data="safeBackupList" style="width: 100%" v-loading="backupListLoading">
+            <el-table-column prop="file_name" label="备份文件名" min-width="250"></el-table-column>
             <el-table-column prop="type" label="备份类型" width="120">
               <template #default="scope">
                 <el-tag :type="getBackupTypeTag(scope.row.type)">
                   {{ getBackupTypeName(scope.row.type) }}
-              </el-tag>
+                </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="size" label="大小" width="100">
+            <el-table-column prop="file_size" label="大小" width="120">
               <template #default="scope">
-                {{ formatFileSize(scope.row.size) }}
+                {{ formatFileSize(scope.row.file_size) }}
               </template>
             </el-table-column>
-            <el-table-column prop="created_at" label="创建时间" width="180">
+            <el-table-column prop="create_time" label="创建时间" width="180">
               <template #default="scope">
-                {{ formatDateTime(scope.row.created_at) }}
+                {{ formatDateTime(scope.row.create_time) }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="200" fixed="right">
+            <el-table-column label="操作" width="160" fixed="right">
               <template #default="scope">
                 <el-button type="primary" size="small" @click="downloadBackup(scope.row)">下载</el-button>
-                <el-button type="success" size="small" @click="restoreFromBackup(scope.row)">恢复</el-button>
                 <el-button type="danger" size="small" @click="deleteBackup(scope.row)">删除</el-button>
               </template>
             </el-table-column>
@@ -184,13 +177,10 @@
     <el-dialog
       v-model="createBackupDialogVisible"
       title="创建系统备份"
-      width="500px"
+      width="600px"
       :close-on-click-modal="false"
     >
-      <el-form :model="backupForm" :rules="backupRules" ref="backupFormRef" label-width="100px">
-        <el-form-item label="备份名称" prop="name">
-          <el-input v-model="backupForm.name" placeholder="请输入备份名称"></el-input>
-        </el-form-item>
+      <el-form :model="backupForm" :rules="backupRules" ref="backupFormRef" label-width="120px">
         <el-form-item label="备份类型" prop="type">
           <el-radio-group v-model="backupForm.type">
             <el-radio label="full">全量备份</el-radio>
@@ -198,8 +188,92 @@
             <el-radio label="database">数据库备份</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="备份描述">
-          <el-input v-model="backupForm.description" type="textarea" :rows="3" placeholder="可选，描述本次备份的目的"></el-input>
+        
+        <!-- MinIO桶选择 - 仅在全量备份和数据库备份时显示 -->
+        <el-form-item 
+          label="MinIO桶选择" 
+          v-if="backupForm.type === 'full' || backupForm.type === 'database'"
+          prop="minio_buckets"
+        >
+          <div v-loading="minioBucketsLoading" style="width: 100%;">
+            <el-alert 
+              v-if="minioBuckets.length === 0 && !minioBucketsLoading"
+              title="暂无可选择的MinIO存储桶" 
+              type="warning" 
+              :closable="false" 
+              show-icon
+              style="margin-bottom: 15px;"
+            />
+            
+            <div v-else-if="minioBuckets.length > 0" style="max-height: 350px; overflow-y: auto;">
+              <!-- 便捷操作按钮 -->
+              <div style="margin-bottom: 12px; padding: 8px; background: #f3f4f6; border-radius: 4px;">
+                <el-button 
+                  size="small" 
+                  @click="selectAllBuckets" 
+                  :disabled="backupForm.minio_buckets.length === minioBuckets.length"
+                >
+                  全选
+                </el-button>
+                <el-button 
+                  size="small" 
+                  @click="clearAllBuckets" 
+                  :disabled="backupForm.minio_buckets.length === 0"
+                >
+                  全不选
+                </el-button>
+                <el-button 
+                  size="small" 
+                  @click="selectRecommendedBuckets"
+                  :disabled="areRecommendedBucketsSelected"
+                >
+                  推荐选择
+                </el-button>
+                <span style="font-size: 12px; color: #6b7280; margin-left: 12px;">
+                  已选择 {{ backupForm.minio_buckets.length }} / {{ minioBuckets.length }} 个存储桶
+                </span>
+              </div>
+              
+              <el-checkbox-group v-model="backupForm.minio_buckets">
+                <div 
+                  v-for="bucket in minioBuckets" 
+                  :key="bucket.name"
+                  style="margin-bottom: 15px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;"
+                >
+                  <el-checkbox :label="bucket.name" style="width: 100%;">
+                    <div style="display: flex; flex-direction: column; margin-left: 8px;">
+                      <div style="font-weight: 600; color: #374151;">
+                        {{ bucket.name }}
+                        <el-tag size="small" style="margin-left: 8px;">
+                          {{ bucket.file_count }} 个文件, {{ formatFileSize(bucket.total_size) }}
+                        </el-tag>
+                      </div>
+                      <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                        {{ bucket.description }}
+                      </div>
+                    </div>
+                  </el-checkbox>
+                </div>
+              </el-checkbox-group>
+            </div>
+            
+            <el-alert 
+              v-if="backupForm.type === 'full'"
+              title="提示：全量备份建议选择所有相关的存储桶"
+              type="info" 
+              :closable="false" 
+              show-icon
+              style="margin-top: 15px;"
+            />
+            <el-alert 
+              v-else-if="backupForm.type === 'database'"
+              title="提示：数据库备份通常只需要选择包含数据的存储桶"
+              type="info" 
+              :closable="false" 
+              show-icon
+              style="margin-top: 15px;"
+            />
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -258,14 +332,33 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 新的任务进度弹窗 (实时轮询) -->
+    <ProgressModal
+      :visible="showTaskProgressModal"
+      :title="taskProgressTitle"
+      :progress="taskProgress"
+      :message="taskMessage"
+      :is-polling="isPolling"
+      :is-completed="isCompleted"
+      :is-error="isError"
+      :error-message="errorMessage"
+      :task-data="taskData"
+      :show-details="true"
+      :allow-cancel="false"
+      @close="handleTaskProgressModalClose"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Plus, UploadFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
+import { useTaskProgress } from '@/composables/useTaskProgress'
+import { createSystemBackup } from '@/api/map'
+import ProgressModal from '@/components/ProgressModal.vue'
 
 // ===================== 响应式数据 =====================
 
@@ -279,17 +372,16 @@ const creatingBackup = ref(false)
 
 // 版本信息
 const versionInfo = reactive({
-  app_version: '',
-  build_time: '',
-  git_commit: '',
-  go_version: '',
-  system_status: '',
-  uptime: 0
+  version: '',        // 后端字段：软件版本号
+  build_time: '',     // 后端字段：构建时间
+  go_version: '',     // 后端字段：Go运行时版本
+  mysql: '',          // 后端字段：MySQL版本
+  mongodb: ''         // 后端字段：MongoDB版本
 })
 
 // 备份相关
 const backupType = ref('full')
-const backupList = ref([])
+const backupList = ref([]) // 初始化为空数组
 const createBackupDialogVisible = ref(false)
 const backupProgressVisible = ref(false)
 const backupProgress = ref(0)
@@ -297,10 +389,13 @@ const backupStatus = ref('')
 const backupMessage = ref('')
 
 const backupForm = reactive({
-  name: '',
-  type: 'full',
-  description: ''
+  type: 'full',                // 后端字段：备份类型 (required)
+  minio_buckets: []           // 后端字段：选择的MinIO桶（仅数据备份和全量备份时使用）
 })
+
+// MinIO桶相关
+const minioBuckets = ref([])
+const minioBucketsLoading = ref(false)
 
 // 恢复相关
 const restoreUploadRef = ref(null)
@@ -323,15 +418,100 @@ const upgradeCountdown = ref(10)
 // 表单引用
 const backupFormRef = ref(null)
 
+// 进度轮询Hook
+const {
+  progress: taskProgress,
+  message: taskMessage,
+  isPolling,
+  isCompleted,
+  isError,
+  errorMessage,
+  taskData,
+  startPolling,
+  stopPolling,
+  reset: resetProgress
+} = useTaskProgress({
+  interval: 1000, // 1秒轮询一次
+  onProgress: (data) => {
+    console.log('任务进度更新:', data)
+  },
+  onComplete: (data) => {
+    console.log('任务完成:', data)
+    ElMessage.success('任务执行完成！')
+    // 刷新备份列表
+    loadBackupList()
+  },
+  onError: (error) => {
+    console.error('任务失败:', error)
+    ElMessage.error('任务执行失败：' + (error.message || '未知错误'))
+  }
+})
+
+// 新的进度弹窗状态
+const showTaskProgressModal = ref(false)
+const taskProgressTitle = ref('')
+
+// 计算属性：确保备份列表数据安全
+const safeBackupList = computed(() => {
+  return Array.isArray(backupList.value) ? backupList.value : []
+})
+
+// 计算属性：检查是否已选择推荐的桶
+const areRecommendedBucketsSelected = computed(() => {
+  const recommendedBuckets = minioBuckets.value
+    .filter(bucket => bucket.selected)
+    .map(bucket => bucket.name)
+  
+  if (recommendedBuckets.length === 0) return true
+  
+  return recommendedBuckets.every(bucketName => 
+    backupForm.minio_buckets.includes(bucketName)
+  )
+})
+
+// 监控备份列表数据类型
+watch(backupList, (newValue) => {
+  if (!Array.isArray(newValue)) {
+    console.warn('检测到backupList不是数组类型，自动修正为空数组:', newValue)
+    backupList.value = []
+  }
+}, { immediate: true })
+
+// 监控备份类型变化，自动更新MinIO桶选择
+watch(() => backupForm.type, (newType) => {
+  if (newType === 'config') {
+    // 配置备份不需要MinIO桶
+    backupForm.minio_buckets = []
+  } else if (minioBuckets.value.length > 0) {
+    // 其他类型根据后端默认设置选择
+    backupForm.minio_buckets = minioBuckets.value
+      .filter(bucket => bucket.selected)
+      .map(bucket => bucket.name)
+  }
+})
+
 // ===================== 验证规则 =====================
 
 const backupRules = {
-  name: [
-    { required: true, message: '请输入备份名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '备份名称长度为2-50个字符', trigger: 'blur' }
-  ],
   type: [
     { required: true, message: '请选择备份类型', trigger: 'change' }
+  ],
+  minio_buckets: [
+    {
+      validator: (rule, value, callback) => {
+        // 仅在全量备份和数据库备份时需要验证
+        if (backupForm.type === 'full' || backupForm.type === 'database') {
+          if (!value || value.length === 0) {
+            callback(new Error('请至少选择一个MinIO存储桶'))
+          } else {
+            callback()
+          }
+        } else {
+          callback()
+        }
+      },
+      trigger: 'change'
+    }
   ]
 }
 
@@ -341,54 +521,58 @@ const backupRules = {
 const loadVersionInfo = async () => {
   versionLoading.value = true
   try {
+    // 检查用户登录状态
+    const token = localStorage.getItem('token')
+    console.log('当前token:', token ? '存在' : '不存在')
+    console.log('正在调用版本信息API: /api/v1/system/version')
+    
     const response = await systemAPI.getVersionInfo()
-    if (response.code === 200) {
+    console.log('版本信息API响应:', response)
+    
+    if (response.success || response.code === 200) {
+      console.log('版本信息数据:', response.data)
       Object.assign(versionInfo, response.data)
+      ElMessage.success('版本信息加载成功')
+    } else {
+      console.warn('版本信息API返回非成功状态:', response)
+      ElMessage.warning('版本信息加载失败：' + (response.message || '未知错误'))
     }
   } catch (error) {
     console.error('加载版本信息失败:', error)
-    ElMessage.error('加载版本信息失败')
+    
+    // 详细错误信息
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+      console.error('HTTP错误状态:', status)
+      console.error('错误响应数据:', data)
+      
+      if (status === 401) {
+        ElMessage.error('未授权访问，请重新登录')
+      } else if (status === 403) {
+        ElMessage.error('权限不足')
+      } else if (status === 404) {
+        ElMessage.error('版本信息接口不存在 (404)')
+      } else {
+        ElMessage.error(`加载版本信息失败 (${status}): ${data?.message || '服务器错误'}`)
+      }
+    } else if (error.request) {
+      console.error('网络请求失败:', error.request)
+      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+        ElMessage.error('无法连接到后端服务器，请确认后端服务正在运行 (http://localhost:8080)')
+      } else {
+        ElMessage.error('网络连接失败，请检查网络连接')
+      }
+    } else {
+      console.error('请求配置错误:', error.message)
+      ElMessage.error('请求配置错误: ' + error.message)
+    }
   } finally {
     versionLoading.value = false
   }
 }
 
-// 获取状态类型
-const getStatusType = (status) => {
-  switch (status) {
-    case 'running': return 'success'
-    case 'warning': return 'warning'
-    case 'error': return 'danger'
-    default: return 'info'
-  }
-}
 
-// 获取状态文本
-const getStatusText = (status) => {
-  switch (status) {
-    case 'running': return '运行正常'
-    case 'warning': return '运行异常'
-    case 'error': return '系统错误'
-    default: return '未知状态'
-  }
-}
-
-// 格式化运行时间
-const formatUptime = (seconds) => {
-  if (!seconds) return 'N/A'
-  
-  const days = Math.floor(seconds / 86400)
-  const hours = Math.floor((seconds % 86400) / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  
-  if (days > 0) {
-    return `${days}天 ${hours}小时 ${minutes}分钟`
-  } else if (hours > 0) {
-    return `${hours}小时 ${minutes}分钟`
-  } else {
-    return `${minutes}分钟`
-  }
-}
 
 // ===================== 备份管理方法 =====================
 
@@ -396,28 +580,109 @@ const formatUptime = (seconds) => {
 const loadBackupList = async () => {
   backupListLoading.value = true
   try {
+    console.log('正在调用备份列表API...')
     const response = await systemAPI.getBackupList()
-    if (response.code === 200) {
-      backupList.value = response.data || []
+    console.log('备份列表API响应:', response)
+    
+    if (response.success || response.code === 200) {
+      // 确保数据是数组类型
+      const data = response.data
+      if (Array.isArray(data)) {
+        backupList.value = data
+      } else {
+        console.warn('备份列表数据不是数组格式:', data)
+        backupList.value = []
+      }
+      console.log('备份列表数据:', backupList.value)
+    } else {
+      console.warn('备份列表API返回非成功状态:', response)
+      backupList.value = [] // 确保是空数组
+      ElMessage.warning('备份列表加载失败：' + (response.message || '未知错误'))
     }
   } catch (error) {
     console.error('加载备份列表失败:', error)
-    ElMessage.error('加载备份列表失败')
+    
+    // 确保在错误情况下也设置为空数组
+    backupList.value = []
+    
+    // 详细错误信息
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+      console.error('HTTP错误状态:', status)
+      console.error('错误响应数据:', data)
+      
+      if (status === 401) {
+        ElMessage.error('未授权访问，请重新登录')
+      } else if (status === 403) {
+        ElMessage.error('权限不足，需要系统配置权限')
+      } else if (status === 404) {
+        ElMessage.error('备份列表接口不存在 (404)')
+      } else {
+        ElMessage.error(`加载备份列表失败 (${status}): ${data?.message || '服务器错误'}`)
+      }
+    } else {
+      ElMessage.error('网络连接失败，请检查网络连接')
+    }
   } finally {
     backupListLoading.value = false
   }
 }
 
+// 加载MinIO桶信息
+const loadMinioBuckets = async () => {
+  minioBucketsLoading.value = true
+  try {
+    console.log('正在加载MinIO桶信息...')
+    const response = await systemAPI.getMinioBucketsInfo()
+    console.log('MinIO桶信息响应:', response)
+    
+    if (response.success || response.code === 200) {
+      minioBuckets.value = response.data || []
+      // 根据后端默认选择设置前端的选中状态
+      backupForm.minio_buckets = minioBuckets.value
+        .filter(bucket => bucket.selected)
+        .map(bucket => bucket.name)
+      console.log('MinIO桶信息:', minioBuckets.value)
+      console.log('默认选中的桶:', backupForm.minio_buckets)
+    } else {
+      console.warn('MinIO桶信息API返回非成功状态:', response)
+      ElMessage.warning('加载MinIO桶信息失败：' + (response.message || '未知错误'))
+      minioBuckets.value = []
+    }
+  } catch (error) {
+    console.error('加载MinIO桶信息失败:', error)
+    minioBuckets.value = []
+    ElMessage.error('加载MinIO桶信息失败')
+  } finally {
+    minioBucketsLoading.value = false
+  }
+}
+
+// MinIO桶选择便捷操作
+const selectAllBuckets = () => {
+  backupForm.minio_buckets = minioBuckets.value.map(bucket => bucket.name)
+}
+
+const clearAllBuckets = () => {
+  backupForm.minio_buckets = []
+}
+
+const selectRecommendedBuckets = () => {
+  backupForm.minio_buckets = minioBuckets.value
+    .filter(bucket => bucket.selected)
+    .map(bucket => bucket.name)
+}
+
 // 显示创建备份对话框
-const showCreateBackupDialog = () => {
-  // 生成默认备份名称
-  const now = new Date()
-  const dateStr = now.toISOString().slice(0, 19).replace(/[T:]/g, '-')
-  backupForm.name = `backup-${dateStr}`
+const showCreateBackupDialog = async () => {
   backupForm.type = backupType.value
-  backupForm.description = ''
+  backupForm.minio_buckets = []
   
   createBackupDialogVisible.value = true
+  
+  // 加载MinIO桶信息
+  await loadMinioBuckets()
 }
 
 // 创建备份
@@ -429,47 +694,38 @@ const createBackup = async () => {
     creatingBackup.value = true
     createBackupDialogVisible.value = false
     
-    // 显示进度对话框
-    backupProgressVisible.value = true
-    backupProgress.value = 0
-    backupStatus.value = ''
-    backupMessage.value = '正在准备备份...'
+    // 设置进度弹窗标题
+    const typeNames = {
+      'config': '配置备份',
+      'database': '数据库备份', 
+      'full': '完整备份'
+    }
+    taskProgressTitle.value = `创建${typeNames[backupForm.type]}`
     
-    // 模拟进度更新
-    const progressTimer = setInterval(() => {
-      if (backupProgress.value < 90) {
-        backupProgress.value += 10
-        if (backupProgress.value === 30) {
-          backupMessage.value = '正在备份配置文件...'
-        } else if (backupProgress.value === 60) {
-          backupMessage.value = '正在备份数据库...'
-        } else if (backupProgress.value === 90) {
-          backupMessage.value = '正在打包备份文件...'
-        }
-      }
-    }, 1000)
+    // 重置进度状态并显示弹窗
+    resetProgress()
+    showTaskProgressModal.value = true
     
-    const response = await systemAPI.createBackup(backupForm)
+    console.log('正在创建备份，参数:', backupForm)
     
-    clearInterval(progressTimer)
+    // 调用新的备份API（返回任务ID）
+    const response = await createSystemBackup({
+      type: backupForm.type,
+      minio_buckets: backupForm.minio_buckets
+    })
     
-    if (response.code === 200) {
-      backupProgress.value = 100
-      backupStatus.value = 'success'
-      backupMessage.value = '备份创建成功'
-      
-      ElMessage.success('备份创建成功')
-      await loadBackupList()
-      
-      setTimeout(() => {
-        backupProgressVisible.value = false
-      }, 2000)
+    console.log('备份任务响应:', response)
+    
+    if (response.data && response.data.task_id) {
+      // 开始轮询任务进度
+      await startPolling(response.data.task_id)
+    } else {
+      throw new Error('未获取到任务ID')
     }
   } catch (error) {
     console.error('创建备份失败:', error)
-    backupStatus.value = 'exception'
-    backupMessage.value = '备份创建失败'
-    ElMessage.error('创建备份失败')
+    ElMessage.error('创建备份失败：' + error.message)
+    showTaskProgressModal.value = false
   } finally {
     creatingBackup.value = false
   }
@@ -478,83 +734,102 @@ const createBackup = async () => {
 // 下载备份
 const downloadBackup = async (backup) => {
   try {
-    const response = await systemAPI.downloadBackup(backup.id)
+    console.log('开始下载备份文件:', backup.file_name)
+    
+    // 显示下载中的提示
+    const loadingMessage = ElMessage({
+      message: '正在下载备份文件，请稍候...',
+      type: 'info',
+      duration: 0,
+      showClose: true
+    })
+    
+    const response = await systemAPI.downloadBackup(backup.file_name)
+    
+    // 关闭加载提示
+    loadingMessage.close()
+    
+    console.log('下载响应:', response)
+    
+    // 检查响应
+    if (!response.data) {
+      throw new Error('下载响应为空')
+    }
     
     // 创建下载链接
-    const blob = new Blob([response.data])
+    const blob = new Blob([response.data], { 
+      type: response.headers['content-type'] || 'application/octet-stream' 
+    })
+    
+    // 检查blob大小
+    if (blob.size === 0) {
+      throw new Error('下载的文件为空')
+    }
+    
     const url = window.URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = backup.name + '.tar.gz'
+    link.download = backup.file_name
+    
+    // 添加到DOM并触发下载
+    document.body.appendChild(link)
     link.click()
+    document.body.removeChild(link)
+    
+    // 清理URL
     window.URL.revokeObjectURL(url)
     
     ElMessage.success('备份文件下载成功')
   } catch (error) {
     console.error('下载备份失败:', error)
-    ElMessage.error('下载备份失败')
-  }
-}
-
-// 从备份恢复
-const restoreFromBackup = async (backup) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要从备份 "${backup.name}" 恢复系统吗？此操作将覆盖当前系统配置和数据！`,
-      '确认恢复',
-      {
-        type: 'warning',
-        confirmButtonText: '确认恢复',
-        cancelButtonText: '取消'
+    
+    // 详细错误信息
+    let errorMessage = '下载备份失败'
+    if (error.response) {
+      const status = error.response.status
+      if (status === 404) {
+        errorMessage = '备份文件不存在'
+      } else if (status === 403) {
+        errorMessage = '没有权限下载此文件'
+      } else if (status === 500) {
+        errorMessage = '服务器内部错误'
+      } else {
+        errorMessage = `下载失败 (${status}): ${error.response.data?.message || '未知错误'}`
       }
-    )
-    
-    executeRestoreFromBackup(backup)
-  } catch (error) {
-    // 用户取消操作
-  }
-}
-
-// 执行从备份恢复
-const executeRestoreFromBackup = async (backup) => {
-  restoreProgressVisible.value = true
-  restoreProgress.value = 0
-  restoreStatus.value = ''
-  restoreMessage.value = '正在恢复系统...'
-  
-  try {
-    // 模拟进度更新
-    const progressTimer = setInterval(() => {
-      if (restoreProgress.value < 90) {
-        restoreProgress.value += 10
-      }
-    }, 1000)
-    
-    const response = await systemAPI.restoreBackup(backup.id)
-    
-    clearInterval(progressTimer)
-    
-    if (response.code === 200) {
-      restoreProgress.value = 100
-      restoreStatus.value = 'success'
-      restoreMessage.value = '系统恢复成功'
-      
-      // 开始倒计时刷新
-      startRestoreCountdown()
+    } else if (error.request) {
+      errorMessage = '网络连接失败，请检查网络'
+    } else {
+      errorMessage = error.message || '下载失败'
     }
-  } catch (error) {
-    console.error('系统恢复失败:', error)
-    restoreStatus.value = 'exception'
-    restoreMessage.value = '系统恢复失败'
-    ElMessage.error('系统恢复失败')
+    
+    ElMessage.error(errorMessage)
+    
+    // 如果blob下载失败，尝试直接链接下载
+    console.log('尝试备用下载方法...')
+    try {
+      const directUrl = `/api/v1/system/backups/${backup.file_name}/download`
+      const link = document.createElement('a')
+      link.href = directUrl
+      link.download = backup.file_name
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      ElMessage.info('已尝试备用下载方法，请检查浏览器下载')
+    } catch (fallbackError) {
+      console.error('备用下载方法也失败:', fallbackError)
+    }
   }
 }
+
+
 
 // 删除备份
 const deleteBackup = async (backup) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除备份 "${backup.name}" 吗？此操作不可恢复！`,
+      `确定要删除备份 "${backup.file_name}" 吗？此操作不可恢复！`,
       '确认删除',
       {
         type: 'warning',
@@ -563,8 +838,8 @@ const deleteBackup = async (backup) => {
       }
     )
     
-    const response = await systemAPI.deleteBackup(backup.id)
-    if (response.code === 200) {
+    const response = await systemAPI.deleteBackup(backup.file_name)
+    if (response.success || response.code === 200) {
       ElMessage.success('备份删除成功')
       await loadBackupList()
     }
@@ -641,46 +916,37 @@ const executeRestore = async () => {
     )
     
     restoreLoading.value = true
-    restoreProgressVisible.value = true
-    restoreProgress.value = 0
-    restoreStatus.value = ''
-    restoreMessage.value = '正在上传备份文件...'
+    
+    // 设置进度弹窗
+    taskProgressTitle.value = '系统恢复'
+    resetProgress()
+    showTaskProgressModal.value = true
     
     const formData = new FormData()
-    formData.append('backup', selectedRestoreFile.value)
+    formData.append('file', selectedRestoreFile.value)
     
-    // 模拟进度更新
-    const progressTimer = setInterval(() => {
-      if (restoreProgress.value < 90) {
-        restoreProgress.value += 10
-        if (restoreProgress.value === 30) {
-          restoreMessage.value = '正在解析备份文件...'
-        } else if (restoreProgress.value === 60) {
-          restoreMessage.value = '正在恢复数据...'
-        } else if (restoreProgress.value === 90) {
-          restoreMessage.value = '正在重启服务...'
-        }
-      }
-    }, 1000)
+    console.log('正在上传恢复文件...')
+    const response = await systemAPI.restoreSystem(formData)
     
-    const response = await systemAPI.restoreBackup(formData)
+    console.log('恢复任务响应:', response)
     
-    clearInterval(progressTimer)
-    
-    if (response.code === 200) {
+    if (response.data && response.data.task_id) {
+      // 开始轮询任务进度
+      await startPolling(response.data.task_id)
+    } else {
+      // 如果没有返回task_id，使用旧的进度显示方式
+      restoreProgressVisible.value = true
       restoreProgress.value = 100
       restoreStatus.value = 'success'
       restoreMessage.value = '系统恢复成功'
-      
-      // 开始倒计时刷新
+      showTaskProgressModal.value = false
       startRestoreCountdown()
     }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('系统恢复失败:', error)
-      restoreStatus.value = 'exception'
-      restoreMessage.value = '系统恢复失败'
-      ElMessage.error('系统恢复失败')
+      ElMessage.error('系统恢复失败：' + error.message)
+      showTaskProgressModal.value = false
     }
   } finally {
     restoreLoading.value = false
@@ -752,46 +1018,37 @@ const executeUpgrade = async () => {
     )
     
     upgradeLoading.value = true
-    upgradeProgressVisible.value = true
-    upgradeProgress.value = 0
-    upgradeStatus.value = ''
-    upgradeMessage.value = '正在上传升级包...'
+    
+    // 设置进度弹窗
+    taskProgressTitle.value = '系统升级'
+    resetProgress()
+    showTaskProgressModal.value = true
     
     const formData = new FormData()
-    formData.append('upgrade', selectedUpgradeFile.value)
+    formData.append('file', selectedUpgradeFile.value)
     
-    // 模拟进度更新
-    const progressTimer = setInterval(() => {
-      if (upgradeProgress.value < 90) {
-        upgradeProgress.value += 10
-        if (upgradeProgress.value === 30) {
-          upgradeMessage.value = '正在验证升级包...'
-        } else if (upgradeProgress.value === 60) {
-          upgradeMessage.value = '正在执行升级...'
-        } else if (upgradeProgress.value === 90) {
-          upgradeMessage.value = '正在重启系统...'
-        }
-      }
-    }, 2000)
-    
+    console.log('正在上传升级包...')
     const response = await systemAPI.upgradeSystem(formData)
     
-    clearInterval(progressTimer)
+    console.log('升级任务响应:', response)
     
-    if (response.code === 200) {
+    if (response.data && response.data.task_id) {
+      // 开始轮询任务进度
+      await startPolling(response.data.task_id)
+    } else {
+      // 如果没有返回task_id，使用旧的进度显示方式
+      upgradeProgressVisible.value = true
       upgradeProgress.value = 100
       upgradeStatus.value = 'success'
       upgradeMessage.value = '系统升级成功'
-      
-      // 开始倒计时刷新
+      showTaskProgressModal.value = false
       startUpgradeCountdown()
     }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('系统升级失败:', error)
-      upgradeStatus.value = 'exception'
-      upgradeMessage.value = '系统升级失败'
-      ElMessage.error('系统升级失败')
+      ElMessage.error('系统升级失败：' + error.message)
+      showTaskProgressModal.value = false
     }
   } finally {
     upgradeLoading.value = false
@@ -816,6 +1073,15 @@ const startUpgradeCountdown = () => {
       window.location.reload()
     }
   }, 1000)
+}
+
+// 处理任务进度弹窗关闭
+const handleTaskProgressModalClose = () => {
+  showTaskProgressModal.value = false
+  if (isPolling.value) {
+    stopPolling()
+  }
+  resetProgress()
 }
 
 // ===================== 工具方法 =====================
@@ -848,7 +1114,39 @@ const formatDateTime = (dateString) => {
 
 // ===================== 生命周期钩子 =====================
 
+// 测试API连通性
+const testApiConnection = async () => {
+  try {
+    // 简单测试，调用不需要权限的接口
+    console.log('测试API连通性...')
+    const response = await fetch('/api/v1/system/version', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+        'Content-Type': 'application/json'
+      }
+    })
+    
+    console.log('API连通性测试响应状态:', response.status)
+    const data = await response.text()
+    console.log('API连通性测试响应数据:', data)
+    
+    if (response.status === 404) {
+      ElMessage.warning('API接口路径可能不正确，请检查后端路由配置')
+    } else if (response.status >= 500) {
+      ElMessage.warning('后端服务器内部错误')
+    }
+  } catch (error) {
+    console.error('API连通性测试失败:', error)
+    ElMessage.warning('无法连接到后端服务器，请确认后端服务正在运行')
+  }
+}
+
 onMounted(async () => {
+  // 先测试连通性
+  await testApiConnection()
+  
+  // 然后加载数据
   await Promise.all([
     loadVersionInfo(),
     loadBackupList()

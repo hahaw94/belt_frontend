@@ -85,6 +85,7 @@
       </el-form>
     </el-card>
 
+
     <!-- IP地址设置 -->
     <el-card class="config-card mb-20" shadow="hover">
       <template #header>
@@ -378,9 +379,9 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="200" fixed="right">
+              <el-table-column label="操作" width="160" fixed="right">
                 <template #default="scope">
-                  <el-button type="primary" size="small" @click="confirmRestoreSnapshot(scope.row)" :loading="restoringSnapshot">
+                  <el-button type="primary" size="small" @click="restoreSnapshot(scope.row.id)" :loading="restoringSnapshot">
                     恢复
                   </el-button>
                   <el-button type="danger" size="small" @click="confirmDeleteSnapshot(scope.row)" :loading="deletingSnapshot">
@@ -473,35 +474,7 @@
       </template>
     </el-dialog>
 
-    <!-- 恢复镜像点确认对话框 -->
-    <el-dialog
-      v-model="restoreSnapshotDialogVisible"
-      title="确认恢复镜像点"
-      width="500px"
-      :close-on-click-modal="false"
-      :close-on-press-escape="false"
-    >
-      <div>
-        <el-alert
-          title="警告：此操作将回滚所有数据到镜像点创建时的状态，无法撤销！"
-          type="warning"
-          show-icon
-          :closable="false"
-        />
-        <div style="margin: 20px 0;">
-          <p><strong>镜像点：</strong>{{ selectedSnapshot?.name }}</p>
-          <p><strong>创建时间：</strong>{{ formatDateTime(selectedSnapshot?.created_at) }}</p>
-          <p><strong>描述：</strong>{{ selectedSnapshot?.description || '无描述' }}</p>
-        </div>
-        <el-checkbox v-model="restoreConfirm">我已了解上述影响，确认执行恢复操作</el-checkbox>
-      </div>
-      <template #footer>
-        <el-button @click="restoreSnapshotDialogVisible = false" :disabled="restoringSnapshot">取消</el-button>
-        <el-button type="danger" @click="restoreSnapshot" :loading="restoringSnapshot" :disabled="!restoreConfirm">
-          确认恢复
-        </el-button>
-      </template>
-    </el-dialog>
+
 
     <!-- 重启确认对话框 -->
     <el-dialog
@@ -610,6 +583,22 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 镜像点任务进度弹窗 (实时轮询) -->
+    <ProgressModal
+      :visible="showSnapshotProgressModal"
+      :title="snapshotProgressTitle"
+      :progress="snapshotProgress"
+      :message="snapshotMessage"
+      :is-polling="snapshotPolling"
+      :is-completed="snapshotCompleted"
+      :is-error="snapshotError"
+      :error-message="snapshotErrorMessage"
+      :task-data="snapshotTaskData"
+      :show-details="true"
+      :allow-cancel="false"
+      @close="handleSnapshotProgressModalClose"
+    />
   </div>
 </template>
 
@@ -619,6 +608,9 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Upload, Camera, PowerOff, SuccessFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
 import { useSystemStore } from '@/stores/system'
+import { useTaskProgress } from '@/composables/useTaskProgress'
+import { createSystemSnapshot } from '@/api/map'
+import ProgressModal from '@/components/ProgressModal.vue'
 
 // ===================== 响应式数据 =====================
 
@@ -635,6 +627,7 @@ const setTimeLoading = ref(false)
 const uploading = ref(false)
 const gb28181Loading = ref(false)
 const testingConnection = ref(false)
+
 
 // 系统维护相关加载状态
 const maintenanceLoading = ref(false)
@@ -723,7 +716,6 @@ const gb28181Config = reactive({
 
 // 系统维护相关数据
 const snapshotList = ref([])
-const selectedSnapshot = ref(null)
 
 // 镜像点表单
 const snapshotForm = reactive({
@@ -731,14 +723,44 @@ const snapshotForm = reactive({
   description: ''
 })
 
+// 进度轮询Hook
+const {
+  progress: snapshotProgress,
+  message: snapshotMessage,
+  isPolling: snapshotPolling,
+  isCompleted: snapshotCompleted,
+  isError: snapshotError,
+  errorMessage: snapshotErrorMessage,
+  taskData: snapshotTaskData,
+  startPolling: startSnapshotPolling,
+  stopPolling: stopSnapshotPolling,
+  reset: resetSnapshotProgress
+} = useTaskProgress({
+  interval: 1000,
+  onProgress: (data) => {
+    console.log('镜像点任务进度更新:', data)
+  },
+  onComplete: (data) => {
+    console.log('镜像点任务完成:', data)
+    ElMessage.success('镜像点任务执行完成！')
+    loadSnapshotList()
+  },
+  onError: (error) => {
+    console.error('镜像点任务失败:', error)
+    ElMessage.error('镜像点任务执行失败：' + (error.message || '未知错误'))
+  }
+})
+
+// 镜像点进度弹窗状态
+const showSnapshotProgressModal = ref(false)
+const snapshotProgressTitle = ref('')
+
 // 对话框显示状态
 const createSnapshotDialogVisible = ref(false)
-const restoreSnapshotDialogVisible = ref(false)
 const restartConfirmDialogVisible = ref(false)
 const restartProgressDialogVisible = ref(false)
 
 // 确认状态
-const restoreConfirm = ref(false)
 const restartConfirm = ref(false)
 
 // 重启相关状态
@@ -1336,45 +1358,98 @@ const createSnapshot = async () => {
   try {
     await snapshotFormRef.value.validate()
     creatingSnapshot.value = true
+    createSnapshotDialogVisible.value = false
     
-    const response = await systemAPI.createSnapshot(snapshotForm)
-    if (response.code === 200) {
-      ElMessage.success('镜像点创建成功')
-      createSnapshotDialogVisible.value = false
-      await loadSnapshotList()
+    // 设置进度弹窗
+    snapshotProgressTitle.value = '创建系统镜像点'
+    resetSnapshotProgress()
+    showSnapshotProgressModal.value = true
+    
+    console.log('正在创建镜像点，参数:', snapshotForm)
+    
+    // 调用新的镜像点API（返回任务ID）
+    const response = await createSystemSnapshot({
+      name: snapshotForm.name,
+      description: snapshotForm.description
+    })
+    
+    console.log('镜像点任务响应:', response)
+    
+    if (response.data && response.data.task_id) {
+      // 开始轮询任务进度
+      await startSnapshotPolling(response.data.task_id)
+    } else {
+      throw new Error('未获取到任务ID')
     }
   } catch (error) {
     console.error('创建镜像点失败:', error)
-    ElMessage.error('创建镜像点失败: ' + (error.response?.data?.message || error.message))
+    ElMessage.error('创建镜像点失败：' + error.message)
+    showSnapshotProgressModal.value = false
   } finally {
     creatingSnapshot.value = false
   }
 }
 
-// 确认恢复镜像点
-const confirmRestoreSnapshot = (snapshot) => {
-  selectedSnapshot.value = snapshot
-  restoreConfirm.value = false
-  restoreSnapshotDialogVisible.value = true
-}
+
 
 // 恢复镜像点
-const restoreSnapshot = async () => {
-  if (!selectedSnapshot.value) return
+const restoreSnapshot = async (snapshotId) => {
+  if (!snapshotId) return
   
-  restoringSnapshot.value = true
+  const id = snapshotId
+  
   try {
-    const response = await systemAPI.restoreSnapshot(selectedSnapshot.value.id)
-    if (response.code === 200) {
-      // 去除立即显示的成功提示，只在进度完成后显示
-      restoreSnapshotDialogVisible.value = false
+    await ElMessageBox.confirm(
+      '确定要恢复到此镜像点吗？此操作将覆盖当前系统配置和数据！',
+      '确认恢复',
+      {
+        type: 'warning',
+        confirmButtonText: '确认恢复',
+        cancelButtonText: '取消'
+      }
+    )
+    
+    restoringSnapshot.value = true
+    
+    // 设置进度弹窗
+    snapshotProgressTitle.value = '恢复系统镜像点'
+    resetSnapshotProgress()
+    showSnapshotProgressModal.value = true
+    
+    console.log('正在恢复镜像点，ID:', id, '类型:', typeof id)
+    
+    // 确保ID是数字类型
+    const numericId = parseInt(id)
+    if (isNaN(numericId)) {
+      throw new Error('无效的镜像点ID')
+    }
+    
+    // 调用系统API恢复镜像点
+    const response = await systemAPI.restoreSnapshot(numericId)
+    
+    console.log('恢复任务响应:', response)
+    
+    if (response.data && response.data.task_id) {
+      // 开始轮询任务进度
+      await startSnapshotPolling(response.data.task_id)
       
-      // 显示恢复进度（不是重启进度）
-      showRestoreProgress('镜像点恢复', '正在应用镜像点配置和数据...', 10)
+
+    } else if (response.code === 200 || response.success) {
+      // 如果没有task_id但恢复成功，直接显示成功
+      showSnapshotProgressModal.value = false
+      ElMessage.success('镜像点恢复成功！')
+      loadSnapshotList()
+      
+
+    } else {
+      throw new Error('恢复镜像点失败')
     }
   } catch (error) {
-    console.error('恢复镜像点失败:', error)
-    ElMessage.error('恢复镜像点失败: ' + (error.response?.data?.message || error.message))
+    if (error !== 'cancel') {
+      console.error('恢复镜像点失败:', error)
+      ElMessage.error('恢复镜像点失败：' + error.message)
+      showSnapshotProgressModal.value = false
+    }
   } finally {
     restoringSnapshot.value = false
   }
@@ -1498,36 +1573,7 @@ const showRestartProgress = (title, message, delaySeconds) => {
   }, delaySeconds * 1000)
 }
 
-// 显示恢复进度（专门用于镜像点恢复）
-const showRestoreProgress = (title, message, delaySeconds) => {
-  restartProgressTitle.value = title
-  restartProgressMessage.value = message
-  restartProgress.value = 0
-  restartProgressStatus.value = ''
-  restartProgressDialogVisible.value = true
-  
-  // 模拟恢复进度更新
-  const progressInterval = setInterval(() => {
-    if (restartProgress.value < 90) {
-      restartProgress.value += 15  // 恢复过程相对较快
-    }
-  }, (delaySeconds * 1000) / 8)
-  
-  // 延迟后完成进度
-  setTimeout(() => {
-    clearInterval(progressInterval)
-    restartProgress.value = 100
-    restartProgressStatus.value = 'success'
-    restartProgressMessage.value = '镜像点恢复完成！系统数据已回滚'
-    
-    // 恢复完成后，3秒后自动关闭对话框
-    setTimeout(() => {
-      restartProgressDialogVisible.value = false
-      // 刷新镜像点列表以显示最新状态
-      loadSnapshotList()
-    }, 3000)
-  }, delaySeconds * 1000)
-}
+
 
 // 开始服务重启倒计时
 const startServiceRestartCountdown = () => {
@@ -1606,6 +1652,15 @@ const updateCurrentTime = () => {
   const seconds = now.getSeconds().toString().padStart(2, '0')
   
   currentTime.value = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+// 处理镜像点进度弹窗关闭
+const handleSnapshotProgressModalClose = () => {
+  showSnapshotProgressModal.value = false
+  if (snapshotPolling.value) {
+    stopSnapshotPolling()
+  }
+  resetSnapshotProgress()
 }
 
 // ===================== 生命周期钩子 =====================
