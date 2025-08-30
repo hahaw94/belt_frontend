@@ -1,13 +1,17 @@
 <template>
-  <div class="version-management-container sub-page-content">
+  <div class="version-management-container tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background">
+    </div>
+    
     <h2>版本管理</h2>
 
     <!-- 版本信息显示 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>当前版本信息</span>
-          <el-button type="primary" :icon="Refresh" size="small" @click="loadVersionInfo" :loading="versionLoading">刷新信息</el-button>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadVersionInfo" :loading="versionLoading">刷新信息</el-button>
         </div>
       </template>
       <div v-loading="versionLoading">
@@ -32,11 +36,11 @@
     </el-card>
 
     <!-- 备份功能 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>系统备份</span>
-          <el-button type="primary" :icon="Plus" size="small" @click="showCreateBackupDialog">创建备份</el-button>
+          <el-button type="primary" :icon="Plus" size="small" class="tech-button-sm" @click="showCreateBackupDialog">创建备份</el-button>
           </div>
       </template>
       <div v-loading="backupLoading">
@@ -53,7 +57,7 @@
         <!-- 备份列表 -->
         <div class="backup-list">
           <h4>备份历史</h4>
-          <el-table :data="safeBackupList" style="width: 100%" v-loading="backupListLoading">
+          <el-table :data="safeBackupList" border stripe class="tech-table" style="width: 100%" v-loading="backupListLoading">
             <el-table-column prop="file_name" label="备份文件名" min-width="250"></el-table-column>
             <el-table-column prop="type" label="备份类型" width="120">
               <template #default="scope">
@@ -74,8 +78,8 @@
             </el-table-column>
             <el-table-column label="操作" width="160" fixed="right">
               <template #default="scope">
-                <el-button type="primary" size="small" @click="downloadBackup(scope.row)">下载</el-button>
-                <el-button type="danger" size="small" @click="deleteBackup(scope.row)">删除</el-button>
+                <el-button type="primary" size="small" class="tech-button-sm" @click="downloadBackup(scope.row)">下载</el-button>
+                <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="deleteBackup(scope.row)">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -84,7 +88,7 @@
     </el-card>
 
     <!-- 恢复功能 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>系统恢复</span>
@@ -120,16 +124,16 @@
           </template>
         </el-upload>
         <div class="restore-actions" style="margin-top: 20px;">
-          <el-button type="danger" @click="executeRestore" :loading="restoreLoading" :disabled="!selectedRestoreFile">
+          <el-button type="danger" class="tech-button-danger" @click="executeRestore" :loading="restoreLoading" :disabled="!selectedRestoreFile">
             执行恢复
             </el-button>
-          <el-button @click="clearRestoreFile">清除文件</el-button>
+          <el-button class="tech-button-secondary" @click="clearRestoreFile">清除文件</el-button>
         </div>
       </div>
     </el-card>
 
     <!-- 一键升级 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>系统升级</span>
@@ -165,10 +169,10 @@
         </template>
       </el-upload>
         <div class="upgrade-actions" style="margin-top: 20px;">
-          <el-button type="danger" @click="executeUpgrade" :loading="upgradeLoading" :disabled="!selectedUpgradeFile">
+          <el-button type="danger" class="tech-button-danger" @click="executeUpgrade" :loading="upgradeLoading" :disabled="!selectedUpgradeFile">
             执行升级
           </el-button>
-          <el-button @click="clearUpgradeFile">清除文件</el-button>
+          <el-button class="tech-button-secondary" @click="clearUpgradeFile">清除文件</el-button>
         </div>
       </div>
     </el-card>
@@ -210,6 +214,7 @@
               <div style="margin-bottom: 12px; padding: 8px; background: #f3f4f6; border-radius: 4px;">
                 <el-button 
                   size="small" 
+                  class="tech-button-sm"
                   @click="selectAllBuckets" 
                   :disabled="backupForm.minio_buckets.length === minioBuckets.length"
                 >
@@ -217,6 +222,7 @@
                 </el-button>
                 <el-button 
                   size="small" 
+                  class="tech-button-secondary tech-button-sm"
                   @click="clearAllBuckets" 
                   :disabled="backupForm.minio_buckets.length === 0"
                 >
@@ -224,6 +230,7 @@
                 </el-button>
                 <el-button 
                   size="small" 
+                  class="tech-button-info tech-button-sm"
                   @click="selectRecommendedBuckets"
                   :disabled="areRecommendedBucketsSelected"
                 >
@@ -277,8 +284,8 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="createBackupDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="createBackup" :loading="creatingBackup">创建备份</el-button>
+        <el-button class="tech-button-secondary" @click="createBackupDialogVisible = false">取消</el-button>
+        <el-button type="primary" class="tech-button" @click="createBackup" :loading="creatingBackup">创建备份</el-button>
       </template>
     </el-dialog>
 
@@ -532,7 +539,6 @@ const loadVersionInfo = async () => {
     if (response.success || response.code === 200) {
       console.log('版本信息数据:', response.data)
       Object.assign(versionInfo, response.data)
-      ElMessage.success('版本信息加载成功')
     } else {
       console.warn('版本信息API返回非成功状态:', response)
       ElMessage.warning('版本信息加载失败：' + (response.message || '未知错误'))
@@ -1155,6 +1161,185 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* ==================== 科技感主题样式 ==================== */
+
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 20px;
+  padding-bottom: 40px;
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 科技感卡片 */
+.tech-card {
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 20px;
+}
+
+.tech-card :deep(.el-card__header) {
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 0;
+}
+
+.tech-card :deep(.el-card__body) {
+  background: transparent;
+  padding: 0;
+}
+
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 科技感表格 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px 12px !important;
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  background: transparent !important;
+  padding: 14px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
 .version-management-container {
   padding: 24px;
 }
@@ -1167,9 +1352,16 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 600;
-  font-size: 16px;
-  color: #303133;
+  font-weight: bold;
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.version-management-container h2 {
+  color: #00ffff;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
 }
 
 .mb-20 {
@@ -1263,11 +1455,336 @@ onMounted(async () => {
 
 /* 按钮组样式 */
 .el-button + .el-button {
-  margin-left: 0;
+  margin-left: 12px;
 }
 
 /* 警告框样式调整 */
 .el-alert {
   margin: 16px 0;
+}
+
+/* ==================== 输入框和表单样式 ==================== */
+
+/* 输入框通用样式 */
+:deep(.el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.4) !important;
+}
+
+:deep(.el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 选择器样式 */
+:deep(.el-select) {
+  width: 100%;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+}
+
+/* 下拉面板样式 */
+:deep(.el-select-dropdown) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+/* 表单标签样式 */
+:deep(.el-form-item__label) {
+  color: #ffffff !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+  font-weight: 500;
+}
+
+/* 文本区域样式 */
+:deep(.el-textarea__inner) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+}
+
+:deep(.el-textarea__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 上传组件样式 */
+:deep(.el-upload) {
+  border: 1px dashed rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 20, 40, 0.3) !important;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-upload:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 对话框样式 */
+:deep(.el-dialog) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-dialog__header) {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-dialog__body) {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+/* 进度条样式 */
+:deep(.el-progress-bar__outer) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-progress-bar__inner) {
+  background: linear-gradient(90deg, #00ffff, #0080ff) !important;
+}
+
+/* 描述列表样式调整 */
+:deep(.el-descriptions__body .el-descriptions__table) {
+  background: transparent !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__label) {
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 警告框样式更新 */
+:deep(.el-alert) {
+  background: rgba(255, 193, 7, 0.1) !important;
+  border: 1px solid rgba(255, 193, 7, 0.3) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.el-alert .el-alert__content) {
+  color: #ffc107 !important;
+}
+
+/* 其他文本颜色调整 */
+.config-form p,
+.config-form span,
+.config-form div {
+  color: #ffffff !important;
+}
+
+.backup-list h4,
+.restore-actions h4,
+.upgrade-actions h4 {
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+/* 备份和恢复说明文字 */
+.backup-section p,
+.restore-section p,
+.upgrade-section p {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ==================== 科技感按钮样式扩展 ==================== */
+
+/* 科技感主要按钮 */
+.tech-button {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+}
+
+.tech-button:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(0, 255, 255, 0.6) !important;
+}
+
+/* 科技感次要按钮 */
+.tech-button-secondary {
+  border: 1px solid rgba(128, 128, 128, 0.4) !important;
+  background: rgba(64, 64, 64, 0.1) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 8px rgba(128, 128, 128, 0.1) !important;
+  padding: 8px 16px !important;
+}
+
+.tech-button-secondary:hover {
+  background: rgba(128, 128, 128, 0.2) !important;
+  box-shadow: 0 0 15px rgba(128, 128, 128, 0.3) !important;
+  transform: translateY(-1px) !important;
+  color: #ffffff !important;
+  border-color: rgba(128, 128, 128, 0.6) !important;
+}
+
+/* 科技感危险按钮 */
+.tech-button-danger {
+  border: 1px solid rgba(255, 82, 82, 0.4) !important;
+  background: rgba(255, 82, 82, 0.1) !important;
+  color: #ff5252 !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(255, 82, 82, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+}
+
+.tech-button-danger:hover {
+  background: rgba(255, 82, 82, 0.2) !important;
+  box-shadow: 0 0 20px rgba(255, 82, 82, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(255, 82, 82, 0.6) !important;
+}
+
+/* 科技感信息按钮 */
+.tech-button-info {
+  border: 1px solid rgba(64, 158, 255, 0.4) !important;
+  background: rgba(64, 158, 255, 0.1) !important;
+  color: #409eff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(64, 158, 255, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+}
+
+.tech-button-info:hover {
+  background: rgba(64, 158, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(64, 158, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(64, 158, 255, 0.6) !important;
+}
+
+/* 便捷操作区域背景优化 */
+.backup-section :deep(.el-card__body) > div > div {
+  background: rgba(0, 20, 40, 0.3) !important;
+  border: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border-radius: 6px;
+}
+
+/* ==================== 文字和间距优化 ==================== */
+
+/* 增加文字行间距 */
+:deep(p), :deep(div), :deep(span) {
+  line-height: 1.6 !important;
+}
+
+/* 段落间距优化 */
+:deep(.el-card__body p) {
+  margin-bottom: 16px !important;
+}
+
+:deep(.el-card__body p:last-child) {
+  margin-bottom: 0 !important;
+}
+
+/* 表格行间距优化 */
+:deep(.el-table .el-table__row) {
+  height: 50px !important;
+}
+
+/* 描述列表间距优化 */
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+  padding: 16px 12px !important;
+  line-height: 1.6 !important;
+}
+
+/* 表单项间距优化 */
+.el-form-item {
+  margin-bottom: 28px !important;
+}
+
+/* 按钮组间距优化 */
+.restore-actions .el-button,
+.upgrade-actions .el-button {
+  margin-right: 16px !important;
+}
+
+.restore-actions .el-button:last-child,
+.upgrade-actions .el-button:last-child {
+  margin-right: 0 !important;
+}
+
+/* 便捷操作按钮间距 */
+:deep(.backup-section .el-button) {
+  margin-right: 12px !important;
+  margin-bottom: 8px !important;
+}
+
+:deep(.backup-section .el-button:last-child) {
+  margin-right: 0 !important;
 }
 </style>

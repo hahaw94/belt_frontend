@@ -17,13 +17,13 @@
       </el-select>
       
       <div class="toolbar-right">
-        <el-button type="primary" :icon="Plus" @click="showAddCameraDialog" :disabled="!selectedLayerId">
+        <el-button type="primary" class="tech-button" :icon="Plus" @click="showAddCameraDialog" :disabled="!selectedLayerId">
           添加相机
         </el-button>
-        <el-button type="success" :icon="Check" @click="savePositions" :disabled="!hasChanges">
+        <el-button type="success" class="tech-button-success" :icon="Check" @click="savePositions" :disabled="!hasChanges">
           保存位置
         </el-button>
-        <el-button type="info" :icon="Refresh" @click="refreshData">刷新</el-button>
+        <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshData">刷新</el-button>
       </div>
     </div>
 
@@ -89,10 +89,10 @@
       
       <!-- 缩放控制 -->
       <div class="zoom-controls">
-        <el-button-group>
-          <el-button :icon="ZoomIn" @click="zoomIn" />
-          <el-button @click="resetZoom">{{ Math.round(zoomLevel * 100) }}%</el-button>
-          <el-button :icon="ZoomOut" @click="zoomOut" />
+        <el-button-group class="tech-button-group">
+          <el-button class="tech-button-secondary" :icon="ZoomIn" @click="zoomIn" />
+          <el-button class="tech-button-secondary" @click="resetZoom">{{ Math.round(zoomLevel * 100) }}%</el-button>
+          <el-button class="tech-button-secondary" :icon="ZoomOut" @click="zoomOut" />
         </el-button-group>
       </div>
     </div>
@@ -104,7 +104,7 @@
     <div v-if="selectedCamera" class="camera-panel">
       <div class="panel-header">
         <h4>相机信息</h4>
-        <el-button type="text" @click="clearSelection">
+        <el-button type="text" class="tech-button-text" @click="clearSelection">
           <el-icon><Close /></el-icon>
         </el-button>
       </div>
@@ -124,8 +124,8 @@
         </el-descriptions>
         
         <div class="panel-actions">
-          <el-button type="primary" size="small" @click="editCameraPosition">编辑位置</el-button>
-          <el-button type="danger" size="small" @click="removeCameraFromLayerAction">移除相机</el-button>
+          <el-button type="primary" size="small" class="tech-button-sm" @click="editCameraPosition">编辑位置</el-button>
+          <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="removeCameraFromLayerAction">移除相机</el-button>
         </div>
       </div>
     </div>
@@ -169,9 +169,10 @@
       
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="addCameraVisible = false">取消</el-button>
+          <el-button class="tech-button-secondary" @click="addCameraVisible = false">取消</el-button>
           <el-button 
             type="primary" 
+            class="tech-button"
             @click="confirmAddCamera"
             :disabled="!selectedUnboundCamera"
           >
@@ -218,8 +219,8 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="editPositionVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmEditPosition">确认</el-button>
+          <el-button class="tech-button-secondary" @click="editPositionVisible = false">取消</el-button>
+          <el-button type="primary" class="tech-button" @click="confirmEditPosition">确认</el-button>
         </span>
       </template>
     </el-dialog>
@@ -838,5 +839,37 @@ export default {
     width: 90%;
     max-width: 400px;
   }
+}
+/* ==================== 间距优化 ==================== */
+
+/* 工具栏按钮间距 */
+.toolbar-right .el-button + .el-button {
+  margin-left: 16px !important;
+}
+
+/* 缩放按钮组间距 */
+.zoom-controls .el-button-group .el-button + .el-button {
+  margin-left: 0 !important;
+  border-left: 1px solid rgba(128, 128, 128, 0.4) !important;
+}
+
+/* 相机面板按钮间距 */
+.panel-actions .el-button + .el-button {
+  margin-left: 12px !important;
+}
+
+/* 表单项间距 */
+:deep(.el-form-item) {
+  margin-bottom: 24px !important;
+}
+
+/* 对话框按钮间距 */
+:deep(.dialog-footer .el-button + .el-button) {
+  margin-left: 16px !important;
+}
+
+/* 表格间距优化 */
+:deep(.el-table .el-table__row) {
+  height: 50px !important;
 }
 </style>

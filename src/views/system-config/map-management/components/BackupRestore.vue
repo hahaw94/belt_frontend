@@ -5,7 +5,7 @@
       <template #header>
         <div class="card-header">
           <span>创建地图备份</span>
-          <el-button type="primary" :icon="Plus" @click="showCreateBackupDialog">
+          <el-button type="primary" class="tech-button" :icon="Plus" @click="showCreateBackupDialog">
             创建备份
           </el-button>
         </div>
@@ -37,7 +37,7 @@
       <template #header>
         <div class="card-header">
           <span>备份文件列表</span>
-          <el-button type="info" :icon="Refresh" @click="loadBackupList">
+          <el-button type="info" class="tech-button-info" :icon="Refresh" @click="loadBackupList">
             刷新列表
           </el-button>
         </div>
@@ -69,17 +69,17 @@
         </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
-            <el-button type="text" size="small" @click="downloadBackup(scope.row)">
+                        <el-button type="text" size="small" class="tech-button-text" @click="downloadBackup(scope.row)">
               下载
             </el-button>
-            <el-button type="text" size="small" @click="showRestoreDialog(scope.row)">
+            <el-button type="text" size="small" class="tech-button-text tech-button-info" @click="showRestoreDialog(scope.row)">
               恢复
             </el-button>
             <el-button 
               type="text" 
               size="small" 
-              @click="deleteBackup(scope.row)" 
-              style="color: #f56c6c;"
+              class="tech-button-text tech-button-danger"
+              @click="deleteBackup(scope.row)"
             >
               删除
             </el-button>
@@ -95,7 +95,7 @@
       <template #header>
         <div class="card-header">
           <span>从文件恢复</span>
-          <el-button type="warning" :icon="Upload" @click="showUploadRestoreDialog">
+          <el-button type="warning" class="tech-button-warning" :icon="Upload" @click="showUploadRestoreDialog">
             上传恢复
           </el-button>
         </div>
@@ -176,8 +176,8 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="createBackupVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmCreateBackup" :loading="creating">
+          <el-button class="tech-button-secondary" @click="createBackupVisible = false">取消</el-button>
+          <el-button type="primary" class="tech-button" @click="confirmCreateBackup" :loading="creating">
             创建备份
           </el-button>
         </span>
@@ -221,8 +221,8 @@
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="restoreVisible = false">取消</el-button>
-          <el-button type="warning" @click="confirmRestore" :loading="restoring">
+          <el-button class="tech-button-secondary" @click="restoreVisible = false">取消</el-button>
+          <el-button type="warning" class="tech-button-warning" @click="confirmRestore" :loading="restoring">
             确认恢复
           </el-button>
         </span>
@@ -272,9 +272,10 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="uploadRestoreVisible = false">取消</el-button>
+          <el-button class="tech-button-secondary" @click="uploadRestoreVisible = false">取消</el-button>
           <el-button 
             type="warning" 
+            class="tech-button-warning"
             @click="confirmUploadRestore" 
             :loading="uploading"
             :disabled="!uploadRestoreForm.file"
@@ -713,5 +714,36 @@ export default {
     gap: 10px;
     align-items: stretch;
   }
+}
+/* ==================== 间距优化 ==================== */
+
+/* 卡片头部按钮间距 */
+.card-header .el-button + .el-button {
+  margin-left: 16px !important;
+}
+
+/* 表格行间距 */
+:deep(.el-table .el-table__row) {
+  height: 50px !important;
+}
+
+/* 表格内按钮间距 */
+:deep(.el-table .el-button + .el-button) {
+  margin-left: 12px !important;
+}
+
+/* 表单项间距 */
+:deep(.el-form-item) {
+  margin-bottom: 24px !important;
+}
+
+/* 对话框按钮间距 */
+:deep(.dialog-footer .el-button + .el-button) {
+  margin-left: 16px !important;
+}
+
+/* 文字行间距优化 */
+:deep(p), :deep(div), :deep(span) {
+  line-height: 1.6 !important;
 }
 </style>

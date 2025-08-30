@@ -2,8 +2,8 @@
   <div class="camera-management">
     <!-- 操作工具栏 -->
     <div class="toolbar">
-      <el-button type="primary" :icon="Plus" @click="showCreateDialog">新建相机</el-button>
-      <el-button type="info" :icon="Refresh" @click="refreshCameras">刷新</el-button>
+      <el-button type="primary" class="tech-button" :icon="Plus" @click="showCreateDialog">新建相机</el-button>
+      <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshCameras">刷新</el-button>
       
       <!-- 搜索框 -->
       <div class="search-box">
@@ -89,13 +89,13 @@
       </el-table-column>
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="scope">
-          <el-button type="text" size="small" @click="viewCamera(scope.row)">查看</el-button>
-          <el-button type="text" size="small" @click="editCamera(scope.row)">编辑</el-button>
+          <el-button type="text" size="small" class="tech-button-text" @click="viewCamera(scope.row)">查看</el-button>
+          <el-button type="text" size="small" class="tech-button-text" @click="editCamera(scope.row)">编辑</el-button>
           <el-button 
             type="text" 
             size="small" 
+            class="tech-button-text tech-button-danger"
             @click="deleteCamera(scope.row)" 
-            style="color: #f56c6c;"
             :disabled="scope.row.is_bound === 1"
           >
             删除
@@ -182,8 +182,8 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitDialog" :loading="submitting">确认</el-button>
+          <el-button class="tech-button-secondary" @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" class="tech-button" @click="submitDialog" :loading="submitting">确认</el-button>
         </span>
       </template>
     </el-dialog>
@@ -587,5 +587,32 @@ export default {
     justify-content: center;
     flex-wrap: wrap;
   }
+}
+
+/* ==================== 间距优化 ==================== */
+
+/* 按钮间距 */
+.toolbar .el-button + .el-button {
+  margin-left: 16px !important;
+}
+
+/* 表格行间距 */
+:deep(.el-table .el-table__row) {
+  height: 50px !important;
+}
+
+/* 表格内按钮间距 */
+:deep(.el-table .el-button + .el-button) {
+  margin-left: 12px !important;
+}
+
+/* 表单项间距 */
+:deep(.el-form-item) {
+  margin-bottom: 24px !important;
+}
+
+/* 对话框按钮间距 */
+:deep(.dialog-footer .el-button + .el-button) {
+  margin-left: 16px !important;
 }
 </style>

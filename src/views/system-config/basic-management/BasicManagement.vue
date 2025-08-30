@@ -1,13 +1,17 @@
 <template>
-  <div class="basic-management-container sub-page-content">
+  <div class="basic-management-container tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background">
+    </div>
+    
     <h2>基础管理</h2>
 
     <!-- NTP时间设置 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>NTP时间设置</span>
-          <el-button type="primary" :icon="Refresh" size="small" @click="loadNTPConfig" :loading="ntpLoading">刷新配置</el-button>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadNTPConfig" :loading="ntpLoading">刷新配置</el-button>
         </div>
       </template>
       <el-form :model="ntpConfig" :rules="ntpRules" ref="ntpFormRef" label-width="150px" class="config-form" v-loading="ntpLoading">
@@ -23,12 +27,28 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="时区设置" prop="timezone">
-              <el-select v-model="ntpConfig.timezone" placeholder="请选择时区" style="width: 100%">
-                <el-option label="Asia/Shanghai" value="Asia/Shanghai"></el-option>
-                <el-option label="Asia/Beijing" value="Asia/Beijing"></el-option>
-                <el-option label="UTC" value="UTC"></el-option>
-                <el-option label="America/New_York" value="America/New_York"></el-option>
-              </el-select>
+              <!-- 自定义时区选择器 -->
+              <div 
+                ref="timezoneSelector"
+                class="custom-timezone-selector" 
+                @click="toggleTimezoneDropdown"
+              >
+                <div class="timezone-display">
+                  <span class="timezone-text">{{ getTimezoneDisplayText() }}</span>
+                  <i class="timezone-arrow" :class="{ 'expanded': showTimezoneDropdown }">▼</i>
+                </div>
+                <div v-if="showTimezoneDropdown" class="timezone-dropdown-custom" @click.stop>
+                  <div 
+                    v-for="option in timezoneOptions" 
+                    :key="option.value"
+                    class="timezone-option"
+                    :class="{ 'selected': ntpConfig.timezone === option.value }"
+                    @click="selectTimezone(option.value)"
+                  >
+                    {{ option.label }}
+                  </div>
+                </div>
+              </div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -40,7 +60,7 @@
           </el-col>
           <el-col :span="12">
             <el-form-item>
-              <el-button type="primary" @click="syncNTP" :loading="syncLoading">立即同步</el-button>
+              <el-button type="primary" class="tech-button" @click="syncNTP" :loading="syncLoading">立即同步</el-button>
             </el-form-item>
           </el-col>
         </el-row>
@@ -59,8 +79,8 @@
           </el-col>
           <el-col :span="12">
             <el-form-item>
-              <el-button type="primary" @click="setManualTime" :loading="setTimeLoading">设置时间</el-button>
-              <el-button @click="syncPCTime">同步PC时间</el-button>
+              <el-button type="primary" class="tech-button" @click="setManualTime" :loading="setTimeLoading">设置时间</el-button>
+              <el-button class="tech-button-secondary" @click="syncPCTime">同步PC时间</el-button>
             </el-form-item>
           </el-col>
         </el-row>
@@ -74,12 +94,12 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row>
+        <el-row style="margin-top: 24px;">
           <el-col :span="24">
-        <el-form-item>
-              <el-button type="primary" @click="saveNTPConfig" :loading="ntpLoading">保存配置</el-button>
-              <el-button @click="resetNTPForm">重置</el-button>
-        </el-form-item>
+            <el-form-item>
+              <el-button type="primary" class="tech-button" @click="saveNTPConfig" :loading="ntpLoading">保存配置</el-button>
+              <el-button class="tech-button-secondary" @click="resetNTPForm">重置</el-button>
+            </el-form-item>
           </el-col>
         </el-row>
       </el-form>
@@ -87,11 +107,11 @@
 
 
     <!-- IP地址设置 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>IP地址设置</span>
-          <el-button type="primary" :icon="Refresh" size="small" @click="loadNetworkConfig" :loading="networkLoading">刷新配置</el-button>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadNetworkConfig" :loading="networkLoading">刷新配置</el-button>
         </div>
       </template>
       <el-form :model="networkConfig" :rules="networkRules" ref="networkFormRef" label-width="150px" class="config-form" v-loading="networkLoading">
@@ -114,19 +134,22 @@
         </el-row>
         <el-row>
           <el-col :span="24">
-            <el-alert
-              title="警告：修改IP地址将导致系统重启，您需要使用新IP地址重新访问系统并重新登录"
-              type="warning"
-              show-icon
-              :closable="false"
-            />
+            <div class="warning-container">
+              <el-alert
+                title="警告：修改IP地址将导致系统重启，您需要使用新IP地址重新访问系统并重新登录"
+                type="warning"
+                show-icon
+                :closable="false"
+                class="custom-warning-alert"
+              />
+            </div>
           </el-col>
         </el-row>
         <el-row style="margin-top: 20px;">
           <el-col :span="24">
             <el-form-item>
-              <el-button type="danger" @click="showIPChangeDialog" :loading="networkLoading">修改IP地址</el-button>
-              <el-button @click="resetNetworkForm">重置</el-button>
+              <el-button type="danger" class="tech-button-danger" @click="showIPChangeDialog" :loading="networkLoading">修改IP地址</el-button>
+              <el-button class="tech-button-secondary" @click="resetNetworkForm">重置</el-button>
           </el-form-item>
           </el-col>
         </el-row>
@@ -134,65 +157,91 @@
     </el-card>
 
     <!-- LOGO替换功能 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>LOGO替换</span>
-          <el-button type="primary" :icon="Refresh" size="small" @click="loadCurrentLogo" :loading="logoLoading">刷新</el-button>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadCurrentLogo" :loading="logoLoading">刷新</el-button>
         </div>
       </template>
-      <div v-loading="logoLoading">
-          <el-row :gutter="20">
-            <el-col :span="12">
-            <div class="logo-preview">
-              <h4>当前LOGO预览</h4>
+      <div v-loading="logoLoading" class="logo-management-container">
+        <el-row :gutter="24">
+          <el-col :span="12">
+            <div class="logo-section">
+              <h4 class="section-title">当前LOGO预览</h4>
               <div class="preview-container">
                 <img v-if="currentLogo.url" :src="currentLogo.url" alt="当前LOGO" class="logo-image"/>
-                <div v-else class="no-logo">暂无自定义LOGO</div>
-              </div>
-            </div>
-            </el-col>
-            <el-col :span="12">
-            <div class="logo-upload">
-              <h4>上传新LOGO</h4>
-              <el-upload
-                ref="logoUploadRef"
-                :auto-upload="false"
-                :show-file-list="false"
-                accept=".jpg,.jpeg,.png"
-                :before-upload="beforeLogoUpload"
-                :on-change="handleLogoChange"
-              >
-                <el-button type="primary" :icon="Upload">选择文件</el-button>
-              </el-upload>
-              <div v-if="logoPreview" class="upload-preview">
-                <img :src="logoPreview" alt="预览" class="logo-image"/>
-                <div class="upload-actions">
-                  <el-button type="primary" @click="uploadLogo" :loading="uploading" size="small">上传</el-button>
-                  <el-button @click="clearLogoPreview" size="small">取消</el-button>
+                <div v-else class="no-logo">
+                  <el-icon class="no-logo-icon"><Picture /></el-icon>
+                  <span>暂无自定义LOGO</span>
                 </div>
               </div>
-              <div class="upload-tips">
-                <p>支持格式：JPG、PNG</p>
-                <p>文件大小：不超过2MB</p>
+              <div v-if="currentLogo.url" class="logo-actions">
+                <el-button type="danger" class="tech-button-danger" @click="deleteLogo" :loading="logoLoading">
+                  恢复默认LOGO
+                </el-button>
               </div>
             </div>
-            </el-col>
-          </el-row>
-        <el-row v-if="currentLogo.url">
-          <el-col :span="24">
-            <el-button type="danger" @click="deleteLogo" :loading="logoLoading">恢复默认LOGO</el-button>
+          </el-col>
+          <el-col :span="12">
+            <div class="logo-section">
+              <h4 class="section-title">上传新LOGO</h4>
+              <div class="upload-area">
+                <el-upload
+                  ref="logoUploadRef"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  accept=".jpg,.jpeg,.png"
+                  :before-upload="beforeLogoUpload"
+                  :on-change="handleLogoChange"
+                  class="logo-uploader"
+                >
+                  <template v-if="!logoPreview">
+                    <div class="upload-trigger">
+                      <el-icon class="upload-icon"><Upload /></el-icon>
+                      <div class="upload-text">选择文件</div>
+                    </div>
+                  </template>
+                </el-upload>
+                
+                <div v-if="logoPreview" class="upload-preview">
+                  <div class="preview-image-container">
+                    <img :src="logoPreview" alt="预览" class="logo-image"/>
+                  </div>
+                  <div class="upload-actions">
+                    <el-button type="primary" class="tech-button" @click="uploadLogo" :loading="uploading">
+                      <el-icon><Upload /></el-icon>
+                      上传
+                    </el-button>
+                    <el-button class="tech-button-secondary" @click="clearLogoPreview">
+                      取消
+                    </el-button>
+                  </div>
+                </div>
+                
+                <div class="upload-tips">
+                  <div class="tip-item">
+                    <el-icon class="tip-icon"><InfoFilled /></el-icon>
+                    <span>支持格式：JPG、PNG</span>
+                  </div>
+                  <div class="tip-item">
+                    <el-icon class="tip-icon"><InfoFilled /></el-icon>
+                    <span>文件大小：不超过2MB</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </el-col>
         </el-row>
       </div>
     </el-card>
 
     <!-- GB28181平台对接 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>GB28181平台对接</span>
-          <el-button type="primary" :icon="Refresh" size="small" @click="loadGB28181Config" :loading="gb28181Loading">刷新配置</el-button>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadGB28181Config" :loading="gb28181Loading">刷新配置</el-button>
         </div>
       </template>
       <el-form :model="gb28181Config" :rules="gb28181Rules" ref="gb28181FormRef" label-width="150px" class="config-form" v-loading="gb28181Loading">
@@ -211,7 +260,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="平台端口" prop="platform_port">
-              <el-input-number v-model="gb28181Config.platform_port" :min="1000" :max="65535" controls-position="right" style="width: 100%"></el-input-number>
+              <el-input-number v-model="gb28181Config.platform_port" :min="1000" :max="65535" :controls="false" style="width: 100%"></el-input-number>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -240,12 +289,12 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row>
+        <el-row style="margin-top: 24px;">
           <el-col :span="24">
             <el-form-item>
-              <el-button type="primary" @click="saveGB28181Config" :loading="gb28181Loading">保存配置</el-button>
-              <el-button @click="testGB28181Connection" :loading="testingConnection">测试连接</el-button>
-              <el-button @click="resetGB28181Form">重置</el-button>
+              <el-button type="primary" class="tech-button" @click="saveGB28181Config" :loading="gb28181Loading">保存配置</el-button>
+              <el-button class="tech-button-info" @click="testGB28181Connection" :loading="testingConnection">测试连接</el-button>
+              <el-button class="tech-button-secondary" @click="resetGB28181Form">重置</el-button>
             </el-form-item>
           </el-col>
         </el-row>
@@ -253,7 +302,7 @@
     </el-card>
 
     <!-- 存储策略配置 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>存储策略配置</span>
@@ -265,14 +314,14 @@
         <el-row :gutter="20">
           <el-col :span="12">
                 <el-form-item label="保存天数" prop="retention_days">
-                  <el-input-number v-model="videoStorageConfig.retention_days" :min="1" :max="3650" controls-position="right" style="width: 100%">
+                  <el-input-number v-model="videoStorageConfig.retention_days" :min="1" :max="3650" :controls="false" style="width: 100%">
                     <template #append>天</template>
                   </el-input-number>
             </el-form-item>
           </el-col>
           <el-col :span="12">
                 <el-form-item label="最大存储容量" prop="max_storage_gb">
-                  <el-input-number v-model="videoStorageConfig.max_storage_gb" :min="1" :max="100000" controls-position="right" style="width: 100%">
+                  <el-input-number v-model="videoStorageConfig.max_storage_gb" :min="1" :max="100000" :controls="false" style="width: 100%">
                     <template #append>GB</template>
                   </el-input-number>
             </el-form-item>
@@ -286,12 +335,12 @@
         </el-form-item>
               </el-col>
             </el-row>
-            <el-row>
+            <el-row style="margin-top: 24px;">
               <el-col :span="24">
-        <el-form-item>
-                  <el-button type="primary" @click="saveVideoStorageConfig" :loading="storageLoading">保存配置</el-button>
-                  <el-button @click="loadVideoStorageConfig">重置</el-button>
-        </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" class="tech-button" @click="saveVideoStorageConfig" :loading="storageLoading">保存配置</el-button>
+                  <el-button class="tech-button-secondary" @click="loadVideoStorageConfig">重置</el-button>
+                </el-form-item>
               </el-col>
             </el-row>
       </el-form>
@@ -301,14 +350,14 @@
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item label="保存天数" prop="retention_days">
-                  <el-input-number v-model="alarmDataConfig.retention_days" :min="1" :max="3650" controls-position="right" style="width: 100%">
+                  <el-input-number v-model="alarmDataConfig.retention_days" :min="1" :max="3650" :controls="false" style="width: 100%">
                     <template #append>天</template>
                   </el-input-number>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="最大记录数" prop="max_records">
-                  <el-input-number v-model="alarmDataConfig.max_records" :min="1000" :max="10000000" controls-position="right" style="width: 100%">
+                  <el-input-number v-model="alarmDataConfig.max_records" :min="1000" :max="10000000" :controls="false" style="width: 100%">
                     <template #append>条</template>
                   </el-input-number>
                 </el-form-item>
@@ -322,11 +371,11 @@
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-row>
+            <el-row style="margin-top: 24px;">
               <el-col :span="24">
                 <el-form-item>
-                  <el-button type="primary" @click="saveAlarmDataConfig" :loading="storageLoading">保存配置</el-button>
-                  <el-button @click="loadAlarmDataConfig">重置</el-button>
+                  <el-button type="primary" class="tech-button" @click="saveAlarmDataConfig" :loading="storageLoading">保存配置</el-button>
+                  <el-button class="tech-button-secondary" @click="loadAlarmDataConfig">重置</el-button>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -336,11 +385,11 @@
     </el-card>
 
     <!-- 系统维护 -->
-    <el-card class="config-card mb-20" shadow="hover">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>系统维护</span>
-          <el-button type="primary" :icon="Refresh" size="small" @click="loadSnapshotList" :loading="maintenanceLoading">刷新列表</el-button>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadSnapshotList" :loading="maintenanceLoading">刷新列表</el-button>
         </div>
       </template>
       <div v-loading="maintenanceLoading">
@@ -349,7 +398,7 @@
           <el-col :span="24">
             <h4>系统镜像点管理</h4>
             <div class="maintenance-actions mb-20">
-              <el-button type="primary" @click="showCreateSnapshotDialog" :loading="creatingSnapshot">
+              <el-button type="primary" class="tech-button" @click="showCreateSnapshotDialog" :loading="creatingSnapshot">
                 <el-icon><Camera /></el-icon>
                 创建镜像点
               </el-button>
@@ -357,43 +406,43 @@
             </div>
             
             <!-- 镜像点列表 -->
-            <el-table :data="snapshotList" border style="width: 100%" empty-text="暂无镜像点">
-              <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="name" label="镜像点名称" min-width="150" />
-              <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
-              <el-table-column prop="file_size" label="文件大小" width="120">
+            <el-table :data="snapshotList" stripe class="tech-table" style="width: 100%" empty-text="暂无镜像点">
+              <el-table-column prop="id" label="ID" width="80" header-align="center" />
+              <el-table-column prop="name" label="镜像点名称" min-width="150" header-align="center" />
+              <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip header-align="center" />
+              <el-table-column prop="file_size" label="文件大小" width="120" header-align="center">
                 <template #default="scope">
                   {{ formatFileSize(scope.row.file_size) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="created_at" label="创建时间" width="180">
+              <el-table-column prop="created_at" label="创建时间" width="180" header-align="center">
                 <template #default="scope">
                   {{ formatDateTime(scope.row.created_at) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="created_by" label="创建者" width="120" />
-              <el-table-column prop="status" label="状态" width="100">
+              <el-table-column prop="created_by" label="创建者" width="120" header-align="center" />
+              <el-table-column prop="status" label="状态" width="100" header-align="center">
                 <template #default="scope">
                   <el-tag :type="getSnapshotStatusType(scope.row.status)">
                     {{ getSnapshotStatusText(scope.row.status) }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="160" fixed="right">
+              <el-table-column label="操作" width="160" fixed="right" header-align="center">
                 <template #default="scope">
-                  <el-button type="primary" size="small" @click="restoreSnapshot(scope.row.id)" :loading="restoringSnapshot">
-                    恢复
-                  </el-button>
-                  <el-button type="danger" size="small" @click="confirmDeleteSnapshot(scope.row)" :loading="deletingSnapshot">
-                    删除
-                  </el-button>
+                  <div class="operation-buttons">
+                    <el-button type="primary" size="small" class="tech-button-sm" @click="restoreSnapshot(scope.row.id)" :loading="restoringSnapshot">
+                      恢复
+                    </el-button>
+                    <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="confirmDeleteSnapshot(scope.row)" :loading="deletingSnapshot">
+                      删除
+                    </el-button>
+                  </div>
                 </template>
               </el-table-column>
             </el-table>
           </el-col>
         </el-row>
-        
-        <el-divider />
         
         <!-- 系统重启管理 -->
         <el-row class="maintenance-section">
@@ -410,7 +459,7 @@
                       <div class="restart-content">
                         <h5>服务重启</h5>
                         <p>重启应用服务，保持服务器运行</p>
-                        <el-button type="primary" @click="confirmRestartService" :loading="restartingService">
+                        <el-button type="primary" class="tech-button" @click="confirmRestartService" :loading="restartingService">
                           重启服务
                         </el-button>
                       </div>
@@ -426,7 +475,7 @@
                       <div class="restart-content">
                         <h5>服务器重启</h5>
                         <p>重启整个服务器系统</p>
-                        <el-button type="danger" @click="confirmRebootServer" :loading="rebootingServer">
+                        <el-button type="danger" class="tech-button-danger" @click="confirmRebootServer" :loading="rebootingServer">
                           重启服务器
                         </el-button>
                       </div>
@@ -469,8 +518,8 @@
         />
       </el-form>
       <template #footer>
-        <el-button @click="createSnapshotDialogVisible = false" :disabled="creatingSnapshot">取消</el-button>
-        <el-button type="primary" @click="createSnapshot" :loading="creatingSnapshot">创建镜像点</el-button>
+        <el-button class="tech-button-secondary" @click="createSnapshotDialogVisible = false" :disabled="creatingSnapshot">取消</el-button>
+        <el-button type="primary" class="tech-button" @click="createSnapshot" :loading="creatingSnapshot">创建镜像点</el-button>
       </template>
     </el-dialog>
 
@@ -497,11 +546,12 @@
         <el-checkbox v-model="restartConfirm">我确认执行此操作</el-checkbox>
       </div>
       <template #footer>
-        <el-button @click="restartConfirmDialogVisible = false" :disabled="performingRestart">取消</el-button>
+                <el-button class="tech-button-secondary" @click="restartConfirmDialogVisible = false" :disabled="performingRestart">取消</el-button>
         <el-button 
           :type="restartType === 'service' ? 'primary' : 'danger'" 
+          :class="restartType === 'service' ? 'tech-button' : 'tech-button-danger'"
           @click="performRestart" 
-          :loading="performingRestart" 
+          :loading="performingRestart"
           :disabled="!restartConfirm"
         >
           确认{{ restartType === 'service' ? '重启服务' : '重启服务器' }}
@@ -525,7 +575,7 @@
         <!-- 服务重启完成后的倒计时 -->
         <div v-if="restartProgress === 100 && restartType === 'service'" style="text-align: center; margin-top: 20px;">
           <p>服务重启完成，页面将在 <strong>{{ serviceRestartCountdown }}</strong> 秒后自动刷新</p>
-          <el-button type="primary" @click="refreshPage">立即刷新</el-button>
+          <el-button type="primary" class="tech-button" @click="refreshPage">立即刷新</el-button>
         </div>
         
         <!-- 镜像点恢复完成后的提示 -->
@@ -546,12 +596,15 @@
       :close-on-press-escape="false"
     >
       <div>
-        <el-alert
-          title="警告：此操作将立即生效并重启系统服务"
-          type="warning"
-          show-icon
-          :closable="false"
-        />
+        <div class="dialog-warning-container">
+          <el-alert
+            title="警告：此操作将立即生效并重启系统服务"
+            type="warning"
+            show-icon
+            :closable="false"
+            class="custom-dialog-warning-alert"
+          />
+        </div>
         <div style="margin: 20px 0;">
           <p><strong>当前IP：</strong>{{ currentNetworkConfig.ip_address }}</p>
           <p><strong>新IP：</strong>{{ networkConfig.ip_address }}</p>
@@ -560,8 +613,8 @@
         <el-checkbox v-model="ipChangeConfirm">我已了解风险，确认执行此操作</el-checkbox>
         </div>
       <template #footer>
-        <el-button @click="ipChangeDialogVisible = false" :disabled="ipChanging">取消</el-button>
-        <el-button type="danger" @click="confirmIPChange" :loading="ipChanging" :disabled="!ipChangeConfirm">确认修改</el-button>
+        <el-button class="tech-button-secondary" @click="ipChangeDialogVisible = false" :disabled="ipChanging">取消</el-button>
+        <el-button type="danger" class="tech-button-danger" @click="confirmIPChange" :loading="ipChanging" :disabled="!ipChangeConfirm">确认修改</el-button>
           </template>
     </el-dialog>
 
@@ -579,7 +632,7 @@
         <p style="margin-top: 15px; text-align: center;">{{ ipChangeMessage }}</p>
         <div v-if="ipChangeProgress === 100" style="text-align: center; margin-top: 20px;">
           <p>系统将在 <strong>{{ countdown }}</strong> 秒后跳转到新地址</p>
-          <el-button type="primary" @click="jumpToNewIP">立即跳转</el-button>
+          <el-button type="primary" class="tech-button" @click="jumpToNewIP">立即跳转</el-button>
         </div>
       </div>
     </el-dialog>
@@ -603,9 +656,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Upload, Camera, PowerOff, SuccessFilled } from '@element-plus/icons-vue'
+import { Refresh, Upload, Camera, PowerOff, SuccessFilled, Picture, InfoFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
 import { useSystemStore } from '@/stores/system'
 import { useTaskProgress } from '@/composables/useTaskProgress'
@@ -637,6 +690,16 @@ const deletingSnapshot = ref(false)
 const restartingService = ref(false)
 const rebootingServer = ref(false)
 const performingRestart = ref(false)
+
+// 自定义时区选择器相关
+const showTimezoneDropdown = ref(false)
+const timezoneSelector = ref(null)
+const timezoneOptions = ref([
+  { label: 'Asia/Shanghai', value: 'Asia/Shanghai' },
+  { label: 'Asia/Beijing', value: 'Asia/Beijing' },
+  { label: 'UTC', value: 'UTC' },
+  { label: 'America/New_York', value: 'America/New_York' }
+])
 
 // NTP配置
 const ntpConfig = reactive({
@@ -1663,12 +1726,51 @@ const handleSnapshotProgressModalClose = () => {
   resetSnapshotProgress()
 }
 
+// ===================== 自定义时区选择器方法 =====================
+
+// 切换时区下拉框显示状态
+const toggleTimezoneDropdown = () => {
+  showTimezoneDropdown.value = !showTimezoneDropdown.value
+}
+
+// 选择时区
+const selectTimezone = (value) => {
+  ntpConfig.timezone = value
+  showTimezoneDropdown.value = false
+}
+
+// 获取时区显示文本
+const getTimezoneDisplayText = () => {
+  if (!ntpConfig.timezone) {
+    return '请选择时区'
+  }
+  const option = timezoneOptions.value.find(opt => opt.value === ntpConfig.timezone)
+  return option ? option.label : ntpConfig.timezone
+}
+
+
+
 // ===================== 生命周期钩子 =====================
 
 onMounted(async () => {
   // 开始时间更新
   updateCurrentTime()
   timeInterval.value = setInterval(updateCurrentTime, 1000)
+  
+  // 添加简单的全局点击监听
+  const handleGlobalClick = (event) => {
+    if (showTimezoneDropdown.value && timezoneSelector.value && !timezoneSelector.value.contains(event.target)) {
+      showTimezoneDropdown.value = false
+    }
+  }
+  
+  // 使用nextTick确保DOM已渲染
+  nextTick(() => {
+    document.addEventListener('click', handleGlobalClick)
+    
+    // 存储引用用于清理
+    window.timezoneGlobalClickHandler = handleGlobalClick
+  })
   
   // 加载各模块配置
   await Promise.all([
@@ -1690,10 +1792,279 @@ onUnmounted(() => {
   if (countdownInterval.value) {
     clearInterval(countdownInterval.value)
   }
+  
+  // 清理全局点击监听器
+  if (window.timezoneGlobalClickHandler) {
+    document.removeEventListener('click', window.timezoneGlobalClickHandler)
+    delete window.timezoneGlobalClickHandler
+  }
 })
 </script>
 
 <style scoped>
+/* ==================== 科技感主题样式 ==================== */
+
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh; /* 最小高度为视口高度，允许内容撑开 */
+  max-height: 100vh; /* 最大高度为视口高度，超出时滚动 */
+  padding: 20px;
+  padding-bottom: 40px; /* 底部额外留白，确保分页控件可见 */
+  background: transparent; /* 使用全局背景 */
+  overflow-y: auto; /* 垂直滚动 */
+  overflow-x: hidden; /* 隐藏水平滚动 */
+  box-sizing: border-box; /* 包含padding在内的盒子模型 */
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 科技感卡片 */
+.tech-card {
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 20px;
+}
+
+.tech-card :deep(.el-card__header) {
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 0;
+}
+
+.tech-card :deep(.el-card__body) {
+  background: transparent;
+  padding: 0;
+}
+
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 科技感主要按钮 */
+.tech-button {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+}
+
+.tech-button:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(0, 255, 255, 0.6) !important;
+}
+
+/* 科技感次要按钮 */
+.tech-button-secondary {
+  border: 1px solid rgba(128, 128, 128, 0.4) !important;
+  background: rgba(64, 64, 64, 0.1) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 8px rgba(128, 128, 128, 0.1) !important;
+  padding: 8px 16px !important;
+}
+
+.tech-button-secondary:hover {
+  background: rgba(128, 128, 128, 0.2) !important;
+  box-shadow: 0 0 15px rgba(128, 128, 128, 0.3) !important;
+  transform: translateY(-1px) !important;
+  color: #ffffff !important;
+  border-color: rgba(128, 128, 128, 0.6) !important;
+}
+
+/* 科技感危险按钮 */
+.tech-button-danger {
+  border: 1px solid rgba(255, 82, 82, 0.4) !important;
+  background: rgba(255, 82, 82, 0.1) !important;
+  color: #ff5252 !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(255, 82, 82, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+}
+
+.tech-button-danger:hover {
+  background: rgba(255, 82, 82, 0.2) !important;
+  box-shadow: 0 0 20px rgba(255, 82, 82, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(255, 82, 82, 0.6) !important;
+}
+
+/* 科技感信息按钮 */
+.tech-button-info {
+  border: 1px solid rgba(64, 158, 255, 0.4) !important;
+  background: rgba(64, 158, 255, 0.1) !important;
+  color: #409eff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(64, 158, 255, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+}
+
+.tech-button-info:hover {
+  background: rgba(64, 158, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(64, 158, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(64, 158, 255, 0.6) !important;
+}
+
+/* 科技感表格 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px 12px !important;
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  background: transparent !important;
+  padding: 14px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
 .basic-management-container {
   padding: 24px;
 }
@@ -1706,9 +2077,9 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 600;
-  font-size: 16px;
-  color: #303133;
+  font-weight: bold;
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 .config-form {
@@ -1719,60 +2090,263 @@ onUnmounted(() => {
   margin-bottom: 20px;
 }
 
-/* LOGO相关样式 */
-.logo-preview h4,
-.logo-upload h4 {
-  margin-bottom: 16px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #606266;
+/* ==================== LOGO管理样式 ==================== */
+
+/* LOGO管理容器 */
+.logo-management-container {
+  padding: 24px 0;
 }
 
-.preview-container {
-  width: 100%;
-  height: 120px;
-  border: 2px dashed #dcdfe6;
-  border-radius: 6px;
+/* LOGO区块 */
+.logo-section {
+  height: 100%;
+  min-height: 320px;
   display: flex;
+  flex-direction: column;
+}
+
+/* 区块标题 */
+.section-title {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+  text-align: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+/* 预览容器 */
+.preview-container {
+  flex: 1;
+  min-height: 180px;
+  border: 2px dashed rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #fafafa;
+  background: rgba(0, 20, 40, 0.3);
+  position: relative;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
 }
 
+.preview-container:hover {
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+/* LOGO图片 */
 .logo-image {
-  max-width: 100%;
-  max-height: 100px;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 90%;
+  max-height: 140px;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  object-fit: contain;
+  transition: all 0.3s ease;
 }
 
+.logo-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* 无LOGO状态 */
 .no-logo {
-  color: #909399;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.6) !important;
   font-size: 14px;
-}
-
-.upload-preview {
-  margin-top: 16px;
   text-align: center;
 }
 
-.upload-actions {
+.no-logo-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  color: rgba(0, 255, 255, 0.4) !important;
+}
+
+/* LOGO操作按钮 */
+.logo-actions {
   margin-top: 12px;
+  text-align: center;
+}
+
+/* 上传区域 */
+.upload-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 上传器样式 */
+.logo-uploader {
+  flex: 1;
+  margin-bottom: 20px;
+}
+
+.logo-uploader :deep(.el-upload) {
+  width: 100%;
+  height: 180px;
+  border: 2px dashed rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 20, 40, 0.3) !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.logo-uploader :deep(.el-upload:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 上传触发器 */
+.upload-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 20px;
+}
+
+.upload-trigger:hover {
+  color: #00ffff;
+  transform: translateY(-2px);
+}
+
+.upload-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  color: rgba(0, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.upload-trigger:hover .upload-icon {
+  color: #00ffff;
+  transform: scale(1.1);
+}
+
+.upload-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* 上传预览 */
+.upload-preview {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.preview-image-container {
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 20, 40, 0.2);
+}
+
+/* 上传操作按钮 */
+.upload-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 .upload-actions .el-button {
-  margin: 0 4px;
+  flex: 1;
+  max-width: 120px;
 }
 
+/* 上传提示 */
 .upload-tips {
-  margin-top: 12px;
-  font-size: 12px;
-  color: #909399;
+  background: rgba(0, 20, 40, 0.4);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: auto;
+}
+
+.tip-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7) !important;
   line-height: 1.4;
 }
 
-.upload-tips p {
-  margin: 4px 0;
+.tip-item:last-child {
+  margin-bottom: 0;
+}
+
+.tip-icon {
+  font-size: 14px;
+  margin-right: 8px;
+  color: rgba(0, 255, 255, 0.6) !important;
+  flex-shrink: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .logo-section {
+    min-height: 280px;
+  }
+  
+  .preview-container {
+    min-height: 140px;
+  }
+  
+  .logo-uploader :deep(.el-upload) {
+    height: 140px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .logo-management-container {
+    padding: 16px 0;
+  }
+  
+  .logo-section {
+    min-height: auto;
+    margin-bottom: 24px;
+  }
+  
+  .preview-container {
+    min-height: 120px;
+  }
+  
+  .logo-uploader :deep(.el-upload) {
+    height: 120px !important;
+  }
+  
+  .upload-actions {
+    flex-direction: column;
+  }
+  
+  .upload-actions .el-button {
+    max-width: none;
+    margin-bottom: 8px;
+  }
+  
+  .upload-actions .el-button:last-child {
+    margin-bottom: 0;
+  }
+  
+  .upload-icon {
+    font-size: 36px !important;
+  }
+  
+  .no-logo-icon {
+    font-size: 36px !important;
+  }
 }
 
 /* 进度对话框样式 */
@@ -1818,11 +2392,21 @@ onUnmounted(() => {
 
 /* 表单项间距优化 */
 .el-form-item {
-  margin-bottom: 22px;
+  margin-bottom: 28px;
 }
 
 .el-form-item:last-child {
   margin-bottom: 0;
+}
+
+/* 行间距优化 */
+:deep(.el-row + .el-row) {
+  margin-top: 16px !important;
+}
+
+/* 特殊按钮行间距 */
+.el-row[style*="margin-top: 24px"] {
+  margin-top: 32px !important;
 }
 
 /* 标签样式优化 */
@@ -1832,7 +2416,12 @@ onUnmounted(() => {
 
 /* 按钮组样式 */
 .el-form-item .el-button + .el-button {
-  margin-left: 12px;
+  margin-left: 16px;
+}
+
+/* 所有按钮间距 */
+.el-button + .el-button {
+  margin-left: 16px;
 }
 
 /* 警告框样式调整 */
@@ -1874,50 +2463,80 @@ onUnmounted(() => {
 }
 
 .restart-card {
-  height: 120px;
+  height: 140px;
   cursor: pointer;
   transition: all 0.3s ease;
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 .restart-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.4) !important;
 }
 
 .restart-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   height: 100%;
-  padding: 16px;
+  padding: 24px 20px 28px 20px;
 }
 
 .restart-icon {
-  margin-right: 16px;
+  margin-right: 20px;
+  margin-top: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background-color: #f5f7fa;
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  flex-shrink: 0;
 }
 
 .restart-content {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .restart-content h5 {
-  margin: 0 0 8px 0;
-  font-size: 16px;
+  margin: 4px 0 12px 0;
+  font-size: 17px;
   font-weight: 600;
-  color: #303133;
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
 }
 
 .restart-content p {
-  margin: 0 0 12px 0;
+  margin: 0 0 20px 0;
   font-size: 14px;
-  color: #606266;
-  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.8) !important;
+  line-height: 1.5;
+}
+
+.restart-content .el-button {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+/* Element Plus 卡片深层样式修改 */
+.restart-card :deep(.el-card__body) {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.restart-card :deep(.el-card) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
 }
 
 /* 表格样式优化 */
@@ -1982,5 +2601,809 @@ onUnmounted(() => {
   .ml-10 {
     margin-left: 0;
   }
+}
+
+/* ==================== 输入框和表单样式 ==================== */
+
+/* 输入框通用样式 */
+:deep(.el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.4) !important;
+}
+
+:deep(.el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 选择器样式 */
+:deep(.el-select) {
+  width: 100%;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select .el-input__wrapper.is-focus) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-select .el-input__inner) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+}
+
+/* 选择框后缀图标 */
+:deep(.el-select .el-select__suffix) {
+  color: rgba(0, 255, 255, 0.6) !important;
+}
+
+:deep(.el-select .el-select__suffix:hover) {
+  color: rgba(0, 255, 255, 0.8) !important;
+}
+
+/* 选择框占位符 */
+:deep(.el-select .el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* ===================== 警告框样式 ===================== */
+
+.warning-container {
+  display: flex;
+  justify-content: flex-start;
+  margin: 15px 0;
+  margin-left: 150px; /* 与表单标签宽度对齐 */
+}
+
+/* 使用更高的优先级覆盖全局样式 */
+.basic-management-container :deep(.custom-warning-alert.el-alert) {
+  width: fit-content !important;
+  max-width: calc(100% - 150px) !important;
+  background: linear-gradient(135deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.05)) !important;
+  border: 1px solid rgba(0, 188, 212, 0.25) !important;
+  border-left: 3px solid rgba(0, 188, 212, 0.6) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 1px 4px rgba(0, 188, 212, 0.05) !important;
+}
+
+/* 强制覆盖Element Plus的默认警告样式 */
+.basic-management-container :deep(.el-alert--warning) {
+  background: linear-gradient(135deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.05)) !important;
+  border: 1px solid rgba(0, 188, 212, 0.25) !important;
+  border-left: 3px solid rgba(0, 188, 212, 0.6) !important;
+  box-shadow: 0 1px 4px rgba(0, 188, 212, 0.05) !important;
+}
+
+.basic-management-container :deep(.el-alert--warning .el-alert__icon) {
+  color: rgba(0, 188, 212, 0.9) !important;
+}
+
+.basic-management-container :deep(.el-alert--warning .el-alert__title),
+.basic-management-container :deep(.el-alert--warning .el-alert__content) {
+  color: rgba(0, 188, 212, 1) !important;
+}
+
+.basic-management-container :deep(.custom-warning-alert.el-alert .el-alert__icon) {
+  color: rgba(0, 188, 212, 0.9) !important;
+  font-size: 16px !important;
+}
+
+.basic-management-container :deep(.custom-warning-alert.el-alert .el-alert__title) {
+  color: rgba(0, 188, 212, 1) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+}
+
+.basic-management-container :deep(.custom-warning-alert.el-alert .el-alert__content) {
+  color: rgba(0, 188, 212, 1) !important;
+}
+
+.dialog-warning-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* 使用更高的优先级覆盖全局样式 */
+:deep(.custom-dialog-warning-alert.el-alert) {
+  width: fit-content !important;
+  max-width: 100% !important;
+  background: linear-gradient(135deg, rgba(0, 188, 212, 0.1), rgba(0, 188, 212, 0.06)) !important;
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+  border-left: 3px solid rgba(0, 188, 212, 0.7) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 6px rgba(0, 188, 212, 0.08) !important;
+}
+
+/* 强制覆盖对话框中的Element Plus默认警告样式 */
+:deep(.el-dialog .el-alert--warning) {
+  background: linear-gradient(135deg, rgba(0, 188, 212, 0.1), rgba(0, 188, 212, 0.06)) !important;
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+  border-left: 3px solid rgba(0, 188, 212, 0.7) !important;
+  box-shadow: 0 2px 6px rgba(0, 188, 212, 0.08) !important;
+}
+
+:deep(.el-dialog .el-alert--warning .el-alert__icon) {
+  color: rgba(0, 188, 212, 1) !important;
+}
+
+:deep(.el-dialog .el-alert--warning .el-alert__title),
+:deep(.el-dialog .el-alert--warning .el-alert__content) {
+  color: rgba(0, 188, 212, 1) !important;
+}
+
+:deep(.custom-dialog-warning-alert.el-alert .el-alert__icon) {
+  color: rgba(0, 188, 212, 1) !important;
+  font-size: 18px !important;
+}
+
+:deep(.custom-dialog-warning-alert.el-alert .el-alert__title) {
+  color: rgba(0, 188, 212, 1) !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+:deep(.custom-dialog-warning-alert.el-alert .el-alert__content) {
+  color: rgba(0, 188, 212, 1) !important;
+}
+
+/* ==================== 自定义时区选择器样式 ==================== */
+
+/* 主容器 */
+.custom-timezone-selector {
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 显示区域 - 完全匹配日期时间选择器样式 */
+.timezone-display {
+  background: rgba(0, 20, 40, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  height: 32px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.timezone-display:hover {
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.custom-timezone-selector.focused .timezone-display {
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+}
+
+/* 显示文字 */
+.timezone-text {
+  color: #ffffff;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  line-height: 30px;
+  flex: 1;
+}
+
+/* 下拉箭头 */
+.timezone-arrow {
+  color: rgba(0, 255, 255, 0.6);
+  font-size: 12px;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.timezone-arrow.expanded {
+  transform: rotate(180deg);
+  color: rgba(0, 255, 255, 0.8);
+}
+
+.timezone-display:hover .timezone-arrow {
+  color: rgba(0, 255, 255, 0.8);
+}
+
+/* 下拉面板 */
+.timezone-dropdown-custom {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  background: rgba(0, 20, 40, 0.95);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  overflow: hidden;
+}
+
+/* 选项样式 */
+.timezone-option {
+  padding: 10px 16px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.timezone-option:last-child {
+  border-bottom: none;
+}
+
+.timezone-option:hover {
+  background: rgba(0, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 1);
+}
+
+.timezone-option.selected {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  font-weight: 500;
+  position: relative;
+}
+
+.timezone-option.selected::after {
+  content: '✓';
+  position: absolute;
+  right: 16px;
+  color: #00ffff;
+  font-weight: bold;
+}
+
+/* 下拉面板动画 */
+.timezone-dropdown-custom {
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 滚动条样式 */
+.timezone-dropdown-custom::-webkit-scrollbar {
+  width: 6px;
+}
+
+.timezone-dropdown-custom::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.timezone-dropdown-custom::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.timezone-dropdown-custom::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
+}
+
+
+
+/* 下拉面板样式 */
+:deep(.el-select-dropdown) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  overflow: hidden !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+/* 单选框样式 */
+:deep(.el-radio-group) {
+  display: flex;
+  gap: 20px;
+}
+
+:deep(.el-radio) {
+  color: #ffffff !important;
+  margin-right: 20px;
+}
+
+:deep(.el-radio__label) {
+  color: #ffffff !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.el-radio__input.is-checked .el-radio__inner) {
+  background: #00ffff !important;
+  border-color: #00ffff !important;
+}
+
+:deep(.el-radio__inner) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-radio__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+}
+
+/* 日期选择器样式 */
+:deep(.el-date-editor) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-date-editor:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-date-editor .el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+/* 表单标签样式 */
+:deep(.el-form-item__label) {
+  color: #ffffff !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+  font-weight: 500;
+}
+
+/* 上传组件样式 */
+:deep(.el-upload) {
+  border: 1px dashed rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 20, 40, 0.3) !important;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-upload:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+
+
+/* 选项卡样式优化 */
+:deep(.el-tabs__item) {
+  color: rgba(255, 255, 255, 0.7) !important;
+  border-bottom: 2px solid transparent !important;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: #00ffff !important;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #00ffff !important;
+  border-bottom-color: transparent !important;
+}
+
+:deep(.el-tabs__nav-wrap::after) {
+  background: transparent !important;
+}
+
+/* 文本区域样式 */
+:deep(.el-textarea__inner) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+}
+
+:deep(.el-textarea__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 数字输入框样式 */
+:deep(.el-input-number) {
+  width: 100%;
+}
+
+:deep(.el-input-number .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 时间间隔提示文本 */
+.time-status {
+  color: #ffffff !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 状态标签样式 */
+:deep(.el-tag) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-tag.el-tag--success) {
+  background: rgba(0, 255, 0, 0.1) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+  color: #00ff00 !important;
+}
+
+/* 警告框样式 */
+:deep(.el-alert) {
+  background: rgba(255, 193, 7, 0.1) !important;
+  border: 1px solid rgba(255, 193, 7, 0.3) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.el-alert .el-alert__content) {
+  color: #ffc107 !important;
+}
+
+/* 对话框样式 */
+:deep(.el-dialog) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-dialog__header) {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-dialog__body) {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+/* 进度条样式 */
+:deep(.el-progress-bar__outer) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-progress-bar__inner) {
+  background: linear-gradient(90deg, #00ffff, #0080ff) !important;
+}
+
+/* 其他文本颜色调整 */
+.config-form p,
+.config-form span,
+.config-form div {
+  color: #ffffff !important;
+}
+
+.maintenance-section h4 {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+.restart-content h5 {
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.restart-content p {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.no-logo {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.upload-tips {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* 预览容器样式 */
+.preview-container {
+  background: rgba(0, 20, 40, 0.3) !important;
+  border: 2px dashed rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px;
+}
+
+/* ==================== 文字和间距优化 ==================== */
+
+/* 增加文字行间距 */
+:deep(p), :deep(div), :deep(span) {
+  line-height: 1.6 !important;
+}
+
+/* 段落间距优化 */
+:deep(.el-card__body p) {
+  margin-bottom: 16px !important;
+}
+
+:deep(.el-card__body p:last-child) {
+  margin-bottom: 0 !important;
+}
+
+/* 表格行间距优化 */
+:deep(.el-table .el-table__row) {
+  height: 50px !important;
+}
+
+/* 科技感表格 - 彻底解决白线问题 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+}
+
+/* 表格整体容器 - 彻底移除所有边框 */
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+  border-collapse: separate !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table::after) {
+  display: none !important;
+}
+
+/* 移除所有可能的白色边框和分隔线 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::before) {
+  display: none !important;
+}
+
+/* 移除表格外层的所有边框元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+}
+
+/* 强制移除Element Plus的默认边框样式 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table--border::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table--border::after) {
+  display: none !important;
+}
+
+/* 表格头部文字居中 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header .el-table__cell) {
+  text-align: center !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header .el-table__cell .cell) {
+  text-align: center !important;
+  justify-content: center !important;
+}
+
+/* 彻底移除所有表格边框 - 最终解决方案 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
+  display: none !important;
+  content: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::before) {
+  display: none !important;
+  content: none !important;
+}
+
+/* 移除所有边框补丁元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 移除表格外围的所有可能边框 */
+.tech-table :deep(.el-table__body-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 最强力的边框移除 - 覆盖所有可能的边框样式 */
+.tech-table :deep(*) {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(td) {
+  border: none !important;
+}
+
+.tech-table :deep(th) {
+  border: none !important;
+}
+
+/* 移除表格容器本身的边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 操作按钮横向排布样式 */
+.operation-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.operation-buttons .el-button {
+  margin: 0 !important;
+  flex-shrink: 0;
+}
+
+/* 表格边框样式优化 - 注释掉避免冲突 */
+/* :deep(.el-table--border) {
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table--border .el-table__cell) {
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+} */
+
+/* 描述列表间距优化 */
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+  padding: 16px 12px !important;
+  line-height: 1.6 !important;
+}
+
+/* 按钮操作区域间距 */
+.card-header .el-button {
+  margin-left: 12px !important;
+}
+
+.card-header .el-button:first-of-type {
+  margin-left: 0 !important;
 }
 </style>
