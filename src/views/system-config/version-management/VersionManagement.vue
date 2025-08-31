@@ -19,9 +19,6 @@
           <el-descriptions-item label="应用版本">
             <el-tag type="primary" size="large">{{ versionInfo.version || 'N/A' }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="构建时间">
-            {{ versionInfo.build_time || 'N/A' }}
-          </el-descriptions-item>
           <el-descriptions-item label="Go版本">
             {{ versionInfo.go_version || 'N/A' }}
           </el-descriptions-item>
@@ -44,20 +41,9 @@
           </div>
       </template>
       <div v-loading="backupLoading">
-        <!-- 备份类型选择 -->
-        <div class="backup-options mb-20">
-          <h4>备份选项</h4>
-          <el-radio-group v-model="backupType">
-            <el-radio label="full">全量备份（包含配置、数据库、程序文件）</el-radio>
-            <el-radio label="config">配置备份（仅备份配置文件）</el-radio>
-            <el-radio label="database">数据库备份（仅备份数据库）</el-radio>
-          </el-radio-group>
-          </div>
-
         <!-- 备份列表 -->
         <div class="backup-list">
-          <h4>备份历史</h4>
-          <el-table :data="safeBackupList" border stripe class="tech-table" style="width: 100%" v-loading="backupListLoading">
+          <el-table :data="safeBackupList" class="tech-table" style="width: 100%" v-loading="backupListLoading">
             <el-table-column prop="file_name" label="备份文件名" min-width="250"></el-table-column>
             <el-table-column prop="type" label="备份类型" width="120">
               <template #default="scope">
@@ -78,8 +64,10 @@
             </el-table-column>
             <el-table-column label="操作" width="160" fixed="right">
               <template #default="scope">
-                <el-button type="primary" size="small" class="tech-button-sm" @click="downloadBackup(scope.row)">下载</el-button>
-                <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="deleteBackup(scope.row)">删除</el-button>
+                <div class="operation-buttons">
+                  <el-button type="primary" size="small" class="tech-button-sm" @click="downloadBackup(scope.row)">下载</el-button>
+                  <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="deleteBackup(scope.row)">删除</el-button>
+                </div>
               </template>
             </el-table-column>
           </el-table>
@@ -95,14 +83,6 @@
         </div>
       </template>
       <div class="restore-section">
-        <el-alert
-          title="上传备份文件进行系统恢复"
-          description="支持上传之前创建的备份文件，系统将根据备份类型执行对应的恢复操作"
-          type="info"
-          show-icon
-          :closable="false"
-          class="mb-20"
-        />
         <el-upload
           ref="restoreUploadRef"
           :auto-upload="false"
@@ -140,14 +120,6 @@
         </div>
       </template>
       <div class="upgrade-section">
-        <el-alert
-          title="上传升级包进行系统升级"
-          description="请上传官方提供的升级包文件，系统将自动执行升级操作并重启服务"
-          type="warning"
-          show-icon
-          :closable="false"
-          class="mb-20"
-        />
       <el-upload
           ref="upgradeUploadRef"
           :auto-upload="false"
@@ -1255,7 +1227,7 @@ onMounted(async () => {
   transform: translateY(-1px) !important;
 }
 
-/* 科技感表格 */
+/* 科技感表格 - 彻底解决白底问题 */
 .tech-table {
   background: rgba(15, 25, 45, 0.95) !important;
   border-radius: 12px !important;
@@ -1265,16 +1237,88 @@ onMounted(async () => {
     0 0 0 1px rgba(0, 255, 255, 0.2) !important;
   backdrop-filter: blur(10px) !important;
   border: none !important;
+  position: relative !important;
 }
 
+/* 在表格外层添加遮罩来覆盖白边 */
+.tech-table::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  z-index: -1 !important;
+  pointer-events: none !important;
+}
+
+/* 表格整体容器 - 彻底移除所有边框 */
 .tech-table :deep(.el-table) {
   background: rgba(15, 25, 45, 0.95) !important;
   border-radius: 12px !important;
   overflow: hidden !important;
   border: none !important;
+  border-collapse: separate !important;
 }
 
 .tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table::after) {
+  display: none !important;
+}
+
+/* 移除所有可能的白色边框和分隔线 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::before) {
+  display: none !important;
+}
+
+/* 移除表格外层的所有边框元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+}
+
+/* 强制移除Element Plus的默认边框样式 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table--border::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table--border::after) {
   display: none !important;
 }
 
@@ -1338,6 +1382,277 @@ onMounted(async () => {
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
   border-right: none !important;
+}
+
+/* 彻底移除所有表格边框 - 最终解决方案 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
+  display: none !important;
+  content: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::before) {
+  display: none !important;
+  content: none !important;
+}
+
+/* 移除所有边框补丁元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 移除表格外围的所有可能边框 */
+.tech-table :deep(.el-table__body-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 最强力的边框移除 - 覆盖所有可能的边框样式 */
+.tech-table :deep(*) {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(td) {
+  border: none !important;
+}
+
+.tech-table :deep(th) {
+  border: none !important;
+}
+
+/* 移除表格容器本身的边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 彻底解决表格左右白边问题 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* 强制移除 Element Plus 表格的所有可能边框 */
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__inner-wrapper *) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 移除表格边框相关的所有CSS类效果 */
+.tech-table :deep(.el-table--border),
+.tech-table :deep(.el-table--border *) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  box-shadow: none !important;
+}
+
+/* 强制覆盖表格的边框样式 */
+.tech-table :deep(.el-table) {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 移除条纹样式可能产生的边框 */
+.tech-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  border: none !important;
+}
+
+/* 确保表格头部和主体没有边框 */
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__body-wrapper),
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 彻底移除表格单元格的所有边框 */
+.tech-table :deep(.el-table .el-table__cell) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table th.el-table__cell) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table td.el-table__cell) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+/* 终极解决方案 - 强制覆盖所有可能的白边 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__inner-wrapper *) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  outline: 0 !important;
+  outline-width: 0 !important;
+  outline-style: none !important;
+  outline-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 强制移除 Element Plus 的所有默认样式 */
+.tech-table :deep(.el-table--border),
+.tech-table :deep(.el-table--group),
+.tech-table :deep(.el-table--striped) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+}
+
+/* 覆盖所有伪元素的边框 */
+.tech-table :deep(.el-table::before),
+.tech-table :deep(.el-table::after),
+.tech-table :deep(.el-table *::before),
+.tech-table :deep(.el-table *::after) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  content: none !important;
+  display: none !important;
+}
+
+/* 强制设置表格内所有元素的背景色 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  background-color: rgba(15, 25, 45, 0.95) !important;
+  background: rgba(15, 25, 45, 0.95) !important;
+}
+
+/* 移除表格的默认边距和内边距 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *) {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 重新设置单元格的内边距 */
+.tech-table :deep(.el-table th),
+.tech-table :deep(.el-table td) {
+  padding: 14px 12px !important;
+}
+
+/* 确保表格宽度100%且没有额外空白 */
+.tech-table :deep(.el-table) {
+  width: 100% !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+  border-spacing: 0 !important;
+}
+
+/* 强制移除可能的边框阴影效果 */
+.tech-table :deep(*) {
+  box-shadow: none !important;
+  text-shadow: none;
+}
+
+/* 重新添加文字阴影给表头 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+}
+
+/* 操作按钮横向排布样式 */
+.operation-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.operation-buttons .el-button {
+  margin: 0 !important;
+  flex-shrink: 0;
 }
 
 .version-management-container {
@@ -1557,15 +1872,65 @@ onMounted(async () => {
 
 /* 上传组件样式 */
 :deep(.el-upload) {
-  border: 1px dashed rgba(0, 255, 255, 0.3) !important;
-  background: rgba(0, 20, 40, 0.3) !important;
-  border-radius: 6px;
-  transition: all 0.3s ease;
+  border: 1px dashed rgba(0, 255, 255, 0.4) !important;
+  background: rgba(15, 25, 45, 0.8) !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 :deep(.el-upload:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  background: rgba(15, 25, 45, 0.9) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 上传拖拽区域样式 */
+:deep(.el-upload-dragger) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px dashed rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+:deep(.el-upload-dragger:hover) {
+  background: rgba(20, 30, 50, 0.8) !important;
   border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.2),
+    inset 0 1px 0 rgba(0, 255, 255, 0.1) !important;
+}
+
+/* 上传区域图标样式 */
+:deep(.el-upload-dragger .el-icon) {
+  color: rgba(0, 255, 255, 0.7) !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-upload-dragger:hover .el-icon) {
+  color: #00ffff !important;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.5) !important;
+}
+
+/* 上传区域文字样式 */
+:deep(.el-upload-dragger .el-upload__text) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-upload-dragger .el-upload__text em) {
+  color: #00ffff !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 上传提示文字样式 */
+:deep(.el-upload__tip) {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 12px !important;
+  margin-top: 10px !important;
 }
 
 /* 对话框样式 */
@@ -1602,20 +1967,71 @@ onMounted(async () => {
 }
 
 /* 描述列表样式调整 */
-:deep(.el-descriptions__body .el-descriptions__table) {
+:deep(.el-descriptions) {
   background: transparent !important;
 }
 
-:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+:deep(.el-descriptions__body) {
   background: transparent !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+  background: rgba(25, 35, 55, 0.6) !important;
   color: #ffffff !important;
   border: 1px solid rgba(0, 255, 255, 0.1) !important;
+  padding: 16px 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:hover) {
+  background: rgba(0, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
 }
 
 :deep(.el-descriptions__body .el-descriptions__table .el-descriptions__label) {
   color: #00ffff !important;
   font-weight: 600 !important;
   text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+  background: rgba(20, 35, 60, 0.8) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__content) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500 !important;
+}
+
+/* 确保表格第一行和最后一行的圆角 */
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:first-child) {
+  border-top-left-radius: 8px !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:nth-child(2)) {
+  border-top-right-radius: 8px !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table tr:last-child .el-descriptions__cell:first-child) {
+  border-bottom-left-radius: 8px !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table tr:last-child .el-descriptions__cell:last-child) {
+  border-bottom-right-radius: 8px !important;
 }
 
 /* 警告框样式更新 */

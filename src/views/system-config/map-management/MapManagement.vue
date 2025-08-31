@@ -130,19 +130,27 @@ export default {
   z-index: 10;
 }
 
+.tech-tabs :deep(.el-tabs) {
+  border: none !important;
+}
+
+.tech-tabs :deep(.el-tabs--card) {
+  border: none !important;
+}
+
 .tech-tabs :deep(.el-tabs__header) {
   margin-bottom: 0;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  border-bottom: none;
 }
 
 .tech-tabs :deep(.el-tabs__nav-wrap::after) {
-  background-color: rgba(0, 255, 255, 0.2) !important;
+  background-color: transparent !important;
 }
 
 .tech-tabs :deep(.el-tabs__item) {
   color: rgba(255, 255, 255, 0.7) !important;
   font-weight: 500;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border: none !important;
   background: rgba(0, 255, 255, 0.05) !important;
   border-radius: 8px 8px 0 0 !important;
   margin-right: 2px !important;
@@ -157,7 +165,7 @@ export default {
 .tech-tabs :deep(.el-tabs__item.is-active) {
   color: #00ffff !important;
   background: rgba(0, 255, 255, 0.15) !important;
-  border-color: #00ffff !important;
+  border: none !important;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
 }
@@ -171,6 +179,7 @@ export default {
   position: relative;
   z-index: 10;
   background: transparent;
+  border: none !important;
 }
 
 .map-management-container {
@@ -194,6 +203,7 @@ export default {
   flex: 1;
   display: flex;
   flex-direction: column;
+  border: none !important;
 }
 
 .management-tabs :deep(.el-tabs__content) {
@@ -201,12 +211,14 @@ export default {
   padding: 20px 0 0 0;
   display: flex;
   flex-direction: column;
+  border: none !important;
 }
 
 .management-tabs :deep(.el-tab-pane) {
   flex: 1;
   display: flex;
   flex-direction: column;
+  border: none !important;
 }
 
 .management-tabs :deep(.el-tabs__header) {
@@ -222,12 +234,14 @@ export default {
   padding: 12px 20px;
   font-size: 14px;
   font-weight: 500;
+  border: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
 }
 
 .management-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item.is-active) {
-  color: #409eff;
-  background-color: #fff;
-  border-bottom-color: #fff;
+  color: #00ffff !important;
+  background-color: rgba(0, 255, 255, 0.15) !important;
+  border: none !important;
 }
 
 /* 响应式设计 */
