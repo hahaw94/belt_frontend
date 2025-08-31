@@ -1,58 +1,32 @@
 <template>
-  <div class="backup-restore">
-    <!-- 备份操作区域 -->
-    <el-card class="backup-section" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span>创建地图备份</span>
-          <el-button type="primary" class="tech-button" :icon="Plus" @click="showCreateBackupDialog">
-            创建备份
-          </el-button>
+  <div class="backup-restore tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background">
         </div>
-      </template>
-      
-      <div class="backup-info">
-        <el-alert
-          title="地图备份说明"
-          type="info"
-          :closable="false"
-          show-icon
-        >
-          <template #default>
-            <p>地图备份将包含以下内容：</p>
-            <ul>
-              <li>图层信息和图片文件</li>
-              <li>相机设备信息</li>
-              <li>相机与图层的绑定关系</li>
-              <li>相机在图层上的位置坐标</li>
-            </ul>
-            <p>建议定期创建备份以保障数据安全。</p>
-          </template>
-        </el-alert>
-      </div>
-    </el-card>
 
-    <!-- 备份列表区域 -->
-    <el-card class="backup-list-section" shadow="hover">
-      <template #header>
-        <div class="card-header">
+    <!-- 头部操作区域 -->
+    <div class="header-section mb-20">
           <span>备份文件列表</span>
-          <el-button type="info" class="tech-button-info" :icon="Refresh" @click="loadBackupList">
-            刷新列表
-          </el-button>
+      <div>
+        <el-button type="primary" icon="Plus" size="small" class="tech-button-sm" @click="showCreateBackupDialog">创建备份</el-button>
+        <el-button type="warning" icon="Upload" size="small" class="tech-button-sm" @click="showUploadRestoreDialog">从文件恢复</el-button>
+        <el-button type="info" icon="Refresh" size="small" class="tech-button-sm" @click="loadBackupList">刷新列表</el-button>
         </div>
-      </template>
+    </div>
       
+    <!-- 表格区域 -->
+    <div class="table-section">
       <el-table
         :data="backupList"
         v-loading="loading"
         stripe
         style="width: 100%"
+        class="backup-table"
       >
         <el-table-column prop="file_name" label="备份文件名" min-width="250" />
         <el-table-column label="备份类型" width="120">
           <template #default="scope">
-            <el-tag :type="scope.row.type === 'all' ? 'primary' : 'warning'">
+            <el-tag :type="scope.row.type === 'all' ? 'success' : 'warning'">
               {{ scope.row.type === 'all' ? '全量备份' : '选择备份' }}
             </el-tag>
           </template>
@@ -67,62 +41,30 @@
             {{ formatDate(scope.row.create_time) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+                <el-table-column label="操作" width="200" fixed="right">
           <template #default="scope">
-                        <el-button type="text" size="small" class="tech-button-text" @click="downloadBackup(scope.row)">
-              下载
-            </el-button>
-            <el-button type="text" size="small" class="tech-button-text tech-button-info" @click="showRestoreDialog(scope.row)">
-              恢复
-            </el-button>
-            <el-button 
-              type="text" 
-              size="small" 
-              class="tech-button-text tech-button-danger"
-              @click="deleteBackup(scope.row)"
-            >
-              删除
-            </el-button>
+            <div class="action-buttons-row">
+              <el-button type="text" size="small" class="tech-button-text" @click="downloadBackup(scope.row)">
+                下载
+              </el-button>
+              <el-button type="text" size="small" class="tech-button-text tech-button-info" @click="showRestoreDialog(scope.row)">
+                恢复
+              </el-button>
+              <el-button 
+                type="text" 
+                size="small" 
+                class="tech-button-text tech-button-danger"
+                @click="deleteBackup(scope.row)"
+              >
+                删除
+              </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
       
       <el-empty v-if="!loading && backupList.length === 0" description="暂无备份文件" />
-    </el-card>
-
-    <!-- 恢复操作区域 -->
-    <el-card class="restore-section" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span>从文件恢复</span>
-          <el-button type="warning" class="tech-button-warning" :icon="Upload" @click="showUploadRestoreDialog">
-            上传恢复
-          </el-button>
         </div>
-      </template>
-      
-      <div class="restore-info">
-        <el-alert
-          title="恢复操作说明"
-          type="warning"
-          :closable="false"
-          show-icon
-        >
-          <template #default>
-            <p>从备份文件恢复时，系统将：</p>
-            <ul>
-              <li>恢复备份中包含的所有图层和图片</li>
-              <li>恢复相机设备信息（如果不存在）</li>
-              <li>重新建立相机与图层的绑定关系</li>
-              <li>恢复相机在图层上的准确位置</li>
-            </ul>
-            <p style="color: #e6a23c; font-weight: bold;">
-              ⚠️ 恢复操作可能会覆盖现有的图层配置，请谨慎操作！
-            </p>
-          </template>
-        </el-alert>
-      </div>
-    </el-card>
 
     <!-- 创建备份对话框 -->
     <el-dialog
@@ -649,50 +591,359 @@ export default {
 </script>
 
 <style scoped>
-.backup-restore {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  height: 100%;
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 20px;
+  padding-bottom: 40px;
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 头部区域样式 */
+.header-section {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  padding: 0;
+}
+
+.header-section span {
+  color: #00ffff !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6) !important;
+  letter-spacing: 1px !important;
+}
+
+.header-section div {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 表格区域样式 */
+.table-section {
+  position: relative;
+  z-index: 10;
+}
+
+/* 备份表格样式 - 完全按照图层管理样式 */
+.backup-table {
+  margin-bottom: 20px;
+}
+
+/* 科技感表格样式 */
+:deep(.backup-table.el-table) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+}
+
+/* 强制去除表格的所有白色背景和边框 */
+:deep(.backup-table.el-table),
+:deep(.backup-table.el-table *) {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+:deep(.backup-table.el-table) {
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+/* 去除表格底部和边框的白线 */
+:deep(.backup-table.el-table::before),
+:deep(.backup-table.el-table::after) {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+}
+
+:deep(.backup-table .el-table__inner-wrapper) {
+  background: transparent !important;
+  border: none !important;
+}
+
+:deep(.backup-table .el-table__inner-wrapper::before),
+:deep(.backup-table .el-table__inner-wrapper::after) {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+}
+
+:deep(.backup-table .el-table__header-wrapper) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  border: none !important;
+}
+
+:deep(.backup-table .el-table__header-wrapper::before),
+:deep(.backup-table .el-table__header-wrapper::after) {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+}
+
+/* 去除表格左右边框和底部边框 */
+:deep(.backup-table .el-table__body),
+:deep(.backup-table .el-table__header),
+:deep(.backup-table .el-table__body-wrapper),
+:deep(.backup-table .el-table__header-wrapper) {
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+/* 强制移除所有可能的边框元素 */
+:deep(.backup-table) {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-left: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+/* 去除表格滚动条区域的白色背景 */
+:deep(.backup-table .el-scrollbar) {
+  background: transparent !important;
+}
+
+:deep(.backup-table .el-scrollbar__wrap) {
+  background: transparent !important;
+}
+
+:deep(.backup-table .el-scrollbar__view) {
+  background: transparent !important;
+}
+
+:deep(.backup-table .el-table__header th) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  color: #00ffff !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.backup-table .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+:deep(.backup-table .el-table__body-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.backup-table .el-table__body tr) {
+  background: transparent !important;
+}
+
+:deep(.backup-table .el-table__body tr:nth-child(even)) {
+  background: rgba(0, 255, 255, 0.02) !important;
+}
+
+:deep(.backup-table .el-table__body tr:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.backup-table .el-table__body td) {
+  background: transparent !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.backup-table .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 表格内的标签样式 */
+:deep(.backup-table .el-tag) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+}
+
+:deep(.backup-table .el-tag.el-tag--success) {
+  background: rgba(103, 194, 58, 0.1) !important;
+  border: 1px solid rgba(103, 194, 58, 0.3) !important;
+  color: #67c23a !important;
+}
+
+:deep(.backup-table .el-tag.el-tag--warning) {
+  background: rgba(230, 162, 60, 0.1) !important;
+  border: 1px solid rgba(230, 162, 60, 0.3) !important;
+  color: #e6a23c !important;
+}
+
+/* 操作按钮行布局 */
+.action-buttons-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+/* 操作按钮样式 */
+:deep(.backup-table .tech-button-text) {
+  color: #00ffff !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 4px 8px !important;
+  margin: 0 !important;
+  border-radius: 3px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+:deep(.backup-table .tech-button-text:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.backup-table .tech-button-text.tech-button-info) {
+  color: #409eff !important;
+}
+
+:deep(.backup-table .tech-button-text.tech-button-info:hover) {
+  background: rgba(64, 158, 255, 0.1) !important;
+  box-shadow: 0 0 8px rgba(64, 158, 255, 0.2) !important;
+}
+
+:deep(.backup-table .tech-button-text.tech-button-danger) {
+  color: #f56c6c !important;
+}
+
+:deep(.backup-table .tech-button-text.tech-button-danger:hover) {
+  background: rgba(245, 108, 108, 0.1) !important;
+  box-shadow: 0 0 8px rgba(245, 108, 108, 0.2) !important;
+}
+
+/* 确保操作列有足够的空间 */
+:deep(.backup-table .el-table__fixed-right) {
+  z-index: 10 !important;
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+:deep(.backup-table .el-table__fixed-right-patch) {
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+:deep(.backup-table .el-table__fixed-right .el-table__fixed-body-wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+:deep(.backup-table .el-table__fixed-right .el-table__fixed-header-wrapper) {
+  background: rgba(0, 30, 60, 0.8) !important;
+}
+
+/* 确保固定列的边框正确显示 */
+:deep(.backup-table .el-table__fixed-right) {
+  border-left: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+/* 操作列单元格样式 */
+:deep(.backup-table .el-table__fixed-right td) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  padding: 8px 12px !important;
+}
+
+:deep(.backup-table .el-table__fixed-right th) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  padding: 8px 12px !important;
+}
+
+/* 空状态样式 */
+:deep(.el-empty) {
+  background: transparent !important;
+}
+
+:deep(.el-empty__description) {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:deep(.el-empty__image svg) {
+  fill: rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 卡片头部样式 */
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.backup-section,
-.restore-section {
-  flex-shrink: 0;
+.card-header span {
+  color: #00ffff !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6) !important;
+  letter-spacing: 1px !important;
 }
 
-.backup-list-section {
-  flex: 1;
+.card-header div {
   display: flex;
-  flex-direction: column;
+  gap: 8px;
+  align-items: center;
 }
 
-.backup-list-section :deep(.el-card__body) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.backup-info,
-.restore-info {
-  margin: 0;
-}
-
-.backup-info ul,
-.restore-info ul {
-  margin: 10px 0;
-  padding-left: 20px;
-}
-
-.backup-info li,
-.restore-info li {
-  margin: 5px 0;
+/* 间距类 */
+.mb-20 {
+  margin-bottom: 20px;
 }
 
 .restore-confirm {
@@ -705,14 +956,20 @@ export default {
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .backup-restore {
-    gap: 15px;
+  .tech-page-container {
+    padding: 15px;
+    height: calc(100vh - 100px);
   }
   
-  .card-header {
+  .header-section {
     flex-direction: column;
     gap: 10px;
     align-items: stretch;
+  }
+  
+  .header-section div {
+    flex-direction: column;
+    gap: 8px;
   }
 }
 /* ==================== 间距优化 ==================== */

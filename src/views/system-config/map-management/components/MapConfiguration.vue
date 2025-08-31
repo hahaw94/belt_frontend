@@ -6,6 +6,7 @@
         v-model="selectedLayerId"
         placeholder="选择图层"
         style="width: 250px;"
+        class="tech-select"
         @change="handleLayerChange"
       >
         <el-option
@@ -86,15 +87,29 @@
           </div>
         </div>
       </div>
-      
-      <!-- 缩放控制 -->
-      <div class="zoom-controls">
-        <el-button-group class="tech-button-group">
-          <el-button class="tech-button-secondary" :icon="ZoomIn" @click="zoomIn" />
-          <el-button class="tech-button-secondary" @click="resetZoom">{{ Math.round(zoomLevel * 100) }}%</el-button>
-          <el-button class="tech-button-secondary" :icon="ZoomOut" @click="zoomOut" />
-        </el-button-group>
-      </div>
+    </div>
+    
+    <!-- 缩放控制 -->
+    <div 
+      v-if="currentLayer"
+      ref="zoomControlsRef"
+      class="zoom-controls"
+      :class="{ 'dragging': isDraggingControls }"
+      :style="{
+        transform: `translate(${controlsPosition.x}px, ${controlsPosition.y}px)`,
+        cursor: isDraggingControls ? 'grabbing' : 'grab'
+      }"
+      @mousedown="startDragControls"
+    >
+      <el-button-group class="tech-button-group">
+        <el-button class="tech-button-secondary" @click="zoomIn">
+          <el-icon><ZoomIn /></el-icon>
+        </el-button>
+        <el-button class="tech-button-secondary" @click="resetZoom">{{ Math.round(zoomLevel * 100) }}%</el-button>
+        <el-button class="tech-button-secondary" @click="zoomOut">
+          <el-icon><ZoomOut /></el-icon>
+        </el-button>
+      </el-button-group>
     </div>
 
     <!-- 空状态 -->
@@ -233,7 +248,12 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   VideoCamera, 
   Close, 
-  Search 
+  Search,
+  ZoomIn,
+  ZoomOut,
+  Plus,
+  Check,
+  Refresh
 } from '@element-plus/icons-vue'
 import { 
   getLayerList,
@@ -289,6 +309,14 @@ export default {
       startY: 0,
       offsetX: 0,
       offsetY: 0
+    })
+    
+    // 缩放控制器拖拽相关
+    const zoomControlsRef = ref(null)
+    const isDraggingControls = ref(false)
+    const controlsPosition = reactive({
+      x: 0,
+      y: 0
     })
 
     // 计算属性
@@ -397,6 +425,31 @@ export default {
 
     const resetZoom = () => {
       fitToContainer()
+    }
+    
+    // 缩放控制器拖拽方法
+    const startDragControls = (event) => {
+      event.preventDefault()
+      isDraggingControls.value = true
+      
+      const startX = event.clientX - controlsPosition.x
+      const startY = event.clientY - controlsPosition.y
+      
+      const handleMouseMove = (e) => {
+        if (!isDraggingControls.value) return
+        
+        controlsPosition.x = e.clientX - startX
+        controlsPosition.y = e.clientY - startY
+      }
+      
+      const handleMouseUp = () => {
+        isDraggingControls.value = false
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+      
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
     }
 
     // 画布点击处理
@@ -639,7 +692,18 @@ export default {
       confirmEditPosition,
       savePositions,
       removeCameraFromLayerAction,
-      refreshData
+      refreshData,
+      // 缩放控制器拖拽
+      zoomControlsRef,
+      isDraggingControls,
+      controlsPosition,
+      startDragControls,
+      // 图标
+      ZoomIn,
+      ZoomOut,
+      Plus,
+      Check,
+      Refresh
     }
   }
 }
@@ -847,10 +911,88 @@ export default {
   margin-left: 16px !important;
 }
 
-/* 缩放按钮组间距 */
-.zoom-controls .el-button-group .el-button + .el-button {
+
+
+/* 缩放按钮样式增强 */
+.zoom-controls {
+  display: flex !important;
+  justify-content: center !important;
+  margin-top: 16px !important;
+  margin-bottom: 16px !important;
+  user-select: none !important;
+  transition: transform 0.2s ease !important;
+}
+
+.zoom-controls.dragging {
+  transition: none !important;
+  z-index: 1000 !important;
+}
+
+.zoom-controls .el-button-group {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 0 !important;
+  background: rgba(0, 20, 40, 0.9) !important;
+  border-radius: 6px !important;
+  padding: 2px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+.zoom-controls .el-button {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  padding: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  color: #00ffff !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  margin: 0 !important;
+}
+
+.zoom-controls .el-button + .el-button {
+  border-left: 1px solid rgba(0, 255, 255, 0.2) !important;
   margin-left: 0 !important;
-  border-left: 1px solid rgba(128, 128, 128, 0.4) !important;
+}
+
+.zoom-controls .el-button:first-child {
+  border-radius: 4px 0 0 4px !important;
+}
+
+.zoom-controls .el-button:last-child {
+  border-radius: 0 4px 4px 0 !important;
+}
+
+.zoom-controls .el-button:only-child {
+  border-radius: 4px !important;
+}
+
+.zoom-controls .el-button:not(:first-child):not(:last-child) {
+  border-radius: 0 !important;
+}
+
+.zoom-controls .el-button:hover {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.3) !important;
+  z-index: 10 !important;
+}
+
+.zoom-controls .el-button .el-icon {
+  font-size: 14px !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.zoom-controls .el-button:active {
+  transform: scale(0.95) !important;
 }
 
 /* 相机面板按钮间距 */
@@ -871,5 +1013,258 @@ export default {
 /* 表格间距优化 */
 :deep(.el-table .el-table__row) {
   height: 50px !important;
+}
+
+/* ==================== 科技感主题样式 ==================== */
+
+/* 主容器样式 */
+.map-configuration {
+  padding: 20px !important;
+  min-height: calc(100vh - 100px) !important;
+  background: transparent !important;
+}
+
+/* 工具栏样式 */
+.toolbar {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  padding: 15px !important;
+  margin-bottom: 20px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 图层选择框样式 */
+.tech-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+/* 地图容器样式 */
+.map-container {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px) !important;
+  min-height: calc(100vh - 300px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding-bottom: 50px !important;
+}
+
+.map-info {
+  background: rgba(0, 30, 60, 0.8) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+.map-info span {
+  color: #00ffff !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 地图包装器样式 */
+.map-wrapper {
+  overflow: auto !important;
+  max-height: calc(100vh - 350px) !important;
+  padding: 20px !important;
+  border-radius: 6px !important;
+}
+
+/* 自定义滚动条样式 */
+.map-wrapper::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.map-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.map-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.map-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+}
+
+/* 地图画布样式 */
+.map-canvas {
+  background: rgba(0, 10, 20, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.1) !important;
+  margin-bottom: 50px !important;
+}
+
+/* 相机面板样式 */
+.camera-panel {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+.panel-header {
+  background: rgba(0, 30, 60, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.panel-header h4 {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+.panel-content {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+/* 相机图标科技感样式 */
+.camera-icon {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.8), rgba(0, 200, 255, 0.9)) !important;
+  border: 2px solid rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4) !important;
+}
+
+.camera-marker:hover .camera-icon,
+.camera-marker.selected .camera-icon {
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.8), rgba(67, 160, 23, 0.9)) !important;
+  border-color: rgba(103, 194, 58, 0.8) !important;
+  box-shadow: 0 0 20px rgba(103, 194, 58, 0.6) !important;
+}
+
+.camera-label {
+  background: rgba(0, 20, 40, 0.9) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5) !important;
+}
+
+.online-indicator {
+  background: #00ff88 !important;
+  border: 2px solid rgba(0, 255, 255, 0.8) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.6) !important;
+}
+
+/* 空状态样式 */
+.empty-state {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  min-height: calc(100vh - 300px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: 50px !important;
+}
+
+.empty-state .el-icon {
+  color: rgba(0, 255, 255, 0.6) !important;
+  font-size: 64px !important;
+  margin-bottom: 20px !important;
+}
+
+.empty-state p {
+  font-size: 18px !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  text-align: center !important;
+}
+
+/* 对话框样式 */
+:deep(.el-dialog) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-dialog__header) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-dialog__body) {
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+/* 表单样式 */
+:deep(.el-form-item__label) {
+  color: #00ffff !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.el-textarea__inner) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+/* 表格样式 */
+:deep(.el-table) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.el-table th) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  color: #00ffff !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table td) {
+  background: transparent !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table tr:hover td) {
+  background: rgba(0, 255, 255, 0.1) !important;
 }
 </style>

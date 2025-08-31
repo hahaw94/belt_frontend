@@ -2,9 +2,6 @@
   <div class="layer-management">
     <!-- 操作工具栏 -->
     <div class="toolbar">
-      <el-button type="primary" class="tech-button" :icon="Plus" @click="showCreateDialog">新建图层</el-button>
-      <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshLayers">刷新</el-button>
-      
       <!-- 搜索框 -->
       <div class="search-box">
         <el-input
@@ -12,6 +9,7 @@
           placeholder="搜索图层名称"
           clearable
           style="width: 250px;"
+          class="tech-input"
           @input="handleSearch"
         >
           <template #prefix>
@@ -24,11 +22,18 @@
           placeholder="状态"
           clearable
           style="width: 120px; margin-left: 10px;"
+          class="tech-select"
           @change="handleSearch"
         >
           <el-option label="启用" :value="1" />
           <el-option label="禁用" :value="0" />
         </el-select>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="action-buttons">
+        <el-button type="primary" class="tech-button" :icon="Plus" @click="showCreateDialog">新建图层</el-button>
+        <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshLayers">刷新</el-button>
       </div>
     </div>
 
@@ -78,12 +83,13 @@
           {{ formatDate(scope.row.create_time) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="180" fixed="right">
         <template #default="scope">
-          <el-button type="text" size="small" class="tech-button-text" @click="viewLayer(scope.row)">查看</el-button>
-          <el-button type="text" size="small" class="tech-button-text" @click="editLayer(scope.row)">编辑</el-button>
-          <el-button type="text" size="small" class="tech-button-text tech-button-info" @click="configCameras(scope.row)">配置相机</el-button>
-          <el-button type="text" size="small" class="tech-button-text tech-button-danger" @click="deleteLayer(scope.row)">删除</el-button>
+          <div class="action-buttons-container">
+            <el-button type="text" size="small" class="tech-button-text" @click="viewLayer(scope.row)">查看</el-button>
+            <el-button type="text" size="small" class="tech-button-text" @click="editLayer(scope.row)">编辑</el-button>
+            <el-button type="text" size="small" class="tech-button-text tech-button-danger" @click="deleteLayer(scope.row)">删除</el-button>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -209,7 +215,7 @@
 <script>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Picture, UploadFilled } from '@element-plus/icons-vue'
+import { Search, Picture, UploadFilled, Plus, Refresh } from '@element-plus/icons-vue'
 import { 
   getLayerList, 
   createLayer, 
@@ -345,11 +351,7 @@ export default {
       }
     }
 
-    // 配置相机
-    const configCameras = () => {
-      // 切换到地图配置标签页并传递图层信息
-      ElMessage.info('功能开发中，敬请期待')
-    }
+
 
     // 删除图层
     const deleteLayer = (layer) => {
@@ -495,7 +497,6 @@ export default {
       showCreateDialog,
       editLayer,
       viewLayer,
-      configCameras,
       deleteLayer,
       beforeUpload,
       handleFileChange,
@@ -503,7 +504,9 @@ export default {
       submitDialog,
       resetDialog,
       formatDate,
-      formatFileSize
+      formatFileSize,
+      Plus,
+      Refresh
     }
   }
 }
@@ -528,14 +531,331 @@ export default {
   align-items: center;
 }
 
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .layer-table {
   margin-bottom: 20px;
+}
+
+/* 科技感表格样式 */
+:deep(.layer-table.el-table) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+}
+
+/* 强制去除表格的所有白色背景和边框 */
+:deep(.layer-table.el-table),
+:deep(.layer-table.el-table *) {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+:deep(.layer-table.el-table) {
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+/* 去除表格底部和边框的白线 */
+:deep(.layer-table.el-table::before),
+:deep(.layer-table.el-table::after) {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+}
+
+:deep(.layer-table .el-table__inner-wrapper) {
+  background: transparent !important;
+  border: none !important;
+}
+
+:deep(.layer-table .el-table__inner-wrapper::before),
+:deep(.layer-table .el-table__inner-wrapper::after) {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+}
+
+:deep(.layer-table .el-table__header-wrapper) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  border: none !important;
+}
+
+:deep(.layer-table .el-table__header-wrapper::before),
+:deep(.layer-table .el-table__header-wrapper::after) {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+}
+
+/* 去除表格左右边框和底部边框 */
+:deep(.layer-table .el-table__body),
+:deep(.layer-table .el-table__header),
+:deep(.layer-table .el-table__body-wrapper),
+:deep(.layer-table .el-table__header-wrapper) {
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+/* 强制移除所有可能的边框元素 */
+:deep(.layer-table) {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-left: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+}
+
+/* 去除表格滚动条区域的白色背景 */
+:deep(.layer-table .el-scrollbar) {
+  background: transparent !important;
+}
+
+:deep(.layer-table .el-scrollbar__wrap) {
+  background: transparent !important;
+}
+
+:deep(.layer-table .el-scrollbar__view) {
+  background: transparent !important;
+}
+
+:deep(.layer-table .el-table__header th) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  color: #00ffff !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.layer-table .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+:deep(.layer-table .el-table__body-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.layer-table .el-table__body tr) {
+  background: transparent !important;
+}
+
+:deep(.layer-table .el-table__body tr:nth-child(even)) {
+  background: rgba(0, 255, 255, 0.02) !important;
+}
+
+:deep(.layer-table .el-table__body tr:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.layer-table .el-table__body td) {
+  background: transparent !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.layer-table .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 表格内的标签样式 */
+:deep(.layer-table .el-tag) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+}
+
+:deep(.layer-table .el-tag.el-tag--success) {
+  background: rgba(103, 194, 58, 0.1) !important;
+  border-color: rgba(103, 194, 58, 0.3) !important;
+  color: #67c23a !important;
+}
+
+:deep(.layer-table .el-tag.el-tag--danger) {
+  background: rgba(255, 82, 82, 0.1) !important;
+  border-color: rgba(255, 82, 82, 0.3) !important;
+  color: #ff5252 !important;
+}
+
+/* 表格加载状态样式 */
+:deep(.layer-table .el-loading-mask) {
+  background: rgba(0, 20, 40, 0.8) !important;
+}
+
+:deep(.layer-table .el-loading-spinner .el-loading-text) {
+  color: #00ffff !important;
+}
+
+/* 表格空状态样式 */
+:deep(.layer-table .el-table__empty-block) {
+  background: rgba(0, 20, 40, 0.3) !important;
+}
+
+:deep(.layer-table .el-table__empty-text) {
+  color: rgba(255, 255, 255, 0.6) !important;
 }
 
 .pagination {
   display: flex;
   justify-content: center;
   margin-top: 20px;
+}
+
+/* 分页器样式 */
+:deep(.pagination .el-pagination) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.pagination .el-pagination .el-pager li) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+  margin: 0 2px !important;
+}
+
+:deep(.pagination .el-pagination .el-pager li:hover) {
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.pagination .el-pagination .el-pager li.active) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  border-color: #00ffff !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 分页按钮样式 */
+:deep(.pagination .el-pagination .btn-prev),
+:deep(.pagination .el-pagination .btn-next) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+}
+
+:deep(.pagination .el-pagination .btn-prev:hover),
+:deep(.pagination .el-pagination .btn-next:hover) {
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.pagination .el-pagination .btn-prev:disabled),
+:deep(.pagination .el-pagination .btn-next:disabled) {
+  background: rgba(0, 20, 40, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 分页输入框和选择器样式 */
+:deep(.pagination .el-pagination .el-select) {
+  background: transparent !important;
+}
+
+:deep(.pagination .el-pagination .el-select .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:deep(.pagination .el-pagination .el-select .el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.pagination .el-pagination .el-input) {
+  background: transparent !important;
+}
+
+:deep(.pagination .el-pagination .el-input .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:deep(.pagination .el-pagination .el-input .el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+/* 分页总数文字样式 */
+:deep(.pagination .el-pagination__total) {
+  color: #ffffff !important;
+}
+
+:deep(.pagination .el-pagination__jump) {
+  color: #ffffff !important;
+}
+
+:deep(.pagination .el-pagination__sizes) {
+  color: #ffffff !important;
+}
+
+/* 操作按钮容器样式 */
+.action-buttons-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  flex-wrap: nowrap;
+  width: 100%;
+  overflow: visible;
+}
+
+.action-buttons-container .el-button {
+  margin: 0 !important;
+  padding: 4px 6px !important;
+  min-width: auto !important;
+  white-space: nowrap !important;
+  font-size: 12px !important;
+  flex-shrink: 0;
+}
+
+/* 确保操作列有足够的空间 */
+:deep(.layer-table .el-table__fixed-right) {
+  z-index: 10 !important;
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+:deep(.layer-table .el-table__fixed-right-patch) {
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+:deep(.layer-table .el-table__fixed-right .el-table__fixed-body-wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+:deep(.layer-table .el-table__fixed-right .el-table__fixed-header-wrapper) {
+  background: rgba(0, 30, 60, 0.8) !important;
+}
+
+/* 确保固定列的边框正确显示 */
+:deep(.layer-table .el-table__fixed-right) {
+  border-left: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+/* 操作列单元格样式 */
+:deep(.layer-table .el-table__fixed-right td) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  padding: 8px 12px !important;
+}
+
+:deep(.layer-table .el-table__fixed-right th) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  padding: 8px 12px !important;
 }
 
 .image-slot {
@@ -564,11 +884,17 @@ export default {
   .toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 16px;
   }
   
   .search-box {
     justify-content: center;
     flex-wrap: wrap;
+  }
+
+  .action-buttons {
+    justify-content: center;
+    order: -1; /* 在移动端将按钮放在搜索框上方 */
   }
 }
 /* ==================== 间距优化 ==================== */
@@ -596,5 +922,19 @@ export default {
 /* 对话框按钮间距 */
 :deep(.dialog-footer .el-button + .el-button) {
   margin-left: 16px !important;
+}
+/* 使用用户管理中成功的方法 */
+.tech-input :deep(.el-input__wrapper),
+.tech-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-input :deep(.el-input__inner),
+.tech-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
 }
 </style>

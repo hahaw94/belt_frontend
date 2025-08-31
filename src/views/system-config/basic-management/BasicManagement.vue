@@ -2069,6 +2069,13 @@ onUnmounted(() => {
   padding: 24px;
 }
 
+.basic-management-container h2 {
+  color: #00ffff;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
+}
+
 .config-card {
   margin-bottom: 24px;
 }

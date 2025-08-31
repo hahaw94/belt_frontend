@@ -7,7 +7,7 @@
     <h2>地图管理</h2>
 
     <!-- 选项卡导航 -->
-    <el-tabs v-model="activeTab" type="card" class="management-tabs tech-tabs">
+    <el-tabs v-model="activeTab" class="management-tabs tech-tabs">
       <el-tab-pane label="图层管理" name="layers">
         <LayerManagement />
       </el-tab-pane>
@@ -138,6 +138,73 @@ export default {
   border: none !important;
 }
 
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header) {
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__nav-wrap) {
+  border: none !important;
+  background: transparent !important;
+}
+
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__nav) {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* 强制覆盖ElementUI Card类型选项卡的默认样式 */
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item) {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 12px 20px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item.is-active) {
+  color: #00ffff !important;
+  background-color: rgba(0, 255, 255, 0.15) !important;
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  outline: none !important;
+}
+
+/* 全局强制覆盖，确保没有任何ElementUI默认样式 */
+.map-management-container :deep(.el-tabs--card > .el-tabs__header .el-tabs__item) {
+  border: none !important;
+  border-color: transparent !important;
+  background-color: rgba(0, 255, 255, 0.05) !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+}
+
+.map-management-container :deep(.el-tabs--card > .el-tabs__header .el-tabs__item.is-active) {
+  border: none !important;
+  border-color: transparent !important;
+  background-color: rgba(0, 255, 255, 0.15) !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+}
+
 .tech-tabs :deep(.el-tabs__header) {
   margin-bottom: 0;
   border-bottom: none;
@@ -190,7 +257,7 @@ export default {
 }
 
 .map-management-container h2 {
-  margin: 0 0 20px 0;
+  margin: 24px 0 20px 0;
   color: #00ffff;
   font-size: 24px;
   font-weight: 600;
@@ -229,20 +296,7 @@ export default {
   padding-left: 0;
 }
 
-/* 选项卡样式优化 */
-.management-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item) {
-  padding: 12px 20px;
-  font-size: 14px;
-  font-weight: 500;
-  border: none !important;
-  background: rgba(0, 255, 255, 0.05) !important;
-}
-
-.management-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item.is-active) {
-  color: #00ffff !important;
-  background-color: rgba(0, 255, 255, 0.15) !important;
-  border: none !important;
-}
+/* 清理重复样式规则，使用.tech-tabs中的样式 */
 
 /* 响应式设计 */
 @media (max-width: 768px) {
@@ -426,23 +480,119 @@ export default {
 /* 分页样式 */
 :deep(.el-pagination) {
   color: #ffffff !important;
+  background: transparent !important;
 }
 
 :deep(.el-pagination .el-pager li) {
   background: rgba(0, 20, 40, 0.6) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
   color: #ffffff !important;
+  border-radius: 4px !important;
+  margin: 0 2px !important;
 }
 
 :deep(.el-pagination .el-pager li:hover) {
   color: #00ffff !important;
   border-color: rgba(0, 255, 255, 0.5) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
 }
 
 :deep(.el-pagination .el-pager li.active) {
   background: rgba(0, 255, 255, 0.2) !important;
   color: #00ffff !important;
   border-color: #00ffff !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 分页按钮样式 */
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+}
+
+:deep(.el-pagination .btn-prev:hover),
+:deep(.el-pagination .btn-next:hover) {
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-pagination .btn-prev:disabled),
+:deep(.el-pagination .btn-next:disabled) {
+  background: rgba(0, 20, 40, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 分页输入框和选择器样式 */
+:deep(.el-pagination .el-select) {
+  background: transparent !important;
+}
+
+:deep(.el-pagination .el-select .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-pagination .el-select .el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.el-pagination .el-input) {
+  background: transparent !important;
+}
+
+:deep(.el-pagination .el-input .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-pagination .el-input .el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+/* 分页总数文字样式 */
+:deep(.el-pagination__total) {
+  color: #ffffff !important;
+}
+
+:deep(.el-pagination__jump) {
+  color: #ffffff !important;
+}
+
+:deep(.el-pagination__sizes) {
+  color: #ffffff !important;
+}
+
+/* 分页下拉选择框的选项样式 */
+:deep(.el-select-dropdown) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
 }
 
 /* ==================== 科技感按钮样式 ==================== */
@@ -680,5 +830,148 @@ export default {
 :deep(.tab-content span),
 :deep(.tab-content div) {
   color: #ffffff !important;
+}
+</style>
+
+<!-- 全局样式覆盖 - 强制去除ElementUI Card类型选项卡的白边 -->
+<style>
+/* 最高优先级样式覆盖 */
+.el-tabs--card > .el-tabs__header .el-tabs__item {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+  background-color: rgba(0, 255, 255, 0.05) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.el-tabs--card > .el-tabs__header .el-tabs__item:hover {
+  border: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  background-color: rgba(0, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+.el-tabs--card > .el-tabs__header .el-tabs__item.is-active {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  background-color: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
+}
+
+.el-tabs--card > .el-tabs__header {
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+.el-tabs--card {
+  border: none !important;
+}
+
+.el-tabs--border-card {
+  border: none !important;
+  background: transparent !important;
+}
+
+.el-tabs--border-card > .el-tabs__header {
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+.el-tabs--border-card > .el-tabs__header .el-tabs__item {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+  background-color: rgba(0, 255, 255, 0.05) !important;
+  border-color: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.el-tabs--border-card > .el-tabs__header .el-tabs__item:hover {
+  border: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  background-color: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  background-color: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
+}
+
+.el-tabs--border-card > .el-tabs__content {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* 默认类型tabs样式覆盖 */
+.el-tabs .el-tabs__header .el-tabs__item {
+  border: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  padding: 12px 20px !important;
+  margin-right: 2px !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.el-tabs .el-tabs__header .el-tabs__item:hover {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: none !important;
+}
+
+.el-tabs .el-tabs__header .el-tabs__item.is-active {
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+  border: none !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-tabs .el-tabs__header {
+  border-bottom: none !important;
+}
+
+.el-tabs .el-tabs__nav-wrap::after {
+  background-color: transparent !important;
+}
+
+/* 针对地图管理页面的特定覆盖 */
+.map-management-container .el-tabs--card > .el-tabs__header .el-tabs__item {
+  border: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+}
+
+.map-management-container .el-tabs--card > .el-tabs__header .el-tabs__item.is-active {
+  border: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
 }
 </style>
