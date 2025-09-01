@@ -165,25 +165,25 @@
           </el-radio-group>
         </el-form-item>
         
-        <!-- MinIO桶选择 - 仅在全量备份和数据库备份时显示 -->
+        <!-- 存储桶选择 - 仅在全量备份和数据库备份时显示 -->
         <el-form-item 
-          label="MinIO桶选择" 
+          label="存储桶选择" 
           v-if="backupForm.type === 'full' || backupForm.type === 'database'"
           prop="minio_buckets"
         >
           <div v-loading="minioBucketsLoading" style="width: 100%;">
             <el-alert 
               v-if="minioBuckets.length === 0 && !minioBucketsLoading"
-              title="暂无可选择的MinIO存储桶" 
+              title="暂无可选择的存储桶" 
               type="warning" 
               :closable="false" 
               show-icon
               style="margin-bottom: 15px;"
             />
             
-            <div v-else-if="minioBuckets.length > 0" style="max-height: 350px; overflow-y: auto;">
+            <div v-else-if="minioBuckets.length > 0" class="minio-buckets-container" style="max-height: 350px; overflow-y: auto;">
               <!-- 便捷操作按钮 -->
-              <div style="margin-bottom: 12px; padding: 8px; background: #f3f4f6; border-radius: 4px;">
+              <div style="margin-bottom: 12px; padding: 8px; background: rgba(0, 20, 40, 0.4); border: 1px solid rgba(0, 255, 255, 0.2); border-radius: 4px;">
                 <el-button 
                   size="small" 
                   class="tech-button-sm"
@@ -217,17 +217,17 @@
                 <div 
                   v-for="bucket in minioBuckets" 
                   :key="bucket.name"
-                  style="margin-bottom: 15px; padding: 12px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb;"
+                  style="margin-bottom: 15px; padding: 12px; border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 6px; background: rgba(0, 20, 40, 0.3);"
                 >
                   <el-checkbox :label="bucket.name" style="width: 100%;">
                     <div style="display: flex; flex-direction: column; margin-left: 8px;">
-                      <div style="font-weight: 600; color: #374151;">
+                      <div style="font-weight: 600; color: #ffffff;">
                         {{ bucket.name }}
                         <el-tag size="small" style="margin-left: 8px;">
                           {{ bucket.file_count }} 个文件, {{ formatFileSize(bucket.total_size) }}
                         </el-tag>
                       </div>
-                      <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                      <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7); margin-top: 4px;">
                         {{ bucket.description }}
                       </div>
                     </div>
@@ -369,10 +369,10 @@ const backupMessage = ref('')
 
 const backupForm = reactive({
   type: 'full',                // 后端字段：备份类型 (required)
-  minio_buckets: []           // 后端字段：选择的MinIO桶（仅数据备份和全量备份时使用）
+  minio_buckets: []           // 后端字段：选择的存储桶（仅数据备份和全量备份时使用）
 })
 
-// MinIO桶相关
+// 存储桶相关
 const minioBuckets = ref([])
 const minioBucketsLoading = ref(false)
 
@@ -456,10 +456,10 @@ watch(backupList, (newValue) => {
   }
 }, { immediate: true })
 
-// 监控备份类型变化，自动更新MinIO桶选择
+// 监控备份类型变化，自动更新存储桶选择
 watch(() => backupForm.type, (newType) => {
   if (newType === 'config') {
-    // 配置备份不需要MinIO桶
+    // 配置备份不需要存储桶
     backupForm.minio_buckets = []
   } else if (minioBuckets.value.length > 0) {
     // 其他类型根据后端默认设置选择
@@ -481,7 +481,7 @@ const backupRules = {
         // 仅在全量备份和数据库备份时需要验证
         if (backupForm.type === 'full' || backupForm.type === 'database') {
           if (!value || value.length === 0) {
-            callback(new Error('请至少选择一个MinIO存储桶'))
+            callback(new Error('请至少选择一个存储桶'))
           } else {
             callback()
           }
@@ -2034,15 +2034,44 @@ onMounted(async () => {
   border-bottom-right-radius: 8px !important;
 }
 
-/* 警告框样式更新 */
+/* 警告框样式更新 - 科技风主题 */
 :deep(.el-alert) {
-  background: rgba(255, 193, 7, 0.1) !important;
-  border: 1px solid rgba(255, 193, 7, 0.3) !important;
   border-radius: 6px !important;
+  backdrop-filter: blur(5px) !important;
 }
 
-:deep(.el-alert .el-alert__content) {
-  color: #ffc107 !important;
+/* 警告类型 alert */
+:deep(.el-alert--warning) {
+  background: rgba(255, 165, 0, 0.1) !important;
+  border: 1px solid rgba(255, 165, 0, 0.4) !important;
+  box-shadow: 0 0 10px rgba(255, 165, 0, 0.2) !important;
+}
+
+:deep(.el-alert--warning .el-alert__content) {
+  color: #ffaa00 !important;
+  text-shadow: 0 0 5px rgba(255, 170, 0, 0.3) !important;
+}
+
+:deep(.el-alert--warning .el-alert__icon) {
+  color: #ffaa00 !important;
+  filter: drop-shadow(0 0 3px rgba(255, 170, 0, 0.4)) !important;
+}
+
+/* 信息类型 alert */
+:deep(.el-alert--info) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-alert--info .el-alert__content) {
+  color: #00ffff !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-alert--info .el-alert__icon) {
+  color: #00ffff !important;
+  filter: drop-shadow(0 0 3px rgba(0, 255, 255, 0.4)) !important;
 }
 
 /* 其他文本颜色调整 */
@@ -2202,5 +2231,30 @@ onMounted(async () => {
 
 :deep(.backup-section .el-button:last-child) {
   margin-right: 0 !important;
+}
+
+/* MinIO桶选择区域滚动条样式 */
+.minio-buckets-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.minio-buckets-container::-webkit-scrollbar-track {
+  background: rgba(0, 20, 40, 0.3);
+  border-radius: 4px;
+}
+
+.minio-buckets-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.4);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.minio-buckets-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.minio-buckets-container::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 255, 255, 0.8);
 }
 </style>

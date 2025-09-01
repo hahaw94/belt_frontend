@@ -32,15 +32,12 @@
         <!-- 状态消息 -->
         <div class="progress-message">
           <div v-if="isError" class="error-message">
-            <i class="error-icon">⚠️</i>
             {{ errorMessage }}
           </div>
           <div v-else-if="isCompleted" class="success-message">
-            <i class="success-icon">✅</i>
             {{ message || '任务完成' }}
           </div>
           <div v-else class="info-message">
-            <i class="loading-icon" v-if="isPolling">⏳</i>
             {{ message || '处理中...' }}
           </div>
         </div>
@@ -186,7 +183,8 @@ const formatTime = (timeStr) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -194,13 +192,18 @@ const formatTime = (timeStr) => {
 }
 
 .progress-modal {
-  background: white;
-  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(0, 20, 40, 0.95), rgba(0, 30, 60, 0.95));
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 12px;
   min-width: 480px;
   max-width: 600px;
   max-height: 80vh;
   overflow-y: auto;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(0, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
 }
 
 .progress-header {
@@ -208,21 +211,23 @@ const formatTime = (timeStr) => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px 16px;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  background: rgba(0, 255, 255, 0.05);
 }
 
 .progress-header h3 {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 .close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  color: #999;
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  font-size: 18px;
+  color: #00ffff;
   cursor: pointer;
   padding: 0;
   width: 30px;
@@ -231,16 +236,21 @@ const formatTime = (timeStr) => {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
 }
 
 .close-btn:hover {
-  background: #f5f5f5;
-  color: #666;
+  background: rgba(0, 255, 255, 0.2);
+  border-color: rgba(0, 255, 255, 0.5);
+  color: #ffffff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+  transform: scale(1.05);
 }
 
 .progress-content {
   padding: 24px;
+  background: rgba(0, 0, 0, 0.1);
 }
 
 .progress-bar-container {
@@ -249,31 +259,37 @@ const formatTime = (timeStr) => {
 
 .progress-bar {
   width: 100%;
-  height: 12px;
-  background: #f0f0f0;
-  border-radius: 6px;
+  height: 16px;
+  background: rgba(0, 20, 40, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
   overflow: hidden;
   position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .progress-fill {
   height: 100%;
-  background: #1890ff;
-  border-radius: 6px;
+  background: linear-gradient(90deg, #00ccff, #0099cc);
+  border-radius: 7px;
   transition: width 0.3s ease;
   position: relative;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
 .progress-fill.active {
-  background: linear-gradient(45deg, #1890ff, #40a9ff);
+  background: linear-gradient(90deg, #00ffff, #00ccff, #0099ff);
+  animation: pulse 2s ease-in-out infinite alternate;
 }
 
 .progress-fill.success {
-  background: #52c41a;
+  background: linear-gradient(90deg, #00ff88, #00cc66);
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
 }
 
 .progress-fill.error {
-  background: #ff4d4f;
+  background: linear-gradient(90deg, #ff4466, #cc3344);
+  box-shadow: 0 0 15px rgba(255, 68, 102, 0.6);
 }
 
 .progress-fill.active::after {
@@ -286,7 +302,7 @@ const formatTime = (timeStr) => {
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.4) 50%,
     rgba(255, 255, 255, 0) 100%
   );
   animation: shimmer 2s infinite;
@@ -297,64 +313,72 @@ const formatTime = (timeStr) => {
   100% { transform: translateX(100%); }
 }
 
+@keyframes pulse {
+  0% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); }
+  100% { box-shadow: 0 0 20px rgba(0, 255, 255, 0.8); }
+}
+
 .progress-text {
   text-align: center;
   margin-top: 8px;
   font-weight: 600;
-  color: #666;
+  color: #00ffff;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+  font-size: 16px;
 }
 
 .progress-message {
   padding: 16px;
-  border-radius: 6px;
+  border-radius: 8px;
   margin-bottom: 16px;
+  backdrop-filter: blur(8px);
 }
 
 .error-message {
-  color: #ff4d4f;
-  background: #fff2f0;
-  border: 1px solid #ffccc7;
+  color: #ff6b6b;
+  background: rgba(255, 68, 102, 0.1);
+  border: 1px solid rgba(255, 68, 102, 0.3);
+  box-shadow: 0 0 15px rgba(255, 68, 102, 0.2);
 }
 
 .success-message {
-  color: #52c41a;
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
+  color: #51cf66;
+  background: rgba(81, 207, 102, 0.1);
+  border: 1px solid rgba(81, 207, 102, 0.3);
+  box-shadow: 0 0 15px rgba(81, 207, 102, 0.2);
 }
 
 .info-message {
-  color: #1890ff;
-  background: #f0f9ff;
-  border: 1px solid #91d5ff;
+  color: #00ffff;
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
 }
 
 .error-message, .success-message, .info-message {
   padding: 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.loading-icon {
-  animation: rotate 2s linear infinite;
-}
-
-@keyframes rotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  font-weight: 500;
+  text-shadow: 0 0 5px currentColor;
 }
 
 .task-details {
-  border-top: 1px solid #eee;
+  border-top: 1px solid rgba(0, 255, 255, 0.2);
   padding-top: 16px;
+  background: rgba(0, 20, 40, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
 }
 
 .task-details h4 {
   margin: 0 0 12px 0;
   font-size: 14px;
-  color: #666;
+  color: #00ffff;
   font-weight: 600;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
 }
 
 .detail-item {
@@ -362,55 +386,98 @@ const formatTime = (timeStr) => {
   justify-content: space-between;
   margin-bottom: 8px;
   font-size: 14px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.detail-item:last-child {
+  border-bottom: none;
 }
 
 .detail-item .label {
-  color: #999;
+  color: rgba(255, 255, 255, 0.7);
   min-width: 80px;
 }
 
 .detail-item .value {
-  color: #333;
+  color: #ffffff;
   text-align: right;
   flex: 1;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 .progress-footer {
   padding: 16px 24px;
-  border-top: 1px solid #eee;
+  border-top: 1px solid rgba(0, 255, 255, 0.2);
+  background: rgba(0, 255, 255, 0.05);
   display: flex;
   justify-content: flex-end;
   gap: 12px;
 }
 
 .cancel-btn, .confirm-btn {
-  padding: 8px 16px;
-  border: 1px solid #d9d9d9;
-  border-radius: 4px;
-  background: white;
+  padding: 10px 20px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 20, 40, 0.6);
   cursor: pointer;
   font-size: 14px;
-  transition: all 0.2s;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  color: #ffffff;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
 }
 
 .cancel-btn:hover:not(:disabled) {
-  border-color: #ff4d4f;
-  color: #ff4d4f;
+  border-color: rgba(255, 68, 102, 0.5);
+  background: rgba(255, 68, 102, 0.1);
+  color: #ff6b6b;
+  box-shadow: 0 0 15px rgba(255, 68, 102, 0.3);
+  text-shadow: 0 0 8px rgba(255, 107, 107, 0.5);
 }
 
 .confirm-btn {
-  background: #1890ff;
-  border-color: #1890ff;
-  color: white;
+  background: rgba(0, 255, 255, 0.2);
+  border-color: rgba(0, 255, 255, 0.5);
+  color: #00ffff;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
 }
 
 .confirm-btn:hover {
-  background: #40a9ff;
-  border-color: #40a9ff;
+  background: rgba(0, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.7);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+  transform: translateY(-1px);
 }
 
 .cancel-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.4;
   cursor: not-allowed;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: none;
+  box-shadow: none;
+}
+
+/* 自定义滚动条样式 */
+.progress-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.progress-modal::-webkit-scrollbar-track {
+  background: rgba(0, 20, 40, 0.3);
+  border-radius: 3px;
+}
+
+.progress-modal::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.4);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.progress-modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
 }
 </style>

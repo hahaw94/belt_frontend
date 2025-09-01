@@ -62,11 +62,11 @@
           <!-- 相机图标 -->
           <div
             v-for="camera in layerCameras"
-            :key="camera.id"
+            :key="camera.camera_id"
             class="camera-marker"
             :class="{ 
-              'selected': selectedCameraId === camera.id,
-              'dragging': draggingCameraId === camera.id
+              'selected': String(selectedCameraId) === String(camera.camera_id),
+              'dragging': String(draggingCameraId) === String(camera.camera_id)
             }"
             :style="{
               left: camera.position_x + 'px',
@@ -321,7 +321,7 @@ export default {
 
     // 计算属性
     const selectedCamera = computed(() => {
-      return layerCameras.value.find(camera => camera.id === selectedCameraId.value)
+      return layerCameras.value.find(camera => camera.camera_id === selectedCameraId.value)
     })
     
     const filteredUnboundCameras = computed(() => {
@@ -368,6 +368,13 @@ export default {
         if (response.code === 200) {
           // 确保 layerCameras 总是一个数组
           layerCameras.value = Array.isArray(response.data) ? response.data : []
+          console.log('加载图层相机数据:', layerCameras.value.map(c => ({
+            关联ID: c.id,
+            相机ID: c.camera_id,
+            相机ID类型: typeof c.camera_id,
+            name: c.camera_name,
+            位置: { x: c.position_x, y: c.position_y }
+          })))
         }
       } catch (error) {
         ElMessage.error('加载图层相机失败')
@@ -468,17 +475,35 @@ export default {
       const x = (event.clientX - rect.left) / zoomLevel.value
       const y = (event.clientY - rect.top) / zoomLevel.value
       
-      const camera = layerCameras.value.find(c => c.id === draggingCameraId.value)
+      const camera = layerCameras.value.find(c => {
+        // 使用正确的camera_id字段进行比较
+        const cId = typeof c.camera_id === 'string' ? c.camera_id : String(c.camera_id)
+        const dragId = typeof draggingCameraId.value === 'string' ? draggingCameraId.value : String(draggingCameraId.value)
+        return cId === dragId
+      })
+      
       if (camera) {
         camera.position_x = Math.max(0, Math.min(Math.round(x - dragState.offsetX), canvasSize.width))
         camera.position_y = Math.max(0, Math.min(Math.round(y - dragState.offsetY), canvasSize.height))
         hasChanges.value = true
+        console.log('更新相机位置:', camera.camera_name, '位置:', camera.position_x, camera.position_y)
+      } else {
+        console.log('找不到拖拽的相机:', {
+          拖拽ID: draggingCameraId.value,
+          拖拽ID类型: typeof draggingCameraId.value,
+          相机列表: layerCameras.value.map(c => ({ 
+            关联ID: c.id, 
+            相机ID: c.camera_id, 
+            相机ID类型: typeof c.camera_id, 
+            name: c.camera_name 
+          }))
+        })
       }
     }
 
     // 选择相机
     const selectCamera = (camera) => {
-      selectedCameraId.value = camera.id
+      selectedCameraId.value = camera.camera_id
     }
 
     // 清除选择
@@ -489,8 +514,9 @@ export default {
     // 开始拖拽
     const startDrag = (camera, event) => {
       event.preventDefault()
-      draggingCameraId.value = camera.id
-      selectedCameraId.value = camera.id
+      console.log('开始拖拽相机:', camera.camera_id, camera.camera_name)
+      draggingCameraId.value = camera.camera_id
+      selectedCameraId.value = camera.camera_id
       
       const rect = mapCanvas.value.getBoundingClientRect()
       const x = (event.clientX - rect.left) / zoomLevel.value
@@ -579,7 +605,7 @@ export default {
       if (!selectedCamera.value || !selectedLayerId.value) return
       
       try {
-        await updateCameraPosition(selectedLayerId.value, selectedCamera.value.id, {
+        await updateCameraPosition(selectedLayerId.value, selectedCamera.value.camera_id, {
           position_x: positionForm.position_x,
           position_y: positionForm.position_y,
           camera_angle: positionForm.camera_angle
@@ -600,20 +626,36 @@ export default {
       
       try {
         // 批量更新所有有变化的相机位置
-        const cameras = layerCameras.value.map(camera => ({
-          camera_id: camera.id,
-          position_x: camera.position_x,
-          position_y: camera.position_y,
-          camera_angle: camera.camera_angle || 0
-        }))
+        const cameras = layerCameras.value.map(camera => {
+          const cameraId = typeof camera.camera_id === 'string' ? parseInt(camera.camera_id, 10) : camera.camera_id
+          const positionX = typeof camera.position_x === 'string' ? parseInt(camera.position_x, 10) : camera.position_x
+          const positionY = typeof camera.position_y === 'string' ? parseInt(camera.position_y, 10) : camera.position_y
+          
+          console.log('处理相机:', {
+            关联ID: camera.id,
+            相机ID: camera.camera_id,
+            转换后相机ID: cameraId,
+            相机名称: camera.camera_name,
+            位置: { x: positionX, y: positionY }
+          })
+          
+          return {
+            camera_id: cameraId,
+            position_x: positionX,
+            position_y: positionY
+          }
+        })
+        
+        console.log('保存位置数据:', { cameras })
         
         // 使用批量更新接口
-        await batchUpdateCameraPositions(selectedLayerId.value, { cameras })
+        await batchUpdateCameraPositions(parseInt(selectedLayerId.value), { cameras })
         
         ElMessage.success('位置保存成功')
         hasChanges.value = false
       } catch (error) {
-        ElMessage.error('保存位置失败: ' + (error.message || '未知错误'))
+        console.error('保存位置失败:', error)
+        ElMessage.error('保存位置失败: ' + (error.response?.data?.message || error.message || '未知错误'))
       }
     }
 
@@ -631,7 +673,7 @@ export default {
         }
       ).then(async () => {
         try {
-          await removeCameraFromLayer(selectedLayerId.value, selectedCamera.value.id)
+          await removeCameraFromLayer(selectedLayerId.value, selectedCamera.value.camera_id)
           ElMessage.success('相机移除成功')
           await loadLayerCameras(selectedLayerId.value)
           clearSelection()
@@ -722,7 +764,7 @@ export default {
   align-items: center;
   margin-bottom: 20px;
   padding: 10px;
-  background: #f5f7fa;
+  background: rgba(0, 20, 40, 0.4);
   border-radius: 4px;
 }
 
@@ -745,7 +787,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 10px 15px;
-  background: #fafafa;
+  background: rgba(0, 20, 40, 0.6);
   border-bottom: 1px solid #e4e7ed;
   font-size: 14px;
   color: #606266;
@@ -755,7 +797,7 @@ export default {
   flex: 1;
   position: relative;
   overflow: auto;
-  background: #f0f0f0;
+  background: rgba(0, 20, 40, 0.3);
   padding: 20px;
 }
 

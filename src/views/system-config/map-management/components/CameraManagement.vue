@@ -152,16 +152,17 @@
           <el-input v-model="dialogForm.ip_address" placeholder="请输入IP地址" />
         </el-form-item>
         <el-form-item label="端口" prop="port">
-          <el-input-number
+          <el-input
             v-model="dialogForm.port"
-            :min="1"
-            :max="65535"
+            type="number"
             placeholder="请输入端口"
             style="width: 100%;"
+            min="1"
+            max="65535"
           />
         </el-form-item>
         <el-form-item label="协议" prop="protocol">
-          <el-select v-model="dialogForm.protocol" placeholder="请选择协议" style="width: 100%;">
+          <el-select v-model="dialogForm.protocol" placeholder="请选择协议" style="width: 100%;" class="tech-select-protocol">
             <el-option label="RTSP" value="RTSP" />
             <el-option label="HTTP" value="HTTP" />
             <el-option label="GB28181" value="GB28181" />
@@ -302,6 +303,20 @@ export default {
       }
     }
 
+    // 验证端口号
+    const validatePort = (rule, value, callback) => {
+      if (!value) {
+        callback(new Error('请输入端口'))
+        return
+      }
+      const port = parseInt(value)
+      if (isNaN(port) || port < 1 || port > 65535) {
+        callback(new Error('端口范围 1-65535'))
+      } else {
+        callback()
+      }
+    }
+
     const dialogRules = {
       camera_code: [
         { required: true, message: '请输入相机编码', trigger: 'blur' },
@@ -315,8 +330,7 @@ export default {
         { required: true, validator: validateIP, trigger: 'blur' }
       ],
       port: [
-        { required: true, message: '请输入端口', trigger: 'blur' },
-        { type: 'number', min: 1, max: 65535, message: '端口范围 1-65535', trigger: 'blur' }
+        { required: true, validator: validatePort, trigger: 'blur' }
       ],
       protocol: [
         { required: true, message: '请选择协议', trigger: 'change' }
@@ -442,7 +456,7 @@ export default {
           const data = {
             camera_name: dialogForm.camera_name,
             ip_address: dialogForm.ip_address,
-            port: dialogForm.port,
+            port: parseInt(dialogForm.port),
             protocol: dialogForm.protocol,
             username: dialogForm.username || null,
             password: dialogForm.password || null,
@@ -464,7 +478,7 @@ export default {
             camera_code: dialogForm.camera_code,
             camera_name: dialogForm.camera_name,
             ip_address: dialogForm.ip_address,
-            port: dialogForm.port,
+            port: parseInt(dialogForm.port),
             protocol: dialogForm.protocol,
             username: dialogForm.username || null,
             password: dialogForm.password || null,
@@ -973,5 +987,269 @@ export default {
 .tech-select :deep(.el-select__input) {
   color: rgba(255, 255, 255, 0.95) !important;
   background: transparent !important;
+}
+
+/* 隐藏数字输入框的上下箭头 */
+:deep(.el-input input[type="number"]::-webkit-outer-spin-button),
+:deep(.el-input input[type="number"]::-webkit-inner-spin-button) {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+:deep(.el-input input[type="number"]) {
+  -moz-appearance: textfield !important;
+}
+
+/* 选择框样式优化 - 强制覆盖所有白色背景 */
+:deep(.el-select) {
+  width: 100% !important;
+}
+
+:deep(.el-select .el-input) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  background-color: rgba(0, 20, 40, 0.6) !important;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  background-color: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  background: rgba(0, 20, 40, 0.8) !important;
+  background-color: rgba(0, 20, 40, 0.8) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select .el-input__wrapper.is-focus) {
+  background: rgba(0, 20, 40, 0.8) !important;
+  background-color: rgba(0, 20, 40, 0.8) !important;
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-select .el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.el-select .el-input__suffix) {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 强制覆盖placeholder样式 */
+:deep(.el-select .el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 协议选择框完全重置样式 */
+.tech-select-protocol {
+  position: relative !important;
+}
+
+.tech-select-protocol * {
+  background: none !important;
+  background-color: rgba(0, 20, 40, 0.6) !important;
+  box-sizing: border-box !important;
+}
+
+.tech-select-protocol :deep(.el-select) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  background-color: rgba(0, 20, 40, 0.6) !important;
+}
+
+.tech-select-protocol :deep(.el-input) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  background-color: rgba(0, 20, 40, 0.6) !important;
+}
+
+.tech-select-protocol :deep(.el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  background-color: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.tech-select-protocol :deep(.el-input__wrapper):before,
+.tech-select-protocol :deep(.el-input__wrapper):after {
+  display: none !important;
+}
+
+.tech-select-protocol :deep(.el-input__wrapper:hover) {
+  background: rgba(0, 20, 40, 0.8) !important;
+  background-color: rgba(0, 20, 40, 0.8) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-select-protocol :deep(.el-input__wrapper.is-focus) {
+  background: rgba(0, 20, 40, 0.8) !important;
+  background-color: rgba(0, 20, 40, 0.8) !important;
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.tech-select-protocol :deep(.el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-select-protocol :deep(.el-input__suffix) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.tech-select-protocol :deep(.el-select__caret) {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.tech-select-protocol :deep(.el-input__suffix-inner) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 相机详情对话框样式 */
+.camera-detail {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 0 0 20px 0;
+  background: transparent;
+}
+
+/* 相机详情滚动条样式 */
+.camera-detail::-webkit-scrollbar {
+  width: 8px;
+}
+
+.camera-detail::-webkit-scrollbar-track {
+  background: rgba(0, 20, 40, 0.3);
+  border-radius: 4px;
+}
+
+.camera-detail::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.4);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.camera-detail::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.camera-detail::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 255, 255, 0.8);
+}
+
+/* 相机详情描述列表样式 */
+.camera-detail :deep(.el-descriptions) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.camera-detail :deep(.el-descriptions__header) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+.camera-detail :deep(.el-descriptions__body) {
+  background: transparent !important;
+}
+
+.camera-detail :deep(.el-descriptions__table) {
+  background: transparent !important;
+  border: none !important;
+}
+
+.camera-detail :deep(.el-descriptions__cell) {
+  background: transparent !important;
+  border: 1px solid rgba(0, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  padding: 12px 16px !important;
+}
+
+.camera-detail :deep(.el-descriptions__label) {
+  background: rgba(0, 30, 60, 0.6) !important;
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+.camera-detail :deep(.el-descriptions__content) {
+  background: rgba(0, 20, 40, 0.4) !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 相机详情标签样式 */
+.camera-detail :deep(.el-tag) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+}
+
+.camera-detail :deep(.el-tag.el-tag--success) {
+  background: rgba(0, 255, 0, 0.1) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+  color: #00ff00 !important;
+}
+
+.camera-detail :deep(.el-tag.el-tag--danger) {
+  background: rgba(255, 0, 0, 0.1) !important;
+  border-color: rgba(255, 0, 0, 0.3) !important;
+  color: #ff0000 !important;
+}
+
+.camera-detail :deep(.el-tag.el-tag--warning) {
+  background: rgba(255, 165, 0, 0.1) !important;
+  border-color: rgba(255, 165, 0, 0.3) !important;
+  color: #ffaa00 !important;
+}
+
+.camera-detail :deep(.el-tag.el-tag--info) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border-color: rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+}
+
+/* 下拉面板样式 */
+:deep(.el-select-dropdown) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  color: #ffffff !important;
+  background: transparent !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  font-weight: bold !important;
 }
 </style>

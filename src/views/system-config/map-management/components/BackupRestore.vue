@@ -1003,4 +1003,86 @@ export default {
 :deep(p), :deep(div), :deep(span) {
   line-height: 1.6 !important;
 }
+
+/* 上传恢复对话框中的文件上传组件样式 */
+:deep(.el-upload) {
+  border: 1px dashed rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 20, 40, 0.6) !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-upload:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  background: rgba(0, 20, 40, 0.8) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-upload-dragger) {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-upload-dragger:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-upload__text) {
+  color: #ffffff !important;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.el-upload__text em) {
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-upload__tip) {
+  color: rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2) !important;
+}
+
+:deep(.el-icon--upload) {
+  color: #00ffff !important;
+  filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.4)) !important;
+}
+
+/* 按钮样式优化 */
+.tech-button-secondary {
+  background: rgba(45, 55, 75, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+}
+
+.tech-button-secondary:hover {
+  background: rgba(65, 75, 95, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-warning {
+  background: rgba(255, 165, 0, 0.8) !important;
+  border: 1px solid rgba(255, 165, 0, 0.5) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+}
+
+.tech-button-warning:hover {
+  background: rgba(255, 165, 0, 0.9) !important;
+  border-color: rgba(255, 165, 0, 0.7) !important;
+  box-shadow: 0 0 10px rgba(255, 165, 0, 0.3) !important;
+}
+
+.tech-button-warning:disabled {
+  background: rgba(100, 100, 100, 0.5) !important;
+  border-color: rgba(150, 150, 150, 0.3) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+  box-shadow: none !important;
+}
 </style>

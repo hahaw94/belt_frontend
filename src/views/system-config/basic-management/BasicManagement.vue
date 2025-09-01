@@ -132,19 +132,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row>
-          <el-col :span="24">
-            <div class="warning-container">
-              <el-alert
-                title="警告：修改IP地址将导致系统重启，您需要使用新IP地址重新访问系统并重新登录"
-                type="warning"
-                show-icon
-                :closable="false"
-                class="custom-warning-alert"
-              />
-            </div>
-          </el-col>
-        </el-row>
+
         <el-row style="margin-top: 20px;">
           <el-col :span="24">
             <el-form-item>
@@ -187,7 +175,9 @@
             <div class="logo-section">
               <h4 class="section-title">上传新LOGO</h4>
               <div class="upload-area">
+                <!-- 上传区域 - 无预览时显示 -->
                 <el-upload
+                  v-if="!logoPreview"
                   ref="logoUploadRef"
                   :auto-upload="false"
                   :show-file-list="false"
@@ -196,28 +186,43 @@
                   :on-change="handleLogoChange"
                   class="logo-uploader"
                 >
-                  <template v-if="!logoPreview">
-                    <div class="upload-trigger">
-                      <el-icon class="upload-icon"><Upload /></el-icon>
-                      <div class="upload-text">选择文件</div>
-                    </div>
-                  </template>
+                  <div class="upload-trigger">
+                    <el-icon class="upload-icon"><Upload /></el-icon>
+                    <div class="upload-text">选择文件</div>
+                  </div>
                 </el-upload>
                 
-                <div v-if="logoPreview" class="upload-preview">
-                  <div class="preview-image-container">
-                    <img :src="logoPreview" alt="预览" class="logo-image"/>
-                  </div>
-                  <div class="upload-actions">
-                    <el-button type="primary" class="tech-button" @click="uploadLogo" :loading="uploading">
-                      <el-icon><Upload /></el-icon>
-                      上传
-                    </el-button>
-                    <el-button class="tech-button-secondary" @click="clearLogoPreview">
-                      取消
-                    </el-button>
+                <!-- 预览区域 - 选择文件后显示，点击可重新选择 -->
+                <div v-if="logoPreview" class="preview-container clickable" @click="triggerReselect">
+                  <img :src="logoPreview" alt="预览" class="logo-image"/>
+                  <div class="preview-overlay">
+                    <el-icon class="overlay-icon"><Upload /></el-icon>
+                    <div class="overlay-text">点击重新选择</div>
                   </div>
                 </div>
+                
+                <!-- 操作按钮 - 有预览时显示 -->
+                <div v-if="logoPreview" class="upload-actions">
+                  <el-button type="primary" class="tech-button" @click="uploadLogo" :loading="uploading">
+                    <el-icon><Upload /></el-icon>
+                    更换
+                  </el-button>
+                  <el-button class="tech-button-secondary" @click="clearLogoPreview">
+                    取消
+                  </el-button>
+                </div>
+                
+                <!-- 隐藏的上传组件，用于重新选择 -->
+                <el-upload
+                  v-show="false"
+                  ref="hiddenLogoUploadRef"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  accept=".jpg,.jpeg,.png"
+                  :before-upload="beforeLogoUpload"
+                  :on-change="handleLogoChange"
+                >
+                </el-upload>
                 
                 <div class="upload-tips">
                   <div class="tip-item">
@@ -495,6 +500,7 @@
       title="创建系统镜像点"
       width="500px"
       :close-on-click-modal="false"
+      class="create-snapshot-dialog"
     >
       <el-form :model="snapshotForm" :rules="snapshotRules" ref="snapshotFormRef" label-width="100px">
         <el-form-item label="镜像点名称" prop="name">
@@ -505,16 +511,15 @@
             v-model="snapshotForm.description"
             type="textarea"
             :rows="3"
-            placeholder="请输入描述信息（可选）"
             maxlength="500"
             show-word-limit
           />
         </el-form-item>
         <el-alert
           title="提示：创建镜像点将备份当前系统的配置文件和数据库，请确保系统处于稳定状态"
-          type="info"
-          show-icon
+          type="warning"
           :closable="false"
+          class="custom-snapshot-alert"
         />
       </el-form>
       <template #footer>
@@ -600,7 +605,6 @@
           <el-alert
             title="警告：此操作将立即生效并重启系统服务"
             type="warning"
-            show-icon
             :closable="false"
             class="custom-dialog-warning-alert"
           />
@@ -749,6 +753,7 @@ const currentLogo = reactive({
 
 const logoPreview = ref('')
 const logoUploadRef = ref(null)
+const hiddenLogoUploadRef = ref(null)
 const selectedLogoFile = ref(null)
 
 // 存储策略配置
@@ -1209,6 +1214,16 @@ const clearLogoPreview = () => {
   selectedLogoFile.value = null
   if (logoUploadRef.value) {
     logoUploadRef.value.clearFiles()
+  }
+  if (hiddenLogoUploadRef.value) {
+    hiddenLogoUploadRef.value.clearFiles()
+  }
+}
+
+// 触发重新选择LOGO（点击预览图时）
+const triggerReselect = () => {
+  if (hiddenLogoUploadRef.value) {
+    hiddenLogoUploadRef.value.$el.querySelector('input').click()
   }
 }
 
@@ -2138,11 +2153,50 @@ onUnmounted(() => {
   position: relative;
   transition: all 0.3s ease;
   margin-bottom: 20px;
+  overflow: hidden;
 }
 
 .preview-container:hover {
   border-color: rgba(0, 255, 255, 0.5);
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+/* 可点击的预览容器 */
+.preview-container.clickable {
+  cursor: pointer;
+}
+
+.preview-container.clickable:hover .preview-overlay {
+  opacity: 1;
+}
+
+/* 预览覆盖层 */
+.preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.3s ease;
+  color: #ffffff;
+}
+
+.overlay-icon {
+  font-size: 32px;
+  color: #00ffff;
+  margin-bottom: 8px;
+}
+
+.overlay-text {
+  font-size: 14px;
+  color: #ffffff;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 /* LOGO图片 */
@@ -2698,7 +2752,6 @@ onUnmounted(() => {
   max-width: calc(100% - 150px) !important;
   background: linear-gradient(135deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.05)) !important;
   border: 1px solid rgba(0, 188, 212, 0.25) !important;
-  border-left: 3px solid rgba(0, 188, 212, 0.6) !important;
   border-radius: 6px !important;
   box-shadow: 0 1px 4px rgba(0, 188, 212, 0.05) !important;
 }
@@ -2707,7 +2760,6 @@ onUnmounted(() => {
 .basic-management-container :deep(.el-alert--warning) {
   background: linear-gradient(135deg, rgba(0, 188, 212, 0.08), rgba(0, 188, 212, 0.05)) !important;
   border: 1px solid rgba(0, 188, 212, 0.25) !important;
-  border-left: 3px solid rgba(0, 188, 212, 0.6) !important;
   box-shadow: 0 1px 4px rgba(0, 188, 212, 0.05) !important;
 }
 
@@ -2748,7 +2800,6 @@ onUnmounted(() => {
   max-width: 100% !important;
   background: linear-gradient(135deg, rgba(0, 188, 212, 0.1), rgba(0, 188, 212, 0.06)) !important;
   border: 1px solid rgba(0, 188, 212, 0.3) !important;
-  border-left: 3px solid rgba(0, 188, 212, 0.7) !important;
   border-radius: 8px !important;
   box-shadow: 0 2px 6px rgba(0, 188, 212, 0.08) !important;
 }
@@ -2757,7 +2808,6 @@ onUnmounted(() => {
 :deep(.el-dialog .el-alert--warning) {
   background: linear-gradient(135deg, rgba(0, 188, 212, 0.1), rgba(0, 188, 212, 0.06)) !important;
   border: 1px solid rgba(0, 188, 212, 0.3) !important;
-  border-left: 3px solid rgba(0, 188, 212, 0.7) !important;
   box-shadow: 0 2px 6px rgba(0, 188, 212, 0.08) !important;
 }
 
@@ -2771,8 +2821,217 @@ onUnmounted(() => {
 }
 
 :deep(.custom-dialog-warning-alert.el-alert .el-alert__icon) {
+  display: none !important;
+}
+
+/* 强制删除对话框警告的左边框 */
+:deep(.custom-dialog-warning-alert.el-alert),
+:deep(.el-dialog .custom-dialog-warning-alert.el-alert) {
+  border-left: none !important;
+}
+
+/* 镜像点创建对话框提示框样式 */
+:deep(.custom-snapshot-alert.el-alert) {
+  width: fit-content !important;
+  max-width: 100% !important;
+  background: linear-gradient(135deg, rgba(0, 188, 212, 0.1), rgba(0, 188, 212, 0.06)) !important;
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 6px rgba(0, 188, 212, 0.08) !important;
+}
+
+:deep(.custom-snapshot-alert.el-alert .el-alert__icon) {
+  display: none !important;
+}
+
+:deep(.custom-snapshot-alert.el-alert .el-alert__title) {
   color: rgba(0, 188, 212, 1) !important;
-  font-size: 18px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+:deep(.custom-snapshot-alert.el-alert .el-alert__content) {
+  color: rgba(0, 188, 212, 1) !important;
+}
+
+/* 创建镜像点对话框整体样式 */
+.el-dialog__header .el-dialog__title {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+/* 确保对话框中的表单标签颜色符合主题 */
+:deep(.el-dialog .el-form-item__label) {
+  color: #ffffff !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+  font-weight: 500;
+}
+
+/* 创建镜像点对话框输入框样式 - 使用更高优先级选择器 */
+:deep(.el-dialog .el-input__inner) {
+  color: #ffffff !important;
+  background: rgba(0, 20, 40, 0.6) !important;
+  border-color: rgba(0, 188, 212, 0.3) !important;
+}
+
+:deep(.el-dialog .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+:deep(.el-dialog .el-input__wrapper:hover) {
+  border-color: rgba(0, 188, 212, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 188, 212, 0.3) !important;
+}
+
+:deep(.el-dialog .el-input__wrapper.is-focus) {
+  border-color: rgba(0, 188, 212, 0.8) !important;
+  box-shadow: 0 0 12px rgba(0, 188, 212, 0.4) !important;
+}
+
+/* 文本域样式 */
+:deep(.el-dialog .el-textarea__inner) {
+  color: #ffffff !important;
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+  border-radius: 4px !important;
+}
+
+:deep(.el-dialog .el-textarea__inner:hover) {
+  border-color: rgba(0, 188, 212, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 188, 212, 0.3) !important;
+}
+
+:deep(.el-dialog .el-textarea__inner:focus) {
+  border-color: rgba(0, 188, 212, 0.8) !important;
+  box-shadow: 0 0 12px rgba(0, 188, 212, 0.4) !important;
+}
+
+/* 文本域placeholder样式 */
+:deep(.el-dialog .el-textarea__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 输入框placeholder样式 */
+:deep(.el-dialog .el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 字数限制标识样式 - 去除白底 */
+:deep(.el-dialog .el-input__count) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+  right: 8px !important;
+}
+
+:deep(.el-dialog .el-textarea__count) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+  bottom: 8px !important;
+  right: 8px !important;
+}
+
+/* 占位符文字样式 */
+:deep(.el-dialog .el-input__inner::placeholder) {
+  color: rgba(0, 188, 212, 0.5) !important;
+}
+
+:deep(.el-dialog .el-textarea__inner::placeholder) {
+  color: rgba(0, 188, 212, 0.5) !important;
+}
+
+/* 专门针对创建镜像点对话框的样式 */
+:deep(.create-snapshot-dialog .el-input__inner) {
+  color: #ffffff !important;
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+:deep(.create-snapshot-dialog .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+}
+
+:deep(.create-snapshot-dialog .el-textarea__inner) {
+  color: #ffffff !important;
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+}
+
+:deep(.create-snapshot-dialog .el-input__count) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+}
+
+:deep(.create-snapshot-dialog .el-textarea__count) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+}
+
+/* 强制修复输入框字数标识的白底问题 */
+:deep(.create-snapshot-dialog .el-input .el-input__count) {
+  background: none !important;
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+:deep(.create-snapshot-dialog .el-textarea .el-textarea__count) {
+  background: none !important;
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 修复描述框边框颜色一致性 */
+:deep(.create-snapshot-dialog .el-textarea__inner) {
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+}
+
+:deep(.create-snapshot-dialog .el-textarea__inner:hover) {
+  border-color: rgba(0, 188, 212, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 188, 212, 0.3) !important;
+}
+
+:deep(.create-snapshot-dialog .el-textarea__inner:focus) {
+  border-color: rgba(0, 188, 212, 0.3) !important;
+  box-shadow: none !important;
+}
+
+/* 全局强制覆盖字数标识样式 */
+.create-snapshot-dialog :deep(.el-input__count),
+.create-snapshot-dialog :deep(.el-textarea__count) {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 确保输入框和文本域边框颜色一致 */
+.create-snapshot-dialog :deep(.el-input__wrapper),
+.create-snapshot-dialog :deep(.el-textarea__inner) {
+  border: 1px solid rgba(0, 188, 212, 0.3) !important;
+}
+
+.create-snapshot-dialog :deep(.el-input__wrapper:hover),
+.create-snapshot-dialog :deep(.el-textarea__inner:hover) {
+  border-color: rgba(0, 188, 212, 0.5) !important;
+}
+
+.create-snapshot-dialog :deep(.el-input__wrapper.is-focus),
+.create-snapshot-dialog :deep(.el-textarea__inner:focus) {
+  border-color: rgba(0, 188, 212, 0.3) !important;
+  box-shadow: none !important;
 }
 
 :deep(.custom-dialog-warning-alert.el-alert .el-alert__title) {
@@ -3009,6 +3268,16 @@ onUnmounted(() => {
   color: #ffffff !important;
   text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
   font-weight: 500;
+  display: flex !important;
+  align-items: center !important;
+  height: 32px !important;
+}
+
+/* 表单内容区域对齐 */
+:deep(.el-form-item__content) {
+  display: flex !important;
+  align-items: center !important;
+  min-height: 32px !important;
 }
 
 /* 上传组件样式 */

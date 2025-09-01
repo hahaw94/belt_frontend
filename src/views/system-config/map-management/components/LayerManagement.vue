@@ -190,12 +190,12 @@
           <el-descriptions-item label="描述" :span="2">{{ currentLayer.layer_description || '暂无描述' }}</el-descriptions-item>
         </el-descriptions>
         
-        <div class="layer-image" style="margin-top: 20px;">
+        <div class="layer-image">
           <h4>图层预览</h4>
           <el-image
             :src="currentLayer.image_url"
-            fit="contain"
-            style="width: 100%; max-height: 400px;"
+            fit="none"
+            style="width: 100%; height: auto;"
             :preview-src-list="[currentLayer.image_url]"
             preview-teleported
           >
@@ -865,14 +865,41 @@ export default {
   align-items: center;
   width: 100%;
   height: 100%;
-  background: #f5f7fa;
+  background: rgba(0, 20, 40, 0.4);
   color: #909399;
   font-size: 14px;
 }
 
 .layer-detail {
-  max-height: 600px;
+  max-height: 70vh;
   overflow-y: auto;
+  padding: 0 0 20px 0;
+  background: transparent;
+}
+
+/* 图层详情滚动条样式 */
+.layer-detail::-webkit-scrollbar {
+  width: 8px;
+}
+
+.layer-detail::-webkit-scrollbar-track {
+  background: rgba(0, 20, 40, 0.3);
+  border-radius: 4px;
+}
+
+.layer-detail::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.4);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.layer-detail::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.6);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.layer-detail::-webkit-scrollbar-thumb:active {
+  background: rgba(0, 255, 255, 0.8);
 }
 
 .dialog-footer {
@@ -936,5 +963,146 @@ export default {
 .tech-select :deep(.el-select__input) {
   color: rgba(255, 255, 255, 0.95) !important;
   background: transparent !important;
+}
+
+/* 文件上传组件样式 */
+:deep(.el-upload) {
+  border: 1px dashed rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 20, 40, 0.6) !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-upload:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  background: rgba(0, 20, 40, 0.8) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-upload-dragger) {
+  background: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-upload-dragger:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-upload__text) {
+  color: #ffffff !important;
+  text-shadow: 0 0 5px rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.el-upload__text em) {
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-upload__tip) {
+  color: rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2) !important;
+}
+
+:deep(.el-icon--upload) {
+  color: #00ffff !important;
+  filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.4)) !important;
+}
+
+/* 图层详情对话框样式 */
+:deep(.el-descriptions) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+:deep(.el-descriptions__header) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-descriptions__body) {
+  background: transparent !important;
+}
+
+:deep(.el-descriptions__table) {
+  background: transparent !important;
+  border: none !important;
+}
+
+:deep(.el-descriptions__cell) {
+  background: transparent !important;
+  border: 1px solid rgba(0, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  padding: 12px 16px !important;
+}
+
+:deep(.el-descriptions__label) {
+  background: rgba(0, 30, 60, 0.6) !important;
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-descriptions__content) {
+  background: rgba(0, 20, 40, 0.4) !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 图层预览容器和标题样式 */
+.layer-image {
+  margin-top: 20px !important;
+  margin-bottom: 20px !important;
+  padding-bottom: 20px !important;
+}
+
+.layer-image h4 {
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+  margin-bottom: 16px !important;
+  font-weight: 600 !important;
+}
+
+/* 图片容器样式优化 */
+:deep(.el-image) {
+  border-radius: 8px !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  overflow: visible !important;
+  background: rgba(0, 20, 40, 0.3) !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+:deep(.el-image img) {
+  border-radius: 8px !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  object-fit: scale-down !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* 标签样式 */
+:deep(.el-tag) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-tag.el-tag--success) {
+  background: rgba(0, 255, 0, 0.1) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+  color: #00ff00 !important;
+}
+
+:deep(.el-tag.el-tag--danger) {
+  background: rgba(255, 0, 0, 0.1) !important;
+  border-color: rgba(255, 0, 0, 0.3) !important;
+  color: #ff0000 !important;
 }
 </style>
