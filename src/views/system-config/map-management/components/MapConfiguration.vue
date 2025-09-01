@@ -167,9 +167,10 @@
       <el-table
         :data="filteredUnboundCameras"
         height="300"
-        @row-click="selectUnboundCamera"
-        highlight-current-row
+        @selection-change="handleSelectionChange"
+        ref="cameraTableRef"
       >
+        <el-table-column type="selection" width="55" />
         <el-table-column prop="camera_name" label="相机名称" />
         <el-table-column prop="camera_code" label="编码" />
         <el-table-column prop="ip_address" label="IP地址" />
@@ -189,9 +190,9 @@
             type="primary" 
             class="tech-button"
             @click="confirmAddCamera"
-            :disabled="!selectedUnboundCamera"
+            :disabled="!selectedUnboundCameras || selectedUnboundCameras.length === 0"
           >
-            确认添加
+            确认添加 {{ selectedUnboundCameras && selectedUnboundCameras.length > 0 ? `(${selectedUnboundCameras.length})` : '' }}
           </el-button>
         </span>
       </template>
@@ -284,7 +285,8 @@ export default {
     const addCameraVisible = ref(false)
     const editPositionVisible = ref(false)
     const cameraSearchKeyword = ref('')
-    const selectedUnboundCamera = ref(null)
+    const selectedUnboundCameras = ref([])
+    const cameraTableRef = ref(null)
     const hasChanges = ref(false)
     
     const mapWrapper = ref(null)
@@ -553,7 +555,11 @@ export default {
       await loadUnboundCameras()
       addCameraVisible.value = true
       cameraSearchKeyword.value = ''
-      selectedUnboundCamera.value = null
+      selectedUnboundCameras.value = []
+      // 清空表格选择
+      if (cameraTableRef.value) {
+        cameraTableRef.value.clearSelection()
+      }
     }
 
     // 过滤未绑定相机
@@ -561,28 +567,33 @@ export default {
       // 计算属性会自动处理过滤
     }
 
-    // 选择未绑定相机
-    const selectUnboundCamera = (camera) => {
-      selectedUnboundCamera.value = camera
+    // 处理多选变化
+    const handleSelectionChange = (selection) => {
+      selectedUnboundCameras.value = selection
     }
 
     // 确认添加相机
     const confirmAddCamera = async () => {
-      if (!selectedUnboundCamera.value || !selectedLayerId.value) return
-      
-      // 默认放在图片中心
-      const centerX = Math.floor(canvasSize.width / 2)
-      const centerY = Math.floor(canvasSize.height / 2)
+      if (!selectedUnboundCameras.value || selectedUnboundCameras.value.length === 0 || !selectedLayerId.value) return
       
       try {
-        await addCameraToLayer(selectedLayerId.value, {
-          camera_id: selectedUnboundCamera.value.id,
-          position_x: centerX,
-          position_y: centerY,
-          camera_angle: 0
+        // 批量添加相机
+        const promises = selectedUnboundCameras.value.map((camera, index) => {
+          // 为多个相机设置不同的默认位置，避免重叠
+          const centerX = Math.floor(canvasSize.width / 2) + (index * 50) - (selectedUnboundCameras.value.length * 25)
+          const centerY = Math.floor(canvasSize.height / 2) + (index * 30) - (selectedUnboundCameras.value.length * 15)
+          
+          return addCameraToLayer(selectedLayerId.value, {
+            camera_id: camera.id,
+            position_x: Math.max(0, Math.min(centerX, canvasSize.width - 50)),
+            position_y: Math.max(0, Math.min(centerY, canvasSize.height - 50)),
+            camera_angle: 0
+          })
         })
         
-        ElMessage.success('相机添加成功')
+        await Promise.all(promises)
+        
+        ElMessage.success(`成功添加 ${selectedUnboundCameras.value.length} 个相机`)
         addCameraVisible.value = false
         await loadLayerCameras(selectedLayerId.value)
       } catch (error) {
@@ -706,7 +717,8 @@ export default {
       addCameraVisible,
       editPositionVisible,
       cameraSearchKeyword,
-      selectedUnboundCamera,
+      selectedUnboundCameras,
+      cameraTableRef,
       hasChanges,
       mapWrapper,
       mapCanvas,
@@ -728,7 +740,7 @@ export default {
       startDrag,
       showAddCameraDialog,
       filterUnboundCameras,
-      selectUnboundCamera,
+      handleSelectionChange,
       confirmAddCamera,
       editCameraPosition,
       confirmEditPosition,
@@ -1294,19 +1306,261 @@ export default {
   border-radius: 6px !important;
 }
 
+/* 强制去除表格的所有白色背景 */
+:deep(.el-table),
+:deep(.el-table *) {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+:deep(.el-table) {
+  background: rgba(0, 20, 40, 0.6) !important;
+}
+
+/* 去除表格内部白色背景 */
+:deep(.el-table .el-table__inner-wrapper) {
+  background: transparent !important;
+  border: none !important;
+}
+
+:deep(.el-table .el-table__header-wrapper) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  border: none !important;
+}
+
+:deep(.el-table .el-table__body-wrapper) {
+  background: transparent !important;
+}
+
 :deep(.el-table th) {
   background: rgba(0, 30, 60, 0.8) !important;
   color: #00ffff !important;
   border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table th:last-child) {
+  border-right: none !important;
 }
 
 :deep(.el-table td) {
   background: transparent !important;
   color: #ffffff !important;
   border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.el-table td:last-child) {
+  border-right: none !important;
+}
+
+:deep(.el-table tr) {
+  background: transparent !important;
+}
+
+:deep(.el-table tr:nth-child(even)) {
+  background: rgba(0, 255, 255, 0.02) !important;
+}
+
+:deep(.el-table tr:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
 }
 
 :deep(.el-table tr:hover td) {
   background: rgba(0, 255, 255, 0.1) !important;
+}
+
+/* 去除表格滚动条区域的白色背景 */
+:deep(.el-table .el-scrollbar) {
+  background: transparent !important;
+}
+
+:deep(.el-table .el-scrollbar__wrap) {
+  background: transparent !important;
+}
+
+:deep(.el-table .el-scrollbar__view) {
+  background: transparent !important;
+}
+
+/* 表格标签样式 */
+:deep(.el-table .el-tag) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-table .el-tag.el-tag--success) {
+  background: rgba(103, 194, 58, 0.1) !important;
+  border: 1px solid rgba(103, 194, 58, 0.3) !important;
+  color: #67c23a !important;
+}
+
+:deep(.el-table .el-tag.el-tag--danger) {
+  background: rgba(245, 108, 108, 0.1) !important;
+  border: 1px solid rgba(245, 108, 108, 0.3) !important;
+  color: #f56c6c !important;
+}
+
+/* 针对添加相机对话框的额外样式优化 */
+/* 去除表格选中行的白色高亮 */
+:deep(.el-table .el-table__body tr.current-row) {
+  background: rgba(0, 255, 255, 0.15) !important;
+}
+
+:deep(.el-table .el-table__body tr.current-row td) {
+  background: rgba(0, 255, 255, 0.15) !important;
+}
+
+/* 去除表格可能的白色边框和分割线 */
+:deep(.el-table::before) {
+  display: none !important;
+}
+
+:deep(.el-table .el-table__border-left-patch) {
+  background: transparent !important;
+}
+
+:deep(.el-table .el-table__border-bottom-patch) {
+  background: transparent !important;
+}
+
+/* 确保搜索框没有白色背景 */
+:deep(.el-input__prefix) {
+  color: rgba(0, 255, 255, 0.6) !important;
+}
+
+:deep(.el-input__suffix) {
+  color: rgba(0, 255, 255, 0.6) !important;
+}
+
+/* 去除可能的白色遮罩或背景 */
+:deep(.el-dialog__wrapper) {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 确保对话框内所有元素都没有白色背景 */
+:deep(.el-dialog .el-dialog__body *) {
+  background-color: transparent !important;
+}
+
+/* 特别针对可能出现的白色容器 */
+:deep(.el-dialog .el-table-v2),
+:deep(.el-dialog .el-table-v2 *),
+:deep(.el-dialog .el-virtual-list),
+:deep(.el-dialog .el-virtual-list *) {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* 完全去除表格底部白线和边框 */
+:deep(.el-table::after),
+:deep(.el-table::before) {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  border: none !important;
+}
+
+:deep(.el-table .el-table__inner-wrapper::after),
+:deep(.el-table .el-table__inner-wrapper::before) {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  border: none !important;
+}
+
+:deep(.el-table .el-table__body::after),
+:deep(.el-table .el-table__body::before) {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  border: none !important;
+}
+
+/* 去除最后一行的底部边框 */
+:deep(.el-table .el-table__body tr:last-child td) {
+  border-bottom: none !important;
+}
+
+/* 多选框样式优化 */
+:deep(.el-table .el-checkbox) {
+  background: transparent !important;
+}
+
+:deep(.el-table .el-checkbox__input) {
+  background: transparent !important;
+}
+
+:deep(.el-table .el-checkbox__inner) {
+  background: rgba(0, 20, 40, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+}
+
+:deep(.el-table .el-checkbox__input.is-checked .el-checkbox__inner) {
+  background: rgba(0, 255, 255, 0.8) !important;
+  border-color: #00ffff !important;
+}
+
+:deep(.el-table .el-checkbox__input.is-checked .el-checkbox__inner::after) {
+  border-color: #ffffff !important;
+}
+
+/* 相机信息面板 - 描述列表样式 */
+:deep(.el-descriptions) {
+  background: transparent !important;
+  border: none !important;
+}
+
+:deep(.el-descriptions__header) {
+  background: transparent !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-descriptions__body) {
+  background: transparent !important;
+}
+
+:deep(.el-descriptions__table) {
+  background: transparent !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.el-descriptions__cell) {
+  background: transparent !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-descriptions__label) {
+  background: rgba(0, 30, 60, 0.6) !important;
+  color: #00ffff !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-descriptions__content) {
+  background: rgba(0, 20, 40, 0.4) !important;
+  color: #ffffff !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+}
+
+/* 相机信息面板中的标签样式 */
+:deep(.camera-panel .el-tag) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+}
+
+:deep(.camera-panel .el-tag.el-tag--success) {
+  background: rgba(103, 194, 58, 0.1) !important;
+  border: 1px solid rgba(103, 194, 58, 0.3) !important;
+  color: #67c23a !important;
+}
+
+:deep(.camera-panel .el-tag.el-tag--danger) {
+  background: rgba(245, 108, 108, 0.1) !important;
+  border: 1px solid rgba(245, 108, 108, 0.3) !important;
+  color: #f56c6c !important;
 }
 </style>

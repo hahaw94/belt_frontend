@@ -423,12 +423,37 @@ export default {
         
         // 先下载备份文件，然后上传恢复
         const response = await downloadMapBackup(selectedBackup.value.file_name)
-        const blob = new Blob([response], { type: 'application/gzip' })
+        
+        // 从axios响应中获取blob数据
+        // 由于API拦截器对blob响应返回完整response对象，需要取response.data
+        let blob
+        if (response.data && response.data instanceof Blob) {
+          blob = response.data
+        } else if (response instanceof Blob) {
+          blob = response
+        } else {
+          // 如果response是ArrayBuffer或其他类型，转换为Blob
+          blob = new Blob([response.data || response], { type: 'application/x-gzip' })
+        }
+        
+        // 验证下载的文件大小
+        if (blob.size === 0) {
+          throw new Error('下载的备份文件为空，请检查文件是否存在')
+        }
         
         // 创建FormData对象进行恢复
         const formData = new FormData()
-        formData.append('file', blob, selectedBackup.value.file_name)
+        // 创建File对象而不是直接使用Blob，确保文件名正确传递
+        const file = new File([blob], selectedBackup.value.file_name, { type: 'application/x-gzip' })
+        formData.append('file', file)
         formData.append('force_restore', restoreForm.force_restore.toString())
+        
+        console.log('恢复文件信息:', {
+          fileName: selectedBackup.value.file_name,
+          fileSize: file.size,
+          fileType: file.type,
+          forceRestore: restoreForm.force_restore
+        })
         
         await restoreMapBackup(formData)
         
@@ -436,7 +461,19 @@ export default {
         restoreVisible.value = false
         loadBackupList()
       } catch (error) {
-        ElMessage.error('恢复失败: ' + (error.message || '未知错误'))
+        console.error('恢复失败详细信息:', error)
+        
+        // 更详细的错误处理
+        let errorMessage = '未知错误'
+        if (error.response?.data?.message) {
+          errorMessage = error.response.data.message
+        } else if (error.response?.data && typeof error.response.data === 'string') {
+          errorMessage = error.response.data
+        } else if (error.message) {
+          errorMessage = error.message
+        }
+        
+        ElMessage.error('恢复失败: ' + errorMessage)
       } finally {
         restoring.value = false
       }

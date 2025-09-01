@@ -302,7 +302,15 @@ export function downloadMapBackup(filename) {
   return request({
     url: `/api/v1/system/map/backups/${filename}/download`,
     method: 'get',
-    responseType: 'blob'
+    responseType: 'blob',
+    timeout: 300000, // 5分钟超时，适用于大文件下载
+    onDownloadProgress: (progressEvent) => {
+      // 可以在这里添加下载进度处理
+      if (progressEvent.lengthComputable) {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+        console.log(`下载进度: ${percentCompleted}%`)
+      }
+    }
   })
 }
 
