@@ -433,7 +433,7 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="160" fixed="right" header-align="center">
+              <el-table-column label="操作" width="160" header-align="center">
                 <template #default="scope">
                   <div class="operation-buttons">
                     <el-button type="primary" size="small" class="tech-button-sm" @click="restoreSnapshot(scope.row.id)" :loading="restoringSnapshot">

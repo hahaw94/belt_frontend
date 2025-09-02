@@ -50,13 +50,15 @@
     </div>
 
     <!-- 相机列表 -->
-    <el-table
-      :data="cameraList"
-      v-loading="loading"
-      stripe
-      style="width: 100%"
-      class="camera-table"
-    >
+    <div class="table-container">
+      <el-table
+        :data="cameraList"
+        v-loading="loading"
+        stripe
+        style="width: 100%; min-width: 1600px;"
+        class="camera-table"
+        :scroll-x="true"
+      >
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="camera_code" label="相机编码" min-width="120" />
       <el-table-column prop="camera_name" label="相机名称" min-width="150" />
@@ -93,7 +95,7 @@
           {{ formatDate(scope.row.create_time) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="220">
         <template #default="scope">
           <div class="action-buttons-container">
             <el-button type="text" size="small" class="tech-button-text" @click="viewCamera(scope.row)">查看</el-button>
@@ -110,7 +112,8 @@
           </div>
         </template>
       </el-table-column>
-    </el-table>
+      </el-table>
+    </div>
 
     <!-- 分页 -->
     <div class="pagination">
@@ -591,11 +594,50 @@ export default {
   margin-bottom: 20px;
 }
 
+/* 表格容器样式 - 支持横向滚动 */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 20, 40, 0.6);
+}
+
+/* 表格容器滚动条样式 */
+.table-container::-webkit-scrollbar {
+  height: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.table-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 255, 255, 0.6) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 255, 255, 0.8) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+}
+
 /* 科技感表格样式 */
 :deep(.camera-table.el-table) {
   background: rgba(0, 20, 40, 0.6) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  border-radius: 6px !important;
+  border: none !important;
+  border-radius: 0 !important;
 }
 
 /* 强制去除表格的所有白色背景和边框 */
@@ -886,38 +928,13 @@ export default {
   flex-shrink: 0;
 }
 
-/* 确保操作列有足够的空间 */
-:deep(.camera-table .el-table__fixed-right) {
-  z-index: 10 !important;
-  background: rgba(0, 20, 40, 0.6) !important;
-}
-
-:deep(.camera-table .el-table__fixed-right-patch) {
-  background: rgba(0, 20, 40, 0.6) !important;
-}
-
-:deep(.camera-table .el-table__fixed-right .el-table__fixed-body-wrapper) {
-  background: rgba(0, 20, 40, 0.6) !important;
-}
-
-:deep(.camera-table .el-table__fixed-right .el-table__fixed-header-wrapper) {
-  background: rgba(0, 30, 60, 0.8) !important;
-}
-
-/* 确保固定列的边框正确显示 */
-:deep(.camera-table .el-table__fixed-right) {
-  border-left: 1px solid rgba(0, 255, 255, 0.1) !important;
-}
-
-/* 操作列单元格样式 */
-:deep(.camera-table .el-table__fixed-right td) {
-  background: rgba(0, 20, 40, 0.6) !important;
-  padding: 8px 12px !important;
-}
-
-:deep(.camera-table .el-table__fixed-right th) {
-  background: rgba(0, 30, 60, 0.8) !important;
-  padding: 8px 12px !important;
+/* 操作列样式优化 */
+:deep(.camera-table .action-buttons-container) {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: nowrap;
+  min-width: 200px;
 }
 
 .camera-detail {
@@ -997,6 +1014,7 @@ export default {
 }
 
 :deep(.el-input input[type="number"]) {
+  appearance: textfield !important;
   -moz-appearance: textfield !important;
 }
 
