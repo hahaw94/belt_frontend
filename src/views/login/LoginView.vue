@@ -20,32 +20,32 @@
       <div class="login-form-wrapper">
         <el-form :model="loginForm" :rules="loginRules" ref="loginFormRef" class="tech-form">
           <el-form-item prop="username" class="form-item-wrapper">
-            <el-input 
+            <TechInput 
               v-model="loginForm.username" 
               placeholder="用户名 / Username"
-              class="tech-input"
               size="large"
+              autocomplete="username"
               @keyup.enter="handleLogin"
             >
               <template #prefix>
                 <el-icon class="input-icon"><User /></el-icon>
               </template>
-            </el-input>
+            </TechInput>
           </el-form-item>
           
           <el-form-item prop="password" class="form-item-wrapper">
-            <el-input 
+            <TechInput 
               v-model="loginForm.password" 
               type="password" 
               placeholder="密码 / Password"
-              class="tech-input"
               size="large"
+              autocomplete="current-password"
               @keyup.enter="handleLogin"
             >
               <template #prefix>
                 <el-icon class="input-icon"><Lock /></el-icon>
               </template>
-            </el-input>
+            </TechInput>
           </el-form-item>
           
           <el-form-item>
@@ -79,6 +79,7 @@ import { useRouter } from 'vue-router'
 import { User, Lock } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import TechInput from '@/components/TechInput.vue'
 
 const router = useRouter()
 const loading = ref(false)
@@ -187,6 +188,10 @@ watch([() => loginForm.username, () => loginForm.password], () => {
   background-repeat: no-repeat;
   overflow: hidden;
   position: relative;
+  font-feature-settings: 'liga', 'kern';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 /* 动态粒子背景 */
@@ -267,21 +272,25 @@ watch([() => loginForm.username, () => loginForm.password], () => {
 .title-text {
   display: block;
   font-size: 32px;
-  font-weight: bold;
+  font-weight: 700;
+  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', sans-serif;
   background: linear-gradient(45deg, #00ffff, #0080ff);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 30px rgba(0, 255, 255, 0.5);
   margin-bottom: 8px;
+  letter-spacing: -0.5px;
 }
 
 .title-subtitle {
   display: block;
   font-size: 14px;
-  font-weight: normal;
-  color: rgba(255, 255, 255, 0.7);
-  letter-spacing: 2px;
+  font-weight: 300;
+  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', sans-serif;
+  color: rgba(255, 255, 255, 0.8);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 
 /* 表单包装器 */
@@ -304,51 +313,10 @@ watch([() => loginForm.username, () => loginForm.password], () => {
   width: 100%;
 }
 
+/* 自定义输入框容器样式 */
 .form-item-wrapper {
   width: 100%;
-}
-
-/* 输入框样式重写 */
-.tech-input {
-  width: 100% !important;
-}
-
-.tech-input :deep(.el-input__wrapper) {
-  background: rgba(0, 0, 0, 0.4) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  border-radius: 8px !important;
-  box-shadow: 
-    0 0 20px rgba(0, 255, 255, 0.1),
-    inset 0 0 20px rgba(0, 255, 255, 0.05) !important;
-  transition: all 0.3s ease !important;
-  height: 50px !important;
-  width: 100% !important;
-}
-
-.tech-input :deep(.el-input__wrapper:hover) {
-  border-color: rgba(0, 255, 255, 0.6) !important;
-  box-shadow: 
-    0 0 30px rgba(0, 255, 255, 0.2),
-    inset 0 0 30px rgba(0, 255, 255, 0.1) !important;
-}
-
-.tech-input :deep(.el-input__wrapper.is-focus) {
-  border-color: #00ffff !important;
-  box-shadow: 
-    0 0 40px rgba(0, 255, 255, 0.3),
-    inset 0 0 40px rgba(0, 255, 255, 0.1) !important;
-}
-
-.tech-input :deep(.el-input__inner) {
-  color: #ffffff !important;
-  background: transparent !important;
-  font-size: 16px !important;
-  height: 48px !important;
-  line-height: 48px !important;
-}
-
-.tech-input :deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.5) !important;
+  position: relative;
 }
 
 .input-icon {
@@ -364,11 +332,14 @@ watch([() => loginForm.username, () => loginForm.password], () => {
   border: none !important;
   border-radius: 8px !important;
   font-size: 16px !important;
-  font-weight: bold !important;
+  font-weight: 600 !important;
+  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', sans-serif !important;
   color: #000000 !important;
   position: relative !important;
   overflow: hidden !important;
   transition: all 0.3s ease !important;
+  letter-spacing: 0.5px !important;
+  text-transform: none !important;
 }
 
 .tech-button:hover {
