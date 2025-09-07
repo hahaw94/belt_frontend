@@ -113,6 +113,39 @@
           <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadNetworkConfig" :loading="networkLoading">刷新配置</el-button>
         </div>
       </template>
+      <!-- 当前网络信息显示 -->
+      <div v-loading="networkLoading" style="margin-bottom: 20px;">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="当前IP地址">
+            <span class="network-value">{{ currentNetworkConfig.ip_address || '获取中...' }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="子网掩码">
+            <span class="network-value">{{ currentNetworkConfig.subnet_mask || '获取中...' }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="网关地址">
+            <span class="network-value">{{ currentNetworkConfig.gateway || '获取中...' }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="当前访问地址">
+            <span class="network-value link-value" @click="copyToClipboard(getCurrentAccessUrl())">
+              {{ getCurrentAccessUrl() }}
+              <el-icon class="copy-icon"><CopyDocument /></el-icon>
+            </span>
+          </el-descriptions-item>
+          <el-descriptions-item label="后端配置地址">
+            <span class="network-value link-value" @click="copyToClipboard(getBackendConfigUrl())">
+              {{ getBackendConfigUrl() }}
+              <el-icon class="copy-icon"><CopyDocument /></el-icon>
+            </span>
+          </el-descriptions-item>
+          <el-descriptions-item label="修改后地址" v-if="networkConfig.ip_address && networkConfig.ip_address !== currentNetworkConfig.ip_address">
+            <span class="network-value preview-url" @click="copyToClipboard(getPreviewAccessUrl())">
+              {{ getPreviewAccessUrl() }}
+              <el-icon class="copy-icon"><CopyDocument /></el-icon>
+            </span>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+
       <el-form :model="networkConfig" :rules="networkRules" ref="networkFormRef" label-width="150px" class="config-form" v-loading="networkLoading">
         <el-row :gutter="20">
           <el-col :span="8">
@@ -245,65 +278,197 @@
       <template #header>
         <div class="card-header">
           <span>GB28181平台对接</span>
-          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadGB28181Config" :loading="gb28181Loading">刷新配置</el-button>
+          <div>
+            <el-button type="primary" :icon="Plus" size="small" class="tech-button-sm" @click="showAddGB28181Dialog">添加平台</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadGB28181Platforms" :loading="gb28181Loading">刷新</el-button>
+          </div>
         </div>
       </template>
-      <el-form :model="gb28181Config" :rules="gb28181Rules" ref="gb28181FormRef" label-width="150px" class="config-form" v-loading="gb28181Loading">
+      
+      <!-- GB28181平台列表表格 -->
+      <el-table 
+        :data="gb28181Platforms" 
+        v-loading="gb28181Loading" 
+        class="tech-table"
+        stripe
+        style="width: 100%"
+      >
+        <el-table-column prop="platform_name" label="平台名称" min-width="120">
+          <template #default="{ row }">
+            <span class="platform-name">{{ row.platform_name }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="platform_ip" label="平台IP" min-width="120">
+          <template #default="{ row }">
+            <span class="platform-ip">{{ row.platform_ip }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="platform_port" label="端口" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag size="small">{{ row.platform_port }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="device_id" label="设备编码" min-width="140">
+          <template #default="{ row }">
+            <span class="device-id">{{ row.device_id }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="username" label="用户名" min-width="100">
+          <template #default="{ row }">
+            <span>{{ row.username }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="enabled" label="状态" width="80" align="center">
+          <template #default="{ row }">
+            <el-switch 
+              v-model="row.enabled" 
+              @change="toggleGB28181Platform(row)"
+              :loading="row.switching"
+            />
+          </template>
+        </el-table-column>
+        <el-table-column prop="connection_status" label="连接状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-tag 
+              :type="row.connection_status === 'connected' ? 'success' : 
+                     row.connection_status === 'connecting' ? 'warning' : 'danger'"
+              size="small"
+            >
+              {{ getConnectionStatusText(row.connection_status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" align="center" fixed="right">
+          <template #default="{ row }">
+            <el-button 
+              type="primary" 
+              size="small" 
+              :icon="Connection" 
+              @click="testGB28181Connection(row)"
+              :loading="row.testing"
+            >
+              测试
+            </el-button>
+            <el-button 
+              type="primary" 
+              size="small" 
+              :icon="Edit" 
+              @click="editGB28181Platform(row)"
+            >
+              编辑
+            </el-button>
+            <el-button 
+              type="danger" 
+              size="small" 
+              :icon="Delete" 
+              @click="deleteGB28181Platform(row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+        <template #empty>
+          <div class="empty-data">
+            <el-icon size="48" color="#C0C4CC"><DocumentRemove /></el-icon>
+            <p>暂无GB28181平台对接配置</p>
+            <el-button type="primary" @click="showAddGB28181Dialog">添加平台</el-button>
+          </div>
+        </template>
+      </el-table>
+    </el-card>
+
+    <!-- GB28181平台添加/编辑对话框 -->
+    <el-dialog
+      v-model="gb28181DialogVisible"
+      :title="gb28181DialogMode === 'add' ? '添加GB28181平台' : '编辑GB28181平台'"
+      width="600px"
+      :close-on-click-modal="false"
+    >
+      <!-- 防止浏览器自动填充的隐藏字段 -->
+      <div style="display: none;">
+        <input type="text" autocomplete="username" />
+        <input type="password" autocomplete="current-password" />
+      </div>
+      
+      <el-form 
+        :model="gb28181FormData" 
+        :rules="gb28181Rules" 
+        ref="gb28181FormRef" 
+        label-width="100px"
+        autocomplete="off"
+      >
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="平台名称" prop="platform_name">
-              <el-input v-model="gb28181Config.platform_name" placeholder="请输入平台名称"></el-input>
+              <el-input v-model="gb28181FormData.platform_name" placeholder="请输入平台名称"></el-input>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="平台IP" prop="platform_ip">
-              <el-input v-model="gb28181Config.platform_ip" placeholder="请输入平台IP地址"></el-input>
+              <el-input v-model="gb28181FormData.platform_ip" placeholder="请输入平台IP地址"></el-input>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="平台端口" prop="platform_port">
-              <el-input-number v-model="gb28181Config.platform_port" :min="1000" :max="65535" :controls="false" style="width: 100%"></el-input-number>
+              <el-input-number 
+                v-model="gb28181FormData.platform_port" 
+                :min="1000" 
+                :max="65535" 
+                :controls="false" 
+                style="width: 100%"
+              ></el-input-number>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="设备编码" prop="device_id">
-              <el-input v-model="gb28181Config.device_id" placeholder="请输入设备编码"></el-input>
+              <el-input v-model="gb28181FormData.device_id" placeholder="请输入设备编码"></el-input>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="用户名" prop="username">
-              <el-input v-model="gb28181Config.username" placeholder="请输入用户名"></el-input>
+              <el-input 
+                v-model="gb28181FormData.username" 
+                placeholder="请输入用户名"
+                autocomplete="new-username"
+                :readonly="false"
+              ></el-input>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="密码" prop="password">
-              <el-input v-model="gb28181Config.password" type="password" placeholder="请输入密码" show-password></el-input>
+              <el-input 
+                v-model="gb28181FormData.password" 
+                type="password" 
+                placeholder="请输入密码" 
+                show-password
+                autocomplete="new-password"
+                :readonly="false"
+              ></el-input>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="20">
+        <el-row>
           <el-col :span="24">
             <el-form-item label="启用状态">
-              <el-switch v-model="gb28181Config.enabled" />
+              <el-switch v-model="gb28181FormData.enabled" />
               <span style="margin-left: 10px; color: #909399;">启用后系统将尝试连接到GB28181平台</span>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row style="margin-top: 24px;">
-          <el-col :span="24">
-            <el-form-item>
-              <el-button type="primary" class="tech-button" @click="saveGB28181Config" :loading="gb28181Loading">保存配置</el-button>
-              <el-button class="tech-button-info" @click="testGB28181Connection" :loading="testingConnection">测试连接</el-button>
-              <el-button class="tech-button-secondary" @click="resetGB28181Form">重置</el-button>
-            </el-form-item>
-          </el-col>
-        </el-row>
       </el-form>
-    </el-card>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="gb28181DialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveGB28181Platform" :loading="gb28181Loading">
+            {{ gb28181DialogMode === 'add' ? '添加' : '保存' }}
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
 
     <!-- 存储策略配置 -->
     <el-card class="config-card tech-card mb-20" shadow="hover">
@@ -319,14 +484,14 @@
           <el-col :span="12">
                 <el-form-item label="保存天数" prop="retention_days">
                   <el-input-number v-model="videoStorageConfig.retention_days" :min="1" :max="3650" :controls="false" style="width: 100%">
-                    <template #append>天</template>
+                    <template #suffix>天</template>
                   </el-input-number>
             </el-form-item>
           </el-col>
           <el-col :span="12">
                 <el-form-item label="最大存储容量" prop="max_storage_gb">
                   <el-input-number v-model="videoStorageConfig.max_storage_gb" :min="1" :max="100000" :controls="false" style="width: 100%">
-                    <template #append>GB</template>
+                    <template #suffix>GB</template>
                   </el-input-number>
             </el-form-item>
           </el-col>
@@ -355,14 +520,14 @@
               <el-col :span="12">
                 <el-form-item label="保存天数" prop="retention_days">
                   <el-input-number v-model="alarmDataConfig.retention_days" :min="1" :max="3650" :controls="false" style="width: 100%">
-                    <template #append>天</template>
+                    <template #suffix>天</template>
                   </el-input-number>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="最大记录数" prop="max_records">
                   <el-input-number v-model="alarmDataConfig.max_records" :min="1000" :max="10000000" :controls="false" style="width: 100%">
-                    <template #append>条</template>
+                    <template #suffix>条</template>
                   </el-input-number>
                 </el-form-item>
               </el-col>
@@ -611,7 +776,8 @@
         <div style="margin: 20px 0;">
           <p><strong>当前IP：</strong>{{ currentNetworkConfig.ip_address }}</p>
           <p><strong>新IP：</strong>{{ networkConfig.ip_address }}</p>
-          <p><strong>新访问地址：</strong>http://{{ networkConfig.ip_address }}:{{ networkConfig.port || '8080' }}</p>
+          <p><strong>当前访问地址：</strong>{{ getCurrentAccessUrl() }}</p>
+          <p><strong>新访问地址：</strong>{{ getPreviewAccessUrl() }}</p>
         </div>
         <el-checkbox v-model="ipChangeConfirm">我已了解风险，确认执行此操作</el-checkbox>
         </div>
@@ -661,7 +827,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Upload, Camera, PowerOff, SuccessFilled, Picture, InfoFilled } from '@element-plus/icons-vue'
+import { Refresh, Upload, Camera, PowerOff, SuccessFilled, Picture, InfoFilled, CopyDocument, Plus, Edit, Delete, Connection, DocumentRemove } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
 import { useSystemStore } from '@/stores/system'
 import { useTaskProgress } from '@/composables/useTaskProgress'
@@ -682,7 +848,6 @@ const syncLoading = ref(false)
 const setTimeLoading = ref(false)
 const uploading = ref(false)
 const gb28181Loading = ref(false)
-const testingConnection = ref(false)
 
 
 // 系统维护相关加载状态
@@ -776,8 +941,12 @@ const alarmDataConfig = reactive({
   cyclic_cleanup: true
 })
 
-// GB28181配置
-const gb28181Config = reactive({
+// GB28181配置相关数据
+const gb28181Platforms = ref([])
+const gb28181DialogVisible = ref(false)
+const gb28181DialogMode = ref('add') // 'add' 或 'edit'
+const gb28181FormData = reactive({
+  id: null,
   platform_name: '',
   platform_ip: '',
   platform_port: 5060,
@@ -1233,7 +1402,8 @@ const jumpToNewIP = (url) => {
     clearInterval(countdownInterval.value)
   }
   
-  const newUrl = url || `http://${networkConfig.ip_address}:8080`
+  // 优先使用后端返回的URL，其次使用预览地址
+  const newUrl = url || getPreviewAccessUrl() || `http://${networkConfig.ip_address}:8080`
   window.location.href = newUrl
 }
 
@@ -1243,6 +1413,54 @@ const resetNetworkForm = () => {
     networkFormRef.value.resetFields()
   }
   Object.assign(networkConfig, currentNetworkConfig)
+}
+
+// 获取当前访问地址（前端地址）
+const getCurrentAccessUrl = () => {
+  const protocol = window.location.protocol
+  const host = window.location.host
+  return `${protocol}//${host}`
+}
+
+// 获取后端配置地址
+const getBackendConfigUrl = () => {
+  if (!currentNetworkConfig.ip_address) {
+    return '配置加载中...'
+  }
+  // 从当前URL获取端口，如果没有则使用默认端口
+  const currentPort = window.location.port || '8080'
+  return `http://${currentNetworkConfig.ip_address}:${currentPort}`
+}
+
+// 获取修改后预览地址
+const getPreviewAccessUrl = () => {
+  if (!networkConfig.ip_address) {
+    return ''
+  }
+  // 从当前URL获取端口，如果没有则使用默认端口
+  const currentPort = window.location.port || '8080'
+  return `http://${networkConfig.ip_address}:${currentPort}`
+}
+
+// 复制到剪贴板
+const copyToClipboard = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('地址已复制到剪贴板')
+  } catch (error) {
+    // 降级处理：使用传统方式复制
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    document.body.appendChild(textArea)
+    textArea.select()
+    try {
+      document.execCommand('copy')
+      ElMessage.success('地址已复制到剪贴板')
+    } catch (err) {
+      ElMessage.error('复制失败，请手动复制')
+    }
+    document.body.removeChild(textArea)
+  }
 }
 
 // ===================== LOGO管理方法 =====================
@@ -1439,73 +1657,183 @@ const saveAlarmDataConfig = async () => {
 
 // ===================== GB28181配置方法 =====================
 
-// 加载GB28181配置
-const loadGB28181Config = async () => {
+// 加载GB28181平台列表
+const loadGB28181Platforms = async () => {
   gb28181Loading.value = true
   try {
-    const response = await systemAPI.getGB28181Config()
+    const response = await systemAPI.getGB28181Platforms()
     if (response.code === 200) {
-      Object.assign(gb28181Config, response.data)
+      gb28181Platforms.value = response.data.map(platform => ({
+        ...platform,
+        switching: false,
+        testing: false,
+        connection_status: platform.connection_status || 'disconnected'
+      }))
     }
   } catch (error) {
-    console.error('加载GB28181配置失败:', error)
-    ElMessage.error('加载GB28181配置失败')
+    console.error('加载GB28181平台列表失败:', error)
+    ElMessage.error('加载GB28181平台列表失败')
   } finally {
     gb28181Loading.value = false
   }
 }
 
-// 保存GB28181配置
-const saveGB28181Config = async () => {
+// 显示添加GB28181平台对话框
+const showAddGB28181Dialog = () => {
+  gb28181DialogMode.value = 'add'
+  resetGB28181FormData()
+  gb28181DialogVisible.value = true
+}
+
+// 编辑GB28181平台
+const editGB28181Platform = (platform) => {
+  gb28181DialogMode.value = 'edit'
+  Object.assign(gb28181FormData, {
+    id: platform.id,
+    platform_name: platform.platform_name,
+    platform_ip: platform.platform_ip,
+    platform_port: platform.platform_port,
+    device_id: platform.device_id,
+    username: platform.username,
+    password: platform.password,
+    enabled: platform.enabled
+  })
+  gb28181DialogVisible.value = true
+}
+
+// 保存GB28181平台
+const saveGB28181Platform = async () => {
   if (!gb28181FormRef.value) return
   
   try {
     await gb28181FormRef.value.validate()
     gb28181Loading.value = true
     
-    const response = await systemAPI.setGB28181Config(gb28181Config)
+    const apiCall = gb28181DialogMode.value === 'add' 
+      ? systemAPI.addGB28181Platform(gb28181FormData)
+      : systemAPI.updateGB28181Platform(gb28181FormData.id, gb28181FormData)
+    
+    const response = await apiCall
     if (response.code === 200) {
-      ElMessage.success('GB28181配置保存成功')
+      ElMessage.success(`GB28181平台${gb28181DialogMode.value === 'add' ? '添加' : '更新'}成功`)
+      gb28181DialogVisible.value = false
+      await loadGB28181Platforms()
     }
   } catch (error) {
-    console.error('保存GB28181配置失败:', error)
-    ElMessage.error('保存GB28181配置失败')
+    console.error(`${gb28181DialogMode.value === 'add' ? '添加' : '更新'}GB28181平台失败:`, error)
+    ElMessage.error(`${gb28181DialogMode.value === 'add' ? '添加' : '更新'}GB28181平台失败`)
   } finally {
     gb28181Loading.value = false
   }
 }
 
-// 测试GB28181连接 (后端暂未实现)
-const testGB28181Connection = async () => {
-  if (!gb28181FormRef.value) return
-  
+// 删除GB28181平台
+const deleteGB28181Platform = async (platform) => {
   try {
-    await gb28181FormRef.value.validate()
-    testingConnection.value = true
+    await ElMessageBox.confirm(
+      `确定要删除平台 "${platform.platform_name}" 吗？`,
+      '确认删除',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
     
-    // 模拟测试功能，后端实现后需要替换为真实API调用
-    setTimeout(() => {
-      ElMessage.info('GB28181连接测试功能待后端实现')
-      testingConnection.value = false
-    }, 1000)
-    
-    // const response = await systemAPI.testGB28181Connection(gb28181Config)
-    // if (response.code === 200) {
-    //   ElMessage.success('GB28181连接测试成功')
-    // }
+    gb28181Loading.value = true
+    const response = await systemAPI.deleteGB28181Platform(platform.id)
+    if (response.code === 200) {
+      ElMessage.success('GB28181平台删除成功')
+      await loadGB28181Platforms()
+    }
   } catch (error) {
-    console.error('GB28181连接测试失败:', error)
-    ElMessage.error('表单验证失败')
-    testingConnection.value = false
+    if (error !== 'cancel') {
+      console.error('删除GB28181平台失败:', error)
+      ElMessage.error('删除GB28181平台失败')
+    }
+  } finally {
+    gb28181Loading.value = false
   }
 }
 
-// 重置GB28181表单
-const resetGB28181Form = () => {
+// 切换GB28181平台启用状态
+const toggleGB28181Platform = async (platform) => {
+  platform.switching = true
+  try {
+    const response = await systemAPI.toggleGB28181Platform(platform.id, platform.enabled)
+    if (response.code === 200) {
+      ElMessage.success(`GB28181平台${platform.enabled ? '启用' : '禁用'}成功`)
+      // 更新连接状态
+      if (platform.enabled) {
+        platform.connection_status = 'connecting'
+        // 模拟连接过程
+        setTimeout(() => {
+          platform.connection_status = Math.random() > 0.5 ? 'connected' : 'disconnected'
+        }, 2000)
+      } else {
+        platform.connection_status = 'disconnected'
+      }
+    }
+  } catch (error) {
+    console.error('切换GB28181平台状态失败:', error)
+    ElMessage.error('切换GB28181平台状态失败')
+    // 恢复原状态
+    platform.enabled = !platform.enabled
+  } finally {
+    platform.switching = false
+  }
+}
+
+// 测试GB28181连接
+const testGB28181Connection = async (platform) => {
+  platform.testing = true
+  try {
+    const response = await systemAPI.testGB28181Connection(platform.id)
+    if (response.code === 200) {
+      ElMessage.success('GB28181连接测试成功')
+      platform.connection_status = 'connected'
+    } else {
+      ElMessage.error('GB28181连接测试失败')
+      platform.connection_status = 'disconnected'
+    }
+  } catch (error) {
+    console.error('GB28181连接测试失败:', error)
+    ElMessage.error('GB28181连接测试失败')
+    platform.connection_status = 'disconnected'
+  } finally {
+    platform.testing = false
+  }
+}
+
+// 重置GB28181表单数据
+const resetGB28181FormData = () => {
+  Object.assign(gb28181FormData, {
+    id: null,
+    platform_name: '',
+    platform_ip: '',
+    platform_port: 5060,
+    device_id: '',
+    username: '',
+    password: '',
+    enabled: false
+  })
   if (gb28181FormRef.value) {
     gb28181FormRef.value.resetFields()
   }
-  loadGB28181Config()
+}
+
+// 获取连接状态文本
+const getConnectionStatusText = (status) => {
+  switch (status) {
+    case 'connected':
+      return '已连接'
+    case 'connecting':
+      return '连接中'
+    case 'disconnected':
+      return '未连接'
+    default:
+      return '未知'
+  }
 }
 
 // ===================== 系统维护方法 =====================
@@ -1941,7 +2269,7 @@ onMounted(async () => {
     loadCurrentLogo(),
     loadVideoStorageConfig(),
     loadAlarmDataConfig(),
-    loadGB28181Config(),
+    loadGB28181Platforms(),
     loadSnapshotList()
   ])
 })
@@ -3828,5 +4156,226 @@ onUnmounted(() => {
 
 .card-header .el-button:first-of-type {
   margin-left: 0 !important;
+}
+
+/* ==================== 描述列表样式（与版本管理完全一致） ==================== */
+
+/* 描述列表样式调整 */
+:deep(.el-descriptions) {
+  background: transparent !important;
+}
+
+:deep(.el-descriptions__body) {
+  background: transparent !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 255, 255, 0.1) !important;
+  padding: 16px 12px !important;
+  transition: all 0.3s ease !important;
+  line-height: 1.6 !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:hover) {
+  background: rgba(0, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__label) {
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+  background: rgba(20, 35, 60, 0.8) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__content) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500 !important;
+}
+
+/* 确保表格第一行和最后一行的圆角 */
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:first-child) {
+  border-top-left-radius: 8px !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:nth-child(2)) {
+  border-top-right-radius: 8px !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table tr:last-child .el-descriptions__cell:first-child) {
+  border-bottom-left-radius: 8px !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table tr:last-child .el-descriptions__cell:last-child) {
+  border-bottom-right-radius: 8px !important;
+}
+
+/* 网络信息显示样式 */
+.network-value {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.link-value {
+  color: #00ffff !important;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.link-value:hover {
+  color: #66d9ff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.preview-url {
+  color: #e6a23c !important;
+  font-weight: 600;
+  text-shadow: 0 0 5px rgba(230, 162, 60, 0.3) !important;
+}
+
+.copy-icon {
+  font-size: 12px;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.link-value:hover .copy-icon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ==================== GB28181平台表格样式 ==================== */
+.tech-table {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tech-table :deep(.el-table__header) {
+  background: rgba(0, 255, 255, 0.1);
+}
+
+.tech-table :deep(.el-table__header th) {
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  font-weight: 600;
+}
+
+.tech-table :deep(.el-table__row) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.tech-table :deep(.el-table__row:hover) {
+  background: rgba(0, 255, 255, 0.05);
+}
+
+.tech-table :deep(.el-table__row--striped) {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-table :deep(.el-table__row--striped:hover) {
+  background: rgba(0, 255, 255, 0.08);
+}
+
+.tech-table :deep(.el-table td) {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.platform-name {
+  font-weight: 600;
+  color: #00ffff;
+}
+
+.platform-ip {
+  font-family: 'Courier New', monospace;
+  color: #0080ff;
+}
+
+.device-id {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: #909399;
+}
+
+.empty-data {
+  padding: 40px 20px;
+  text-align: center;
+  color: #909399;
+}
+
+.empty-data p {
+  margin: 16px 0 20px;
+  font-size: 14px;
+}
+
+/* GB28181对话框样式 */
+.el-dialog {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 15px;
+  box-shadow: 
+    0 0 50px rgba(0, 255, 255, 0.1),
+    inset 0 0 50px rgba(0, 255, 255, 0.05);
+}
+
+.el-dialog :deep(.el-dialog__header) {
+  background: rgba(0, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 15px 15px 0 0;
+}
+
+.el-dialog :deep(.el-dialog__title) {
+  color: #00ffff;
+  font-weight: 600;
+}
+
+.el-dialog :deep(.el-dialog__body) {
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+}
+
+.el-dialog :deep(.el-dialog__footer) {
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 0 0 15px 15px;
+}
+
+/* GB28181表格响应式 */
+@media (max-width: 768px) {
+  .tech-table :deep(.el-table__body-wrapper) {
+    overflow-x: auto;
+  }
+  
+  .el-dialog {
+    width: 95% !important;
+    margin: 5vh auto !important;
+  }
 }
 </style>

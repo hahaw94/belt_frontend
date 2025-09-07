@@ -596,6 +596,15 @@ export default {
         ElMessage.success(`成功添加 ${selectedUnboundCameras.value.length} 个相机`)
         addCameraVisible.value = false
         await loadLayerCameras(selectedLayerId.value)
+        
+        // 发出全局事件，通知其他组件刷新相机数据
+        window.dispatchEvent(new CustomEvent('camera-data-updated', {
+          detail: {
+            type: 'camera_added',
+            layerId: selectedLayerId.value,
+            cameras: selectedUnboundCameras.value
+          }
+        }))
       } catch (error) {
         ElMessage.error('添加相机失败: ' + (error.message || '未知错误'))
       }
@@ -664,6 +673,17 @@ export default {
         
         ElMessage.success('位置保存成功')
         hasChanges.value = false
+        
+        // 发出全局事件，通知其他组件刷新相机数据
+        window.dispatchEvent(new CustomEvent('camera-data-updated', {
+          detail: {
+            type: 'position_updated',
+            layerId: selectedLayerId.value,
+            cameras: cameras
+          }
+        }))
+        
+        console.log('已发出相机数据更新事件')
       } catch (error) {
         console.error('保存位置失败:', error)
         ElMessage.error('保存位置失败: ' + (error.response?.data?.message || error.message || '未知错误'))
@@ -688,6 +708,15 @@ export default {
           ElMessage.success('相机移除成功')
           await loadLayerCameras(selectedLayerId.value)
           clearSelection()
+          
+          // 发出全局事件，通知其他组件刷新相机数据
+          window.dispatchEvent(new CustomEvent('camera-data-updated', {
+            detail: {
+              type: 'camera_removed',
+              layerId: selectedLayerId.value,
+              cameraId: selectedCamera.value.camera_id
+            }
+          }))
         } catch (error) {
           ElMessage.error('移除相机失败: ' + (error.message || '未知错误'))
         }

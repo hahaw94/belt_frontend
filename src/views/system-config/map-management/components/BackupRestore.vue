@@ -463,6 +463,14 @@ export default {
         ElMessage.success('恢复成功')
         restoreVisible.value = false
         loadBackupList()
+        
+        // 发出全局事件，通知其他组件刷新数据
+        window.dispatchEvent(new CustomEvent('camera-data-updated', {
+          detail: {
+            type: 'backup_restored',
+            fileName: selectedBackup.value.file_name
+          }
+        }))
       } catch (error) {
         console.error('恢复失败详细信息:', error)
         
@@ -552,6 +560,14 @@ export default {
         ElMessage.success('恢复成功')
         uploadRestoreVisible.value = false
         loadBackupList()
+        
+        // 发出全局事件，通知其他组件刷新数据
+        window.dispatchEvent(new CustomEvent('camera-data-updated', {
+          detail: {
+            type: 'backup_restored',
+            fileName: uploadRestoreForm.file.name
+          }
+        }))
       } catch (error) {
         ElMessage.error('恢复失败: ' + (error.message || '未知错误'))
       } finally {

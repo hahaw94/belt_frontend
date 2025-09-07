@@ -51,12 +51,24 @@ export default {
     }
   },
   watch: {
-    activeTab(newTab) {
+    activeTab(newTab, oldTab) {
       // 更新路由参数
       if (this.$route.query.tab !== newTab) {
         this.$router.replace({
           ...this.$route,
           query: { ...this.$route.query, tab: newTab }
+        })
+      }
+      
+      // 标签页切换时，发出刷新事件
+      if (oldTab && newTab !== oldTab) {
+        this.$nextTick(() => {
+          window.dispatchEvent(new CustomEvent('tab-changed', {
+            detail: {
+              newTab: newTab,
+              oldTab: oldTab
+            }
+          }))
         })
       }
     }

@@ -83,19 +83,34 @@ export const systemAPI = {
   },
 
   // ===================== GB28181平台对接 =====================
-  // 获取GB28181配置
-  getGB28181Config() {
-    return request.get('/api/v1/system/management/gb28181')
+  // 获取GB28181平台列表
+  getGB28181Platforms() {
+    return request.get('/api/v1/system/management/gb28181/platforms')
   },
 
-  // 设置GB28181配置
-  setGB28181Config(data) {
-    return request.put('/api/v1/system/management/gb28181', data)
+  // 添加GB28181平台
+  addGB28181Platform(data) {
+    return request.post('/api/v1/system/management/gb28181/platforms', data)
   },
 
-  // 测试GB28181连接 (暂未实现)
-  testGB28181Connection(data) {
-    return request.post('/api/v1/system/management/gb28181/test', data)
+  // 更新GB28181平台
+  updateGB28181Platform(id, data) {
+    return request.put(`/api/v1/system/management/gb28181/platforms/${id}`, data)
+  },
+
+  // 删除GB28181平台
+  deleteGB28181Platform(id) {
+    return request.delete(`/api/v1/system/management/gb28181/platforms/${id}`)
+  },
+
+  // 切换GB28181平台启用状态
+  toggleGB28181Platform(id, enabled) {
+    return request.put(`/api/v1/system/management/gb28181/platforms/${id}/toggle`, { enabled })
+  },
+
+  // 测试GB28181连接
+  testGB28181Connection(id) {
+    return request.post(`/api/v1/system/management/gb28181/platforms/${id}/test`)
   },
 
   // ===================== 系统维护 =====================

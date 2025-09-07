@@ -241,7 +241,7 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus, Refresh } from '@element-plus/icons-vue'
 import { 
@@ -530,8 +530,36 @@ export default {
       return new Date(dateString).toLocaleString('zh-CN')
     }
 
+    // 监听相机数据更新事件
+    const handleCameraDataUpdate = (event) => {
+      console.log('相机管理页面接收到数据更新事件:', event.detail)
+      // 自动刷新相机列表数据
+      loadCameras()
+    }
+    
+    // 监听标签页切换事件
+    const handleTabChange = (event) => {
+      const { newTab } = event.detail
+      if (newTab === 'cameras') {
+        console.log('切换到相机管理页面，刷新数据')
+        // 延迟一点刷新，确保组件已完全渲染
+        setTimeout(() => {
+          loadCameras()
+        }, 100)
+      }
+    }
+    
     onMounted(() => {
       loadCameras()
+      // 添加全局事件监听
+      window.addEventListener('camera-data-updated', handleCameraDataUpdate)
+      window.addEventListener('tab-changed', handleTabChange)
+    })
+    
+    onUnmounted(() => {
+      // 移除事件监听
+      window.removeEventListener('camera-data-updated', handleCameraDataUpdate)
+      window.removeEventListener('tab-changed', handleTabChange)
     })
 
     return {
