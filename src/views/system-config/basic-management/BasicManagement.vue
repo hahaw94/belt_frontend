@@ -24,7 +24,7 @@
               </el-radio-group>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :span="12" v-if="ntpConfig.mode === 'ntp_client'">
             <el-form-item label="时区设置" prop="timezone">
               <!-- 自定义时区选择器 -->
               <div 
@@ -76,10 +76,12 @@
               />
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+        </el-row>
+        <el-row :gutter="20" v-if="ntpConfig.mode === 'ntp_server'">
+          <el-col :span="24">
             <el-form-item>
               <el-button type="primary" class="tech-button" @click="setManualTime" :loading="setTimeLoading">手动设置时间</el-button>
-              <el-button class="tech-button-secondary" @click="syncPCTime">自动设置时间</el-button>
+              <el-button class="tech-button-secondary" @click="syncPCTime">同步PC时间</el-button>
             </el-form-item>
           </el-col>
         </el-row>
@@ -825,7 +827,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Upload, Camera, PowerOff, SuccessFilled, Picture, InfoFilled, CopyDocument, Plus, Edit, Delete, Connection, DocumentRemove } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
@@ -885,10 +887,21 @@ const ntpConfig = reactive({
 // 手动时间设置
 const manualTime = ref('')
 
-// 当前时间显示
+// 当前时间显示 - 分离客户端和服务器模式
 const currentTime = ref('')
 const timeInterval = ref(null)
 const lastConfigLoadTime = ref(Date.now())
+
+// 客户端模式和服务器模式的独立时间状态
+const clientModeTime = reactive({
+  current_time: '',
+  lastLoadTime: Date.now()
+})
+
+const serverModeTime = reactive({
+  current_time: '',
+  lastLoadTime: Date.now()
+})
 
 // 网络配置
 const networkConfig = reactive({
@@ -1131,6 +1144,15 @@ const loadNTPConfig = async () => {
       Object.assign(ntpConfig, configData)
       // 记录配置加载时间，用于时间显示计算
       lastConfigLoadTime.value = Date.now()
+      
+      // 如果当前模式的独立时间状态为空，使用加载的时间初始化
+      if (configData.mode === 'ntp_client' && !clientModeTime.current_time && configData.current_time) {
+        clientModeTime.current_time = configData.current_time
+        clientModeTime.lastLoadTime = Date.now()
+      } else if (configData.mode === 'manual' && !serverModeTime.current_time && configData.current_time) {
+        serverModeTime.current_time = configData.current_time
+        serverModeTime.lastLoadTime = Date.now()
+      }
     }
   } catch (error) {
     console.error('加载NTP配置失败:', error)
@@ -1182,6 +1204,55 @@ const saveNTPConfig = async () => {
   }
 }
 
+// 获取当前后端保存的时区配置
+const getCurrentTimezone = async () => {
+  try {
+    const response = await systemAPI.getNTPConfig()
+    if (response.code === 200 && response.data.timezone) {
+      return response.data.timezone
+    }
+  } catch (error) {
+    console.error('获取当前时区失败:', error)
+  }
+  return null
+}
+
+// 静默保存NTP配置（不显示成功消息）
+const saveNTPConfigSilently = async () => {
+  try {
+    // 准备发送给后端的配置，只发送后端需要的字段
+    const configToSend = {
+      server: ntpConfig.server,
+      timezone: ntpConfig.timezone,
+      mode: ntpConfig.mode === 'ntp_server' ? 'manual' : ntpConfig.mode
+    }
+    
+    console.log('静默保存NTP配置:', {
+      前端模式: ntpConfig.mode,
+      后端模式: configToSend.mode,
+      服务器: configToSend.server,
+      时区: configToSend.timezone
+    })
+    
+    // 保存当前前端模式
+    const currentFrontendMode = ntpConfig.mode
+    
+    const response = await systemAPI.setNTPConfig(configToSend)
+    if (response.code === 200) {
+      console.log('时区配置已自动保存')
+      // 重新加载配置但保持前端模式
+      await loadNTPConfig()
+      // 确保模式保持不变
+      ntpConfig.mode = currentFrontendMode
+      return true
+    }
+    return false
+  } catch (error) {
+    console.error('静默保存NTP配置失败:', error)
+    return false
+  }
+}
+
 // 立即同步时间
 const syncNTP = async () => {
   // 先检查前置条件
@@ -1203,12 +1274,27 @@ const syncNTP = async () => {
       时区: ntpConfig.timezone
     })
     
+    // 在同步之前先保存当前时区配置（如果时区已更改）
+    const needsSaveConfig = ntpConfig.timezone !== (await getCurrentTimezone())
+    if (needsSaveConfig) {
+      console.log('检测到时区变更，先保存配置...')
+      await saveNTPConfigSilently()
+    }
+    
     const response = await systemAPI.syncNTP()
     console.log('同步响应:', response)
     
     if (response.code === 200) {
       ElMessage.success('时间同步成功')
+      // 重新加载配置以获取最新的时间信息
       await loadNTPConfig()
+      // 将同步后的时间保存到客户端模式时间状态
+      if (ntpConfig.current_time) {
+        clientModeTime.current_time = ntpConfig.current_time
+        clientModeTime.lastLoadTime = Date.now()
+      }
+      // 立即更新时间显示以反映时区变化
+      updateCurrentTime()
     } else {
       console.error('同步失败响应:', response)
       ElMessage.error(response.message || '时间同步失败')
@@ -1256,10 +1342,20 @@ const setManualTime = async () => {
     })
     if (response.code === 200) {
       ElMessage.success('时间设置成功')
+      
+      // 保存手动设置的时间
+      const manualTimeValue = manualTime.value
+      
       // 重新加载配置但保持前端模式
       await loadNTPConfig()
       // 确保模式保持不变
       ntpConfig.mode = currentFrontendMode
+      
+      // 将手动设置的时间保存到服务器模式时间状态
+      serverModeTime.current_time = manualTimeValue
+      serverModeTime.lastLoadTime = Date.now()
+      // 立即更新时间显示
+      updateCurrentTime()
     }
   } catch (error) {
     console.error('设置时间失败:', error)
@@ -1269,14 +1365,10 @@ const setManualTime = async () => {
   }
 }
 
-// 自动设置时间（同步PC时间）
-const syncPCTime = async () => {
-  setTimeLoading.value = true
+// 同步PC时间（前端实现，不调用后端API）
+const syncPCTime = () => {
   try {
-    // 保存当前前端模式
-    const currentFrontendMode = ntpConfig.mode
-    
-    // 为了满足后端验证，提供当前时间作为占位符
+    // 获取当前PC时间
     const now = new Date()
     const year = now.getFullYear()
     const month = (now.getMonth() + 1).toString().padStart(2, '0')
@@ -1286,22 +1378,17 @@ const syncPCTime = async () => {
     const seconds = now.getSeconds().toString().padStart(2, '0')
     const currentPCTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
     
-    const response = await systemAPI.setManualTime({
-      time: currentPCTime, // 提供当前PC时间作为参数
-      sync_mode: 'pc_sync'
-    })
-    if (response.code === 200) {
-      ElMessage.success('自动设置时间成功')
-      // 重新加载配置但保持前端模式
-      await loadNTPConfig()
-      // 确保模式保持不变
-      ntpConfig.mode = currentFrontendMode
-    }
+    // 将PC时间保存到服务器模式时间状态
+    serverModeTime.current_time = currentPCTime
+    serverModeTime.lastLoadTime = Date.now()
+    // 立即更新时间显示
+    updateCurrentTime()
+    
+    ElMessage.success('同步PC时间成功')
+    console.log('同步PC时间:', currentPCTime)
   } catch (error) {
-    console.error('自动设置时间失败:', error)
-    ElMessage.error('自动设置时间失败')
-  } finally {
-    setTimeLoading.value = false
+    console.error('同步PC时间失败:', error)
+    ElMessage.error('同步PC时间失败')
   }
 }
 
@@ -2174,15 +2261,38 @@ const getStatusText = (status) => {
   }
 }
 
-// 更新当前时间显示
+// 更新当前时间显示 - 根据模式使用独立的时间状态
 const updateCurrentTime = () => {
-  // 如果有从后端获取的程序时间，使用程序时间；否则使用PC时间作为后备
-  if (ntpConfig.current_time) {
-    // 基于程序时间计算当前时间（考虑到从获取配置到现在的时间差）
-    const programTime = new Date(ntpConfig.current_time)
+  let targetTime = ''
+  let targetLoadTime = Date.now()
+  
+  // 根据当前模式选择相应的时间状态
+  if (ntpConfig.mode === 'ntp_client') {
+    // 客户端模式：优先使用客户端时间，否则使用通用时间
+    if (clientModeTime.current_time) {
+      targetTime = clientModeTime.current_time
+      targetLoadTime = clientModeTime.lastLoadTime
+    } else if (ntpConfig.current_time) {
+      targetTime = ntpConfig.current_time
+      targetLoadTime = lastConfigLoadTime.value
+    }
+  } else if (ntpConfig.mode === 'ntp_server') {
+    // 服务器模式：优先使用服务器时间，否则使用通用时间
+    if (serverModeTime.current_time) {
+      targetTime = serverModeTime.current_time
+      targetLoadTime = serverModeTime.lastLoadTime
+    } else if (ntpConfig.current_time) {
+      targetTime = ntpConfig.current_time
+      targetLoadTime = lastConfigLoadTime.value
+    }
+  }
+  
+  // 如果有目标时间，基于它计算当前时间
+  if (targetTime) {
+    const programTime = new Date(targetTime)
     if (!isNaN(programTime.getTime())) {
       // 如果程序时间有效，使用它并加上经过的时间
-      const now = new Date(programTime.getTime() + (Date.now() - lastConfigLoadTime.value))
+      const now = new Date(programTime.getTime() + (Date.now() - targetLoadTime))
       const year = now.getFullYear()
       const month = (now.getMonth() + 1).toString().padStart(2, '0')
       const day = now.getDate().toString().padStart(2, '0')
@@ -2239,6 +2349,17 @@ const getTimezoneDisplayText = () => {
 }
 
 
+
+// ===================== 模式切换监听 =====================
+
+// 监听模式切换，保持时间状态独立
+watch(() => ntpConfig.mode, (newMode, oldMode) => {
+  if (newMode !== oldMode) {
+    console.log(`模式从 ${oldMode} 切换到 ${newMode}`)
+    // 立即更新时间显示以使用对应模式的时间
+    updateCurrentTime()
+  }
+})
 
 // ===================== 生命周期钩子 =====================
 
