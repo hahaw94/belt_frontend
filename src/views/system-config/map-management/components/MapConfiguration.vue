@@ -24,6 +24,9 @@
         <el-button type="success" class="tech-button-success" :icon="Check" @click="savePositions" :disabled="!hasChanges">
           保存位置
         </el-button>
+        <el-button type="warning" class="tech-button-warning" @click="resetBackgroundPosition" :disabled="!currentLayer">
+          重置背景
+        </el-button>
         <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshData">刷新</el-button>
       </div>
     </div>
@@ -34,6 +37,7 @@
         <span>{{ currentLayer.layer_name }}</span>
         <span>{{ currentLayer.image_width }}×{{ currentLayer.image_height }}</span>
         <span>相机数量: {{ layerCameras.length }}</span>
+        <span>背景位置: ({{ backgroundDragState.currentX }}, {{ backgroundDragState.currentY }})</span>
       </div>
       
       <div class="map-wrapper" ref="mapWrapper">
@@ -43,7 +47,7 @@
           :style="{ 
             width: canvasSize.width + 'px',
             height: canvasSize.height + 'px',
-            transform: `scale(${zoomLevel})`,
+            transform: `scale(${zoomLevel}) translate(${backgroundDragState.currentX}px, ${backgroundDragState.currentY}px)`,
             transformOrigin: 'top left'
           }"
           @click="handleCanvasClick"
@@ -54,34 +58,53 @@
             :src="currentLayer.image_url"
             alt="地图背景"
             class="map-background"
+            :class="{ 'dragging': backgroundDragState.isDragging }"
             @load="onImageLoad"
             @error="onImageError"
+            @mousedown="startBackgroundDrag"
             draggable="false"
           />
           
-          <!-- 相机图标 -->
+          <!-- 聚合相机图标 -->
           <div
-            v-for="camera in layerCameras"
-            :key="camera.camera_id"
+            v-for="cluster in clusteredCameras"
+            :key="cluster.id"
             class="camera-marker"
             :class="{ 
-              'selected': String(selectedCameraId) === String(camera.camera_id),
-              'dragging': String(draggingCameraId) === String(camera.camera_id)
+              'selected': cluster.cameras.some(camera => String(selectedCameraId) === String(camera.camera_id)),
+              'dragging': cluster.cameras.some(camera => String(draggingCameraId) === String(camera.camera_id)),
+              'clustered': cluster.cameras.length > 1
             }"
             :style="{
-              left: camera.position_x + 'px',
-              top: camera.position_y + 'px',
-              transform: camera.camera_angle ? `rotate(${camera.camera_angle}deg)` : 'none'
+              left: cluster.position_x + 'px',
+              top: cluster.position_y + 'px',
+              transform: cluster.camera_angle ? `rotate(${cluster.camera_angle}deg)` : 'none'
             }"
-            @click.stop="selectCamera(camera)"
-            @mousedown="startDrag(camera, $event)"
+            @click.stop="selectCluster(cluster)"
+            @mousedown="startClusterDrag(cluster, $event)"
+            @mouseenter="showClusterTooltip($event, cluster)"
+            @mouseleave="hideClusterTooltip"
           >
             <el-icon class="camera-icon">
               <VideoCamera />
             </el-icon>
-            <div class="camera-label">{{ camera.camera_name }}</div>
+            
+            <!-- 聚合数量标识 -->
             <div 
-              v-if="camera.is_online === 1" 
+              v-if="cluster.cameras.length > 1" 
+              class="cluster-count"
+            >
+              {{ cluster.cameras.length }}
+            </div>
+            
+            <!-- 显示主相机名称或聚合提示 -->
+            <div class="camera-label">
+              {{ cluster.cameras.length > 1 ? `${cluster.cameras[0].camera_name} 等${cluster.cameras.length}个` : cluster.cameras[0].camera_name }}
+            </div>
+            
+            <!-- 在线状态指示器 -->
+            <div 
+              v-if="cluster.cameras.some(camera => camera.is_online === 1)" 
               class="online-indicator"
             ></div>
           </div>
@@ -115,6 +138,28 @@
     <!-- 空状态 -->
     <el-empty v-else description="请选择图层查看地图配置" />
 
+    <!-- 聚合相机悬停提示 -->
+    <teleport to="body">
+      <div 
+        v-if="tooltipVisible"
+        class="cluster-tooltip"
+        :style="{
+          left: tooltipPosition.x + 'px',
+          top: tooltipPosition.y + 'px'
+        }"
+      >
+        <div class="tooltip-content">
+          <div 
+            v-for="line in tooltipContent.split('\n')" 
+            :key="line"
+            class="tooltip-line"
+          >
+            {{ line }}
+          </div>
+        </div>
+      </div>
+    </teleport>
+
     <!-- 相机信息面板 -->
     <div v-if="selectedCamera" class="camera-panel">
       <div class="panel-header">
@@ -124,6 +169,40 @@
         </el-button>
       </div>
       <div class="panel-content">
+        <!-- 检查是否是聚合相机 -->
+        <div v-if="isSelectedCameraClustered" class="cluster-info">
+          <!-- 聚合相机列表 -->
+          <div class="cluster-cameras">
+            <div 
+              v-for="camera in selectedCluster.cameras" 
+              :key="camera.camera_id"
+              class="cluster-camera-item"
+              :class="{ 'active': camera.camera_id === selectedCameraId }"
+              @click="selectedCameraId = camera.camera_id"
+            >
+              <div class="camera-indicator">
+                <el-icon><VideoCamera /></el-icon>
+                <div 
+                  v-if="camera.is_online === 1" 
+                  class="mini-online-indicator"
+                ></div>
+              </div>
+              <div class="camera-info">
+                <div class="camera-name">{{ camera.camera_name }}</div>
+                <div class="camera-status">
+                  <el-tag 
+                    :type="camera.is_online === 1 ? 'success' : 'danger'" 
+                    size="small"
+                  >
+                    {{ camera.is_online === 1 ? '在线' : '离线' }}
+                  </el-tag>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 选中相机的详细信息 -->
         <el-descriptions :column="1" size="small" border>
           <el-descriptions-item label="名称">{{ selectedCamera.camera_name }}</el-descriptions-item>
           <el-descriptions-item label="编码">{{ selectedCamera.camera_code }}</el-descriptions-item>
@@ -313,6 +392,15 @@ export default {
       offsetY: 0
     })
     
+    // 背景图片拖拽相关
+    const backgroundDragState = reactive({
+      isDragging: false,
+      startX: 0,
+      startY: 0,
+      currentX: 0,
+      currentY: 0
+    })
+    
     // 缩放控制器拖拽相关
     const zoomControlsRef = ref(null)
     const isDraggingControls = ref(false)
@@ -332,6 +420,71 @@ export default {
       return unboundCameras.value.filter(camera => 
         camera.camera_name.toLowerCase().includes(keyword) ||
         camera.camera_code.toLowerCase().includes(keyword)
+      )
+    })
+
+    // 相机聚合计算 - 将位置相同或接近的相机聚合在一起
+    const clusteredCameras = computed(() => {
+      if (!layerCameras.value.length) return []
+      
+      const clusters = []
+      const processed = new Set()
+      const tolerance = 20 // 位置容差，像素为单位
+      
+      layerCameras.value.forEach((camera, index) => {
+        if (processed.has(index)) return
+        
+        const cluster = {
+          id: `cluster_${clusters.length}`,
+          cameras: [camera],
+          position_x: camera.position_x,
+          position_y: camera.position_y,
+          camera_angle: camera.camera_angle
+        }
+        
+        processed.add(index)
+        
+        // 查找位置相近的其他相机
+        layerCameras.value.forEach((otherCamera, otherIndex) => {
+          if (processed.has(otherIndex) || index === otherIndex) return
+          
+          const distance = Math.sqrt(
+            Math.pow(camera.position_x - otherCamera.position_x, 2) +
+            Math.pow(camera.position_y - otherCamera.position_y, 2)
+          )
+          
+          if (distance <= tolerance) {
+            cluster.cameras.push(otherCamera)
+            processed.add(otherIndex)
+          }
+        })
+        
+        clusters.push(cluster)
+      })
+      
+      console.log('聚合相机结果:', clusters.map(c => ({
+        位置: `(${c.position_x}, ${c.position_y})`,
+        相机数量: c.cameras.length,
+        相机列表: c.cameras.map(cam => cam.camera_name)
+      })))
+      
+      return clusters
+    })
+
+    // 检查选中的相机是否属于聚合
+    const isSelectedCameraClustered = computed(() => {
+      if (!selectedCameraId.value) return false
+      const cluster = clusteredCameras.value.find(c => 
+        c.cameras.some(camera => camera.camera_id === selectedCameraId.value)
+      )
+      return cluster && cluster.cameras.length > 1
+    })
+
+    // 获取选中相机所在的聚合
+    const selectedCluster = computed(() => {
+      if (!selectedCameraId.value) return null
+      return clusteredCameras.value.find(c => 
+        c.cameras.some(camera => camera.camera_id === selectedCameraId.value)
       )
     })
 
@@ -360,6 +513,7 @@ export default {
         await loadLayerCameras(layerId)
         clearSelection()
         resetZoom()
+        resetBackgroundPosition()
       }
     }
 
@@ -477,35 +631,60 @@ export default {
       const x = (event.clientX - rect.left) / zoomLevel.value
       const y = (event.clientY - rect.top) / zoomLevel.value
       
-      const camera = layerCameras.value.find(c => {
-        // 使用正确的camera_id字段进行比较
-        const cId = typeof c.camera_id === 'string' ? c.camera_id : String(c.camera_id)
-        const dragId = typeof draggingCameraId.value === 'string' ? draggingCameraId.value : String(draggingCameraId.value)
-        return cId === dragId
-      })
+      const newX = Math.max(0, Math.min(Math.round(x - dragState.offsetX), canvasSize.width))
+      const newY = Math.max(0, Math.min(Math.round(y - dragState.offsetY), canvasSize.height))
       
-      if (camera) {
-        camera.position_x = Math.max(0, Math.min(Math.round(x - dragState.offsetX), canvasSize.width))
-        camera.position_y = Math.max(0, Math.min(Math.round(y - dragState.offsetY), canvasSize.height))
-        hasChanges.value = true
-        console.log('更新相机位置:', camera.camera_name, '位置:', camera.position_x, camera.position_y)
-      } else {
-        console.log('找不到拖拽的相机:', {
-          拖拽ID: draggingCameraId.value,
-          拖拽ID类型: typeof draggingCameraId.value,
-          相机列表: layerCameras.value.map(c => ({ 
-            关联ID: c.id, 
-            相机ID: c.camera_id, 
-            相机ID类型: typeof c.camera_id, 
-            name: c.camera_name 
-          }))
+      // 如果是聚合相机拖拽，同步移动所有相机
+      if (dragState.clusterCameras && dragState.clusterCameras.length > 0) {
+        dragState.clusterCameras.forEach(clusterCamera => {
+          const camera = layerCameras.value.find(c => {
+            const cId = typeof c.camera_id === 'string' ? c.camera_id : String(c.camera_id)
+            const clusterId = typeof clusterCamera.camera_id === 'string' ? clusterCamera.camera_id : String(clusterCamera.camera_id)
+            return cId === clusterId
+          })
+          
+          if (camera) {
+            camera.position_x = newX
+            camera.position_y = newY
+          }
         })
+        
+        hasChanges.value = true
+        console.log('同步移动聚合相机:', dragState.clusterCameras.map(c => c.camera_name), '位置:', newX, newY)
+      } else {
+        // 单个相机拖拽
+        const camera = layerCameras.value.find(c => {
+          const cId = typeof c.camera_id === 'string' ? c.camera_id : String(c.camera_id)
+          const dragId = typeof draggingCameraId.value === 'string' ? draggingCameraId.value : String(draggingCameraId.value)
+          return cId === dragId
+        })
+        
+        if (camera) {
+          camera.position_x = newX
+          camera.position_y = newY
+          hasChanges.value = true
+          console.log('更新相机位置:', camera.camera_name, '位置:', camera.position_x, camera.position_y)
+        }
       }
     }
 
     // 选择相机
     const selectCamera = (camera) => {
       selectedCameraId.value = camera.camera_id
+    }
+
+    // 选择聚合相机
+    const selectCluster = (cluster) => {
+      // 如果聚合包含多个相机，选择第一个作为代表
+      selectedCameraId.value = cluster.cameras[0].camera_id
+      
+      // 如果聚合只有一个相机，直接选择
+      if (cluster.cameras.length === 1) {
+        selectedCameraId.value = cluster.cameras[0].camera_id
+      } else {
+        // 多个相机时，可以显示选择列表或其他处理逻辑
+        console.log('选择了聚合相机:', cluster.cameras.map(c => c.camera_name))
+      }
     }
 
     // 清除选择
@@ -533,6 +712,32 @@ export default {
       document.addEventListener('mouseup', stopDrag)
     }
 
+    // 开始拖拽聚合相机
+    const startClusterDrag = (cluster, event) => {
+      event.preventDefault()
+      console.log('开始拖拽聚合相机:', cluster.cameras.map(c => c.camera_name))
+      
+      // 选择第一个相机作为拖拽代表
+      const primaryCamera = cluster.cameras[0]
+      draggingCameraId.value = primaryCamera.camera_id
+      selectedCameraId.value = primaryCamera.camera_id
+      
+      const rect = mapCanvas.value.getBoundingClientRect()
+      const x = (event.clientX - rect.left) / zoomLevel.value
+      const y = (event.clientY - rect.top) / zoomLevel.value
+      
+      dragState.isDragging = true
+      dragState.offsetX = x - cluster.position_x
+      dragState.offsetY = y - cluster.position_y
+      
+      // 记录聚合中的所有相机，用于同步移动
+      dragState.clusterCameras = cluster.cameras
+      
+      // 添加全局事件监听
+      document.addEventListener('mousemove', handleDocumentMouseMove)
+      document.addEventListener('mouseup', stopDrag)
+    }
+
     // 文档鼠标移动处理
     const handleDocumentMouseMove = (event) => {
       if (mapCanvas.value) {
@@ -545,9 +750,88 @@ export default {
       dragState.isDragging = false
       draggingCameraId.value = null
       
+      // 清理聚合拖拽状态
+      if (dragState.clusterCameras) {
+        delete dragState.clusterCameras
+      }
+      
       // 移除全局事件监听
       document.removeEventListener('mousemove', handleDocumentMouseMove)
       document.removeEventListener('mouseup', stopDrag)
+    }
+
+    // 背景图片拖拽开始
+    const startBackgroundDrag = (event) => {
+      // 只有当没有拖拽相机时才允许拖拽背景
+      if (dragState.isDragging || draggingCameraId.value) return
+      
+      event.preventDefault()
+      backgroundDragState.isDragging = true
+      backgroundDragState.startX = event.clientX - backgroundDragState.currentX
+      backgroundDragState.startY = event.clientY - backgroundDragState.currentY
+      
+      console.log('开始拖拽背景图片')
+      
+      // 添加全局事件监听
+      document.addEventListener('mousemove', handleBackgroundDragMove)
+      document.addEventListener('mouseup', stopBackgroundDrag)
+    }
+    
+    // 背景图片拖拽移动
+    const handleBackgroundDragMove = (event) => {
+      if (!backgroundDragState.isDragging) return
+      
+      event.preventDefault()
+      backgroundDragState.currentX = event.clientX - backgroundDragState.startX
+      backgroundDragState.currentY = event.clientY - backgroundDragState.startY
+      
+      console.log('拖拽背景图片位置:', {
+        x: backgroundDragState.currentX,
+        y: backgroundDragState.currentY
+      })
+    }
+    
+    // 停止背景图片拖拽
+    const stopBackgroundDrag = () => {
+      backgroundDragState.isDragging = false
+      
+      console.log('停止拖拽背景图片')
+      
+      // 移除全局事件监听
+      document.removeEventListener('mousemove', handleBackgroundDragMove)
+      document.removeEventListener('mouseup', stopBackgroundDrag)
+    }
+    
+    // 重置背景图片位置
+    const resetBackgroundPosition = () => {
+      backgroundDragState.currentX = 0
+      backgroundDragState.currentY = 0
+      console.log('重置背景图片位置')
+    }
+
+    // 聚合相机悬停提示
+    const clusterTooltip = ref(null)
+    const tooltipVisible = ref(false)
+    const tooltipPosition = reactive({ x: 0, y: 0 })
+    const tooltipContent = ref('')
+
+    const showClusterTooltip = (event, cluster) => {
+      if (cluster.cameras.length <= 1) return
+      
+      const rect = event.target.getBoundingClientRect()
+      tooltipPosition.x = rect.left + rect.width / 2
+      tooltipPosition.y = rect.top - 10
+      
+      tooltipContent.value = cluster.cameras.map(camera => 
+        `${camera.camera_name} (${camera.is_online === 1 ? '在线' : '离线'})`
+      ).join('\n')
+      
+      tooltipVisible.value = true
+      console.log('显示聚合提示:', cluster.cameras.map(c => c.camera_name))
+    }
+
+    const hideClusterTooltip = () => {
+      tooltipVisible.value = false
     }
 
     // 显示添加相机对话框
@@ -756,6 +1040,17 @@ export default {
       positionForm,
       selectedCamera,
       filteredUnboundCameras,
+      clusteredCameras,
+      isSelectedCameraClustered,
+      selectedCluster,
+      selectCluster,
+      startClusterDrag,
+      clusterTooltip,
+      tooltipVisible,
+      tooltipPosition,
+      tooltipContent,
+      showClusterTooltip,
+      hideClusterTooltip,
       handleLayerChange,
       onImageLoad,
       onImageError,
@@ -781,6 +1076,10 @@ export default {
       isDraggingControls,
       controlsPosition,
       startDragControls,
+      // 背景图片拖拽
+      backgroundDragState,
+      startBackgroundDrag,
+      resetBackgroundPosition,
       // 图标
       ZoomIn,
       ZoomOut,
@@ -847,6 +1146,7 @@ export default {
   margin: 0 auto;
   cursor: crosshair;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
 .map-background {
@@ -854,6 +1154,17 @@ export default {
   height: 100%;
   display: block;
   user-select: none;
+  cursor: grab;
+  transition: filter 0.2s ease;
+}
+
+.map-background:hover {
+  filter: brightness(1.05);
+}
+
+.map-background.dragging {
+  cursor: grabbing;
+  filter: brightness(0.95);
 }
 
 .camera-marker {
@@ -871,6 +1182,10 @@ export default {
 
 .camera-marker.dragging {
   z-index: 30;
+}
+
+.camera-marker.clustered {
+  z-index: 25;
 }
 
 .camera-icon {
@@ -922,6 +1237,69 @@ export default {
   background: #67c23a;
   border: 2px solid white;
   border-radius: 50%;
+}
+
+/* 聚合数量标识 */
+.cluster-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 18px;
+  height: 18px;
+  background: #f56c6c;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 10;
+}
+
+/* 聚合相机样式增强 */
+.camera-marker.clustered .camera-icon {
+  background: linear-gradient(135deg, #f56c6c, #e6a23c);
+  border-color: #f56c6c;
+  box-shadow: 0 0 15px rgba(245, 108, 108, 0.4);
+}
+
+.camera-marker.clustered:hover .camera-icon {
+  background: linear-gradient(135deg, #f78989, #eebe77);
+  transform: scale(1.3);
+  box-shadow: 0 0 20px rgba(245, 108, 108, 0.6);
+}
+
+/* 聚合提示框样式 */
+.cluster-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-100%);
+}
+
+.tooltip-content {
+  background: rgba(0, 20, 40, 0.95);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 6px;
+  padding: 8px 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  max-width: 250px;
+}
+
+.tooltip-line {
+  color: #ffffff;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.3);
+}
+
+.tooltip-line + .tooltip-line {
+  margin-top: 4px;
 }
 
 .zoom-controls {
@@ -995,6 +1373,41 @@ export default {
 }
 
 
+
+/* 背景图片拖拽状态样式 */
+.map-background.dragging {
+  filter: brightness(0.95) drop-shadow(0 0 20px rgba(0, 255, 255, 0.5)) !important;
+  transition: none !important;
+}
+
+/* 重置背景按钮科技感样式 */
+.tech-button-warning {
+  background: linear-gradient(135deg, rgba(255, 177, 0, 0.8), rgba(255, 140, 0, 0.9)) !important;
+  border: 1px solid rgba(255, 177, 0, 0.6) !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 5px rgba(255, 177, 0, 0.5) !important;
+  box-shadow: 0 0 10px rgba(255, 177, 0, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.tech-button-warning:hover {
+  background: linear-gradient(135deg, rgba(255, 177, 0, 1), rgba(255, 140, 0, 1)) !important;
+  box-shadow: 0 0 20px rgba(255, 177, 0, 0.6) !important;
+  transform: translateY(-2px) !important;
+}
+
+.tech-button-warning:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 0 15px rgba(255, 177, 0, 0.4) !important;
+}
+
+.tech-button-warning:disabled {
+  background: rgba(255, 177, 0, 0.3) !important;
+  border-color: rgba(255, 177, 0, 0.2) !important;
+  box-shadow: none !important;
+  transform: none !important;
+  opacity: 0.5 !important;
+}
 
 /* 缩放按钮样式增强 */
 .zoom-controls {
@@ -1233,6 +1646,28 @@ export default {
   background: linear-gradient(135deg, rgba(0, 255, 255, 0.8), rgba(0, 200, 255, 0.9)) !important;
   border: 2px solid rgba(0, 255, 255, 0.6) !important;
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.4) !important;
+}
+
+/* 聚合相机科技感样式 */
+.camera-marker.clustered .camera-icon {
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.8), rgba(230, 162, 60, 0.9)) !important;
+  border: 2px solid rgba(245, 108, 108, 0.6) !important;
+  box-shadow: 0 0 15px rgba(245, 108, 108, 0.4) !important;
+}
+
+.camera-marker.clustered:hover .camera-icon {
+  background: linear-gradient(135deg, rgba(247, 137, 137, 0.9), rgba(238, 190, 119, 1)) !important;
+  border-color: rgba(245, 108, 108, 0.8) !important;
+  box-shadow: 0 0 20px rgba(245, 108, 108, 0.6) !important;
+}
+
+/* 聚合数量标识科技感样式 */
+.cluster-count {
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.9), rgba(220, 38, 127, 1)) !important;
+  border: 2px solid rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 0 0 10px rgba(245, 108, 108, 0.6) !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 3px rgba(245, 108, 108, 0.8) !important;
 }
 
 .camera-marker:hover .camera-icon,
@@ -1591,5 +2026,109 @@ export default {
   background: rgba(245, 108, 108, 0.1) !important;
   border: 1px solid rgba(245, 108, 108, 0.3) !important;
   color: #f56c6c !important;
+}
+
+/* 聚合相机信息样式 */
+.cluster-info {
+  margin-bottom: 20px;
+}
+
+.cluster-cameras {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 6px;
+  background: rgba(0, 10, 20, 0.3);
+}
+
+.cluster-camera-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cluster-camera-item:last-child {
+  border-bottom: none;
+}
+
+.cluster-camera-item:hover {
+  background: rgba(0, 255, 255, 0.05);
+}
+
+.cluster-camera-item.active {
+  background: rgba(0, 255, 255, 0.1);
+  border-left: 3px solid #00ffff;
+}
+
+.camera-indicator {
+  position: relative;
+  width: 24px;
+  height: 24px;
+  margin-right: 10px;
+  flex-shrink: 0;
+}
+
+.camera-indicator .el-icon {
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.6), rgba(0, 200, 255, 0.8));
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+}
+
+.mini-online-indicator {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 6px;
+  height: 6px;
+  background: #00ff88;
+  border: 1px solid rgba(0, 255, 255, 0.6);
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(0, 255, 136, 0.4);
+}
+
+.camera-info {
+  flex: 1;
+}
+
+.camera-name {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.3);
+}
+
+.camera-status {
+  font-size: 12px;
+}
+
+/* 聚合面板警告框样式 */
+:deep(.cluster-info .el-alert) {
+  background: rgba(230, 162, 60, 0.1) !important;
+  border: 1px solid rgba(230, 162, 60, 0.3) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.cluster-info .el-alert__title) {
+  color: #e6a23c !important;
+  text-shadow: 0 0 5px rgba(230, 162, 60, 0.3) !important;
+}
+
+:deep(.cluster-info .el-alert__description) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.cluster-info .el-alert__icon) {
+  color: #e6a23c !important;
 }
 </style>
