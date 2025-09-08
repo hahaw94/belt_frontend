@@ -20,23 +20,26 @@
           </el-col>
           <el-col :span="12" v-if="ntpConfig.mode === 'ntp_client'">
             <el-form-item label="时区设置" prop="timezone">
-              <!-- 自定义时区选择器 -->
-              <div 
-                ref="timezoneSelector"
-                class="custom-timezone-selector" 
-                @click="toggleTimezoneDropdown"
-              >
-                <div class="timezone-display">
-                  <span class="timezone-text">{{ getTimezoneDisplayText() }}</span>
-                  <i class="timezone-arrow" :class="{ 'expanded': showTimezoneDropdown }">▼</i>
+              <div class="custom-select-container">
+                <div 
+                  class="custom-select-trigger"
+                  @click="toggleTimezoneDropdown"
+                  :class="{ 'active': showTimezoneDropdown }"
+                >
+                  <span class="select-value">{{ getSelectedTimezoneLabel() }}</span>
+                  <i class="select-arrow" :class="{ 'expanded': showTimezoneDropdown }">▼</i>
                 </div>
-                <div v-if="showTimezoneDropdown" class="timezone-dropdown-custom" @click.stop>
-                  <div 
-                    v-for="option in timezoneOptions" 
+                <div 
+                  v-if="showTimezoneDropdown" 
+                  class="custom-select-dropdown"
+                  @click.stop
+                >
+                  <div
+                    v-for="option in timezoneOptions"
                     :key="option.value"
-                    class="timezone-option"
+                    class="select-option"
                     :class="{ 'selected': ntpConfig.timezone === option.value }"
-                    @click="updateTimezone(option.value)"
+                    @click="selectTimezone(option.value)"
                   >
                     {{ option.label }}
                   </div>
@@ -186,11 +189,23 @@ export default {
     updateNtpServer(value) {
       this.$emit('update-ntp-server', value)
     },
-    getTimezoneDisplayText() {
-      return this.$parent?.getTimezoneDisplayText?.() || ''
+    getSelectedTimezoneLabel() {
+      const selected = this.timezoneOptions.find(option => option.value === this.ntpConfig.timezone)
+      return selected ? selected.label : '请选择时区'
     },
     getStatusText(status) {
-      return this.$parent?.getStatusText?.(status) || status
+      switch (status) {
+        case 'synced':
+          return '已同步'
+        case 'active':
+          return '正常运行'
+        case 'sync_required':
+          return '需要同步'
+        case 'unknown':
+          return '状态未知'
+        default:
+          return '未同步'
+      }
     }
   }
 }
@@ -198,4 +213,140 @@ export default {
 
 <style scoped>
 /* 继承父组件的科技感样式 */
+
+/* 自定义选择框容器 */
+.custom-select-container {
+  position: relative;
+  width: 100%;
+}
+
+/* 选择框触发器 */
+.custom-select-trigger {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  background: rgba(15, 25, 45, 0.8);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1);
+}
+
+.custom-select-trigger:hover {
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2);
+  background: rgba(15, 25, 45, 0.9);
+}
+
+.custom-select-trigger.active {
+  border-color: #00ffff;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  background: rgba(15, 25, 45, 1);
+}
+
+/* 选择框显示值 */
+.select-value {
+  flex: 1;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+}
+
+/* 箭头图标 */
+.select-arrow {
+  font-size: 12px;
+  color: rgba(0, 255, 255, 0.7);
+  transition: all 0.3s ease;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.select-arrow.expanded {
+  transform: rotate(180deg);
+  color: #00ffff;
+}
+
+/* 下拉选项容器 */
+.custom-select-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(15, 25, 45, 0.95);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  border-radius: 6px;
+  margin-top: 2px;
+  max-height: 200px;
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+/* 下拉选项 */
+.select-option {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.select-option:last-child {
+  border-bottom: none;
+}
+
+.select-option:hover {
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.1);
+}
+
+.select-option.selected {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  font-weight: 500;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  box-shadow: inset 0 0 25px rgba(0, 255, 255, 0.15);
+}
+
+.select-option.selected:hover {
+  background: rgba(0, 255, 255, 0.25);
+  box-shadow: inset 0 0 30px rgba(0, 255, 255, 0.2);
+}
+
+/* 自定义滚动条 */
+.custom-select-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-select-dropdown::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.custom-select-dropdown::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 3px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.custom-select-dropdown::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+}
 </style>

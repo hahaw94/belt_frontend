@@ -20,42 +20,53 @@
           <el-descriptions-item label="网关地址">
             <span class="network-value">{{ currentNetworkConfig.gateway || '获取中...' }}</span>
           </el-descriptions-item>
+          <el-descriptions-item label="服务端口">
+            <span class="network-value">{{ currentNetworkConfig.port || '获取中...' }}</span>
+          </el-descriptions-item>
           <el-descriptions-item label="当前访问地址">
             <span class="network-value link-value" @click="copyToClipboard(getCurrentAccessUrl())">
               {{ getCurrentAccessUrl() }}
               <el-icon class="copy-icon"><CopyDocument /></el-icon>
             </span>
+            <div class="url-description">（浏览器当前地址）</div>
           </el-descriptions-item>
-          <el-descriptions-item label="后端配置地址">
+          <el-descriptions-item label="系统配置地址">
             <span class="network-value link-value" @click="copyToClipboard(getBackendConfigUrl())">
               {{ getBackendConfigUrl() }}
               <el-icon class="copy-icon"><CopyDocument /></el-icon>
             </span>
+            <div class="url-description">（系统实际配置）</div>
           </el-descriptions-item>
-          <el-descriptions-item label="修改后地址" v-if="networkConfig.ip_address && networkConfig.ip_address !== currentNetworkConfig.ip_address">
+          <el-descriptions-item label="修改后地址" v-if="hasNetworkChanges()">
             <span class="network-value preview-url" @click="copyToClipboard(getPreviewAccessUrl())">
               {{ getPreviewAccessUrl() }}
               <el-icon class="copy-icon"><CopyDocument /></el-icon>
             </span>
+            <div class="url-description">（修改配置后的地址）</div>
           </el-descriptions-item>
         </el-descriptions>
       </div>
 
-      <el-form :model="networkConfig" :rules="networkRules" ref="networkFormRef" label-width="150px" class="config-form" v-loading="networkLoading">
-        <el-row :gutter="20">
-          <el-col :span="8">
+      <el-form :model="networkConfig" :rules="networkRules" ref="networkFormRef" label-width="120px" class="config-form" v-loading="networkLoading">
+        <el-row :gutter="16">
+          <el-col :span="6">
             <el-form-item label="IP地址" prop="ip_address">
               <el-input :model-value="networkConfig.ip_address" @update:model-value="updateIpAddress" placeholder="请输入IP地址"></el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="6">
             <el-form-item label="子网掩码" prop="subnet_mask">
               <el-input :model-value="networkConfig.subnet_mask" @update:model-value="updateSubnetMask" placeholder="请输入子网掩码"></el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="6">
             <el-form-item label="网关" prop="gateway">
               <el-input :model-value="networkConfig.gateway" @update:model-value="updateGateway" placeholder="请输入网关地址"></el-input>
+            </el-form-item>
+          </el-col>
+          <el-col :span="6">
+            <el-form-item label="服务端口" prop="port">
+              <el-input :model-value="networkConfig.port" @update:model-value="updatePort" placeholder="请输入服务端口"></el-input>
             </el-form-item>
           </el-col>
         </el-row>
@@ -63,7 +74,7 @@
         <el-row style="margin-top: 20px;">
           <el-col :span="24">
             <el-form-item>
-              <el-button type="danger" class="tech-button-danger" @click="showIPChangeDialog" :loading="networkLoading">修改IP地址</el-button>
+              <el-button type="danger" class="tech-button-danger" @click="showNetworkChangeDialog" :loading="networkLoading">修改网络配置</el-button>
               <el-button class="tech-button-secondary" @click="resetNetworkForm">重置</el-button>
             </el-form-item>
           </el-col>
@@ -81,7 +92,7 @@ export default {
     CopyDocument,
     Refresh // eslint-disable-line vue/no-unused-components
   },
-  emits: ['load-network-config', 'show-ip-change-dialog', 'reset-network-form', 'copy-to-clipboard', 'update-ip-address', 'update-subnet-mask', 'update-gateway'],
+  emits: ['load-network-config', 'show-network-change-dialog', 'reset-network-form', 'copy-to-clipboard', 'update-ip-address', 'update-subnet-mask', 'update-gateway', 'update-port'],
   props: {
     networkConfig: {
       type: Object,
@@ -104,8 +115,8 @@ export default {
     loadNetworkConfig() {
       this.$emit('load-network-config')
     },
-    showIPChangeDialog() {
-      this.$emit('show-ip-change-dialog')
+    showNetworkChangeDialog() {
+      this.$emit('show-network-change-dialog')
     },
     resetNetworkForm() {
       this.$emit('reset-network-form')
@@ -114,13 +125,26 @@ export default {
       this.$emit('copy-to-clipboard', text)
     },
     getCurrentAccessUrl() {
-      return this.$parent?.getCurrentAccessUrl?.() || ''
+      // 获取当前浏览器地址栏的地址
+      return window.location.origin
     },
     getBackendConfigUrl() {
-      return this.$parent?.getBackendConfigUrl?.() || ''
+      const ip = this.currentNetworkConfig.ip_address || 'localhost'
+      const port = this.currentNetworkConfig.port || '8080'
+      return `http://${ip}:${port}`
     },
     getPreviewAccessUrl() {
-      return this.$parent?.getPreviewAccessUrl?.() || ''
+      const ip = this.networkConfig.ip_address || 'localhost'
+      const port = this.networkConfig.port || this.currentNetworkConfig.port || '8080'
+      return `http://${ip}:${port}`
+    },
+    hasNetworkChanges() {
+      return (
+        this.networkConfig.ip_address !== this.currentNetworkConfig.ip_address ||
+        this.networkConfig.subnet_mask !== this.currentNetworkConfig.subnet_mask ||
+        this.networkConfig.gateway !== this.currentNetworkConfig.gateway ||
+        this.networkConfig.port !== this.currentNetworkConfig.port
+      )
     },
     updateIpAddress(value) {
       this.$emit('update-ip-address', value)
@@ -130,6 +154,9 @@ export default {
     },
     updateGateway(value) {
       this.$emit('update-gateway', value)
+    },
+    updatePort(value) {
+      this.$emit('update-port', value)
     }
   }
 }
@@ -137,4 +164,39 @@ export default {
 
 <style scoped>
 /* 继承父组件的科技感样式 */
+.url-description {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.network-value {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.link-value {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.link-value:hover {
+  color: #00ffff;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.copy-icon {
+  margin-left: 8px;
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.link-value:hover .copy-icon {
+  opacity: 1;
+}
+
+.preview-url {
+  color: #409EFF;
+  font-weight: 500;
+}
 </style>

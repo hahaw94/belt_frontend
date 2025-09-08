@@ -36,6 +36,11 @@ export const systemAPI = {
     return request.put('/api/v1/system/network', data)
   },
 
+  // 修改端口配置
+  setPortConfig(data) {
+    return request.put('/api/v1/system/port', data)
+  },
+
   // ===================== LOGO管理 =====================
   // 上传LOGO
   uploadLogo(formData) {

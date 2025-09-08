@@ -40,12 +40,13 @@
           :network-rules="networkRules"
           :network-loading="networkLoading"
           @load-network-config="loadNetworkConfig"
-          @show-ip-change-dialog="showIPChangeDialog"
+          @show-network-change-dialog="showNetworkChangeDialog"
           @reset-network-form="resetNetworkForm"
           @copy-to-clipboard="copyToClipboard"
           @update-ip-address="updateIpAddress"
           @update-subnet-mask="updateSubnetMask"
           @update-gateway="updateGateway"
+          @update-port="updatePort"
         />
       </el-tab-pane>
       <el-tab-pane label="外观设置" name="appearance">
@@ -126,60 +127,80 @@
     </el-tabs>
 
     <!-- 保留所有原有的对话框和弹窗 -->
-    <!-- IP修改确认对话框 -->
+    <!-- 网络配置修改确认对话框 -->
     <el-dialog
-      v-model="ipChangeDialogVisible"
-      title="确认修改IP地址"
-      width="500px"
+      v-model="networkChangeDialogVisible"
+      title="确认修改网络配置"
+      width="600px"
       :close-on-click-modal="false"
       :show-close="false"
     >
-      <div class="ip-change-warning">
+      <div class="network-change-warning">
         <el-icon size="48" color="#E6A23C"><WarningFilled /></el-icon>
         <div class="warning-content">
-          <h3>警告：修改IP地址后，系统可能会暂时无法访问</h3>
-          <div class="ip-change-details">
-            <p><strong>当前IP：</strong>{{ currentNetworkConfig.ip_address }}</p>
-            <p><strong>修改为：</strong>{{ networkConfig.ip_address }}</p>
-            <p><strong>新访问地址：</strong>{{ getPreviewAccessUrl() }}</p>
+          <h3>警告：修改网络配置后，系统可能会暂时无法访问</h3>
+          <div class="network-change-details">
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <div class="config-section">
+                  <h4>当前配置</h4>
+                  <p><strong>IP地址：</strong>{{ currentNetworkConfig.ip_address }}</p>
+                  <p><strong>子网掩码：</strong>{{ currentNetworkConfig.subnet_mask }}</p>
+                  <p><strong>网关：</strong>{{ currentNetworkConfig.gateway }}</p>
+                  <p><strong>端口：</strong>{{ currentNetworkConfig.port }}</p>
+                </div>
+              </el-col>
+              <el-col :span="12">
+                <div class="config-section">
+                  <h4>修改为</h4>
+                  <p><strong>IP地址：</strong>{{ networkConfig.ip_address }}</p>
+                  <p><strong>子网掩码：</strong>{{ networkConfig.subnet_mask }}</p>
+                  <p><strong>网关：</strong>{{ networkConfig.gateway }}</p>
+                  <p><strong>端口：</strong>{{ networkConfig.port }}</p>
+                </div>
+              </el-col>
+            </el-row>
+            <div style="margin-top: 15px; text-align: center;">
+              <p><strong>新访问地址：</strong><span style="color: #409EFF; font-size: 16px;">{{ getPreviewAccessUrl() }}</span></p>
+            </div>
           </div>
-          <div class="ip-change-tips">
+          <div class="network-change-tips">
             <p>1. 修改后请使用新地址访问系统</p>
-            <p>2. 如果无法访问，请检查网络连接</p>
+            <p>2. 如果无法访问，请检查网络连接和端口是否被占用</p>
             <p>3. 修改过程约需30-60秒</p>
           </div>
         </div>
       </div>
       
       <div style="margin-top: 20px; text-align: center;">
-        <el-checkbox v-model="ipChangeConfirm">我已了解风险，确认修改IP地址</el-checkbox>
+        <el-checkbox v-model="networkChangeConfirm">我已了解风险，确认修改网络配置</el-checkbox>
       </div>
       
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="ipChangeDialogVisible = false">取消</el-button>
-          <el-button type="danger" @click="changeIPAddress" :disabled="!ipChangeConfirm" :loading="ipChanging">
+          <el-button @click="networkChangeDialogVisible = false">取消</el-button>
+          <el-button type="danger" @click="changeNetworkConfig" :disabled="!networkChangeConfirm" :loading="networkChanging">
             确认修改
           </el-button>
         </span>
       </template>
     </el-dialog>
 
-    <!-- IP修改进度对话框 -->
+    <!-- 网络配置修改进度对话框 -->
     <el-dialog
-      v-model="ipChangeProgressVisible"
-      title="正在修改IP地址"
+      v-model="networkChangeProgressVisible"
+      title="正在修改网络配置"
       width="500px"
       :close-on-click-modal="false"
       :show-close="false"
     >
       <div class="progress-content">
-        <el-progress :percentage="ipChangeProgress" :status="ipChangeProgress === 100 ? 'success' : ''" />
-        <p style="margin-top: 15px;">{{ ipChangeMessage }}</p>
+        <el-progress :percentage="networkChangeProgress" :status="networkChangeProgress === 100 ? 'success' : ''" />
+        <p style="margin-top: 15px;">{{ networkChangeMessage }}</p>
         
-        <div v-if="ipChangeProgress === 100" style="text-align: center; margin-top: 20px;">
+        <div v-if="networkChangeProgress === 100" style="text-align: center; margin-top: 20px;">
           <el-alert 
-            title="IP地址修改完成" 
+            title="网络配置修改完成" 
             type="success" 
             :closable="false"
             style="margin-bottom: 15px;"
@@ -193,6 +214,7 @@
         </div>
       </div>
     </el-dialog>
+
 
     <!-- 创建镜像点对话框 -->
     <el-dialog
@@ -363,26 +385,41 @@ const manualTime = ref('')
 const currentTime = ref('')
 const timeInterval = ref(null)
 
+// 独立的时间状态管理
+const clientModeTime = reactive({
+  current_time: '',
+  lastLoadTime: Date.now()
+})
+
+const serverModeTime = reactive({
+  current_time: '',
+  lastLoadTime: Date.now()
+})
+
+const lastConfigLoadTime = ref(Date.now())
+
 // 网络配置
 const networkConfig = reactive({
   ip_address: '',
   subnet_mask: '',
-  gateway: ''
+  gateway: '',
+  port: ''
 })
 
 const currentNetworkConfig = reactive({
   ip_address: '',
   subnet_mask: '',
-  gateway: ''
+  gateway: '',
+  port: ''
 })
 
-// IP修改相关
-const ipChangeDialogVisible = ref(false)
-const ipChangeProgressVisible = ref(false)
-const ipChangeConfirm = ref(false)
-const ipChanging = ref(false)
-const ipChangeProgress = ref(0)
-const ipChangeMessage = ref('')
+// 网络配置修改相关
+const networkChangeDialogVisible = ref(false)
+const networkChangeProgressVisible = ref(false)
+const networkChangeConfirm = ref(false)
+const networkChanging = ref(false)
+const networkChangeProgress = ref(0)
+const networkChangeMessage = ref('')
 const countdown = ref(10)
 const countdownInterval = ref(null)
 
@@ -466,6 +503,23 @@ const networkRules = reactive({
   gateway: [
     { required: true, message: '请输入网关地址', trigger: 'blur' },
     { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: '请输入正确的网关地址格式', trigger: 'blur' }
+  ],
+  port: [
+    { required: true, message: '请输入服务端口', trigger: 'blur' },
+    { pattern: /^[1-9]\d{0,4}$/, message: '端口号应为1-65535之间的数字', trigger: 'blur' },
+    { 
+      validator: (rule, value, callback) => {
+        const port = parseInt(value)
+        if (port < 1 || port > 65535) {
+          callback(new Error('端口号必须在1-65535范围内'))
+        } else if (port < 1024) {
+          callback(new Error('建议使用1024以上的端口号'))
+        } else {
+          callback()
+        }
+      }, 
+      trigger: 'blur' 
+    }
   ]
 })
 
@@ -521,8 +575,43 @@ const loadNTPConfig = async () => {
   ntpLoading.value = true
   try {
     const response = await systemAPI.getNTPConfig()
-    if (response.success) {
-      Object.assign(ntpConfig, response.data)
+    if (response.code === 200 || response.success) {
+      const currentMode = ntpConfig.mode // 保存当前前端模式
+      const configData = { ...response.data }
+      
+      // 将后端的manual模式映射为前端的ntp_server模式
+      if (configData.mode === 'manual') {
+        configData.mode = 'ntp_server'
+      }
+      
+      Object.assign(ntpConfig, configData)
+      
+      // 如果有当前时间，更新对应模式的时间状态
+      if (response.data.current_time) {
+        lastConfigLoadTime.value = Date.now()
+        
+        // 根据后端返回的模式更新对应的时间状态
+        if (response.data.mode === 'ntp_client' || response.data.mode === 'client') {
+          clientModeTime.current_time = response.data.current_time
+          clientModeTime.lastLoadTime = Date.now()
+        } else if (response.data.mode === 'ntp_server' || response.data.mode === 'manual') {
+          serverModeTime.current_time = response.data.current_time
+          serverModeTime.lastLoadTime = Date.now()
+        }
+      }
+      
+      // 如果有前端模式保存，则恢复它
+      if (currentMode) {
+        ntpConfig.mode = currentMode
+      }
+      
+      console.log('NTP配置加载完成:', {
+        后端模式: response.data.mode,
+        前端模式: ntpConfig.mode,
+        时间: response.data.current_time,
+        客户端时间: clientModeTime.current_time,
+        服务器时间: serverModeTime.current_time
+      })
     }
   } catch (error) {
     console.error('加载NTP配置失败:', error)
@@ -533,18 +622,86 @@ const loadNTPConfig = async () => {
 }
 
 const syncNTP = async () => {
+  // 检查前置条件
+  if (ntpConfig.mode !== 'ntp_client') {
+    ElMessage.error('只有NTP客户端模式才能执行时间同步')
+    return
+  }
+  
+  if (!ntpConfig.server || ntpConfig.server.trim() === '') {
+    ElMessage.error('请先配置NTP服务器地址')
+    return
+  }
+  
   syncLoading.value = true
   try {
+    console.log('开始时间同步:', {
+      模式: ntpConfig.mode,
+      服务器: ntpConfig.server,
+      时区: ntpConfig.timezone
+    })
+    
+    // 先保存当前配置，确保时区设置已保存到后端
+    console.log('同步前先保存配置...')
+    const configToSend = {
+      server: ntpConfig.server,
+      timezone: ntpConfig.timezone,
+      mode: ntpConfig.mode === 'ntp_server' ? 'manual' : ntpConfig.mode
+    }
+    
+    const saveResponse = await systemAPI.setNTPConfig(configToSend)
+    if (!(saveResponse.code === 200 || saveResponse.success)) {
+      console.error('保存配置失败:', saveResponse)
+      ElMessage.error('保存配置失败，无法执行同步')
+      return
+    }
+    
+    console.log('配置保存成功，开始同步...')
+    
+    // 执行同步
     const response = await systemAPI.syncNTP()
+    console.log('同步响应:', response)
+    
     if (response.success) {
       ElMessage.success('NTP同步成功')
+      
+      // 保存当前前端模式
+      const currentFrontendMode = ntpConfig.mode
+      
+      // 重新加载配置以获取最新的时间信息
       await loadNTPConfig()
+      ntpConfig.mode = currentFrontendMode
+      
+      // 将同步后的时间保存到客户端模式时间状态
+      if (ntpConfig.current_time) {
+        clientModeTime.current_time = ntpConfig.current_time
+        clientModeTime.lastLoadTime = Date.now()
+      }
+      
+      // 立即更新时间显示以反映时区变化
+      updateCurrentTime()
     } else {
+      console.error('同步失败响应:', response)
       ElMessage.error(response.message || 'NTP同步失败')
     }
   } catch (error) {
     console.error('NTP同步失败:', error)
-    ElMessage.error('NTP同步失败')
+    // 提供更详细的错误信息
+    let errorMessage = 'NTP同步失败'
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMessage = error.response.data.message
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    // 为常见错误提供更友好的提示
+    if (errorMessage.includes('服务器内部错误')) {
+      errorMessage = 'NTP服务器连接失败，请检查服务器地址和网络连接'
+    } else if (errorMessage.includes('未配置')) {
+      errorMessage = '请先配置NTP服务器地址和时区'
+    }
+    
+    ElMessage.error(errorMessage)
   } finally {
     syncLoading.value = false
   }
@@ -558,16 +715,45 @@ const setManualTime = async () => {
   
   setTimeLoading.value = true
   try {
-    const response = await systemAPI.setManualTime(manualTime.value)
-    if (response.success) {
+    console.log('手动设置时间:', manualTime.value)
+    
+    // 使用与备份文件相同的格式
+    const response = await systemAPI.setManualTime({
+      time: manualTime.value,
+      sync_mode: 'manual'
+    })
+    console.log('设置时间响应:', response)
+    
+    if (response.code === 200 || response.success) {
       ElMessage.success('时间设置成功')
+      
+      // 保存当前前端模式
+      const currentFrontendMode = ntpConfig.mode
+      
+      // 将手动设置的时间保存到服务器模式时间状态
+      serverModeTime.current_time = manualTime.value
+      serverModeTime.lastLoadTime = Date.now()
+      
+      // 重新加载配置但保持前端模式
       await loadNTPConfig()
+      ntpConfig.mode = currentFrontendMode
+      
+      // 立即更新时间显示
+      updateCurrentTime()
     } else {
-      ElMessage.error(response.message || '时间设置失败')
+      console.error('设置时间失败响应:', response)
+      ElMessage.error(response.message || response.data?.message || '时间设置失败')
     }
   } catch (error) {
     console.error('设置时间失败:', error)
-    ElMessage.error('设置时间失败')
+    // 提供更详细的错误信息
+    let errorMessage = '设置时间失败'
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMessage = error.response.data.message
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    ElMessage.error(errorMessage)
   } finally {
     setTimeLoading.value = false
   }
@@ -576,17 +762,58 @@ const setManualTime = async () => {
 const syncPCTime = async () => {
   setTimeLoading.value = true
   try {
-    const currentDateTime = new Date().toISOString().slice(0, 19).replace('T', ' ')
-    const response = await systemAPI.setManualTime(currentDateTime)
-    if (response.success) {
+    // 获取当前PC时间（前端时间）
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = (now.getMonth() + 1).toString().padStart(2, '0')
+    const day = now.getDate().toString().padStart(2, '0')
+    const hours = now.getHours().toString().padStart(2, '0')
+    const minutes = now.getMinutes().toString().padStart(2, '0')
+    const seconds = now.getSeconds().toString().padStart(2, '0')
+    
+    const currentDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+    console.log('同步PC时间:', currentDateTime)
+    
+    // 使用与备份文件相同的格式
+    const response = await systemAPI.setManualTime({
+      time: currentDateTime,
+      sync_mode: 'manual'
+    })
+    console.log('PC时间同步响应:', response)
+    
+    if (response.code === 200 || response.success) {
       ElMessage.success('PC时间同步成功')
+      
+      // 保存当前前端模式
+      const currentFrontendMode = ntpConfig.mode
+      
+      // 将PC时间保存到服务器模式时间状态
+      serverModeTime.current_time = currentDateTime
+      serverModeTime.lastLoadTime = Date.now()
+      
+      // 同时更新手动时间选择器的值
+      manualTime.value = currentDateTime
+      
+      // 重新加载配置但保持前端模式
       await loadNTPConfig()
+      ntpConfig.mode = currentFrontendMode
+      
+      // 立即更新时间显示
+      updateCurrentTime()
     } else {
-      ElMessage.error(response.message || 'PC时间同步失败')
+      console.error('PC时间同步失败响应:', response)
+      ElMessage.error(response.message || response.data?.message || 'PC时间同步失败')
     }
   } catch (error) {
     console.error('PC时间同步失败:', error)
-    ElMessage.error('PC时间同步失败')
+    // 提供更详细的错误信息
+    let errorMessage = 'PC时间同步失败'
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMessage = error.response.data.message
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    ElMessage.error(errorMessage)
   } finally {
     setTimeLoading.value = false
   }
@@ -595,16 +822,45 @@ const syncPCTime = async () => {
 const saveNTPConfig = async () => {
   ntpLoading.value = true
   try {
-    const response = await systemAPI.setNTPConfig(ntpConfig)
-    if (response.success) {
+    // 准备发送给后端的配置，只发送后端需要的字段
+    const configToSend = {
+      server: ntpConfig.server,
+      timezone: ntpConfig.timezone,
+      mode: ntpConfig.mode === 'ntp_server' ? 'manual' : ntpConfig.mode
+    }
+    
+    // 调试日志
+    console.log('保存NTP配置:', {
+      前端模式: ntpConfig.mode,
+      后端模式: configToSend.mode,
+      服务器: configToSend.server,
+      时区: configToSend.timezone
+    })
+    
+    // 保存当前前端模式
+    const currentFrontendMode = ntpConfig.mode
+    
+    const response = await systemAPI.setNTPConfig(configToSend)
+    if (response.code === 200 || response.success) {
       ElMessage.success('NTP配置保存成功')
+      // 重新加载配置但保持前端模式
       await loadNTPConfig()
+      // 确保模式保持不变
+      ntpConfig.mode = currentFrontendMode
     } else {
-      ElMessage.error(response.message || 'NTP配置保存失败')
+      console.error('保存失败响应:', response)
+      ElMessage.error(response.message || response.data?.message || 'NTP配置保存失败')
     }
   } catch (error) {
     console.error('保存NTP配置失败:', error)
-    ElMessage.error('保存NTP配置失败')
+    // 提供更详细的错误信息
+    let errorMessage = '保存NTP配置失败'
+    if (error.response && error.response.data && error.response.data.message) {
+      errorMessage = error.response.data.message
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    ElMessage.error(errorMessage)
   } finally {
     ntpLoading.value = false
   }
@@ -631,9 +887,17 @@ const loadNetworkConfig = async () => {
   }
 }
 
-const showIPChangeDialog = () => {
-  ipChangeDialogVisible.value = true
-  ipChangeConfirm.value = false
+const showNetworkChangeDialog = () => {
+  // 检查是否有任何配置发生了变化
+  if (networkConfig.ip_address === currentNetworkConfig.ip_address &&
+      networkConfig.subnet_mask === currentNetworkConfig.subnet_mask &&
+      networkConfig.gateway === currentNetworkConfig.gateway &&
+      networkConfig.port === currentNetworkConfig.port) {
+    ElMessage.warning('请先修改网络配置')
+    return
+  }
+  networkChangeDialogVisible.value = true
+  networkChangeConfirm.value = false
 }
 
 const resetNetworkForm = () => {
@@ -1104,12 +1368,24 @@ const selectTimezone = (value) => {
 }
 
 const updateNtpMode = (value) => {
+  const oldMode = ntpConfig.mode
   ntpConfig.mode = value
+  
+  console.log(`模式从 ${oldMode} 切换到 ${value}`)
+  
+  // 立即更新时间显示以使用对应模式的时间
+  updateCurrentTime()
 }
 
 const updateTimezone = (value) => {
+  console.log('时区更新:', value)
   ntpConfig.timezone = value
   showTimezoneDropdown.value = false
+  
+  // 提示用户保存配置
+  if (ntpConfig.mode === 'ntp_client') {
+    ElMessage.info('时区已更改，请点击"保存配置"或"立即同步"以应用更改')
+  }
 }
 
 const updateManualTime = (value) => {
@@ -1131,6 +1407,10 @@ const updateSubnetMask = (value) => {
 
 const updateGateway = (value) => {
   networkConfig.gateway = value
+}
+
+const updatePort = (value) => {
+  networkConfig.port = value
 }
 
 // GB28181平台更新方法
@@ -1192,8 +1472,23 @@ const updateAlarmCyclicCleanup = (value) => {
 }
 
 
+// eslint-disable-next-line no-unused-vars
+const getCurrentAccessUrl = () => {
+  // 获取当前浏览器地址栏的地址
+  return window.location.origin
+}
+
+// eslint-disable-next-line no-unused-vars
+const getBackendConfigUrl = () => {
+  const ip = currentNetworkConfig.ip_address || 'localhost'
+  const port = currentNetworkConfig.port || '8080'
+  return `http://${ip}:${port}`
+}
+
 const getPreviewAccessUrl = () => {
-  return `http://${networkConfig.ip_address || 'localhost'}`
+  const ip = networkConfig.ip_address || 'localhost'
+  const port = networkConfig.port || currentNetworkConfig.port || '8080'
+  return `http://${ip}:${port}`
 }
 
 const copyToClipboard = async (text) => {
@@ -1206,64 +1501,131 @@ const copyToClipboard = async (text) => {
   }
 }
 
-const changeIPAddress = async () => {
-  ipChanging.value = true
-  ipChangeDialogVisible.value = false
+const changeNetworkConfig = async () => {
+  networkChanging.value = true
+  networkChangeDialogVisible.value = false
   
   try {
-    const response = await systemAPI.changeIPAddress(networkConfig)
-    if (response.success) {
-      ipChangeProgressVisible.value = true
-      startIPChangeProgress()
-    } else {
-      ElMessage.error(response.message || 'IP地址修改失败')
+    // 检查是否需要修改端口
+    const needPortChange = networkConfig.port !== currentNetworkConfig.port
+    
+    // 先修改网络配置（IP、子网掩码、网关）
+    const networkResponse = await systemAPI.setNetworkConfig({
+      ip_address: networkConfig.ip_address,
+      subnet_mask: networkConfig.subnet_mask,
+      gateway: networkConfig.gateway
+    })
+    
+    if (networkResponse.code !== 200 && !networkResponse.success) {
+      ElMessage.error(networkResponse.message || '网络配置修改失败')
+      return
     }
+    
+    // 如果需要修改端口，调用端口修改API
+    if (needPortChange) {
+      const portResponse = await systemAPI.setPortConfig({ port: networkConfig.port })
+      if (portResponse.code !== 200 && !portResponse.success) {
+        ElMessage.error(portResponse.message || '端口配置修改失败')
+        return
+      }
+    }
+    
+    // 所有修改成功，显示进度
+    networkChangeProgressVisible.value = true
+    startNetworkChangeProgress()
+    
   } catch (error) {
-    console.error('修改IP地址失败:', error)
-    ElMessage.error('修改IP地址失败')
+    console.error('修改网络配置失败:', error)
+    ElMessage.error('修改网络配置失败')
   } finally {
-    ipChanging.value = false
+    networkChanging.value = false
   }
 }
 
-const startIPChangeProgress = () => {
-  ipChangeProgress.value = 0
-  ipChangeMessage.value = '正在修改IP地址...'
+const startNetworkChangeProgress = () => {
+  networkChangeProgress.value = 0
+  networkChangeMessage.value = '正在修改网络配置...'
   
   const progressInterval = setInterval(() => {
-    ipChangeProgress.value += 3
-    if (ipChangeProgress.value >= 100) {
+    networkChangeProgress.value += 3
+    if (networkChangeProgress.value >= 100) {
       clearInterval(progressInterval)
-      ipChangeProgress.value = 100
-      ipChangeMessage.value = 'IP地址修改完成'
-      startIPChangeCountdown()
+      networkChangeProgress.value = 100
+      networkChangeMessage.value = '网络配置修改完成'
+      startNetworkChangeCountdown()
     }
   }, 1000)
 }
 
-const startIPChangeCountdown = () => {
+const startNetworkChangeCountdown = () => {
   countdown.value = 10
   countdownInterval.value = setInterval(() => {
     countdown.value--
     if (countdown.value <= 0) {
       clearInterval(countdownInterval.value)
-      window.location.href = getPreviewAccessUrl()
+      jumpToNewUrl()
     }
   }, 1000)
 }
 
+const jumpToNewUrl = () => {
+  const newUrl = getPreviewAccessUrl()
+  window.location.href = newUrl
+}
+
 const updateCurrentTime = () => {
-  if (ntpConfig.current_time) {
-    currentTime.value = new Date(ntpConfig.current_time).toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    })
+  let targetTime = ''
+  let targetLoadTime = Date.now()
+  
+  // 根据当前模式选择相应的时间状态
+  if (ntpConfig.mode === 'ntp_client') {
+    // 客户端模式：优先使用客户端时间，否则使用通用时间
+    if (clientModeTime.current_time) {
+      targetTime = clientModeTime.current_time
+      targetLoadTime = clientModeTime.lastLoadTime
+    } else if (ntpConfig.current_time) {
+      targetTime = ntpConfig.current_time
+      targetLoadTime = lastConfigLoadTime.value
+    }
+  } else if (ntpConfig.mode === 'ntp_server') {
+    // 服务器模式：优先使用服务器时间，否则使用通用时间
+    if (serverModeTime.current_time) {
+      targetTime = serverModeTime.current_time
+      targetLoadTime = serverModeTime.lastLoadTime
+    } else if (ntpConfig.current_time) {
+      targetTime = ntpConfig.current_time
+      targetLoadTime = lastConfigLoadTime.value
+    }
   }
+  
+  // 如果有目标时间，基于它计算当前时间
+  if (targetTime) {
+    const programTime = new Date(targetTime)
+    if (!isNaN(programTime.getTime())) {
+      // 如果程序时间有效，使用它并加上经过的时间
+      const now = new Date(programTime.getTime() + (Date.now() - targetLoadTime))
+      const year = now.getFullYear()
+      const month = (now.getMonth() + 1).toString().padStart(2, '0')
+      const day = now.getDate().toString().padStart(2, '0')
+      const hours = now.getHours().toString().padStart(2, '0')
+      const minutes = now.getMinutes().toString().padStart(2, '0')
+      const seconds = now.getSeconds().toString().padStart(2, '0')
+      
+      currentTime.value = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+      return
+    }
+  }
+  
+  // 后备方案：使用PC时间
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = (now.getMonth() + 1).toString().padStart(2, '0')
+  const day = now.getDate().toString().padStart(2, '0')
+  const hours = now.getHours().toString().padStart(2, '0')
+  const minutes = now.getMinutes().toString().padStart(2, '0')
+  const seconds = now.getSeconds().toString().padStart(2, '0')
+  
+  currentTime.value = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 const handleSnapshotTaskSuccess = () => {
@@ -1304,7 +1666,18 @@ onMounted(async () => {
   
   timeInterval.value = setInterval(updateCurrentTime, 1000)
   
+  // 添加全局点击事件，用于关闭时区下拉框
+  document.addEventListener('click', handleGlobalClick)
 })
+
+// 处理全局点击事件
+const handleGlobalClick = (event) => {
+  // 如果点击的不是时区选择器相关元素，则关闭下拉框
+  if (!event.target.closest('.custom-select-container')) {
+    showTimezoneDropdown.value = false
+  }
+}
+
 
 onUnmounted(() => {
   if (timeInterval.value) {
@@ -1313,6 +1686,8 @@ onUnmounted(() => {
   if (countdownInterval.value) {
     clearInterval(countdownInterval.value)
   }
+  // 移除全局点击事件监听器
+  document.removeEventListener('click', handleGlobalClick)
 })
 </script>
 
@@ -1517,6 +1892,72 @@ onUnmounted(() => {
   box-shadow: 0 0 20px rgba(255, 82, 82, 0.4) !important;
   transform: translateY(-1px) !important;
   border-color: rgba(255, 82, 82, 0.6) !important;
+}
+
+/* 科技感警告按钮 */
+.tech-button-warning {
+  border: 1px solid rgba(255, 193, 7, 0.4) !important;
+  background: rgba(255, 193, 7, 0.1) !important;
+  color: #ffc107 !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  font-weight: 500 !important;
+  padding: 10px 20px !important;
+  text-shadow: 0 0 5px rgba(255, 193, 7, 0.3) !important;
+}
+
+.tech-button-warning:hover {
+  background: rgba(255, 193, 7, 0.2) !important;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(255, 193, 7, 0.6) !important;
+}
+
+/* 网络配置修改对话框样式 */
+.network-change-warning {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.network-change-details {
+  margin: 20px 0;
+  width: 100%;
+}
+
+.config-section {
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 10px;
+}
+
+.config-section h4 {
+  color: #00ffff;
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.config-section p {
+  margin: 5px 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.network-change-tips {
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  border-radius: 8px;
+  padding: 15px;
+  margin-top: 15px;
+  text-align: left;
+}
+
+.network-change-tips p {
+  margin: 5px 0;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .tech-tabs {
@@ -1734,6 +2175,508 @@ onUnmounted(() => {
   background: rgba(0, 255, 255, 0.05);
   border-color: rgba(0, 255, 255, 0.4);
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+/* ==================== LOGO管理样式 ==================== */
+
+/* LOGO管理容器 */
+.logo-management-container {
+  padding: 24px 0;
+}
+
+/* LOGO区块 */
+.logo-section {
+  height: 100%;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 区块标题 */
+.section-title {
+  margin: 0 0 20px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+/* 预览容器 */
+.preview-container {
+  flex: 1;
+  min-height: 180px;
+  border: 2px dashed rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 20, 40, 0.3);
+  position: relative;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.preview-container:hover {
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+/* 可点击的预览容器 */
+.preview-container.clickable {
+  cursor: pointer;
+}
+
+.preview-container.clickable:hover .preview-overlay {
+  opacity: 1;
+}
+
+/* 预览覆盖层 */
+.preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+}
+
+.overlay-icon {
+  font-size: 32px;
+  color: #00ffff;
+  margin-bottom: 8px;
+}
+
+.overlay-text {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* LOGO图片 */
+.logo-image {
+  max-width: 90%;
+  max-height: 140px;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  object-fit: contain;
+  transition: all 0.3s ease;
+}
+
+.logo-image:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* 无LOGO状态 */
+.no-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.no-logo-icon {
+  font-size: 48px;
+  color: rgba(0, 255, 255, 0.4) !important;
+  margin-bottom: 12px;
+}
+
+/* LOGO操作按钮 */
+.logo-actions {
+  margin-top: 12px;
+  text-align: center;
+}
+
+/* 上传区域 */
+.upload-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 上传器样式 */
+.logo-uploader {
+  flex: 1;
+  margin-bottom: 20px;
+}
+
+.logo-uploader :deep(.el-upload) {
+  width: 100%;
+  height: 180px;
+  border: 2px dashed rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 20, 40, 0.3) !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.logo-uploader :deep(.el-upload:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 上传触发器 */
+.upload-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 20px;
+}
+
+.upload-trigger:hover {
+  color: #00ffff;
+  transform: translateY(-2px);
+}
+
+.upload-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  color: rgba(0, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.upload-trigger:hover .upload-icon {
+  color: #00ffff;
+  transform: scale(1.1);
+}
+
+.upload-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* 上传操作按钮 */
+.upload-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.upload-actions .el-button {
+  flex: 1;
+  max-width: 120px;
+}
+
+/* 上传提示 */
+.upload-tips {
+  background: rgba(0, 20, 40, 0.4);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 16px;
+  margin-top: auto;
+}
+
+.tip-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7) !important;
+  line-height: 1.4;
+}
+
+.tip-item:last-child {
+  margin-bottom: 0;
+}
+
+.tip-icon {
+  font-size: 14px;
+  margin-right: 8px;
+  color: rgba(0, 255, 255, 0.6) !important;
+  flex-shrink: 0;
+}
+
+/* ==================== 网络管理样式 ==================== */
+
+/* 网络信息显示样式 */
+.network-value {
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.link-value {
+  color: #00ffff !important;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.link-value:hover {
+  color: #66d9ff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.preview-url {
+  color: #e6a23c !important;
+  font-weight: 600;
+  text-shadow: 0 0 5px rgba(230, 162, 60, 0.3) !important;
+}
+
+.copy-icon {
+  font-size: 12px;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.link-value:hover .copy-icon {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ==================== 时区选择器样式 ==================== */
+
+/* 主容器 */
+.custom-timezone-selector {
+  position: relative;
+  width: 100%;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* 显示区域 - 完全匹配日期时间选择器样式 */
+.timezone-display {
+  background: rgba(0, 20, 40, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 4px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  height: 32px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.timezone-display:hover {
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.custom-timezone-selector.focused .timezone-display {
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.4);
+}
+
+/* 显示文字 */
+.timezone-text {
+  color: #ffffff;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  line-height: 30px;
+  flex: 1;
+}
+
+/* 下拉箭头 */
+.timezone-arrow {
+  color: rgba(0, 255, 255, 0.6);
+  font-size: 12px;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.timezone-arrow.expanded {
+  transform: rotate(180deg);
+  color: rgba(0, 255, 255, 0.8);
+}
+
+.timezone-display:hover .timezone-arrow {
+  color: rgba(0, 255, 255, 0.8);
+}
+
+/* 下拉面板 */
+.timezone-dropdown-custom {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 2000;
+  background: rgba(0, 20, 40, 0.95);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+/* 选项样式 */
+.timezone-option {
+  padding: 10px 16px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.timezone-option:last-child {
+  border-bottom: none;
+}
+
+.timezone-option:hover {
+  background: rgba(0, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 1);
+}
+
+.timezone-option.selected {
+  background: rgba(0, 255, 255, 0.2);
+  color: #00ffff;
+  font-weight: 500;
+  position: relative;
+}
+
+.timezone-option.selected::after {
+  content: '✓';
+  position: absolute;
+  right: 16px;
+  color: #00ffff;
+  font-weight: bold;
+}
+
+/* 下拉面板动画 */
+.timezone-dropdown-custom {
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 滚动条样式 */
+.timezone-dropdown-custom::-webkit-scrollbar {
+  width: 6px;
+}
+
+.timezone-dropdown-custom::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.timezone-dropdown-custom::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.timezone-dropdown-custom::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
+}
+
+/* ==================== 系统维护样式 ==================== */
+
+.maintenance-section {
+  margin-bottom: 24px;
+}
+
+.maintenance-section h4 {
+  margin-bottom: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.maintenance-actions {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ml-10 {
+  margin-left: 10px;
+}
+
+/* 重启卡片样式增强 */
+.restart-actions {
+  margin-top: 16px;
+}
+
+.restart-card {
+  height: 140px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.restart-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.4) !important;
+}
+
+.restart-item {
+  display: flex;
+  align-items: flex-start;
+  height: 100%;
+  padding: 24px 20px 28px 20px;
+}
+
+.restart-icon {
+  margin-right: 20px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  flex-shrink: 0;
+}
+
+.restart-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.restart-content h5 {
+  margin: 4px 0 12px 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.restart-content p {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8) !important;
+  line-height: 1.5;
+}
+
+.restart-content .el-button {
+  margin-top: auto;
+  align-self: flex-start;
 }
 
 /* 对话框样式 */
