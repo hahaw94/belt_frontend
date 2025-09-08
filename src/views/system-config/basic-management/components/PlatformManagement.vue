@@ -1,5 +1,6 @@
 <template>
-  <el-card class="config-card tech-card mb-20" shadow="hover">
+  <div class="platform-management">
+    <el-card class="config-card tech-card mb-20" shadow="hover">
     <template #header>
       <div class="card-header">
         <span>GB28181平台对接</span>
@@ -106,8 +107,11 @@
       :model-value="gb28181DialogVisible"
       @update:model-value="updateDialogVisible"
       :title="gb28181DialogMode === 'add' ? '添加GB28181平台' : '编辑GB28181平台'"
-      width="600px"
+      width="700px"
       :close-on-click-modal="false"
+      class="platform-dialog"
+      center
+      align-center
     >
       <!-- 防止浏览器自动填充的隐藏字段 -->
       <div style="display: none;">
@@ -119,23 +123,24 @@
         :model="gb28181FormData" 
         :rules="gb28181Rules" 
         ref="gb28181FormRef" 
-        label-width="100px"
+        label-width="80px"
         autocomplete="off"
+        class="platform-form"
       >
-        <el-row :gutter="20">
-          <el-col :span="12">
+        <el-row :gutter="16">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="平台名称" prop="platform_name">
               <el-input :model-value="gb28181FormData.platform_name" @update:model-value="updatePlatformName" placeholder="请输入平台名称"></el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="平台IP" prop="platform_ip">
               <el-input :model-value="gb28181FormData.platform_ip" @update:model-value="updatePlatformIp" placeholder="请输入平台IP地址"></el-input>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
+        <el-row :gutter="16">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="平台端口" prop="platform_port">
               <el-input-number 
                 :model-value="gb28181FormData.platform_port" 
@@ -147,14 +152,14 @@
               ></el-input-number>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="设备编码" prop="device_id">
               <el-input :model-value="gb28181FormData.device_id" @update:model-value="updateDeviceId" placeholder="请输入设备编码"></el-input>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
+        <el-row :gutter="16">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="用户名" prop="username">
               <el-input 
                 :model-value="gb28181FormData.username" 
@@ -165,7 +170,7 @@
               ></el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col :xs="24" :sm="12">
             <el-form-item label="密码" prop="password">
               <el-input 
                 :model-value="gb28181FormData.password" 
@@ -197,7 +202,8 @@
         </span>
       </template>
     </el-dialog>
-  </el-card>
+    </el-card>
+  </div>
 </template>
 
 <script>
@@ -294,9 +300,108 @@ export default {
 
 <style scoped>
 .platform-management {
-  height: 100%;
+  height: auto;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
+}
+
+/* 卡片自适应高度 */
+.config-card.tech-card {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+.config-card.tech-card :deep(.el-card__body) {
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* 表格容器自适应 */
+.tech-table {
+  height: auto !important;
+  min-height: auto !important;
+}
+
+/* 对话框自适应高度和宽度 */
+:deep(.el-dialog) {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+:deep(.el-dialog__body) {
+  max-height: calc(90vh - 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+}
+
+/* 平台对话框特定样式 */
+.platform-dialog :deep(.el-dialog) {
+  max-width: 95vw;
+  width: 700px;
+}
+
+.platform-dialog :deep(.el-dialog__body) {
+  padding: 20px 24px;
+}
+
+/* 表单样式优化 */
+.platform-form {
+  width: 100%;
+  overflow: hidden;
+}
+
+.platform-form :deep(.el-form-item) {
+  margin-bottom: 18px;
+}
+
+.platform-form :deep(.el-form-item__label) {
+  font-size: 14px;
+  color: #606266;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.platform-form :deep(.el-form-item__content) {
+  flex: 1;
+  min-width: 0;
+}
+
+.platform-form :deep(.el-input) {
+  width: 100%;
+}
+
+.platform-form :deep(.el-input__wrapper) {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 平台对话框简化居中样式 */
+.platform-dialog :deep(.el-dialog) {
+  margin-top: 10vh !important;
+  margin-bottom: 10vh !important;
+}
+
+/* 响应式处理 */
+@media (max-width: 768px) {
+  .platform-dialog :deep(.el-dialog) {
+    width: 95vw !important;
+    margin-top: 5vh !important;
+    margin-bottom: 5vh !important;
+  }
+  
+  .platform-form {
+    label-width: 70px !important;
+  }
+  
+  .platform-form :deep(.el-form-item__label) {
+    font-size: 13px;
+  }
 }
 
 /* 继承父组件的样式 */

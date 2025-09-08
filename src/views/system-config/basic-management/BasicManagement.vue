@@ -51,6 +51,7 @@
       </el-tab-pane>
       <el-tab-pane label="外观设置" name="appearance">
         <LogoManagement
+          ref="logoManagementRef"
           :current-logo="currentLogo"
           :logo-preview="logoPreview"
           :logo-loading="logoLoading"
@@ -424,6 +425,7 @@ const countdown = ref(10)
 const countdownInterval = ref(null)
 
 // LOGO相关
+const logoManagementRef = ref(null)
 const currentLogo = reactive({
   url: '',
   name: '',
@@ -958,7 +960,13 @@ const handleLogoChange = (file) => {
 }
 
 const triggerReselect = () => {
-  // 触发重新选择逻辑
+  // 通过引用触发隐藏上传组件的点击事件
+  if (logoManagementRef.value && logoManagementRef.value.$refs.hiddenLogoUploadRef) {
+    const input = logoManagementRef.value.$refs.hiddenLogoUploadRef.$el.querySelector('input')
+    if (input) {
+      input.click()
+    }
+  }
 }
 
 const uploadLogo = async () => {
@@ -2017,7 +2025,7 @@ onUnmounted(() => {
 
 .basic-management-container {
   padding: 20px;
-  height: calc(100vh - 120px);
+  min-height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
 }
@@ -2037,6 +2045,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   border: none !important;
+  overflow: visible;
 }
 
 .management-tabs :deep(.el-tabs__content) {
@@ -2045,6 +2054,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   border: none !important;
+  overflow: visible;
+  min-height: auto;
 }
 
 .management-tabs :deep(.el-tab-pane) {
@@ -2052,6 +2063,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   border: none !important;
+  overflow: visible;
+  height: auto;
+  min-height: auto;
 }
 
 .management-tabs :deep(.el-tabs__header) {
