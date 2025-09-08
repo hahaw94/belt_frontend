@@ -214,16 +214,108 @@ export default {
 <style scoped>
 /* 继承父组件的科技感样式 */
 
+/* 卡片标题样式 */
+.card-header span {
+  color: #00ffff;
+  font-weight: 600;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  letter-spacing: 1px;
+}
+
+/* 表单标签样式 */
+.config-form :deep(.el-form-item__label) {
+  color: rgba(0, 255, 255, 0.9) !important;
+  font-weight: 500;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
+  font-size: 14px;
+}
+
+/* 单选框文字样式 */
+.config-form :deep(.el-radio__label) {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 400;
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.2);
+}
+
+.config-form :deep(.el-radio__input.is-checked + .el-radio__label) {
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  font-weight: 500;
+}
+
+/* 输入框文字样式 */
+.config-form :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+}
+
+.config-form :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+  text-shadow: none;
+}
+
+/* 日期选择器文字样式 */
+.config-form :deep(.el-date-editor .el-input__inner) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+}
+
+/* 按钮文字增强 */
+.tech-button {
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.4) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px;
+}
+
+.tech-button-secondary {
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3) !important;
+  font-weight: 400 !important;
+}
+
+.tech-button-sm {
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.3) !important;
+  font-weight: 500 !important;
+}
+
+/* 状态标签样式 */
+.config-form :deep(.el-tag) {
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.config-form :deep(.el-tag.el-tag--success) {
+  color: #4ade80 !important;
+  text-shadow: 0 0 4px rgba(74, 222, 128, 0.3);
+}
+
+.config-form :deep(.el-tag.el-tag--warning) {
+  color: #fbbf24 !important;
+  text-shadow: 0 0 4px rgba(251, 191, 36, 0.3);
+}
+
+/* 当前时间显示样式 */
+.config-form span[style*="margin-left"] {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.2);
+  font-weight: 400;
+}
+
 /* 自定义选择框容器 */
 .custom-select-container {
   position: relative;
   width: 100%;
+  display: flex;
+  align-items: center;
+  min-height: 32px;
 }
 
 /* 选择框触发器 */
 .custom-select-trigger {
   width: 100%;
-  height: 40px;
+  height: 32px;
   padding: 0 12px;
   background: rgba(15, 25, 45, 0.8);
   border: 1px solid rgba(0, 255, 255, 0.3);
@@ -236,6 +328,8 @@ export default {
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
   box-shadow: 0 0 8px rgba(0, 255, 255, 0.1);
+  line-height: 32px;
+  box-sizing: border-box;
 }
 
 .custom-select-trigger:hover {

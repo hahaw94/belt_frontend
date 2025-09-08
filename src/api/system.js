@@ -119,25 +119,6 @@ export const systemAPI = {
   },
 
   // ===================== 系统维护 =====================
-  // 获取镜像点列表
-  getSnapshots() {
-    return request.get('/api/v1/system/maintenance/snapshots')
-  },
-
-  // 创建系统镜像点
-  createSnapshot(data) {
-    return request.post('/api/v1/system/maintenance/snapshots', data)
-  },
-
-  // 恢复到指定镜像点
-  restoreSnapshot(id) {
-    return request.post(`/api/v1/system/maintenance/snapshots/${id}/restore`)
-  },
-
-  // 删除镜像点
-  deleteSnapshot(id) {
-    return request.delete(`/api/v1/system/maintenance/snapshots/${id}`)
-  },
 
   // 重启服务
   restartService() {

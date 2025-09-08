@@ -157,4 +157,95 @@ export default {
 }
 
 /* 继承父组件的样式 */
+
+/* 科技感卡片样式 - 按照基础管理主文件样式 */
+.config-card.tech-card {
+  position: relative;
+  z-index: 10;
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  margin-bottom: 20px;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+}
+
+.config-card.tech-card :deep(.el-card__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 16px 20px !important;
+  color: #ffffff !important;
+}
+
+.config-card.tech-card :deep(.el-card__header .card-header) {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
+.config-card.tech-card :deep(.el-card__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  padding: 20px !important;
+  border-radius: 0 0 12px 12px !important;
+  height: auto !important;
+  min-height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* 卡片标题样式 */
+.card-header span {
+  color: #00ffff;
+  font-weight: 600;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  letter-spacing: 1px;
+}
+
+/* 表单标签样式 */
+.config-form :deep(.el-form-item__label) {
+  color: rgba(0, 255, 255, 0.9) !important;
+  font-weight: 500;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
+  font-size: 14px;
+}
+
+/* 输入框文字样式 */
+.config-form :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+}
+
+/* 数字输入框样式 */
+.config-form :deep(.el-input-number .el-input__inner) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+}
+
+/* 按钮文字增强 */
+.tech-button {
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.4) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px;
+}
+
+.tech-button-secondary {
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3) !important;
+  font-weight: 400 !important;
+}
+
+/* 开关说明文字样式 */
+.config-form span[style*="color: #909399"] {
+  color: rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+  font-style: italic;
+}
 </style>

@@ -110,17 +110,9 @@
       </el-tab-pane>
       <el-tab-pane label="系统维护" name="maintenance">
         <MaintenanceManagement
-          :snapshot-list="snapshotList"
           :maintenance-loading="maintenanceLoading"
-          :creating-snapshot="creatingSnapshot"
-          :restoring-snapshot="restoringSnapshot"
-          :deleting-snapshot="deletingSnapshot"
           :restarting-service="restartingService"
           :rebooting-server="rebootingServer"
-          @load-snapshot-list="loadSnapshotList"
-          @show-create-snapshot-dialog="showCreateSnapshotDialog"
-          @restore-snapshot="restoreSnapshot"
-          @confirm-delete-snapshot="confirmDeleteSnapshot"
           @confirm-restart-service="confirmRestartService"
           @confirm-reboot-server="confirmRebootServer"
         />
@@ -217,35 +209,6 @@
     </el-dialog>
 
 
-    <!-- 创建镜像点对话框 -->
-    <el-dialog
-      v-model="createSnapshotDialogVisible"
-      title="创建系统镜像点"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form :model="snapshotFormData" :rules="snapshotRules" ref="snapshotFormRef" label-width="120px">
-        <el-form-item label="镜像点名称" prop="name">
-          <el-input v-model="snapshotFormData.name" placeholder="请输入镜像点名称"></el-input>
-        </el-form-item>
-        <el-form-item label="描述" prop="description">
-          <el-input
-            v-model="snapshotFormData.description"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入镜像点描述"
-          ></el-input>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="createSnapshotDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="createSnapshot" :loading="creatingSnapshot">
-            创建镜像点
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
 
     <!-- 重启确认对话框 -->
     <el-dialog
@@ -301,25 +264,9 @@
           </el-alert>
         </div>
         
-        <!-- 镜像点恢复完成后的提示 -->
-        <div v-if="restartProgress === 100 && restartProgressTitle === '镜像点恢复'" style="text-align: center; margin-top: 20px;">
-          <el-alert title="镜像点恢复完成" type="success" :closable="false">
-            系统已恢复到指定镜像点状态
-          </el-alert>
-        </div>
       </div>
     </el-dialog>
 
-    <!-- 镜像点任务进度弹窗 -->
-    <ProgressModal
-      v-if="snapshotTaskModalVisible"
-      :visible="snapshotTaskModalVisible"
-      :title="snapshotModalTitle"
-      :task-id="snapshotTaskId"
-      :auto-close="snapshotAutoClose"
-      @close="snapshotTaskModalVisible = false"
-      @success="handleSnapshotTaskSuccess"
-    />
   </div>
 </template>
 
@@ -328,8 +275,6 @@ import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
-import { createSystemSnapshot } from '@/api/map'
-import ProgressModal from '@/components/ProgressModal.vue'
 
 // 导入子组件
 import TimeManagement from './components/TimeManagement.vue'
@@ -352,9 +297,6 @@ const setTimeLoading = ref(false)
 const uploading = ref(false)
 const gb28181Loading = ref(false)
 const maintenanceLoading = ref(false)
-const creatingSnapshot = ref(false)
-const restoringSnapshot = ref(false)
-const deletingSnapshot = ref(false)
 const restartingService = ref(false)
 const rebootingServer = ref(false)
 const performingRestart = ref(false)
@@ -462,13 +404,7 @@ const alarmDataConfig = reactive({
   cyclic_cleanup: true
 })
 
-// 系统维护相关
-const snapshotList = ref([])
-const createSnapshotDialogVisible = ref(false)
-const snapshotFormData = reactive({
-  name: '',
-  description: ''
-})
+// 系统维护相关 - 仅保留重启相关
 
 // 重启相关
 const restartDialogVisible = ref(false)
@@ -481,11 +417,6 @@ const restartProgressMessage = ref('')
 const restartProgress = ref(0)
 const serviceRestartCountdown = ref(10)
 
-// 镜像点任务进度相关
-const snapshotTaskModalVisible = ref(false)
-const snapshotModalTitle = ref('')
-const snapshotTaskId = ref('')
-const snapshotAutoClose = ref(true)
 
 // 表单验证规则
 const ntpRules = reactive({
@@ -562,15 +493,6 @@ const alarmDataRules = reactive({
   ]
 })
 
-const snapshotRules = reactive({
-  name: [
-    { required: true, message: '请输入镜像点名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '镜像点名称长度为2-50个字符', trigger: 'blur' }
-  ],
-  description: [
-    { max: 200, message: '描述不能超过200个字符', trigger: 'blur' }
-  ]
-})
 
 // 时间相关方法
 const loadNTPConfig = async () => {
@@ -1193,106 +1115,7 @@ const saveAlarmDataConfig = async () => {
   }
 }
 
-// 系统维护相关方法
-const loadSnapshotList = async () => {
-  maintenanceLoading.value = true
-  try {
-    const response = await systemAPI.getSnapshotList()
-    if (response.success) {
-      snapshotList.value = response.data || []
-    }
-  } catch (error) {
-    console.error('加载镜像点列表失败:', error)
-    ElMessage.error('加载镜像点列表失败')
-  } finally {
-    maintenanceLoading.value = false
-  }
-}
-
-const showCreateSnapshotDialog = () => {
-  resetSnapshotForm()
-  createSnapshotDialogVisible.value = true
-}
-
-const resetSnapshotForm = () => {
-  snapshotFormData.name = ''
-  snapshotFormData.description = ''
-}
-
-const createSnapshot = async () => {
-  creatingSnapshot.value = true
-  try {
-    const response = await createSystemSnapshot(snapshotFormData)
-    if (response.success) {
-      ElMessage.success('镜像点创建任务已启动')
-      createSnapshotDialogVisible.value = false
-      
-      snapshotTaskId.value = response.data.task_id
-      snapshotModalTitle.value = '创建镜像点'
-      snapshotAutoClose.value = true
-      snapshotTaskModalVisible.value = true
-    } else {
-      ElMessage.error(response.message || '创建镜像点失败')
-    }
-  } catch (error) {
-    console.error('创建镜像点失败:', error)
-    ElMessage.error('创建镜像点失败')
-  } finally {
-    creatingSnapshot.value = false
-  }
-}
-
-const restoreSnapshot = async (id) => {
-  try {
-    await ElMessageBox.confirm('确定要恢复到此镜像点吗？这将覆盖当前系统状态。', '确认恢复', {
-      type: 'warning'
-    })
-    
-    restoringSnapshot.value = true
-    const response = await systemAPI.restoreSnapshot(id)
-    if (response.success) {
-      ElMessage.success('镜像点恢复任务已启动')
-      
-      snapshotTaskId.value = response.data.task_id
-      snapshotModalTitle.value = '恢复镜像点'
-      snapshotAutoClose.value = false
-      snapshotTaskModalVisible.value = true
-    } else {
-      ElMessage.error(response.message || '恢复镜像点失败')
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('恢复镜像点失败:', error)
-      ElMessage.error('恢复镜像点失败')
-    }
-  } finally {
-    restoringSnapshot.value = false
-  }
-}
-
-const confirmDeleteSnapshot = async (row) => {
-  try {
-    await ElMessageBox.confirm(`确定要删除镜像点 "${row.name}" 吗？`, '确认删除', {
-      type: 'warning'
-    })
-    
-    deletingSnapshot.value = true
-    const response = await systemAPI.deleteSnapshot(row.id)
-    if (response.success) {
-      ElMessage.success('删除成功')
-      await loadSnapshotList()
-    } else {
-      ElMessage.error(response.message || '删除失败')
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除镜像点失败:', error)
-      ElMessage.error('删除失败')
-    }
-  } finally {
-    deletingSnapshot.value = false
-  }
-}
+// 系统维护相关方法 - 仅保留重启相关
 
 const confirmRestartService = () => {
   restartType.value = 'service'
@@ -1636,9 +1459,6 @@ const updateCurrentTime = () => {
   currentTime.value = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
-const handleSnapshotTaskSuccess = () => {
-  loadSnapshotList()
-}
 
 // 监听路由参数，设置默认选项卡
 watch(() => activeTab.value, (newTab, oldTab) => {
@@ -1668,8 +1488,7 @@ onMounted(async () => {
     loadCurrentLogo(),
     loadGB28181Platforms(),
     loadVideoStorageConfig(),
-    loadAlarmDataConfig(),
-    loadSnapshotList()
+    loadAlarmDataConfig()
   ])
   
   timeInterval.value = setInterval(updateCurrentTime, 1000)

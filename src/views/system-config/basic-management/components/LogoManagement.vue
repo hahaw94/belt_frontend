@@ -177,6 +177,59 @@ export default {
 </script>
 
 <style scoped>
+/* 卡片标题样式 */
+.card-header span {
+  color: #00ffff;
+  font-weight: 600;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  letter-spacing: 1px;
+}
+
+/* 节标题样式 */
+.section-title {
+  color: rgba(0, 255, 255, 0.9) !important;
+  font-weight: 500;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
+  font-size: 16px !important;
+}
+
+/* 按钮文字增强 */
+.tech-button {
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.4) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px;
+}
+
+.tech-button-sm {
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.3) !important;
+  font-weight: 500 !important;
+}
+
+/* 提示文字样式 */
+.tip-item span {
+  color: rgba(255, 255, 255, 0.8) !important;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+}
+
+/* 无数据状态文字 */
+.no-logo span {
+  color: rgba(255, 255, 255, 0.8) !important;
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.2);
+  font-weight: 400;
+}
+
+/* 上传文字样式 */
+.upload-text {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3) !important;
+}
+
+.overlay-text {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.3) !important;
+}
+
 .logo-management-container {
   padding: 20px;
 }

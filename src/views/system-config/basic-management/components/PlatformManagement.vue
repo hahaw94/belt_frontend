@@ -306,14 +306,43 @@ export default {
   flex-direction: column;
 }
 
-/* 卡片自适应高度 */
+/* 科技感卡片样式 - 按照基础管理主文件样式 */
 .config-card.tech-card {
+  position: relative;
+  z-index: 10;
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  margin-bottom: 20px;
   height: auto !important;
   min-height: auto !important;
   max-height: none !important;
 }
 
+.config-card.tech-card :deep(.el-card__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 16px 20px !important;
+  color: #ffffff !important;
+}
+
+.config-card.tech-card :deep(.el-card__header .card-header) {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin: 0 !important;
+  width: 100% !important;
+}
+
 .config-card.tech-card :deep(.el-card__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  padding: 20px !important;
+  border-radius: 0 0 12px 12px !important;
   height: auto !important;
   min-height: auto !important;
   max-height: none !important;
@@ -405,4 +434,223 @@ export default {
 }
 
 /* 继承父组件的样式 */
+
+/* 卡片标题样式 */
+.card-header span {
+  color: #00ffff;
+  font-weight: 600;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  letter-spacing: 1px;
+}
+
+/* 表格文字样式 */
+.platform-name, .platform-ip, .device-id {
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+  font-family: inherit;
+}
+
+/* 表单标签样式 */
+.platform-form :deep(.el-form-item__label) {
+  color: rgba(0, 255, 255, 0.9) !important;
+  font-weight: 500;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
+  font-size: 14px;
+}
+
+/* 输入框文字样式 */
+.platform-form :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+}
+
+.platform-form :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+  text-shadow: none;
+}
+
+/* 按钮文字增强 */
+.tech-button-sm {
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.3) !important;
+  font-weight: 500 !important;
+}
+
+/* 空数据状态文字 */
+.empty-data p {
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.2);
+  font-weight: 400;
+}
+
+/* 表格标签样式 */
+:deep(.el-tag) {
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+:deep(.el-tag.el-tag--success) {
+  color: #4ade80 !important;
+  text-shadow: 0 0 4px rgba(74, 222, 128, 0.3);
+}
+
+:deep(.el-tag.el-tag--warning) {
+  color: #fbbf24 !important;
+  text-shadow: 0 0 4px rgba(251, 191, 36, 0.3);
+}
+
+:deep(.el-tag.el-tag--danger) {
+  color: #f87171 !important;
+  text-shadow: 0 0 4px rgba(248, 113, 113, 0.3);
+}
+
+/* 科技感表格样式 - 完全按照网络管理样式 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+  position: relative !important;
+}
+
+/* 在表格外层添加遮罩来覆盖白边 */
+.tech-table::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  z-index: -1 !important;
+  pointer-events: none !important;
+}
+
+/* 表格整体容器 - 彻底移除所有边框 */
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+  border-collapse: separate !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table::after) {
+  display: none !important;
+}
+
+/* 移除所有可能的白色边框和分隔线 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::before) {
+  display: none !important;
+}
+
+/* 表头样式 */
+.tech-table :deep(.el-table__header-wrapper) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px 12px !important;
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+/* 表格行样式 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  background: transparent !important;
+  padding: 14px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 强制移除所有可能的边框 */
+.tech-table :deep(*) {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(td) {
+  border: none !important;
+}
+
+.tech-table :deep(th) {
+  border: none !important;
+}
+
+/* 移除表格容器本身的边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
 </style>

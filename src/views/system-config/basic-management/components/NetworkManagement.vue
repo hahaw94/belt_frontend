@@ -28,21 +28,18 @@
               {{ getCurrentAccessUrl() }}
               <el-icon class="copy-icon"><CopyDocument /></el-icon>
             </span>
-            <div class="url-description">（浏览器当前地址）</div>
           </el-descriptions-item>
           <el-descriptions-item label="系统配置地址">
             <span class="network-value link-value" @click="copyToClipboard(getBackendConfigUrl())">
               {{ getBackendConfigUrl() }}
               <el-icon class="copy-icon"><CopyDocument /></el-icon>
             </span>
-            <div class="url-description">（系统实际配置）</div>
           </el-descriptions-item>
           <el-descriptions-item label="修改后地址" v-if="hasNetworkChanges()">
             <span class="network-value preview-url" @click="copyToClipboard(getPreviewAccessUrl())">
               {{ getPreviewAccessUrl() }}
               <el-icon class="copy-icon"><CopyDocument /></el-icon>
             </span>
-            <div class="url-description">（修改配置后的地址）</div>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -164,6 +161,133 @@ export default {
 
 <style scoped>
 /* 继承父组件的科技感样式 */
+
+/* 卡片标题样式 */
+.card-header span {
+  color: #00ffff;
+  font-weight: 600;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  letter-spacing: 1px;
+}
+
+/* 表单标签样式 */
+.config-form :deep(.el-form-item__label) {
+  color: rgba(0, 255, 255, 0.9) !important;
+  font-weight: 500;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
+  font-size: 14px;
+}
+
+/* 输入框文字样式 */
+.config-form :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+}
+
+.config-form :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+  text-shadow: none;
+}
+
+/* 按钮文字增强 */
+.tech-button-sm {
+  text-shadow: 0 0 4px rgba(0, 255, 255, 0.3) !important;
+  font-weight: 500 !important;
+}
+
+.tech-button-danger {
+  text-shadow: 0 0 6px rgba(245, 108, 108, 0.4) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px;
+}
+
+.tech-button-secondary {
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3) !important;
+  font-weight: 400 !important;
+}
+
+/* 描述标签样式 */
+:deep(.el-descriptions-item__label) {
+  color: rgba(0, 255, 255, 0.9) !important;
+  font-weight: 500;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
+}
+
+/* 网络值样式优化 */
+.network-value {
+  color: rgba(255, 255, 255, 0.9) !important;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+  font-family: inherit;
+}
+
+/* 描述列表样式调整 - 完全按照版本管理样式 */
+:deep(.el-descriptions) {
+  background: transparent !important;
+}
+
+:deep(.el-descriptions__body) {
+  background: transparent !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 255, 255, 0.1) !important;
+  padding: 16px 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:hover) {
+  background: rgba(0, 255, 255, 0.08) !important;
+  box-shadow: inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__label) {
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+  background: rgba(20, 35, 60, 0.8) !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__content) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500 !important;
+}
+
+/* 确保表格第一行和最后一行的圆角 */
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:first-child) {
+  border-top-left-radius: 8px !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell:nth-child(2)) {
+  border-top-right-radius: 8px !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table tr:last-child .el-descriptions__cell:first-child) {
+  border-bottom-left-radius: 8px !important;
+}
+
+:deep(.el-descriptions__body .el-descriptions__table tr:last-child .el-descriptions__cell:last-child) {
+  border-bottom-right-radius: 8px !important;
+}
 .url-description {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.6);

@@ -19,14 +19,26 @@
           <el-descriptions-item label="应用版本">
             <el-tag type="primary" size="large">{{ versionInfo.version || 'N/A' }}</el-tag>
           </el-descriptions-item>
+          <el-descriptions-item label="构建时间">
+            {{ formatBuildTime(versionInfo.build_time) || 'N/A' }}
+          </el-descriptions-item>
           <el-descriptions-item label="Go版本">
             {{ versionInfo.go_version || 'N/A' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="操作系统">
+            {{ formatOSInfo(versionInfo.os, versionInfo.arch) || 'N/A' }}
           </el-descriptions-item>
           <el-descriptions-item label="MySQL版本">
             {{ versionInfo.mysql || 'N/A' }}
           </el-descriptions-item>
           <el-descriptions-item label="MongoDB版本">
             {{ versionInfo.mongodb || 'N/A' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="Redis版本">
+            {{ versionInfo.redis || 'N/A' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="MinIO状态">
+            {{ versionInfo.minio || 'N/A' }}
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -355,7 +367,11 @@ const versionInfo = reactive({
   build_time: '',     // 后端字段：构建时间
   go_version: '',     // 后端字段：Go运行时版本
   mysql: '',          // 后端字段：MySQL版本
-  mongodb: ''         // 后端字段：MongoDB版本
+  mongodb: '',        // 后端字段：MongoDB版本
+  redis: '',          // 后端字段：Redis版本
+  minio: '',          // 后端字段：MinIO版本/状态
+  os: '',             // 后端字段：操作系统信息
+  arch: ''            // 后端字段：系统架构
 })
 
 // 备份相关
@@ -1088,6 +1104,54 @@ const formatDateTime = (dateString) => {
     minute: '2-digit',
     second: '2-digit'
   })
+}
+
+// 格式化构建时间
+const formatBuildTime = (buildTime) => {
+  if (!buildTime || buildTime === 'unknown') return 'N/A'
+  
+  // 如果是ISO格式时间戳，进行格式化
+  if (buildTime.includes('T') || buildTime.includes('-')) {
+    try {
+      const date = new Date(buildTime)
+      return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch (e) {
+      return buildTime
+    }
+  }
+  
+  return buildTime
+}
+
+// 格式化操作系统信息
+const formatOSInfo = (os, arch) => {
+  if (!os && !arch) return 'N/A'
+  
+  const osNames = {
+    'windows': 'Windows',
+    'linux': 'Linux',
+    'darwin': 'macOS',
+    'freebsd': 'FreeBSD'
+  }
+  
+  const archNames = {
+    'amd64': 'x64',
+    'x86_64': 'x64',
+    '386': 'x86',
+    'arm64': 'ARM64',
+    'arm': 'ARM'
+  }
+  
+  const osName = osNames[os] || os || 'Unknown'
+  const archName = archNames[arch] || arch || 'Unknown'
+  
+  return `${osName} (${archName})`
 }
 
 // ===================== 生命周期钩子 =====================

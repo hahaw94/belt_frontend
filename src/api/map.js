@@ -373,19 +373,5 @@ export function createSystemBackup(data) {
   })
 }
 
-/**
- * 创建系统镜像点（返回任务ID用于进度查询）
- * @param {Object} data - 镜像点数据
- * @param {string} data.name - 镜像点名称
- * @param {string} data.description - 描述（可选）
- * @returns {Promise}
- */
-export function createSystemSnapshot(data) {
-  return request({
-    url: '/api/v1/system/maintenance/snapshots',
-    method: 'post',
-    data
-  })
-}
 
 
