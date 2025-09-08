@@ -192,6 +192,20 @@ export const systemAPI = {
   // 重启服务
   restartSystemService() {
     return request.post('/api/v1/system/restart')
+  },
+
+  // 一键恢复系统
+  oneClickRestore(backupFileName, options = {}) {
+    return request.post('/api/v1/system/restore/one-click', {
+      restore_type: 'one_click',
+      backup_file_name: backupFileName,
+      options: {
+        force_restore: options.force_restore || false,
+        auto_restart: options.auto_restart || false,
+        backup_before_restore: options.backup_before_restore || true,
+        ...options
+      }
+    })
   }
 
   // ===================== 地图管理 (待后端实现) =====================

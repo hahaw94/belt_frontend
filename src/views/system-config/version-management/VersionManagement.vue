@@ -74,10 +74,11 @@
                 {{ formatDateTime(scope.row.create_time) }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="160">
+            <el-table-column label="操作" width="240">
               <template #default="scope">
                 <div class="operation-buttons">
                   <el-button type="primary" size="small" class="tech-button-sm" @click="downloadBackup(scope.row)">下载</el-button>
+                  <el-button type="success" size="small" class="tech-button-success tech-button-sm" @click="oneClickRestore(scope.row)">恢复</el-button>
                   <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="deleteBackup(scope.row)">删除</el-button>
                 </div>
               </template>
@@ -169,18 +170,49 @@
       :close-on-click-modal="false"
     >
       <el-form :model="backupForm" :rules="backupRules" ref="backupFormRef" label-width="120px">
+        <el-form-item label="备份名称" prop="name">
+          <el-input 
+            v-model="backupForm.name" 
+            placeholder="请输入备份名称（最多100个字符）"
+            maxlength="100"
+            show-word-limit
+          />
+        </el-form-item>
+        
+        <el-form-item label="备份描述" prop="description">
+          <el-input 
+            v-model="backupForm.description" 
+            placeholder="请输入备份描述（可选，最多500个字符）"
+            type="textarea"
+            :rows="3"
+            maxlength="500"
+            show-word-limit
+          />
+        </el-form-item>
+
         <el-form-item label="备份类型" prop="type">
           <el-radio-group v-model="backupForm.type">
             <el-radio label="full">全量备份</el-radio>
-            <el-radio label="config">配置备份</el-radio>
-            <el-radio label="database">数据库备份</el-radio>
+            <el-radio label="custom">自定义备份</el-radio>
           </el-radio-group>
         </el-form-item>
         
-        <!-- 存储桶选择 - 仅在全量备份和数据库备份时显示 -->
+        <!-- 自定义备份选项 -->
+        <div v-if="backupForm.type === 'custom'">
+          <el-form-item label="备份内容">
+            <el-checkbox-group v-model="customBackupOptions">
+              <el-checkbox label="config">系统配置</el-checkbox>
+              <el-checkbox label="mysql">MySQL数据库</el-checkbox>
+              <el-checkbox label="mongodb">MongoDB数据库</el-checkbox>
+              <el-checkbox label="minio">MinIO存储</el-checkbox>
+            </el-checkbox-group>
+          </el-form-item>
+        </div>
+        
+        <!-- 存储桶选择 - 仅在全量备份或包含MinIO的自定义备份时显示 -->
         <el-form-item 
           label="存储桶选择" 
-          v-if="backupForm.type === 'full' || backupForm.type === 'database'"
+          v-if="backupForm.type === 'full' || (backupForm.type === 'custom' && customBackupOptions.includes('minio'))"
           prop="minio_buckets"
         >
           <div v-loading="minioBucketsLoading" style="width: 100%;">
@@ -250,15 +282,15 @@
             
             <el-alert 
               v-if="backupForm.type === 'full'"
-              title="提示：全量备份建议选择所有相关的存储桶"
+              title="提示：全量备份建议选择所有相关的存储桶以确保数据完整性"
               type="info" 
               :closable="false" 
               show-icon
               style="margin-top: 15px;"
             />
             <el-alert 
-              v-else-if="backupForm.type === 'database'"
-              title="提示：数据库备份通常只需要选择包含数据的存储桶"
+              v-else-if="backupForm.type === 'custom' && customBackupOptions.includes('minio')"
+              title="提示：选择相关的存储桶进行自定义备份"
               type="info" 
               :closable="false" 
               show-icon
@@ -342,6 +374,78 @@
   </div>
 </template>
 
+<!-- MessageBox 简洁青色主题样式 -->
+<style>
+/* 简洁青色主题 MessageBox 样式 */
+.el-message-box {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.el-message-box__header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+.el-message-box__title {
+  color: #00ffff !important;
+  font-weight: 600 !important;
+}
+
+.el-message-box__content {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.el-message-box__message {
+  color: rgba(255, 255, 255, 0.95) !important;
+  line-height: 1.6 !important;
+  white-space: pre-line !important;
+  word-break: break-word !important;
+}
+
+.el-message-box__btns {
+  background: transparent !important;
+  border-top: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+.el-message-box__btns .el-button--default {
+  background: rgba(128, 128, 128, 0.1) !important;
+  border: 1px solid rgba(128, 128, 128, 0.4) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.el-message-box__btns .el-button--default:hover {
+  background: rgba(128, 128, 128, 0.2) !important;
+  border-color: rgba(128, 128, 128, 0.6) !important;
+  color: #ffffff !important;
+}
+
+.el-message-box__btns .el-button--primary {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: #00ffff !important;
+}
+
+.el-message-box__btns .el-button--primary:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  border-color: rgba(0, 255, 255, 0.6) !important;
+}
+
+.el-message-box__btns .el-button--danger {
+  background: rgba(255, 82, 82, 0.1) !important;
+  border: 1px solid rgba(255, 82, 82, 0.4) !important;
+  color: #ff5252 !important;
+}
+
+.el-message-box__btns .el-button--danger:hover {
+  background: rgba(255, 82, 82, 0.2) !important;
+  border-color: rgba(255, 82, 82, 0.6) !important;
+}
+</style>
+
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -375,7 +479,6 @@ const versionInfo = reactive({
 })
 
 // 备份相关
-const backupType = ref('full')
 const backupList = ref([]) // 初始化为空数组
 const createBackupDialogVisible = ref(false)
 const backupProgressVisible = ref(false)
@@ -384,13 +487,19 @@ const backupStatus = ref('')
 const backupMessage = ref('')
 
 const backupForm = reactive({
-  type: 'full',                // 后端字段：备份类型 (required)
-  minio_buckets: []           // 后端字段：选择的存储桶（仅数据备份和全量备份时使用）
+  type: 'full',                // 后端字段：备份类型 (required: full/custom)
+  name: '',                    // 后端字段：备份名称 (required)
+  description: '',             // 后端字段：备份描述 (optional)
+  minio_buckets: [],           // 后端字段：选择的存储桶（仅全量备份时使用）
+  custom_options: null         // 后端字段：自定义备份选项（仅custom类型时使用）
 })
 
 // 存储桶相关
 const minioBuckets = ref([])
 const minioBucketsLoading = ref(false)
+
+// 自定义备份选项
+const customBackupOptions = ref([])
 
 // 恢复相关
 const restoreUploadRef = ref(null)
@@ -435,6 +544,36 @@ const {
     ElMessage.success('任务执行完成！')
     // 刷新备份列表
     loadBackupList()
+    // 如果是恢复任务完成，提示用户重启服务
+    if (taskProgressTitle.value.includes('恢复')) {
+      ElMessageBox.confirm(
+        '系统恢复已完成！为了确保所有更改生效，建议您重启服务。\n\n是否现在重启服务？',
+        '恢复完成',
+        {
+          type: 'success',
+          confirmButtonText: '重启服务',
+          cancelButtonText: '稍后重启',
+          confirmButtonClass: 'el-button--primary',
+          cancelButtonClass: 'el-button--default',
+          customClass: 'tech-message-box',
+          dangerouslyUseHTMLString: false,
+          lockScroll: true,
+          showClose: true,
+          closeOnClickModal: false,
+          closeOnPressEscape: true
+        }
+      ).then(() => {
+        // 重启服务
+        systemAPI.restartSystemService().then(() => {
+          ElMessage.success('服务重启指令已发送')
+        }).catch(error => {
+          console.error('重启服务失败:', error)
+          ElMessage.error('重启服务失败')
+        })
+      }).catch(() => {
+        ElMessage.info('请记得在适当时机重启服务以确保恢复生效')
+      })
+    }
   },
   onError: (error) => {
     console.error('任务失败:', error)
@@ -474,28 +613,56 @@ watch(backupList, (newValue) => {
 
 // 监控备份类型变化，自动更新存储桶选择
 watch(() => backupForm.type, (newType) => {
-  if (newType === 'config') {
-    // 配置备份不需要存储桶
+  if (newType === 'full') {
+    // 全量备份：默认选择推荐的存储桶
+    if (minioBuckets.value.length > 0) {
+      backupForm.minio_buckets = minioBuckets.value
+        .filter(bucket => bucket.selected)
+        .map(bucket => bucket.name)
+    }
+  } else if (newType === 'custom') {
+    // 自定义备份：清空存储桶选择，等待用户自定义
     backupForm.minio_buckets = []
-  } else if (minioBuckets.value.length > 0) {
-    // 其他类型根据后端默认设置选择
-    backupForm.minio_buckets = minioBuckets.value
-      .filter(bucket => bucket.selected)
-      .map(bucket => bucket.name)
+    customBackupOptions.value = []
   }
 })
+
+// 监控自定义备份选项变化
+watch(customBackupOptions, (newOptions) => {
+  if (backupForm.type === 'custom') {
+    if (!newOptions.includes('minio')) {
+      // 如果不包含MinIO，清空存储桶选择
+      backupForm.minio_buckets = []
+    } else if (minioBuckets.value.length > 0 && backupForm.minio_buckets.length === 0) {
+      // 如果包含MinIO但还没选择存储桶，自动选择推荐的
+      backupForm.minio_buckets = minioBuckets.value
+        .filter(bucket => bucket.selected)
+        .map(bucket => bucket.name)
+    }
+  }
+}, { deep: true })
 
 // ===================== 验证规则 =====================
 
 const backupRules = {
+  name: [
+    { required: true, message: '请输入备份名称', trigger: 'blur' },
+    { min: 1, max: 100, message: '备份名称长度在 1 到 100 个字符', trigger: 'blur' }
+  ],
+  description: [
+    { max: 500, message: '备份描述不能超过 500 个字符', trigger: 'blur' }
+  ],
   type: [
     { required: true, message: '请选择备份类型', trigger: 'change' }
   ],
   minio_buckets: [
     {
       validator: (rule, value, callback) => {
-        // 仅在全量备份和数据库备份时需要验证
-        if (backupForm.type === 'full' || backupForm.type === 'database') {
+        // 仅在全量备份或包含MinIO的自定义备份时需要验证
+        const needsMinIO = backupForm.type === 'full' || 
+                          (backupForm.type === 'custom' && customBackupOptions.value.includes('minio'))
+        
+        if (needsMinIO) {
           if (!value || value.length === 0) {
             callback(new Error('请至少选择一个存储桶'))
           } else {
@@ -670,8 +837,13 @@ const selectRecommendedBuckets = () => {
 
 // 显示创建备份对话框
 const showCreateBackupDialog = async () => {
-  backupForm.type = backupType.value
+  // 重置表单
+  backupForm.type = 'full'
+  backupForm.name = ''
+  backupForm.description = ''
   backupForm.minio_buckets = []
+  backupForm.custom_options = null
+  customBackupOptions.value = []
   
   createBackupDialogVisible.value = true
   
@@ -690,9 +862,8 @@ const createBackup = async () => {
     
     // 设置进度弹窗标题
     const typeNames = {
-      'config': '配置备份',
-      'database': '数据库备份', 
-      'full': '完整备份'
+      'full': '全量备份',
+      'custom': '自定义备份'
     }
     taskProgressTitle.value = `创建${typeNames[backupForm.type]}`
     
@@ -700,13 +871,32 @@ const createBackup = async () => {
     resetProgress()
     showTaskProgressModal.value = true
     
-    console.log('正在创建备份，参数:', backupForm)
+    // 构造请求参数
+    const requestData = {
+      type: backupForm.type,
+      name: backupForm.name,
+      description: backupForm.description || undefined
+    }
+    
+    // 根据备份类型添加相应参数
+    if (backupForm.type === 'full') {
+      requestData.minio_buckets = backupForm.minio_buckets
+    } else if (backupForm.type === 'custom') {
+      requestData.custom_options = {
+        include_config: customBackupOptions.value.includes('config'),
+        database_options: {
+          include_mysql: customBackupOptions.value.includes('mysql'),
+          include_mongodb: customBackupOptions.value.includes('mongodb'),
+          include_minio: customBackupOptions.value.includes('minio'),
+          minio_buckets: customBackupOptions.value.includes('minio') ? backupForm.minio_buckets : []
+        }
+      }
+    }
+    
+    console.log('正在创建备份，参数:', requestData)
     
     // 调用新的备份API（返回任务ID）
-    const response = await createSystemBackup({
-      type: backupForm.type,
-      minio_buckets: backupForm.minio_buckets
-    })
+    const response = await createSystemBackup(requestData)
     
     console.log('备份任务响应:', response)
     
@@ -819,6 +1009,68 @@ const downloadBackup = async (backup) => {
 
 
 
+// 一键恢复
+const oneClickRestore = async (backup) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要恢复备份 "${backup.file_name}" 吗？\n\n此操作将：\n• 覆盖当前系统配置和数据\n• 在恢复前自动创建当前备份\n• 恢复完成后需要手动重启服务\n\n请确保您了解此操作的影响！`,
+      '确认恢复',
+      {
+        type: 'warning',
+        confirmButtonText: '确认恢复',
+        cancelButtonText: '取消',
+        confirmButtonClass: 'el-button--primary',
+        cancelButtonClass: 'el-button--default',
+        customClass: 'tech-message-box',
+        dangerouslyUseHTMLString: false,
+        lockScroll: true,
+        showClose: true,
+        closeOnClickModal: false,
+        closeOnPressEscape: true,
+        beforeClose: (action, instance, done) => {
+          if (action === 'confirm') {
+            instance.confirmButtonLoading = true
+            instance.confirmButtonText = '确认中...'
+            setTimeout(() => {
+              done()
+            }, 300)
+          } else {
+            done()
+          }
+        }
+      }
+    )
+    
+    // 设置进度弹窗
+    taskProgressTitle.value = '一键恢复'
+    resetProgress()
+    showTaskProgressModal.value = true
+    
+    console.log('正在执行一键恢复，备份文件:', backup.file_name)
+    
+    const response = await systemAPI.oneClickRestore(backup.file_name, {
+      force_restore: false,
+      auto_restart: false,
+      backup_before_restore: true
+    })
+    
+    console.log('一键恢复任务响应:', response)
+    
+    if (response.data && response.data.task_id) {
+      // 开始轮询任务进度
+      await startPolling(response.data.task_id)
+    } else {
+      throw new Error('未获取到任务ID')
+    }
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('一键恢复失败:', error)
+      ElMessage.error('一键恢复失败：' + error.message)
+      showTaskProgressModal.value = false
+    }
+  }
+}
+
 // 删除备份
 const deleteBackup = async (backup) => {
   try {
@@ -828,7 +1080,15 @@ const deleteBackup = async (backup) => {
       {
         type: 'warning',
         confirmButtonText: '确认删除',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
+        confirmButtonClass: 'el-button--danger',
+        cancelButtonClass: 'el-button--default',
+        customClass: 'tech-message-box',
+        dangerouslyUseHTMLString: false,
+        lockScroll: true,
+        showClose: true,
+        closeOnClickModal: false,
+        closeOnPressEscape: true
       }
     )
     
@@ -905,7 +1165,15 @@ const executeRestore = async () => {
       {
         type: 'warning',
         confirmButtonText: '确认恢复',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
+        confirmButtonClass: 'el-button--primary',
+        cancelButtonClass: 'el-button--default',
+        customClass: 'tech-message-box',
+        dangerouslyUseHTMLString: false,
+        lockScroll: true,
+        showClose: true,
+        closeOnClickModal: false,
+        closeOnPressEscape: true
       }
     )
     
@@ -1007,7 +1275,15 @@ const executeUpgrade = async () => {
       {
         type: 'warning',
         confirmButtonText: '确认升级',
-        cancelButtonText: '取消'
+        cancelButtonText: '取消',
+        confirmButtonClass: 'el-button--primary',
+        cancelButtonClass: 'el-button--default',
+        customClass: 'tech-message-box',
+        dangerouslyUseHTMLString: false,
+        lockScroll: true,
+        showClose: true,
+        closeOnClickModal: false,
+        closeOnPressEscape: true
       }
     )
     
@@ -1710,13 +1986,15 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: nowrap;
 }
 
 .operation-buttons .el-button {
   margin: 0 !important;
   flex-shrink: 0;
+  min-width: 56px;
+  padding: 6px 12px !important;
 }
 
 .version-management-container {
@@ -2159,6 +2437,286 @@ onMounted(async () => {
   color: rgba(255, 255, 255, 0.8) !important;
 }
 
+/* ==================== 科技感消息弹窗样式 ==================== */
+
+/* 科技感 MessageBox 样式 - 使用更高的优先级 */
+:deep(.el-message-box),
+.el-message-box {
+  background: rgba(0, 20, 40, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(0, 255, 255, 0.2),
+    inset 0 1px 0 rgba(0, 255, 255, 0.1) !important;
+  min-width: 420px !important;
+  max-width: 600px !important;
+}
+
+/* MessageBox 头部样式 */
+:deep(.el-message-box__header),
+.el-message-box__header {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  padding: 20px 20px 15px 20px !important;
+}
+
+:deep(.el-message-box__title),
+.el-message-box__title {
+  color: #00ffff !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* MessageBox 关闭按钮样式 */
+:deep(.el-message-box__headerbtn),
+.el-message-box__headerbtn {
+  color: rgba(255, 255, 255, 0.6) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-message-box__headerbtn:hover),
+.el-message-box__headerbtn:hover {
+  color: #00ffff !important;
+  background: rgba(0, 255, 255, 0.2) !important;
+  border-color: rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  transform: scale(1.05) !important;
+}
+
+:deep(.el-message-box__close) {
+  font-size: 16px !important;
+}
+
+/* MessageBox 内容区域样式 */
+:deep(.el-message-box__content),
+.el-message-box__content {
+  background: transparent !important;
+  padding: 20px !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+:deep(.el-message-box__container) {
+  position: relative !important;
+}
+
+/* MessageBox 图标样式 */
+:deep(.el-message-box__status) {
+  font-size: 28px !important;
+  margin-right: 16px !important;
+  filter: drop-shadow(0 0 8px currentColor) !important;
+}
+
+:deep(.el-message-box__status.el-icon-warning) {
+  color: #ffaa00 !important;
+}
+
+:deep(.el-message-box__status.el-icon-success) {
+  color: #67c23a !important;
+}
+
+:deep(.el-message-box__status.el-icon-error) {
+  color: #ff5252 !important;
+}
+
+:deep(.el-message-box__status.el-icon-info) {
+  color: #409eff !important;
+}
+
+/* MessageBox 消息文本样式 */
+:deep(.el-message-box__message),
+.el-message-box__message {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 15px !important;
+  line-height: 1.8 !important;
+  margin: 0 !important;
+  word-break: break-word !important;
+  white-space: pre-line !important;
+}
+
+/* MessageBox 按钮区域样式 */
+:deep(.el-message-box__btns),
+.el-message-box__btns {
+  background: transparent !important;
+  border-top: 1px solid rgba(0, 255, 255, 0.1) !important;
+  padding: 20px !important;
+  text-align: right !important;
+}
+
+/* MessageBox 按钮样式 */
+:deep(.el-message-box__btns .el-button),
+.el-message-box__btns .el-button {
+  margin-left: 12px !important;
+  padding: 10px 20px !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.5px !important;
+  transition: all 0.3s ease !important;
+  min-width: 100px !important;
+}
+
+/* 取消按钮样式 */
+:deep(.el-message-box__btns .el-button--default),
+.el-message-box__btns .el-button--default {
+  background: rgba(128, 128, 128, 0.1) !important;
+  border: 1px solid rgba(128, 128, 128, 0.4) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 0 8px rgba(128, 128, 128, 0.1) !important;
+}
+
+:deep(.el-message-box__btns .el-button--default:hover),
+.el-message-box__btns .el-button--default:hover {
+  background: rgba(128, 128, 128, 0.2) !important;
+  border-color: rgba(128, 128, 128, 0.6) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(128, 128, 128, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 确认按钮样式 */
+:deep(.el-message-box__btns .el-button--primary),
+.el-message-box__btns .el-button--primary {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: #00ffff !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-message-box__btns .el-button--primary:hover),
+.el-message-box__btns .el-button--primary:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 危险按钮样式（删除等操作） */
+:deep(.el-message-box__btns .el-button--danger),
+.el-message-box__btns .el-button--danger {
+  background: rgba(255, 82, 82, 0.1) !important;
+  border: 1px solid rgba(255, 82, 82, 0.4) !important;
+  color: #ff5252 !important;
+  box-shadow: 0 0 10px rgba(255, 82, 82, 0.2) !important;
+}
+
+:deep(.el-message-box__btns .el-button--danger:hover),
+.el-message-box__btns .el-button--danger:hover {
+  background: rgba(255, 82, 82, 0.2) !important;
+  border-color: rgba(255, 82, 82, 0.6) !important;
+  box-shadow: 0 0 20px rgba(255, 82, 82, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 警告类型 MessageBox 特殊效果 */
+:deep(.el-message-box--warning) {
+  border-color: rgba(255, 165, 0, 0.4) !important;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 165, 0, 0.2),
+    inset 0 1px 0 rgba(255, 165, 0, 0.1) !important;
+}
+
+:deep(.el-message-box--warning .el-message-box__title) {
+  color: #ffaa00 !important;
+  text-shadow: 0 0 10px rgba(255, 170, 0, 0.5) !important;
+}
+
+/* 成功类型 MessageBox 特殊效果 */
+:deep(.el-message-box--success) {
+  border-color: rgba(103, 194, 58, 0.4) !important;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(103, 194, 58, 0.2),
+    inset 0 1px 0 rgba(103, 194, 58, 0.1) !important;
+}
+
+:deep(.el-message-box--success .el-message-box__title) {
+  color: #67c23a !important;
+  text-shadow: 0 0 10px rgba(103, 194, 58, 0.5) !important;
+}
+
+/* MessageBox 遮罩层样式 */
+:deep(.el-overlay) {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* 自定义科技感 MessageBox 类 */
+:deep(.tech-message-box) {
+  position: relative !important;
+}
+
+:deep(.tech-message-box::before) {
+  content: '' !important;
+  position: absolute !important;
+  top: -2px !important;
+  left: -2px !important;
+  right: -2px !important;
+  bottom: -2px !important;
+  background: linear-gradient(45deg, 
+    transparent, 
+    rgba(0, 255, 255, 0.3), 
+    transparent, 
+    rgba(0, 255, 255, 0.3), 
+    transparent) !important;
+  border-radius: 14px !important;
+  z-index: -1 !important;
+  animation: borderGlow 3s linear infinite !important;
+}
+
+@keyframes borderGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* MessageBox 动画增强 */
+:deep(.el-message-box) {
+  animation: messageBoxFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+@keyframes messageBoxFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  :deep(.el-message-box) {
+    min-width: 320px !important;
+    max-width: 90vw !important;
+    margin: 20px !important;
+  }
+  
+  :deep(.el-message-box__content) {
+    padding: 15px !important;
+  }
+  
+  :deep(.el-message-box__btns) {
+    padding: 15px !important;
+    text-align: center !important;
+  }
+  
+  :deep(.el-message-box__btns .el-button) {
+    margin: 5px !important;
+    width: 100px !important;
+  }
+}
+
 /* ==================== 科技感按钮样式扩展 ==================== */
 
 /* 科技感主要按钮 */
@@ -2235,6 +2793,25 @@ onMounted(async () => {
   box-shadow: 0 0 20px rgba(64, 158, 255, 0.4) !important;
   transform: translateY(-1px) !important;
   border-color: rgba(64, 158, 255, 0.6) !important;
+}
+
+/* 科技感成功按钮 */
+.tech-button-success {
+  border: 1px solid rgba(103, 194, 58, 0.4) !important;
+  background: rgba(103, 194, 58, 0.1) !important;
+  color: #67c23a !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(103, 194, 58, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+}
+
+.tech-button-success:hover {
+  background: rgba(103, 194, 58, 0.2) !important;
+  box-shadow: 0 0 20px rgba(103, 194, 58, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(103, 194, 58, 0.6) !important;
 }
 
 /* 便捷操作区域背景优化 */
