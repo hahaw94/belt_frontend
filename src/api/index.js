@@ -1,9 +1,21 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+// 获取当前页面的baseURL，用于API请求
+const getCurrentBaseURL = () => {
+  if (process.env.NODE_ENV === 'development') {
+    // 开发环境下使用空字符串，依赖代理配置
+    return ''
+  }
+  
+  // 在生产环境中，使用当前浏览器的地址作为baseURL
+  const currentOrigin = window.location.origin
+  return process.env.VUE_APP_API_BASE_URL || currentOrigin
+}
+
 // 创建axios实例
 const request = axios.create({
-  baseURL: process.env.NODE_ENV === 'development' ? '' : (process.env.VUE_APP_API_BASE_URL || 'http://localhost:8080'),
+  baseURL: getCurrentBaseURL(),
   timeout: 10000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json;charset=UTF-8'
@@ -197,6 +209,32 @@ export const api = {
       responseType: 'blob' // 重要：设置响应类型为blob
     })
   }
+}
+
+// 动态更新baseURL的方法
+export const updateBaseURL = (newPort) => {
+  if (process.env.NODE_ENV === 'development') {
+    // 开发环境下，API请求通过代理，需要重启开发服务器才能生效
+    console.warn('开发环境检测到端口变更，需要重启前端开发服务器才能生效')
+    ElMessage.warning('开发环境下端口已修改，请重启前端开发服务器 (npm run serve) 以应用新的代理配置')
+    return ''
+  }
+  
+  // 生产环境下构建新的baseURL
+  const protocol = window.location.protocol
+  const hostname = window.location.hostname
+  const newBaseURL = `${protocol}//${hostname}:${newPort}`
+  
+  // 更新axios实例的baseURL
+  request.defaults.baseURL = newBaseURL
+  
+  console.log('API baseURL已更新为:', newBaseURL)
+  return newBaseURL
+}
+
+// 获取当前baseURL的方法
+export const getAxiosBaseURL = () => {
+  return request.defaults.baseURL
 }
 
 // 默认导出request实例，以便其他地方使用

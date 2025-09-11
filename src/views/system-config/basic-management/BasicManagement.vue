@@ -314,6 +314,7 @@ import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
+import { updateBaseURL } from '@/api/index'
 
 // 导入子组件
 import TimeManagement from './components/TimeManagement.vue'
@@ -1327,6 +1328,9 @@ const changePort = async () => {
     
     ElMessage.success('端口修改成功，系统将使用新端口提供服务')
     
+    // 立即更新API请求的baseURL到新端口
+    updateBaseURL(newPort.value)
+    
     // 更新当前配置和表单中的端口
     currentNetworkConfig.port = newPort.value
     networkConfig.port = newPort.value
@@ -1334,22 +1338,24 @@ const changePort = async () => {
     // 关闭对话框
     portChangeDialogVisible.value = false
     
-    // 如果端口变更，提示用户使用新地址访问
-    if (window.location.port && window.location.port !== newPort.value) {
-      const newUrl = `${window.location.protocol}//${window.location.hostname}:${newPort.value}${window.location.pathname}`
+    // 检查端口是否真的发生了变化，如果是则提示用户使用新地址访问
+    const currentPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80')
+    if (currentPort !== newPort.value) {
+      const newUrl = `${window.location.protocol}//${window.location.hostname}:${newPort.value}${window.location.pathname}${window.location.search}${window.location.hash}`
       
       ElMessageBox.confirm(
-        `端口已修改为 ${newPort.value}，需要使用新地址访问系统。是否立即跳转到新地址？`,
+        `端口已修改为 ${newPort.value}，当前页面的后续API请求将使用新端口。建议跳转到新地址以确保完整功能正常。是否立即跳转？`,
         '端口已修改',
         {
           confirmButtonText: '立即跳转',
-          cancelButtonText: '稍后手动访问',
+          cancelButtonText: '继续使用当前页面',
           type: 'warning'
         }
       ).then(() => {
         window.location.href = newUrl
       }).catch(() => {
-        // 用户选择稍后手动访问，不做任何操作
+        // 用户选择继续使用当前页面，API请求已经更新到新端口，基本功能可以正常使用
+        ElMessage.info('API请求已更新到新端口，但建议稍后手动访问新地址以确保完整功能')
       })
     }
   } catch (error) {
