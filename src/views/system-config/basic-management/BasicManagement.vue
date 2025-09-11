@@ -299,7 +299,7 @@
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="portChangeDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="changePort" :loading="portChanging">
+          <el-button type="primary" @click="changePort" :loading="portChanging" :disabled="!isPortChanged">
             确认修改
           </el-button>
         </span>
@@ -310,7 +310,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
@@ -410,6 +410,12 @@ const countdownInterval = ref(null)
 const portChangeDialogVisible = ref(false)
 const newPort = ref('')
 const portChanging = ref(false)
+
+// 检查端口是否发生变化的计算属性
+const isPortChanged = computed(() => {
+  const currentPort = currentNetworkConfig.port || '8080'
+  return newPort.value && newPort.value !== currentPort.toString()
+})
 
 // LOGO相关
 const logoManagementRef = ref(null)
@@ -1315,6 +1321,12 @@ const showPortChangeDialog = () => {
 }
 
 const changePort = async () => {
+  // 检查端口是否真的发生了变化
+  if (!isPortChanged.value) {
+    ElMessage.info('端口未发生变化，无需修改')
+    return
+  }
+
   // 表单验证
   try {
     portChanging.value = true
@@ -1337,27 +1349,6 @@ const changePort = async () => {
     
     // 关闭对话框
     portChangeDialogVisible.value = false
-    
-    // 检查端口是否真的发生了变化，如果是则提示用户使用新地址访问
-    const currentPort = window.location.port || (window.location.protocol === 'https:' ? '443' : '80')
-    if (currentPort !== newPort.value) {
-      const newUrl = `${window.location.protocol}//${window.location.hostname}:${newPort.value}${window.location.pathname}${window.location.search}${window.location.hash}`
-      
-      ElMessageBox.confirm(
-        `端口已修改为 ${newPort.value}，当前页面的后续API请求将使用新端口。建议跳转到新地址以确保完整功能正常。是否立即跳转？`,
-        '端口已修改',
-        {
-          confirmButtonText: '立即跳转',
-          cancelButtonText: '继续使用当前页面',
-          type: 'warning'
-        }
-      ).then(() => {
-        window.location.href = newUrl
-      }).catch(() => {
-        // 用户选择继续使用当前页面，API请求已经更新到新端口，基本功能可以正常使用
-        ElMessage.info('API请求已更新到新端口，但建议稍后手动访问新地址以确保完整功能')
-      })
-    }
   } catch (error) {
     console.error('修改端口失败:', error)
     ElMessage.error('修改端口失败')
@@ -2628,6 +2619,142 @@ onUnmounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 16px;
+}
+
+/* 端口修改对话框样式 */
+:deep(.el-dialog) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 15px !important;
+  box-shadow: 
+    0 0 50px rgba(0, 255, 255, 0.2),
+    inset 0 0 50px rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.el-dialog__header) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 15px 15px 0 0 !important;
+}
+
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+  font-weight: bold !important;
+}
+
+:deep(.el-dialog__body) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 端口修改表单样式 */
+.port-change-content {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.port-change-content :deep(.el-form-item__label) {
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+.port-change-content :deep(.el-input__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  background: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.port-change-content :deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.port-change-content :deep(.el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.port-change-content :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.port-change-content :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 当前端口显示样式 */
+.port-change-content span {
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 警告提示样式 */
+.port-change-content :deep(.el-alert) {
+  background: rgba(230, 162, 60, 0.15) !important;
+  border: 1px solid rgba(230, 162, 60, 0.3) !important;
+  border-radius: 6px !important;
+}
+
+.port-change-content :deep(.el-alert__content) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.port-change-content :deep(.el-alert__icon) {
+  color: rgba(230, 162, 60, 0.8) !important;
+}
+
+/* 对话框按钮样式 */
+:deep(.dialog-footer .el-button) {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background-color: rgba(45, 55, 75, 0.8) !important;
+  background: rgba(45, 55, 75, 0.8) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.dialog-footer .el-button:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  background: rgba(65, 75, 95, 0.9) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2) !important;
+  transform: translateY(-1px) !important;
+}
+
+:deep(.dialog-footer .el-button--primary) {
+  background: rgba(0, 150, 200, 0.8) !important;
+  border-color: rgba(0, 200, 255, 0.6) !important;
+  color: #ffffff !important;
+}
+
+:deep(.dialog-footer .el-button--primary:hover) {
+  background: rgba(0, 180, 230, 0.9) !important;
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4) !important;
+}
+
+/* 禁用状态的按钮样式 */
+:deep(.dialog-footer .el-button--primary.is-disabled),
+:deep(.dialog-footer .el-button--primary:disabled) {
+  background: rgba(100, 100, 100, 0.3) !important;
+  border-color: rgba(150, 150, 150, 0.3) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+:deep(.dialog-footer .el-button--primary.is-disabled:hover),
+:deep(.dialog-footer .el-button--primary:disabled:hover) {
+  background: rgba(100, 100, 100, 0.3) !important;
+  border-color: rgba(150, 150, 150, 0.3) !important;
+  color: rgba(255, 255, 255, 0.4) !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .warning-content h3 {
