@@ -41,6 +41,7 @@
           :network-loading="networkLoading"
           @load-network-config="loadNetworkConfig"
           @show-network-change-dialog="showNetworkChangeDialog"
+          @show-port-change-dialog="showPortChangeDialog"
           @reset-network-form="resetNetworkForm"
           @copy-to-clipboard="copyToClipboard"
           @update-ip-address="updateIpAddress"
@@ -267,6 +268,44 @@
       </div>
     </el-dialog>
 
+    <!-- 端口修改对话框 -->
+    <el-dialog
+      v-model="portChangeDialogVisible"
+      title="修改服务端口"
+      width="400px"
+      :close-on-click-modal="false"
+    >
+      <div class="port-change-content">
+        <el-alert
+          type="warning"
+          :closable="false"
+          style="margin-bottom: 20px;"
+        >
+          <template #default>
+            <p>修改端口后，系统将使用新端口提供服务，可能需要重新访问。</p>
+          </template>
+        </el-alert>
+        
+        <el-form :model="{ port: newPort }" :rules="portRules" ref="portFormRef" label-width="100px">
+          <el-form-item label="当前端口">
+            <span>{{ currentNetworkConfig.port || '8080' }}</span>
+          </el-form-item>
+          <el-form-item label="新端口" prop="port">
+            <el-input v-model="newPort" placeholder="请输入新端口号"></el-input>
+          </el-form-item>
+        </el-form>
+      </div>
+      
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="portChangeDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="changePort" :loading="portChanging">
+            确认修改
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
   </div>
 </template>
 
@@ -365,6 +404,11 @@ const networkChangeProgress = ref(0)
 const networkChangeMessage = ref('')
 const countdown = ref(10)
 const countdownInterval = ref(null)
+
+// 端口修改相关
+const portChangeDialogVisible = ref(false)
+const newPort = ref('')
+const portChanging = ref(false)
 
 // LOGO相关
 const logoManagementRef = ref(null)
@@ -490,6 +534,26 @@ const alarmDataRules = reactive({
   max_records: [
     { required: true, message: '请输入最大记录数', trigger: 'blur' },
     { type: 'number', min: 1000, max: 10000000, message: '记录数范围为1000-10000000条', trigger: 'change' }
+  ]
+})
+
+const portRules = reactive({
+  port: [
+    { required: true, message: '请输入服务端口', trigger: 'blur' },
+    { pattern: /^[1-9]\d{0,4}$/, message: '端口号应为1-65535之间的数字', trigger: 'blur' },
+    { 
+      validator: (rule, value, callback) => {
+        const port = parseInt(value)
+        if (port < 1 || port > 65535) {
+          callback(new Error('端口号必须在1-65535范围内'))
+        } else if (port < 1024) {
+          callback(new Error('建议使用1024以上的端口号'))
+        } else {
+          callback()
+        }
+      }, 
+      trigger: 'blur' 
+    }
   ]
 })
 
@@ -1244,6 +1308,58 @@ const updatePort = (value) => {
   networkConfig.port = value
 }
 
+const showPortChangeDialog = () => {
+  portChangeDialogVisible.value = true
+  newPort.value = currentNetworkConfig.port || '8080'
+}
+
+const changePort = async () => {
+  // 表单验证
+  try {
+    portChanging.value = true
+    
+    // 调用端口修改API
+    const portResponse = await systemAPI.setPortConfig({ port: newPort.value })
+    if (portResponse.code !== 200 && !portResponse.success) {
+      ElMessage.error(portResponse.message || '端口配置修改失败')
+      return
+    }
+    
+    ElMessage.success('端口修改成功，系统将使用新端口提供服务')
+    
+    // 更新当前配置和表单中的端口
+    currentNetworkConfig.port = newPort.value
+    networkConfig.port = newPort.value
+    
+    // 关闭对话框
+    portChangeDialogVisible.value = false
+    
+    // 如果端口变更，提示用户使用新地址访问
+    if (window.location.port && window.location.port !== newPort.value) {
+      const newUrl = `${window.location.protocol}//${window.location.hostname}:${newPort.value}${window.location.pathname}`
+      
+      ElMessageBox.confirm(
+        `端口已修改为 ${newPort.value}，需要使用新地址访问系统。是否立即跳转到新地址？`,
+        '端口已修改',
+        {
+          confirmButtonText: '立即跳转',
+          cancelButtonText: '稍后手动访问',
+          type: 'warning'
+        }
+      ).then(() => {
+        window.location.href = newUrl
+      }).catch(() => {
+        // 用户选择稍后手动访问，不做任何操作
+      })
+    }
+  } catch (error) {
+    console.error('修改端口失败:', error)
+    ElMessage.error('修改端口失败')
+  } finally {
+    portChanging.value = false
+  }
+}
+
 // GB28181平台更新方法
 const updateDialogVisible = (value) => {
   gb28181DialogVisible.value = value
@@ -1337,10 +1453,7 @@ const changeNetworkConfig = async () => {
   networkChangeDialogVisible.value = false
   
   try {
-    // 检查是否需要修改端口
-    const needPortChange = networkConfig.port !== currentNetworkConfig.port
-    
-    // 先修改网络配置（IP、子网掩码、网关）
+    // 修改网络配置（IP、子网掩码、网关）
     const networkResponse = await systemAPI.setNetworkConfig({
       ip_address: networkConfig.ip_address,
       subnet_mask: networkConfig.subnet_mask,
@@ -1352,16 +1465,7 @@ const changeNetworkConfig = async () => {
       return
     }
     
-    // 如果需要修改端口，调用端口修改API
-    if (needPortChange) {
-      const portResponse = await systemAPI.setPortConfig({ port: networkConfig.port })
-      if (portResponse.code !== 200 && !portResponse.success) {
-        ElMessage.error(portResponse.message || '端口配置修改失败')
-        return
-      }
-    }
-    
-    // 所有修改成功，显示进度
+    // 修改成功，显示进度
     networkChangeProgressVisible.value = true
     startNetworkChangeProgress()
     

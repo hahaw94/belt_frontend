@@ -22,6 +22,7 @@
           </el-descriptions-item>
           <el-descriptions-item label="服务端口">
             <span class="network-value">{{ currentNetworkConfig.port || '获取中...' }}</span>
+            <el-button type="primary" size="small" class="tech-button-sm ml-10" @click="showPortChangeDialog" :loading="networkLoading">修改端口</el-button>
           </el-descriptions-item>
           <el-descriptions-item label="当前访问地址">
             <span class="network-value link-value" @click="copyToClipboard(getCurrentAccessUrl())">
@@ -46,24 +47,19 @@
 
       <el-form :model="networkConfig" :rules="networkRules" ref="networkFormRef" label-width="120px" class="config-form" v-loading="networkLoading">
         <el-row :gutter="16">
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="IP地址" prop="ip_address">
               <el-input :model-value="networkConfig.ip_address" @update:model-value="updateIpAddress" placeholder="请输入IP地址"></el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="子网掩码" prop="subnet_mask">
               <el-input :model-value="networkConfig.subnet_mask" @update:model-value="updateSubnetMask" placeholder="请输入子网掩码"></el-input>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="8">
             <el-form-item label="网关" prop="gateway">
               <el-input :model-value="networkConfig.gateway" @update:model-value="updateGateway" placeholder="请输入网关地址"></el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="服务端口" prop="port">
-              <el-input :model-value="networkConfig.port" @update:model-value="updatePort" placeholder="请输入服务端口"></el-input>
             </el-form-item>
           </el-col>
         </el-row>
@@ -89,7 +85,7 @@ export default {
     CopyDocument,
     Refresh // eslint-disable-line vue/no-unused-components
   },
-  emits: ['load-network-config', 'show-network-change-dialog', 'reset-network-form', 'copy-to-clipboard', 'update-ip-address', 'update-subnet-mask', 'update-gateway', 'update-port'],
+  emits: ['load-network-config', 'show-network-change-dialog', 'reset-network-form', 'copy-to-clipboard', 'update-ip-address', 'update-subnet-mask', 'update-gateway', 'update-port', 'show-port-change-dialog'],
   props: {
     networkConfig: {
       type: Object,
@@ -154,6 +150,9 @@ export default {
     },
     updatePort(value) {
       this.$emit('update-port', value)
+    },
+    showPortChangeDialog() {
+      this.$emit('show-port-change-dialog')
     }
   }
 }
@@ -322,5 +321,9 @@ export default {
 .preview-url {
   color: #409EFF;
   font-weight: 500;
+}
+
+.ml-10 {
+  margin-left: 10px;
 }
 </style>
