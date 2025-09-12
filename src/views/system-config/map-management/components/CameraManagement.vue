@@ -459,7 +459,7 @@ export default {
           const data = {
             camera_name: dialogForm.camera_name,
             ip_address: dialogForm.ip_address,
-            port: parseInt(dialogForm.port),
+            port: parseInt(dialogForm.port, 10),
             protocol: dialogForm.protocol,
             username: dialogForm.username || null,
             password: dialogForm.password || null,
@@ -481,7 +481,7 @@ export default {
             camera_code: dialogForm.camera_code,
             camera_name: dialogForm.camera_name,
             ip_address: dialogForm.ip_address,
-            port: parseInt(dialogForm.port),
+            port: parseInt(dialogForm.port, 10),
             protocol: dialogForm.protocol,
             username: dialogForm.username || null,
             password: dialogForm.password || null,

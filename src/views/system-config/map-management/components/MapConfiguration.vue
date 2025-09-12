@@ -861,25 +861,41 @@ export default {
       if (!selectedUnboundCameras.value || selectedUnboundCameras.value.length === 0 || !selectedLayerId.value) return
       
       try {
+        // 打印调试信息
+        console.log('准备添加相机到图层:', {
+          layerId: selectedLayerId.value,
+          layerIdType: typeof selectedLayerId.value,
+          selectedCameras: selectedUnboundCameras.value.map(c => ({
+            id: c.id,
+            idType: typeof c.id,
+            name: c.camera_name
+          }))
+        })
+        
         // 批量添加相机
         const promises = selectedUnboundCameras.value.map((camera, index) => {
           // 为多个相机设置不同的默认位置，避免重叠
           const centerX = Math.floor(canvasSize.width / 2) + (index * 50) - (selectedUnboundCameras.value.length * 25)
           const centerY = Math.floor(canvasSize.height / 2) + (index * 30) - (selectedUnboundCameras.value.length * 15)
           
-          return addCameraToLayer(selectedLayerId.value, {
-            camera_id: camera.id,
+          const payload = {
+            camera_id: parseInt(camera.id, 10), // 确保传递正确的整型相机ID
             position_x: Math.max(0, Math.min(centerX, canvasSize.width - 50)),
             position_y: Math.max(0, Math.min(centerY, canvasSize.height - 50)),
+            camera_icon: null,
             camera_angle: 0
-          })
+          }
+          
+          console.log(`添加相机 ${camera.camera_name} 的请求参数:`, payload)
+          
+          return addCameraToLayer(parseInt(selectedLayerId.value, 10), payload)
         })
         
         await Promise.all(promises)
         
         ElMessage.success(`成功添加 ${selectedUnboundCameras.value.length} 个相机`)
         addCameraVisible.value = false
-        await loadLayerCameras(selectedLayerId.value)
+        await loadLayerCameras(parseInt(selectedLayerId.value, 10))
         
         // 发出全局事件，通知其他组件刷新相机数据
         window.dispatchEvent(new CustomEvent('camera-data-updated', {
@@ -890,7 +906,25 @@ export default {
           }
         }))
       } catch (error) {
-        ElMessage.error('添加相机失败: ' + (error.message || '未知错误'))
+        console.error('添加相机失败详细信息:', {
+          error: error,
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          layerId: selectedLayerId.value,
+          selectedCameras: selectedUnboundCameras.value.map(c => ({ id: c.id, name: c.camera_name }))
+        })
+        
+        let errorMessage = '添加相机失败'
+        if (error.response?.data?.message) {
+          errorMessage += ': ' + error.response.data.message
+        } else if (error.response?.status === 400) {
+          errorMessage += ': 请求参数错误，请检查相机信息是否正确'
+        } else if (error.message) {
+          errorMessage += ': ' + error.message
+        }
+        
+        ElMessage.error(errorMessage)
       }
     }
 
@@ -909,15 +943,15 @@ export default {
       if (!selectedCamera.value || !selectedLayerId.value) return
       
       try {
-        await updateCameraPosition(selectedLayerId.value, selectedCamera.value.camera_id, {
+        await updateCameraPosition(parseInt(selectedLayerId.value, 10), selectedCamera.value.camera_id, {
           position_x: positionForm.position_x,
           position_y: positionForm.position_y,
-          camera_angle: positionForm.camera_angle
+          camera_angle: positionForm.camera_angle || null
         })
         
         ElMessage.success('位置更新成功')
         editPositionVisible.value = false
-        await loadLayerCameras(selectedLayerId.value)
+        await loadLayerCameras(parseInt(selectedLayerId.value, 10))
         hasChanges.value = false
       } catch (error) {
         ElMessage.error('更新位置失败: ' + (error.message || '未知错误'))
@@ -946,14 +980,15 @@ export default {
           return {
             camera_id: cameraId,
             position_x: positionX,
-            position_y: positionY
+            position_y: positionY,
+            camera_angle: camera.camera_angle || null
           }
         })
         
         console.log('保存位置数据:', { cameras })
         
         // 使用批量更新接口
-        await batchUpdateCameraPositions(parseInt(selectedLayerId.value), { cameras })
+        await batchUpdateCameraPositions(parseInt(selectedLayerId.value, 10), { cameras })
         
         ElMessage.success('位置保存成功')
         hasChanges.value = false
@@ -988,9 +1023,9 @@ export default {
         }
       ).then(async () => {
         try {
-          await removeCameraFromLayer(selectedLayerId.value, selectedCamera.value.camera_id)
+          await removeCameraFromLayer(parseInt(selectedLayerId.value, 10), selectedCamera.value.camera_id)
           ElMessage.success('相机移除成功')
-          await loadLayerCameras(selectedLayerId.value)
+          await loadLayerCameras(parseInt(selectedLayerId.value, 10))
           clearSelection()
           
           // 发出全局事件，通知其他组件刷新相机数据
@@ -1010,7 +1045,7 @@ export default {
     // 刷新数据
     const refreshData = () => {
       if (selectedLayerId.value) {
-        loadLayerCameras(selectedLayerId.value)
+        loadLayerCameras(parseInt(selectedLayerId.value, 10))
       }
       loadLayers()
     }

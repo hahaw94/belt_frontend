@@ -363,7 +363,9 @@ export default {
         }
 
         if (createBackupForm.backup_type === 'selected') {
-          data.layer_ids = createBackupForm.layer_ids
+          data.layer_ids = createBackupForm.layer_ids.map(id => 
+            typeof id === 'string' ? parseInt(id, 10) : id
+          )
         }
 
         await createMapBackup(data)
