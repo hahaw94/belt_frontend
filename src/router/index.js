@@ -2,6 +2,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HomeView from '../views/HomeView.vue';
 import Layout from '@/layout/index.vue';
+import HomeLayout from '@/layout/HomeLayout.vue';
 import { routePermissionGuard } from '@/utils/route-permission';
 // 首页组件
 // 无需在这里引入所有页面组件，因为我们使用路由懒加载
@@ -16,7 +17,7 @@ const routes = [
   },
   {
     path: '/',
-    component: Layout,
+    component: HomeLayout,
     redirect: '/dashboard',
     children: [
       {

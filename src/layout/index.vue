@@ -161,7 +161,7 @@ export default {
     const systemStore = useSystemStore();
     const { checkMenuPermission, checkChildPermission } = usePermissions();
     
-    const userAvatarUrl = ref('https://cube.elemecdn.com/0/88/03b0d4153c31b21f7da7534d36da500d.jpeg');
+    const userAvatarUrl = ref(require('@/assets/images/main/main-head.png'));
     const isCollapse = ref(false);
     const menuContainer = ref(null);
     const showProfile = ref(false);
@@ -303,6 +303,16 @@ export default {
   border-bottom: 1px solid rgba(0, 255, 255, 0.3);
   position: relative;
   overflow: hidden;
+}
+
+/* 首页专用头部样式 */
+.layout-header.home-header {
+  background: url('@/assets/images/main/main-header.png') center/cover no-repeat, 
+              linear-gradient(135deg, 
+                rgba(15, 25, 45, 0.8) 0%, 
+                rgba(20, 35, 60, 0.8) 50%, 
+                rgba(25, 40, 65, 0.8) 100%);
+  background-blend-mode: overlay;
 }
 
 /* 头部科技感背景效果 */

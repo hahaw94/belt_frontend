@@ -8,7 +8,7 @@
       <div class="left-panel">
         <!-- 告警统计 -->
         <div class="widget">
-          <div class="widget-title">📊 告警统计</div>
+          <div class="widget-title">告警统计</div>
           <div class="stats-grid">
             <div class="stat-item">
               <div class="stat-number">{{ dashboardData.alarm_stats.today_total }}</div>
@@ -33,7 +33,7 @@
 
         <!-- 任务统计 -->
         <div class="widget">
-          <div class="widget-title">⚙️ 任务统计</div>
+          <div class="widget-title">任务统计</div>
           <div class="single-stat">
             <div class="stat-number">{{ dashboardData.task_stats?.online_tasks || 16 }}</div>
             <div class="stat-label">在线任务</div>
@@ -46,7 +46,7 @@
 
         <!-- 事件通知 -->
         <div class="widget">
-          <div class="widget-title">🔔 事件通知</div>
+          <div class="widget-title">事件通知</div>
           <div class="event-list">
             <div
               v-for="alarm in recentAlarms"
@@ -89,7 +89,7 @@
       <div class="right-panel">
         <!-- 设备统计 -->
         <div class="widget">
-          <div class="widget-title">📹 设备统计</div>
+          <div class="widget-title">设备统计</div>
           <div class="stats-grid">
             <div class="stat-item">
               <div class="stat-number status-online">{{ dashboardData.camera_stats.online_cameras }}</div>
@@ -114,7 +114,7 @@
 
         <!-- 高频告警排行 -->
         <div class="widget">
-          <div class="widget-title">🏆 高频告警排行</div>
+          <div class="widget-title">高频告警排行</div>
           <div class="ranking-list">
             <div
               v-for="(item, index) in dashboardData.alarm_ranking"
@@ -132,7 +132,7 @@
 
         <!-- 告警趋势 -->
         <div class="widget">
-          <div class="widget-title">📈 告警趋势</div>
+          <div class="widget-title">告警趋势</div>
           <div class="chart-container">
             <canvas ref="trendChart" id="trendChart"></canvas>
           </div>
@@ -608,7 +608,7 @@ onUnmounted(() => {
 /* 工业风格深色主题 */
 .industrial-dashboard {
   font-family: 'Microsoft YaHei', Arial, sans-serif;
-  background: linear-gradient(135deg, #0f1419 0%, #1a2332 100%);
+  background: transparent; /* 移除原有背景，使用布局的背景图 */
   color: #ffffff;
   min-height: 100vh;
   overflow-x: hidden;
@@ -616,23 +616,26 @@ onUnmounted(() => {
 
 
 
-/* 主容器三栏布局 */
+/* 主容器三栏布局 - 全屏宽度 */
 .dashboard-container {
   display: grid;
-  grid-template-columns: 300px 1fr 300px;
+  grid-template-columns: 350px 1fr 350px; /* 增加左右面板宽度，中间自适应 */
   grid-template-rows: 1fr;
-  height: 100vh;
-  gap: 15px;
-  padding: 15px;
+  height: calc(100vh - 80px); /* 减去新的header高度 */
+  gap: 20px;
+  padding: 15px; /* 减少外边距 */
+  max-width: 100vw;
 }
 
 /* 左右面板样式 */
 .left-panel, .right-panel {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  max-height: calc(100vh - 30px);
-  overflow-y: auto;
+  gap: 0; /* 完全去除卡片间隔 */
+  height: calc(100vh - 110px); /* 调整高度计算：80px header + 30px padding */
+  overflow: hidden; /* 不允许滚动，强制卡片拉伸 */
+  padding: 0; /* 确保面板内部没有padding */
+  margin: 0; /* 确保面板没有margin */
 }
 
 /* 中央内容区域 */
@@ -645,6 +648,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  height: calc(100vh - 110px); /* 与左右面板保持一致的高度 */
 }
 
 /* 工业背景 */
@@ -660,18 +664,40 @@ onUnmounted(() => {
 
 /* 小部件样式 */
 .widget {
-  background: rgba(0, 40, 80, 0.9);
-  border: 1px solid rgba(0, 150, 255, 0.3);
-  border-radius: 8px;
-  padding: 15px;
+  background: url('@/assets/images/main/main-container1.png') center/cover no-repeat;
+  background-size: 100% 100%; /* 强制背景图填满整个卡片 */
+  border: none;
+  border-radius: 0; /* 去除圆角，让卡片完全连接 */
+  padding: 25px 15px 15px 15px;
   backdrop-filter: blur(10px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-  transition: all 0.3s ease;
+  box-shadow: none; /* 去除阴影避免视觉间隙 */
+  text-align: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  flex: 1 1 0; /* 更强制的flex分配 */
+  min-height: 0; /* 移除最小高度限制，让flex完全控制 */
+  margin: 0 !important; /* 强制确保没有外边距 */
+  padding-top: 25px !important;
+  padding-bottom: 15px !important;
+  box-sizing: border-box; /* 确保盒模型正确 */
 }
 
 .widget:hover {
-  transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* 第一个卡片顶部圆角 */
+.widget:first-child {
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+}
+
+/* 最后一个卡片底部圆角 */
+.widget:last-child {
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
 }
 
 .widget-title {
@@ -679,17 +705,13 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: bold;
   margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.widget-title::before {
-  content: '';
-  width: 4px;
-  height: 16px;
-  background: linear-gradient(45deg, #00d4ff, #0099ff);
-  border-radius: 2px;
+  text-align: center;
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  width: calc(100% - 30px);
 }
 
 /* 统计网格 */
@@ -698,6 +720,9 @@ onUnmounted(() => {
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   margin-bottom: 10px;
+  margin-top: 10px;
+  position: relative;
+  z-index: 2;
 }
 
 .stat-item {
@@ -734,6 +759,9 @@ onUnmounted(() => {
   background: rgba(0, 150, 255, 0.1);
   border-radius: 6px;
   border: 1px solid rgba(0, 150, 255, 0.2);
+  position: relative;
+  z-index: 2;
+  margin-top: 10px;
 }
 
 /* 任务算法描述 */
@@ -782,6 +810,13 @@ onUnmounted(() => {
   transition: all 0.3s ease;
   font-size: 14px;
   cursor: pointer;
+  position: relative;
+  z-index: 2;
+}
+
+/* 事件列表、排行榜列表容器 */
+.event-list, .ranking-list {
+  margin-top: 10px;
 }
 
 .list-item:hover {
@@ -850,7 +885,9 @@ onUnmounted(() => {
 /* 图表容器 */
 .chart-container {
   height: 180px;
-  margin-top: 10px;
+  margin-top: 15px;
+  position: relative;
+  z-index: 2;
 }
 
 /* 告警弹窗 */
@@ -941,9 +978,17 @@ onUnmounted(() => {
 }
 
 /* 响应式设计 */
+@media (max-width: 1400px) {
+  .dashboard-container {
+    grid-template-columns: 320px 1fr 320px;
+    gap: 15px;
+    padding: 15px;
+  }
+}
+
 @media (max-width: 1200px) {
   .dashboard-container {
-    grid-template-columns: 280px 1fr 280px;
+    grid-template-columns: 300px 1fr 300px;
   }
 }
 
