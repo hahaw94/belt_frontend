@@ -83,15 +83,42 @@
         <!-- 任务统计 -->
         <div class="widget widget-task">
           <div class="widget-title">任务统计</div>
-          <div class="single-stat">
-            <div class="stat-number">{{ dashboardData.task_stats?.online_tasks || 16 }}</div>
-            <div class="stat-label">在线任务</div>
-            <div class="task-algorithm">安全帽检测、烟火检测、人员闯入</div>
-            <div class="progress-bar">
-              <div class="progress-fill" :style="{ width: (dashboardData.task_stats?.progress || 85) + '%' }"></div>
+          <div class="task-stats-container">
+            
+            <!-- 左上角数据 -->
+            <div class="corner-data top-left">
+              <div class="data-number">20240805985353</div>
+              <div class="data-label">暂无数据</div>
             </div>
+            
+            <!-- 右上角数据 -->
+            <div class="corner-data top-right">
+              <div class="data-number">{{ dashboardData.task_stats?.online_tasks || 16 }}</div>
+              <div class="data-label">暂无数据</div>
             </div>
-    </div>
+            
+            <!-- 中心圆圈 -->
+            <div class="center-circle">
+              <div class="circle-background"></div>
+              <div class="circle-content">
+                <div class="center-number">1</div>
+                <div class="center-label">在线任务</div>
+              </div>
+            </div>
+            
+            <!-- 左下角数据 -->
+            <div class="corner-data bottom-left">
+              <div class="data-number">0</div>
+              <div class="data-label">暂无数据</div>
+            </div>
+            
+            <!-- 右下角数据 -->
+            <div class="corner-data bottom-right">
+              <div class="data-number">0</div>
+              <div class="data-label">暂无数据</div>
+            </div>
+          </div>
+        </div>
 
         <!-- 事件通知 -->
         <div class="widget widget-event">
@@ -104,8 +131,8 @@
               @click="viewAlarmDetail(alarm)"
             >
               <div class="event-content">
+                <div class="event-type">{{ alarm.type }}</div>
                 <div class="event-device">{{ alarm.device_name }}</div>
-                <div class="event-type">{{ getEventIcon(alarm.type) }} {{ alarm.type }}</div>
                 </div>
               <div class="event-time">{{ formatEventTime(alarm.time) }}</div>
               </div>
@@ -266,7 +293,7 @@
         <div class="widget">
           <div class="widget-title">告警趋势</div>
           <div class="svg-chart-container">
-            <svg class="trend-chart" viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet">
+            <svg class="trend-chart" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">
               <!-- 定义渐变和滤镜 -->
               <defs>
                 <!-- 折线发光效果 -->
@@ -289,15 +316,15 @@
               <g class="grid-lines">
                 <!-- 水平网格线 -->
                 <line v-for="i in 7" :key="'h-' + i" 
-                      :x1="20" :y1="10 + (i-1) * 18" 
-                      :x2="265" :y2="10 + (i-1) * 18" 
+                      :x1="25" :y1="15 + (i-1) * 23" 
+                      :x2="300" :y2="15 + (i-1) * 23" 
                       stroke="#00bfff" stroke-width="0.5" 
                       stroke-dasharray="2,2" opacity="0.4"/>
                 
                 <!-- 垂直网格线 -->
                 <line v-for="i in 12" :key="'v-' + i" 
-                      :x1="20 + (i-1) * 21" :y1="10" 
-                      :x2="20 + (i-1) * 21" :y2="118" 
+                      :x1="25 + (i-1) * 24" :y1="15" 
+                      :x2="25 + (i-1) * 24" :y2="150" 
                       stroke="#00bfff" stroke-width="0.5" 
                       stroke-dasharray="2,2" opacity="0.3"/>
               </g>
@@ -305,15 +332,15 @@
               <!-- Y轴刻度标签 -->
               <g class="y-axis-labels">
                 <text v-for="(value, index) in yAxisLabels" :key="'y-' + index"
-                      :x="15" :y="122 - index * 18" 
-                      fill="#88ccff" font-size="9" text-anchor="end">{{ value }}</text>
+                      :x="18" :y="155 - index * 23" 
+                      fill="#88ccff" font-size="10" text-anchor="end">{{ value }}</text>
               </g>
               
               <!-- X轴刻度标签 -->
               <g class="x-axis-labels">
                 <text v-for="(time, index) in xAxisLabels" :key="'x-' + index"
-                      :x="20 + index * 21" :y="132" 
-                      fill="#88ccff" font-size="9" text-anchor="middle">{{ time }}</text>
+                      :x="25 + index * 24" :y="168" 
+                      fill="#88ccff" font-size="10" text-anchor="middle">{{ time }}</text>
               </g>
               
               <!-- 数据区域填充 -->
@@ -484,7 +511,7 @@ const recentAlarms = computed(() => {
 
 // 排行榜图表数据
 const rankingChartData = computed(() => {
-  const deviceNames = ['演示253摄像机', '演示61摄像机', '演示211摄像机', '智无数据', '智无数据']
+  const deviceNames = ['演示253摄像机', '演示61摄像机', '演示211摄像机', '演示102摄像机', '演示178摄像机']
   const strokeColors = ['#ff6b35', '#ffa500', '#00bfff', '#1e90ff', '#4682b4']
   
   // 扩展数据到5个项目，为后面两项添加固定假数据
@@ -507,14 +534,25 @@ const rankingChartData = computed(() => {
 // 趋势图表数据
 const trendChartData = ref([5, 15, 6, 13, 6, 2, 1, 0, 0, 1, 9, 18])
 const xAxisLabels = ref(['12', '14', '16', '18', '20', '22', '0', '2', '4', '6', '8', '10'])
-const yAxisLabels = ref([0, 3, 6, 9, 12, 15, 18])
+
+// Y轴标签 - 支持动态计算或手动设置
+const yAxisLabels = computed(() => {
+  // 方式1：固定标签（当前使用）
+  return [0, 3, 6, 9, 12, 15, 18]
+  
+  // 方式2：动态计算（后续可启用）
+  // const maxDataValue = Math.max(...trendChartData.value)
+  // const maxY = Math.ceil(maxDataValue * 1.2 / 5) * 5 // 向上取整到5的倍数，并留20%余量
+  // const step = maxY / 6
+  // return Array.from({length: 7}, (_, i) => Math.round(i * step))
+})
 
 // 图表点坐标计算
 const chartPoints = computed(() => {
   const maxValue = Math.max(...yAxisLabels.value)
   return trendChartData.value.map((value, index) => ({
-    x: 20 + index * 21,
-    y: 118 - (value / maxValue) * 108
+    x: 25 + index * 24, // 调整起始位置和间距以匹配新的viewBox
+    y: 150 - (value / maxValue) * 135 // 调整Y轴范围以匹配新的高度
   }))
 })
 
@@ -533,14 +571,14 @@ const linePath = computed(() => {
 const areaPath = computed(() => {
   if (chartPoints.value.length === 0) return ''
   
-  let path = `M ${chartPoints.value[0].x} 118`
+  let path = `M ${chartPoints.value[0].x} 150` // 调整基线位置以匹配新的Y轴底部
   path += ` L ${chartPoints.value[0].x} ${chartPoints.value[0].y}`
   
   for (let i = 1; i < chartPoints.value.length; i++) {
     path += ` L ${chartPoints.value[i].x} ${chartPoints.value[i].y}`
   }
   
-  path += ` L ${chartPoints.value[chartPoints.value.length - 1].x} 118 Z`
+  path += ` L ${chartPoints.value[chartPoints.value.length - 1].x} 150 Z` // 调整基线位置
   return path
 })
 
@@ -622,17 +660,6 @@ const formatEventTime = (timeStr) => {
   return time.toLocaleTimeString('zh-CN', { hour12: false }).slice(0, 8)
 }
 
-// 获取事件图标
-const getEventIcon = (type) => {
-  const iconMap = {
-    '未戴安全帽': '⚠️',
-    '烟火检测': '🔥',
-    '人员闯入': '👤',
-    '异常行为': '🚨',
-    '车辆违规': '🚗'
-  }
-  return iconMap[type] || '🔔'
-}
 
 // 获取设备名称（用于排行榜）- 已被rankingChartData计算属性替代
 // const getDeviceName = (type) => {
@@ -763,6 +790,11 @@ let refreshInterval = null
 
 // SVG图表已替代Chart.js，相关代码已移除
 // 如果需要动态更新图表数据，可以直接修改trendChartData的值
+// 
+// Y轴范围调整说明：
+// 1. 简单调整：直接修改yAxisLabels computed中的return数组
+// 2. 智能调整：取消注释动态计算部分，会根据数据自动调整Y轴范围
+// 3. 混合方式：可以设置最小显示范围，避免数据较小时图表过于扁平
 
 onMounted(() => {
   loadDashboardData()
@@ -807,7 +839,7 @@ onUnmounted(() => {
 /* 主容器三栏布局 - 全屏宽度 */
 .dashboard-container {
   display: grid;
-  grid-template-columns: 350px 1fr 350px; /* 增加左右面板宽度，中间自适应 */
+  grid-template-columns: 420px 1fr 420px; /* 从350px增加到420px，进一步增加左右面板宽度 */
   grid-template-rows: 1fr;
   height: calc(100vh - 80px); /* 减去新的header高度 */
   gap: 20px;
@@ -1090,27 +1122,138 @@ onUnmounted(() => {
   margin-top: 5px;
 }
 
-/* 单个统计项 */
-.single-stat {
-  text-align: center;
-  padding: 15px;
-  background: transparent; /* 透明背景 */
-  border-radius: 6px;
-  border: 1px solid transparent; /* 透明边框，保留边界但不可见 */
-  box-shadow: none; /* 移除发光效果 */
+/* 任务统计容器 */
+.task-stats-container {
   position: relative;
-  z-index: 2;
-  margin-top: 10px;
+  width: calc(100% - 30px); /* 与标题框宽度保持一致 */
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0; /* 移除左右padding，使用width控制 */
+  margin: 0 15px; /* 使用margin确保与标题框对齐 */
 }
 
-/* 任务算法描述 */
+
+/* 中心圆圈 */
+.center-circle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px; /* 从120px增加到160px */
+  height: 200px; /* 从120px增加到160px */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5; /* 最高层级，确保中心圆圈在最上方 */
+}
+
+.circle-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url('@/assets/images/main/main-container-circle2.png') center/contain no-repeat;
+  opacity: 0.8;
+  z-index: 1;
+}
+
+.circle-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: #ffffff;
+}
+
+.center-number {
+  font-size: 36px; /* 从40px缩小到36px */
+  font-weight: bold;
+  color: #00d4ff;
+  text-shadow: 0 0 12px rgba(0, 212, 255, 0.8);
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.center-label {
+  font-size: 16px; /* 从14px增加到16px，与放大的圆圈协调 */
+  color: #88ccff;
+  font-weight: 500;
+}
+
+/* 四角数据显示 */
+.corner-data {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  z-index: 4; /* 提高层级，显示在连接线之上 */
+  width: 140px; /* 从110px增加到140px，增大约27% */
+  height: 45px; /* 从45px增加到55px，增大约22% */
+  background: url('@/assets/images/main/main-container-box1.png') center/100% 100% no-repeat;
+  opacity: 0.5; /* 设置透明度 */
+  padding: 8px 12px; /* 添加内边距让文字位置更好 */
+  box-sizing: border-box;
+}
+
+.top-left {
+  top: 15px;
+  left: -25px; /* 从-20px继续向左移动到-25px */
+}
+
+.top-right {
+  top: 15px;
+  right: -25px; /* 从-20px继续向右移动到-25px */
+}
+
+.bottom-left {
+  bottom: 15px;
+  left: -25px; /* 从-20px继续向左移动到-25px */
+}
+
+.bottom-right {
+  bottom: 15px;
+  right: -25px; /* 从-20px继续向右移动到-25px */
+}
+
+.data-number {
+  font-size: 13px; /* 从11px增加到13px，适应更大的框体 */
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+  line-height: 1.1;
+  margin-bottom: 3px; /* 从2px增加到3px */
+  max-width: 116px; /* 从86px增加到116px，适应新的框宽度 */
+  word-break: break-all; /* 允许数字换行 */
+  position: relative;
+  z-index: 3; /* 确保文字显示在背景图片上方 */
+}
+
+.data-label {
+  font-size: 12px; /* 从10px增加到12px，适应更大的框体 */
+  color: #88ccff;
+  font-weight: 400;
+  text-shadow: 0 0 6px rgba(136, 204, 255, 0.8);
+  position: relative;
+  z-index: 3; /* 确保文字显示在背景图片上方 */
+}
+
+/* 移除旧的单个统计项样式 - 保留作为备用 */
+.single-stat {
+  display: none; /* 隐藏旧样式 */
+}
+
+/* 保留旧的任务算法描述样式作为备用 */
 .task-algorithm {
   font-size: 11px;
   color: #88ccff;
   margin-top: 5px;
 }
 
-/* 进度条 */
+/* 保留旧的进度条样式作为备用 */
 .progress-bar {
   width: 100%;
   height: 6px;
@@ -1141,14 +1284,18 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
-  margin-bottom: 8px;
-  background: transparent; /* 透明背景 */
+  padding: 8px 15px 8px 20px; /* 左边增加一些内边距 */
+  margin-bottom: 12px;
+  background-image: url('~@/assets/images/main/main-container-box3.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
   border-radius: 4px;
-  border-left: 3px solid transparent; /* 透明左边框 */
-  border: 1px solid transparent; /* 透明边框，保留边界但不可见 */
-  box-shadow: none; /* 移除发光效果 */
-  transition: none; /* 移除过渡效果 */
+  min-height: 45px; /* 适合2-3行文字的高度 */
+  max-height: 60px;
+  border: none;
+  box-shadow: none;
+  transition: none;
   font-size: 14px;
   cursor: pointer;
   position: relative;
@@ -1345,22 +1492,42 @@ onUnmounted(() => {
 /* 事件内容 */
 .event-content {
   flex: 1;
-}
-
-.event-device {
-  font-size: 14px;
-  color: #ffffff;
-  margin-bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
 .event-type {
-  font-size: 12px;
+  font-size: 14px;
   color: #ff6666;
+  text-shadow: 0 0 4px rgba(255, 102, 102, 0.8), 1px 1px 2px rgba(0, 0, 0, 0.8);
+  font-weight: 500;
+  position: relative;
+  z-index: 3;
+  margin-bottom: 2px;
+}
+
+.event-device {
+  font-size: 12px;
+  color: #ffffff;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 1px 1px 2px rgba(0, 0, 0, 0.8);
+  font-weight: 500;
+  position: relative;
+  z-index: 3;
 }
 
 .event-time {
-  font-size: 12px;
+  font-size: 14px;
   color: #88ccff;
+  text-shadow: 0 0 4px rgba(136, 204, 255, 0.8), 1px 1px 2px rgba(0, 0, 0, 0.8);
+  font-weight: 500;
+  position: relative;
+  z-index: 3;
+  margin-right: 8px; /* 向左移动8像素 */
+  display: flex;
+  align-items: center;
 }
 
 /* 设备状态 */
@@ -1536,7 +1703,7 @@ onUnmounted(() => {
 
 /* SVG图表容器 */
 .svg-chart-container {
-  height: 180px;
+  height: 240px; /* 从180px增加到240px，增大60px */
   margin-top: 15px;
   position: relative;
   z-index: 2;
@@ -1706,7 +1873,7 @@ onUnmounted(() => {
 /* 响应式设计 */
 @media (max-width: 1400px) {
   .dashboard-container {
-    grid-template-columns: 320px 1fr 320px;
+    grid-template-columns: 380px 1fr 380px; /* 从320px增加到380px */
     gap: 15px;
     padding: 15px;
   }
@@ -1714,7 +1881,7 @@ onUnmounted(() => {
 
 @media (max-width: 1200px) {
   .dashboard-container {
-    grid-template-columns: 300px 1fr 300px;
+    grid-template-columns: 350px 1fr 350px; /* 从300px增加到350px */
   }
 }
 
