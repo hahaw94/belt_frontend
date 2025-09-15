@@ -1,6 +1,17 @@
 <template>
   <div class="industrial-dashboard">
-    
+    <!-- 左侧渐变过渡效果 -->
+    <div class="left-gradient-overlay"></div>
+    <!-- 右侧渐变过渡效果 -->
+    <div class="right-gradient-overlay"></div>
+    <!-- 左上角渐变效果 -->
+    <div class="corner-gradient top-left"></div>
+    <!-- 右上角渐变效果 -->
+    <div class="corner-gradient top-right"></div>
+    <!-- 左下角渐变效果 -->
+    <div class="corner-gradient bottom-left"></div>
+    <!-- 右下角渐变效果 -->
+    <div class="corner-gradient bottom-right"></div>
 
     <!-- 主要内容区域 - 三栏布局 -->
     <div class="dashboard-container">
@@ -140,10 +151,8 @@
           </div>
             </div>
 
-      <!-- 中央内容区域 -->
+      <!-- 中央内容区域 - 已删除地图框，仅保留背景 -->
       <div class="main-content">
-        <div class="factory-bg"></div>
-        
         <!-- 实时告警弹窗 -->
         <div 
           v-if="showAlertPopup" 
@@ -230,8 +239,15 @@
           <div class="widget-title">高频告警排行</div>
           <div class="ranking-chart-container">
             <svg class="ranking-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <!-- 背景网格线 -->
+              <!-- 定义渐变 -->
               <defs>
+                <!-- 灰色背景渐变 -->
+                <linearGradient id="grayBackground" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#666666;stop-opacity:0.3" />
+                  <stop offset="100%" style="stop-color:#444444;stop-opacity:0.2" />
+                </linearGradient>
+                
+                <!-- 彩色柱状图渐变 -->
                 <linearGradient id="barGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
                   <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:0.8" />
                   <stop offset="100%" style="stop-color:#ff6b35;stop-opacity:0.3" />
@@ -253,6 +269,21 @@
                   <stop offset="100%" style="stop-color:#4682b4;stop-opacity:0.2" />
                 </linearGradient>
               </defs>
+              
+              <!-- 灰色背景柱 -->
+              <rect 
+                v-for="(item, index) in rankingChartData"
+                :key="'bg-' + index"
+                :x="3"
+                :y="18 + index * 18"
+                :width="94"
+                :height="4"
+                fill="url(#grayBackground)"
+                stroke="rgba(102, 102, 102, 0.3)"
+                stroke-width="0.1"
+                rx="0.5"
+                class="ranking-bar-background"
+              />
               
               <!-- 数据柱 -->
               <rect 
@@ -600,36 +631,7 @@ const unprocessedArcLength = computed(() => {
 })
 
 
-// CAD图层数据
-const cadMapData = reactive({
-  map_config: {
-    background_image: '/uploads/maps/belt_layout.png',
-    width: 1920,
-    height: 1080
-  },
-  camera_points: [
-    {
-      device_id: 1,
-      device_name: '皮带头部摄像头',
-      x: 150,
-      y: 200,
-      status: '在线',
-      stream_url: 'rtmp://192.168.1.101:1935/live/stream1',
-      resolution: '1920x1080',
-      fps: 25
-    },
-    {
-      device_id: 2,
-      device_name: '皮带尾部摄像头',
-      x: 800,
-      y: 200,
-      status: '在线',
-      stream_url: 'rtmp://192.168.1.102:1935/live/stream2',
-      resolution: '1920x1080',
-      fps: 30
-    }
-  ]
-})
+// 已删除CAD图层数据相关代码
 
 // 当前摄像头
 const currentCamera = ref({})
@@ -724,18 +726,7 @@ const loadDashboardData = async () => {
   }
 }
 
-// 加载CAD图层数据
-const loadCadMapData = async () => {
-  try {
-    const response = await dashboardApi.getCadMap()
-    if (response.success) {
-      Object.assign(cadMapData, response.body)
-    }
-  } catch (error) {
-    console.error('加载CAD图层失败:', error)
-    ElMessage.error('加载地图数据失败')
-  }
-}
+// 已删除loadCadMapData函数
 
 // 查看告警详情
 const viewAlarmDetail = (alarm) => {
@@ -798,8 +789,7 @@ let refreshInterval = null
 
 onMounted(() => {
   loadDashboardData()
-  loadCadMapData()
-  
+
   // 每30秒刷新一次数据
   refreshInterval = setInterval(() => {
     loadDashboardData()
@@ -828,10 +818,184 @@ onUnmounted(() => {
 /* 工业风格深色主题 */
 .industrial-dashboard {
   font-family: 'Microsoft YaHei', Arial, sans-serif;
-  background: transparent; /* 移除原有背景，使用布局的背景图 */
+  /* 将1.png设置为整个页面的背景图片 */
+  background: url('@/assets/images/main/1.png') center/cover no-repeat fixed;
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
   color: #ffffff;
   min-height: 100vh;
   overflow-x: hidden;
+  position: relative;
+}
+
+/* 添加顶部渐变过渡效果 */
+.industrial-dashboard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 180px;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 30, 60, 0.3) 0%,
+    rgba(0, 28, 56, 0.26) 10%,
+    rgba(0, 25, 50, 0.22) 20%,
+    rgba(0, 23, 46, 0.18) 30%,
+    rgba(0, 20, 40, 0.15) 40%,
+    rgba(0, 18, 36, 0.12) 50%,
+    rgba(0, 15, 30, 0.09) 60%,
+    rgba(0, 13, 26, 0.06) 70%,
+    rgba(0, 10, 20, 0.04) 80%,
+    rgba(0, 8, 16, 0.025) 90%,
+    rgba(0, 5, 10, 0.01) 95%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 添加底部渐变过渡效果 */
+.industrial-dashboard::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 120px;
+  background: linear-gradient(
+    to top,
+    rgba(0, 20, 40, 0.2) 0%,
+    rgba(0, 18, 36, 0.16) 20%,
+    rgba(0, 15, 30, 0.12) 40%,
+    rgba(0, 13, 26, 0.08) 60%,
+    rgba(0, 10, 20, 0.05) 80%,
+    rgba(0, 8, 16, 0.025) 90%,
+    rgba(0, 5, 10, 0.01) 95%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 左侧渐变过渡效果 */
+.left-gradient-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 250px;
+  height: 100vh;
+  background: linear-gradient(
+    to right,
+    rgba(0, 30, 60, 0.25) 0%,
+    rgba(0, 28, 56, 0.22) 10%,
+    rgba(0, 25, 50, 0.18) 20%,
+    rgba(0, 22, 44, 0.15) 30%,
+    rgba(0, 20, 40, 0.12) 40%,
+    rgba(0, 18, 36, 0.09) 50%,
+    rgba(0, 15, 30, 0.06) 60%,
+    rgba(0, 12, 24, 0.04) 70%,
+    rgba(0, 10, 20, 0.025) 80%,
+    rgba(0, 8, 16, 0.015) 90%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 右侧渐变过渡效果 */
+.right-gradient-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 250px;
+  height: 100vh;
+  background: linear-gradient(
+    to left,
+    rgba(0, 30, 60, 0.25) 0%,
+    rgba(0, 28, 56, 0.22) 10%,
+    rgba(0, 25, 50, 0.18) 20%,
+    rgba(0, 22, 44, 0.15) 30%,
+    rgba(0, 20, 40, 0.12) 40%,
+    rgba(0, 18, 36, 0.09) 50%,
+    rgba(0, 15, 30, 0.06) 60%,
+    rgba(0, 12, 24, 0.04) 70%,
+    rgba(0, 10, 20, 0.025) 80%,
+    rgba(0, 8, 16, 0.015) 90%,
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 角落渐变效果基础样式 */
+.corner-gradient {
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 左上角渐变 */
+.corner-gradient.top-left {
+  top: 0;
+  left: 0;
+  background: radial-gradient(
+    ellipse at top left,
+    rgba(0, 40, 80, 0.15) 0%,
+    rgba(0, 35, 70, 0.12) 20%,
+    rgba(0, 30, 60, 0.09) 40%,
+    rgba(0, 25, 50, 0.06) 60%,
+    rgba(0, 20, 40, 0.03) 80%,
+    transparent 100%
+  );
+}
+
+/* 右上角渐变 */
+.corner-gradient.top-right {
+  top: 0;
+  right: 0;
+  background: radial-gradient(
+    ellipse at top right,
+    rgba(0, 40, 80, 0.15) 0%,
+    rgba(0, 35, 70, 0.12) 20%,
+    rgba(0, 30, 60, 0.09) 40%,
+    rgba(0, 25, 50, 0.06) 60%,
+    rgba(0, 20, 40, 0.03) 80%,
+    transparent 100%
+  );
+}
+
+/* 左下角渐变 */
+.corner-gradient.bottom-left {
+  bottom: 0;
+  left: 0;
+  background: radial-gradient(
+    ellipse at bottom left,
+    rgba(0, 40, 80, 0.12) 0%,
+    rgba(0, 35, 70, 0.09) 20%,
+    rgba(0, 30, 60, 0.07) 40%,
+    rgba(0, 25, 50, 0.05) 60%,
+    rgba(0, 20, 40, 0.025) 80%,
+    transparent 100%
+  );
+}
+
+/* 右下角渐变 */
+.corner-gradient.bottom-right {
+  bottom: 0;
+  right: 0;
+  background: radial-gradient(
+    ellipse at bottom right,
+    rgba(0, 40, 80, 0.12) 0%,
+    rgba(0, 35, 70, 0.09) 20%,
+    rgba(0, 30, 60, 0.07) 40%,
+    rgba(0, 25, 50, 0.05) 60%,
+    rgba(0, 20, 40, 0.025) 80%,
+    transparent 100%
+  );
 }
 
 
@@ -839,12 +1003,34 @@ onUnmounted(() => {
 /* 主容器三栏布局 - 全屏宽度 */
 .dashboard-container {
   display: grid;
-  grid-template-columns: 420px 1fr 420px; /* 从350px增加到420px，进一步增加左右面板宽度 */
+  grid-template-columns: 480px 1fr 480px; /* 从420px增加到480px，进一步加宽左右面板 */
   grid-template-rows: 1fr;
   height: calc(100vh - 80px); /* 减去新的header高度 */
-  gap: 20px;
-  padding: 15px; /* 减少外边距 */
+  gap: 15px; /* 减少间隙从20px到15px，让布局更紧凑 */
+  padding: 10px; /* 减少外边距从15px到10px */
   max-width: 100vw;
+  position: relative;
+  z-index: 2; /* 确保内容显示在渐变遮罩之上 */
+}
+
+/* 添加整体氛围光效 */
+.dashboard-container::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  right: -50px;
+  bottom: -50px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 80, 160, 0.02) 0%,
+    rgba(0, 60, 120, 0.015) 20%,
+    rgba(0, 40, 80, 0.01) 40%,
+    rgba(0, 20, 40, 0.005) 60%,
+    transparent 80%
+  );
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* 左右面板样式 */
@@ -857,39 +1043,32 @@ onUnmounted(() => {
   padding: 10px; /* 添加内边距 */
   margin: 0; /* 确保面板没有margin */
   background: transparent; /* 确保面板背景透明 */
+  /* 添加轻微的背景模糊以增强层次感 */
+  backdrop-filter: blur(1px);
 }
 
 /* 中央内容区域 */
 .main-content {
+  flex: 1;
   position: relative;
-  background: linear-gradient(45deg, rgba(0, 50, 100, 0.3), rgba(0, 30, 60, 0.5));
-  border: 1px solid rgba(0, 150, 255, 0.3);
-  border-radius: 8px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   height: calc(100vh - 110px); /* 与左右面板保持一致的高度 */
+  /* 移除背景，让整体背景透过 */
+  background: transparent;
 }
 
-/* 工业背景 */
-.factory-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800"><defs><linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" style="stop-color:%23001122;stop-opacity:1" /><stop offset="100%" style="stop-color:%23002244;stop-opacity:1" /></linearGradient></defs><rect fill="url(%23bg)" width="1200" height="800"/><g opacity="0.4"><rect x="100" y="300" width="200" height="100" fill="%23003366" rx="5"/><rect x="350" y="250" width="150" height="150" fill="%23004488" rx="5"/><rect x="550" y="280" width="300" height="80" fill="%23002244" rx="5"/><circle cx="200" cy="500" r="50" fill="%230066aa"/><circle cx="700" cy="450" r="40" fill="%230088cc"/><polygon points="900,200 950,150 1000,200 1000,350 900,350" fill="%23003366"/><polygon points="1050,180 1100,130 1150,180 1150,370 1050,370" fill="%23004488"/></g></svg>') center/cover no-repeat;
-  opacity: 0.6;
-}
 
 /* 小部件样式 */
 .widget {
   background: transparent; /* 完全透明背景 */
-  border: 1px solid transparent; /* 透明边框，保留边界但不可见 */
-  border-radius: 8px; /* 轻微圆角 */
+  border: none; /* 完全移除边框 */
+  border-radius: 0; /* 移除圆角 */
   padding: 25px 15px 15px 15px;
-  box-shadow: none; /* 移除所有阴影效果 */
+  box-shadow: none; /* 移除所有阴影 */
+  backdrop-filter: none; /* 移除背景模糊效果 */
   text-align: center;
   position: relative;
   display: flex;
@@ -925,7 +1104,7 @@ onUnmounted(() => {
   top: 5px;
   left: 0;
   right: 0;
-  opacity: 0.5;
+  opacity: 0.8;
   width: 100%; /* 铺满整个宽度 */
   height: 40px; /* 缩短高度 */
   background: url('@/assets/images/main/main-containier-header.png') center/cover no-repeat;
@@ -945,6 +1124,13 @@ onUnmounted(() => {
   text-align: center; /* 改回居中对齐 */
   position: absolute;
   top: 12px; /* 向上移动，让标题显示在标题栏图片内部 */
+  /* 增强文字可读性 - 加强阴影效果 */
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 1), 
+    0 0 10px rgba(0, 0, 0, 1),
+    0 2px 6px rgba(0, 0, 0, 1),
+    0 0 5px rgba(0, 212, 255, 0.8);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 1));
   left: 50%;
   transform: translateX(-50%); /* 恢复居中变换 */
   z-index: 4; /* 提高层级确保显示在图片上方 */
@@ -970,7 +1156,7 @@ onUnmounted(() => {
   border: none;
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: none;
 }
 
 .device-category:hover {
@@ -1018,14 +1204,18 @@ onUnmounted(() => {
   justify-content: space-between;
   min-height: 35px; /* 减少最小高度 */
   position: relative;
-  opacity: 0.5; /* 添加透明度 */
+  opacity: 0.8; /* 提高透明度 */
 }
 
 .device-type {
   font-size: 16px;
   font-weight: bold;
   color: #00d4ff;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 1),
+    0 0 12px rgba(0, 0, 0, 1),
+    0 3px 6px rgba(0, 0, 0, 1),
+    0 0 8px rgba(0, 212, 255, 0.8);
 }
 
 .device-total {
@@ -1036,14 +1226,21 @@ onUnmounted(() => {
   font-size: 24px;
   font-weight: bold;
   color: #ffffff;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  text-shadow: 
+    0 0 18px rgba(255, 255, 255, 1),
+    0 0 12px rgba(0, 0, 0, 1),
+    0 4px 8px rgba(0, 0, 0, 1),
+    0 0 10px rgba(255, 255, 255, 0.9);
 }
 
 .unit-text {
   font-size: 18px;
   font-weight: normal;
   color: #ffffff;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+  text-shadow: 
+    0 0 12px rgba(255, 255, 255, 0.8),
+    0 0 8px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 0.9);
   margin-left: 2px;
 }
 
@@ -1074,7 +1271,10 @@ onUnmounted(() => {
 .detail-number {
   font-size: 20px;
   font-weight: bold;
-  text-shadow: 0 0 8px currentColor;
+  text-shadow: 
+    0 0 12px currentColor,
+    0 0 8px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 0.9);
   line-height: 1;
 }
 
@@ -1083,6 +1283,10 @@ onUnmounted(() => {
   font-weight: 500;
   font-size: 14px;
   line-height: 1;
+  text-shadow: 
+    0 0 8px rgba(136, 204, 255, 0.8),
+    0 0 6px rgba(0, 0, 0, 1),
+    0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 
@@ -1101,8 +1305,8 @@ onUnmounted(() => {
   text-align: center;
   padding: 12px;
   background: transparent; /* 透明背景 */
-  border-radius: 6px;
-  border: 1px solid transparent; /* 透明边框，保留边界但不可见 */
+  border-radius: 0; /* 移除圆角 */
+  border: none; /* 完全移除边框 */
   box-shadow: none; /* 移除发光效果 */
   transition: none; /* 移除过渡效果 */
 }
@@ -1156,7 +1360,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   background: url('@/assets/images/main/main-container-circle2.png') center/contain no-repeat;
-  opacity: 0.8;
+  opacity: 0.9;
   z-index: 1;
 }
 
@@ -1171,15 +1375,25 @@ onUnmounted(() => {
   font-size: 36px; /* 从40px缩小到36px */
   font-weight: bold;
   color: #00d4ff;
-  text-shadow: 0 0 12px rgba(0, 212, 255, 0.8);
+  text-shadow: 
+    0 0 25px rgba(0, 212, 255, 1),
+    0 0 18px rgba(0, 0, 0, 1),
+    0 4px 10px rgba(0, 0, 0, 1),
+    0 0 15px rgba(0, 212, 255, 0.9),
+    0 0 8px rgba(255, 255, 255, 0.3);
   line-height: 1;
   margin-bottom: 6px;
 }
 
 .center-label {
-  font-size: 16px; /* 从14px增加到16px，与放大的圆圈协调 */
+  font-size: 14px; /* 缩小一个字号，从16px调整到14px */
   color: #88ccff;
   font-weight: 500;
+  text-shadow: 
+    0 0 15px rgba(136, 204, 255, 1),
+    0 0 10px rgba(0, 0, 0, 1),
+    0 2px 6px rgba(0, 0, 0, 1),
+    0 0 8px rgba(136, 204, 255, 0.8);
 }
 
 /* 四角数据显示 */
@@ -1194,7 +1408,7 @@ onUnmounted(() => {
   width: 140px; /* 从110px增加到140px，增大约27% */
   height: 45px; /* 从45px增加到55px，增大约22% */
   background: url('@/assets/images/main/main-container-box1.png') center/100% 100% no-repeat;
-  opacity: 0.5; /* 设置透明度 */
+  opacity: 0.95; /* 进一步提高透明度 */
   padding: 8px 12px; /* 添加内边距让文字位置更好 */
   box-sizing: border-box;
 }
@@ -1223,7 +1437,11 @@ onUnmounted(() => {
   font-size: 13px; /* 从11px增加到13px，适应更大的框体 */
   font-weight: bold;
   color: #ffffff;
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+  text-shadow: 
+    0 0 12px rgba(255, 255, 255, 1),
+    0 0 8px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 1),
+    0 0 6px rgba(255, 255, 255, 0.8);
   line-height: 1.1;
   margin-bottom: 3px; /* 从2px增加到3px */
   max-width: 116px; /* 从86px增加到116px，适应新的框宽度 */
@@ -1236,7 +1454,10 @@ onUnmounted(() => {
   font-size: 12px; /* 从10px增加到12px，适应更大的框体 */
   color: #88ccff;
   font-weight: 400;
-  text-shadow: 0 0 6px rgba(136, 204, 255, 0.8);
+  text-shadow: 
+    0 0 10px rgba(136, 204, 255, 1),
+    0 0 6px rgba(0, 0, 0, 1),
+    0 1px 3px rgba(0, 0, 0, 0.9);
   position: relative;
   z-index: 3; /* 确保文字显示在背景图片上方 */
 }
@@ -1300,6 +1521,7 @@ onUnmounted(() => {
   cursor: pointer;
   position: relative;
   z-index: 2;
+  opacity: 0.9; /* 提高背景图片透明度 */
 }
 
 /* 事件列表、排行榜列表容器 */
@@ -1327,6 +1549,11 @@ onUnmounted(() => {
   color: #88ccff;
   font-size: 14px;
   margin-bottom: 15px;
+  text-shadow: 
+    0 0 12px rgba(136, 204, 255, 1),
+    0 0 8px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 0.9);
+  font-weight: 500;
 }
 
 .alarm-counter {
@@ -1341,17 +1568,42 @@ onUnmounted(() => {
   width: 35px;
   height: 45px;
   line-height: 45px;
-  background: linear-gradient(135deg, rgba(0, 150, 255, 0.2) 0%, rgba(0, 200, 255, 0.3) 100%);
-  border: 1px solid rgba(0, 150, 255, 0.4);
+  background: linear-gradient(135deg, 
+    rgba(0, 150, 255, 0.3) 0%,
+    rgba(0, 100, 200, 0.25) 50%,
+    rgba(0, 80, 160, 0.2) 100%
+  );
+  border: 1px solid rgba(0, 200, 255, 0.4);
   border-radius: 6px;
   color: #ffffff;
   font-size: 22px;
   font-weight: bold;
   text-align: center;
   box-shadow: 
-    0 0 10px rgba(0, 150, 255, 0.3),
+    0 0 12px rgba(0, 150, 255, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+  text-shadow: 
+    0 0 15px rgba(255, 255, 255, 1),
+    0 0 10px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 1),
+    0 0 8px rgba(255, 255, 255, 0.8);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+
+/* 数字框悬停效果 */
+.counter-digit:hover {
+  background: linear-gradient(135deg, 
+    rgba(0, 150, 255, 0.4) 0%,
+    rgba(0, 100, 200, 0.35) 50%,
+    rgba(0, 80, 160, 0.3) 100%
+  );
+  box-shadow: 
+    0 0 18px rgba(0, 150, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
 }
 
 .alarm-details {
@@ -1416,7 +1668,7 @@ onUnmounted(() => {
   width: 150px;
   height: 150px;
   background: url('@/assets/images/main/main-container-circle.png') center/contain no-repeat;
-  opacity: 0.5;
+  opacity: 0.8;
   z-index: 1;
   pointer-events: none;
 }
@@ -1487,6 +1739,10 @@ onUnmounted(() => {
   color: #ffffff;
   font-size: 15px;
   font-weight: 500;
+  text-shadow: 
+    0 0 10px rgba(255, 255, 255, 1),
+    0 0 6px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 0.9);
 }
 
 /* 事件内容 */
@@ -1502,7 +1758,11 @@ onUnmounted(() => {
 .event-type {
   font-size: 14px;
   color: #ff6666;
-  text-shadow: 0 0 4px rgba(255, 102, 102, 0.8), 1px 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 
+    0 0 8px rgba(255, 102, 102, 1),
+    0 0 6px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 1),
+    0 0 4px rgba(255, 102, 102, 0.8);
   font-weight: 500;
   position: relative;
   z-index: 3;
@@ -1512,7 +1772,10 @@ onUnmounted(() => {
 .event-device {
   font-size: 12px;
   color: #ffffff;
-  text-shadow: 0 0 6px rgba(255, 255, 255, 0.9), 1px 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 
+    0 0 10px rgba(255, 255, 255, 1),
+    0 0 6px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 1);
   font-weight: 500;
   position: relative;
   z-index: 3;
@@ -1521,7 +1784,10 @@ onUnmounted(() => {
 .event-time {
   font-size: 14px;
   color: #88ccff;
-  text-shadow: 0 0 4px rgba(136, 204, 255, 0.8), 1px 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 
+    0 0 8px rgba(136, 204, 255, 1),
+    0 0 6px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 1);
   font-weight: 500;
   position: relative;
   z-index: 3;
@@ -1577,10 +1843,24 @@ onUnmounted(() => {
   z-index: 1;
 }
 
+.ranking-bar-background {
+  opacity: 0;
+  animation: slideInBarBackground 1s ease-out forwards;
+}
+
 .ranking-bar {
   opacity: 0;
   animation: slideInBar 1s ease-out forwards;
   filter: drop-shadow(0 0 3px currentColor);
+}
+
+@keyframes slideInBarBackground {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideInBar {
@@ -1637,7 +1917,7 @@ onUnmounted(() => {
   min-width: 42px;
   width: 42px;
   text-shadow: 0 0 6px currentColor;
-  border: 1px solid currentColor;
+  border: none;
   box-shadow: 0 0 8px currentColor;
   flex-shrink: 0;
 }
@@ -1678,7 +1958,10 @@ onUnmounted(() => {
   font-size: 14px;
   color: #ffffff;
   font-weight: 500;
-  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+  text-shadow: 
+    0 0 8px rgba(255, 255, 255, 0.8),
+    0 0 6px rgba(0, 0, 0, 1),
+    0 1px 3px rgba(0, 0, 0, 0.9);
   text-align: left;
 }
 
@@ -1686,7 +1969,10 @@ onUnmounted(() => {
   font-size: 16px;
   font-weight: bold;
   color: #00ff88;
-  text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  text-shadow: 
+    0 0 12px rgba(0, 255, 136, 0.8),
+    0 0 8px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 0.9);
   min-width: 25px;
   width: 25px;
   text-align: right;
@@ -1871,17 +2157,27 @@ onUnmounted(() => {
 }
 
 /* 响应式设计 */
+@media (max-width: 1600px) {
+  .dashboard-container {
+    grid-template-columns: 440px 1fr 440px; /* 中等屏幕下稍微缩小 */
+    gap: 15px;
+    padding: 10px;
+  }
+}
+
 @media (max-width: 1400px) {
   .dashboard-container {
-    grid-template-columns: 380px 1fr 380px; /* 从320px增加到380px */
-    gap: 15px;
-    padding: 15px;
+    grid-template-columns: 400px 1fr 400px; /* 从380px增加到400px */
+    gap: 12px;
+    padding: 12px;
   }
 }
 
 @media (max-width: 1200px) {
   .dashboard-container {
-    grid-template-columns: 350px 1fr 350px; /* 从300px增加到350px */
+    grid-template-columns: 360px 1fr 360px; /* 从350px增加到360px */
+    gap: 10px;
+    padding: 10px;
   }
 }
 
