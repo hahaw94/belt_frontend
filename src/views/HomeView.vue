@@ -7,32 +7,81 @@
       <!-- 左侧面板 -->
       <div class="left-panel">
         <!-- 告警统计 -->
-        <div class="widget">
+        <div class="widget widget-alarm">
           <div class="widget-title">告警统计</div>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <div class="stat-number">{{ dashboardData.alarm_stats.today_total }}</div>
-              <div class="stat-label">今日告警数</div>
+          <div class="alarm-stats-container">
+            <!-- 今日告警总数显示区域 -->
+            <div class="main-alarm-display">
+              <div class="alarm-label">今日告警总数</div>
+              <div class="alarm-counter">
+                <span class="counter-digit">{{ String(dashboardData.alarm_stats.today_total).padStart(6, '0').split('').slice(0, 1).join('') }}</span>
+                <span class="counter-digit">{{ String(dashboardData.alarm_stats.today_total).padStart(6, '0').split('').slice(1, 2).join('') }}</span>
+                <span class="counter-digit">{{ String(dashboardData.alarm_stats.today_total).padStart(6, '0').split('').slice(2, 3).join('') }}</span>
+                <span class="counter-digit">{{ String(dashboardData.alarm_stats.today_total).padStart(6, '0').split('').slice(3, 4).join('') }}</span>
+                <span class="counter-digit">{{ String(dashboardData.alarm_stats.today_total).padStart(6, '0').split('').slice(4, 5).join('') }}</span>
+                <span class="counter-digit">{{ String(dashboardData.alarm_stats.today_total).padStart(6, '0').split('').slice(5, 6).join('') }}</span>
+              </div>
             </div>
-            <div class="stat-item">
-              <div class="stat-number">{{ dashboardData.alarm_stats.processed }}</div>
-              <div class="stat-label">已处理</div>
+            <!-- 环形图统计 -->
+            <div class="alarm-chart-container">
+              <div class="chart-wrapper">
+                <!-- 装饰圆圈背景 -->
+                <div class="chart-decoration"></div>
+                <svg class="alarm-ring-chart" width="130" height="130" viewBox="0 0 100 100">
+                  <!-- 背景圆环 -->
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="rgba(0, 150, 255, 0.2)"
+                    stroke-width="8"
+                  />
+                  <!-- 已处理圆弧 -->
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#00aaff"
+                    stroke-width="8"
+                    :stroke-dasharray="processedArcLength + ' ' + (totalCircumference - processedArcLength)"
+                    stroke-dashoffset="0"
+                    class="processed-arc"
+                    transform="rotate(-90 50 50)"
+                  />
+                  <!-- 未处理圆弧 -->
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    stroke="#ffaa00"
+                    stroke-width="8"
+                    :stroke-dasharray="unprocessedArcLength + ' ' + (totalCircumference - unprocessedArcLength)"
+                    :stroke-dashoffset="-processedArcLength"
+                    class="unprocessed-arc"
+                    transform="rotate(-90 50 50)"
+                  />
+                </svg>
+              </div>
+              <!-- 图例 -->
+              <div class="chart-legend">
+                <div class="legend-item">
+                  <span class="legend-dot processed"></span>
+                  <span class="legend-text">已处理: {{ dashboardData.alarm_stats.processed }}</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot unprocessed"></span>
+                  <span class="legend-text">未处理: {{ dashboardData.alarm_stats.unprocessed }}</span>
+                </div>
+              </div>
             </div>
           </div>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <div class="stat-number">{{ dashboardData.alarm_stats.unprocessed }}</div>
-              <div class="stat-label">未处理</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-number">{{ dashboardData.alarm_stats.processing || 1 }}</div>
-              <div class="stat-label">处理中</div>
-            </div>
-            </div>
-          </div>
+        </div>
 
         <!-- 任务统计 -->
-        <div class="widget">
+        <div class="widget widget-task">
           <div class="widget-title">任务统计</div>
           <div class="single-stat">
             <div class="stat-number">{{ dashboardData.task_stats?.online_tasks || 16 }}</div>
@@ -45,7 +94,7 @@
     </div>
 
         <!-- 事件通知 -->
-        <div class="widget">
+        <div class="widget widget-event">
           <div class="widget-title">事件通知</div>
           <div class="event-list">
             <div
@@ -90,24 +139,61 @@
         <!-- 设备统计 -->
         <div class="widget">
           <div class="widget-title">设备统计</div>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <div class="stat-number status-online">{{ dashboardData.camera_stats.online_cameras }}</div>
-              <div class="stat-label">摄像机在线</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-number status-offline">{{ dashboardData.camera_stats.offline_cameras }}</div>
-              <div class="stat-label">摄像机离线</div>
-          </div>
+          <div class="device-stats-container">
+            <!-- 摄像机统计 -->
+            <div class="device-category">
+              <div class="device-header">
+                <div class="device-icon camera-icon"></div>
+                <div class="device-info-box">
+                  <div class="device-type">摄像机</div>
+                  <div class="device-total">
+                    <span class="total-number">{{ dashboardData.camera_stats.total_cameras }}</span>
+                    <span class="unit-text">个</span>
+                  </div>
+                </div>
               </div>
-          <div class="stats-grid">
-            <div class="stat-item">
-              <div class="stat-number status-online">{{ dashboardData.device_stats.online_devices - dashboardData.camera_stats.online_cameras }}</div>
-              <div class="stat-label">算法服务在线</div>
+              <div class="device-details">
+                <div class="detail-item">
+                  <div class="detail-number status-online">
+                    {{ dashboardData.camera_stats.online_cameras }}<span class="unit-text-small">个</span>
+                  </div>
+                  <div class="detail-label">在线</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-number status-offline">
+                    {{ dashboardData.camera_stats.offline_cameras }}<span class="unit-text-small">个</span>
+                  </div>
+                  <div class="detail-label">离线</div>
+                </div>
+              </div>
             </div>
-            <div class="stat-item">
-              <div class="stat-number status-offline">1</div>
-              <div class="stat-label">算法服务离线</div>
+
+            <!-- 算法服务统计 -->
+            <div class="device-category">
+              <div class="device-header">
+                <div class="device-icon algorithm-icon"></div>
+                <div class="device-info-box">
+                  <div class="device-type">算法服务</div>
+                  <div class="device-total">
+                    <span class="total-number">{{ dashboardData.device_stats.total_devices - dashboardData.camera_stats.total_cameras }}</span>
+                    <span class="unit-text">个</span>
+                  </div>
+                </div>
+              </div>
+              <div class="device-details">
+                <div class="detail-item">
+                  <div class="detail-number status-online">
+                    {{ dashboardData.device_stats.online_devices - dashboardData.camera_stats.online_cameras }}<span class="unit-text-small">个</span>
+                  </div>
+                  <div class="detail-label">在线</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-number status-offline">
+                    1<span class="unit-text-small">个</span>
+                  </div>
+                  <div class="detail-label">离线</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -115,26 +201,136 @@
         <!-- 高频告警排行 -->
         <div class="widget">
           <div class="widget-title">高频告警排行</div>
-          <div class="ranking-list">
-            <div
-              v-for="(item, index) in dashboardData.alarm_ranking"
-              :key="index"
-              class="list-item"
-            >
-              <div class="device-status">
-                <span class="status-dot" :class="index < 3 ? 'dot-online' : 'dot-offline'"></span>
-                <span>TOP{{ index + 1 }} {{ getDeviceName(item.type) }}</span>
-                    </div>
-              <span class="ranking-count">{{ item.count }}</span>
+          <div class="ranking-chart-container">
+            <svg class="ranking-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <!-- 背景网格线 -->
+              <defs>
+                <linearGradient id="barGradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#ff6b35;stop-opacity:0.8" />
+                  <stop offset="100%" style="stop-color:#ff6b35;stop-opacity:0.3" />
+                </linearGradient>
+                <linearGradient id="barGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#ffa500;stop-opacity:0.8" />
+                  <stop offset="100%" style="stop-color:#ffa500;stop-opacity:0.3" />
+                </linearGradient>
+                <linearGradient id="barGradient3" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#00bfff;stop-opacity:0.8" />
+                  <stop offset="100%" style="stop-color:#00bfff;stop-opacity:0.3" />
+                </linearGradient>
+                <linearGradient id="barGradient4" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#1e90ff;stop-opacity:0.7" />
+                  <stop offset="100%" style="stop-color:#1e90ff;stop-opacity:0.2" />
+                </linearGradient>
+                <linearGradient id="barGradient5" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#4682b4;stop-opacity:0.6" />
+                  <stop offset="100%" style="stop-color:#4682b4;stop-opacity:0.2" />
+                </linearGradient>
+              </defs>
+              
+              <!-- 数据柱 -->
+              <rect 
+                v-for="(item, index) in rankingChartData"
+                :key="index"
+                :x="3"
+                :y="18 + index * 18"
+                :width="item.percentage * 94"
+                :height="4"
+                :fill="`url(#barGradient${index + 1})`"
+                :stroke="item.strokeColor"
+                stroke-width="0.1"
+                rx="0.5"
+                class="ranking-bar"
+                :style="{ animationDelay: index * 0.2 + 's' }"
+              />
+            </svg>
+            
+            <!-- 排行标签和文字信息 -->
+            <div class="ranking-labels">
+              <div 
+                v-for="(item, index) in rankingChartData"
+                :key="index"
+                class="ranking-item"
+                :style="{ animationDelay: index * 0.1 + 's' }"
+              >
+                <div class="rank-badge" :class="`rank-${index + 1}`">
+                  TOP{{ index + 1 }}
                 </div>
+                <div class="device-name">{{ item.deviceName }}</div>
+                <div class="count-value">{{ item.count }}</div>
               </div>
             </div>
+          </div>
+        </div>
 
         <!-- 告警趋势 -->
         <div class="widget">
           <div class="widget-title">告警趋势</div>
-          <div class="chart-container">
-            <canvas ref="trendChart" id="trendChart"></canvas>
+          <div class="svg-chart-container">
+            <svg class="trend-chart" viewBox="0 0 280 140" preserveAspectRatio="xMidYMid meet">
+              <!-- 定义渐变和滤镜 -->
+              <defs>
+                <!-- 折线发光效果 -->
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                  <feMerge> 
+                    <feMergeNode in="coloredBlur"/>
+                    <feMergeNode in="SourceGraphic"/>
+                  </feMerge>
+                </filter>
+                
+                <!-- 填充渐变 -->
+                <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.3" />
+                  <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0.05" />
+                </linearGradient>
+              </defs>
+              
+              <!-- 网格线 -->
+              <g class="grid-lines">
+                <!-- 水平网格线 -->
+                <line v-for="i in 7" :key="'h-' + i" 
+                      :x1="20" :y1="10 + (i-1) * 18" 
+                      :x2="265" :y2="10 + (i-1) * 18" 
+                      stroke="#00bfff" stroke-width="0.5" 
+                      stroke-dasharray="2,2" opacity="0.4"/>
+                
+                <!-- 垂直网格线 -->
+                <line v-for="i in 12" :key="'v-' + i" 
+                      :x1="20 + (i-1) * 21" :y1="10" 
+                      :x2="20 + (i-1) * 21" :y2="118" 
+                      stroke="#00bfff" stroke-width="0.5" 
+                      stroke-dasharray="2,2" opacity="0.3"/>
+              </g>
+              
+              <!-- Y轴刻度标签 -->
+              <g class="y-axis-labels">
+                <text v-for="(value, index) in yAxisLabels" :key="'y-' + index"
+                      :x="15" :y="122 - index * 18" 
+                      fill="#88ccff" font-size="9" text-anchor="end">{{ value }}</text>
+              </g>
+              
+              <!-- X轴刻度标签 -->
+              <g class="x-axis-labels">
+                <text v-for="(time, index) in xAxisLabels" :key="'x-' + index"
+                      :x="20 + index * 21" :y="132" 
+                      fill="#88ccff" font-size="9" text-anchor="middle">{{ time }}</text>
+              </g>
+              
+              <!-- 数据区域填充 -->
+              <path :d="areaPath" fill="url(#chartGradient)" opacity="0.6"/>
+              
+              <!-- 折线 -->
+              <path :d="linePath" fill="none" stroke="#00d4ff" 
+                    stroke-width="2" filter="url(#glow)" 
+                    class="trend-line"/>
+              
+              <!-- 数据点 -->
+              <circle v-for="(point, index) in chartPoints" :key="'point-' + index"
+                      :cx="point.x" :cy="point.y" r="3.5" 
+                      fill="#00d4ff" stroke="#ffffff" stroke-width="1.5"
+                      class="data-point" filter="url(#glow)"
+                      :style="{ animationDelay: index * 0.1 + 's' }"/>
+            </svg>
           </div>
         </div>
       </div>
@@ -206,7 +402,7 @@ const loading = ref(false)
 const videoDialogVisible = ref(false)
 const alarmDetailVisible = ref(false)
 // const cadMapContainer = ref(null) // 暂时注释，如果需要可以取消注释
-const trendChart = ref(null)
+// const trendChart = ref(null) // 已替换为SVG图表
 
 // 新增状态
 const showAlertPopup = ref(false)
@@ -286,6 +482,86 @@ const recentAlarms = computed(() => {
   return dashboardData.latest_alarms.slice(0, 3)
 })
 
+// 排行榜图表数据
+const rankingChartData = computed(() => {
+  const deviceNames = ['演示253摄像机', '演示61摄像机', '演示211摄像机', '智无数据', '智无数据']
+  const strokeColors = ['#ff6b35', '#ffa500', '#00bfff', '#1e90ff', '#4682b4']
+  
+  // 扩展数据到5个项目，为后面两项添加固定假数据
+  const extendedRanking = [
+    ...dashboardData.alarm_ranking,
+    { type: '智能监控', count: 8 },
+    { type: '数据分析', count: 3 }
+  ].slice(0, 5)
+  
+  const maxCount = Math.max(...extendedRanking.map(item => item.count), 1)
+  
+  return extendedRanking.map((item, index) => ({
+    deviceName: deviceNames[index],
+    count: item.count,
+    percentage: item.count / maxCount,
+    strokeColor: strokeColors[index]
+  }))
+})
+
+// 趋势图表数据
+const trendChartData = ref([5, 15, 6, 13, 6, 2, 1, 0, 0, 1, 9, 18])
+const xAxisLabels = ref(['12', '14', '16', '18', '20', '22', '0', '2', '4', '6', '8', '10'])
+const yAxisLabels = ref([0, 3, 6, 9, 12, 15, 18])
+
+// 图表点坐标计算
+const chartPoints = computed(() => {
+  const maxValue = Math.max(...yAxisLabels.value)
+  return trendChartData.value.map((value, index) => ({
+    x: 20 + index * 21,
+    y: 118 - (value / maxValue) * 108
+  }))
+})
+
+// 折线路径
+const linePath = computed(() => {
+  if (chartPoints.value.length === 0) return ''
+  
+  let path = `M ${chartPoints.value[0].x} ${chartPoints.value[0].y}`
+  for (let i = 1; i < chartPoints.value.length; i++) {
+    path += ` L ${chartPoints.value[i].x} ${chartPoints.value[i].y}`
+  }
+  return path
+})
+
+// 区域填充路径
+const areaPath = computed(() => {
+  if (chartPoints.value.length === 0) return ''
+  
+  let path = `M ${chartPoints.value[0].x} 118`
+  path += ` L ${chartPoints.value[0].x} ${chartPoints.value[0].y}`
+  
+  for (let i = 1; i < chartPoints.value.length; i++) {
+    path += ` L ${chartPoints.value[i].x} ${chartPoints.value[i].y}`
+  }
+  
+  path += ` L ${chartPoints.value[chartPoints.value.length - 1].x} 118 Z`
+  return path
+})
+
+// 环形图圆弧长度计算
+const totalCircumference = computed(() => {
+  return 2 * Math.PI * 40 // 半径为40的圆周长
+})
+
+const processedArcLength = computed(() => {
+  const total = dashboardData.alarm_stats.processed + dashboardData.alarm_stats.unprocessed
+  if (total === 0) return 0
+  return (dashboardData.alarm_stats.processed / total) * totalCircumference.value
+})
+
+const unprocessedArcLength = computed(() => {
+  const total = dashboardData.alarm_stats.processed + dashboardData.alarm_stats.unprocessed
+  if (total === 0) return 0
+  return (dashboardData.alarm_stats.unprocessed / total) * totalCircumference.value
+})
+
+
 // CAD图层数据
 const cadMapData = reactive({
   map_config: {
@@ -358,15 +634,15 @@ const getEventIcon = (type) => {
   return iconMap[type] || '🔔'
 }
 
-// 获取设备名称（用于排行榜）
-const getDeviceName = (type) => {
-  const deviceMap = {
-    '异常行为': '演示253摄像机',
-    '车辆违规': '演示61摄像机',
-    '人员闯入': '演示211摄像机'
-  }
-  return deviceMap[type] || '演示102摄像机'
-}
+// 获取设备名称（用于排行榜）- 已被rankingChartData计算属性替代
+// const getDeviceName = (type) => {
+//   const deviceMap = {
+//     '异常行为': '演示253摄像机',
+//     '车辆违规': '演示61摄像机',
+//     '人员闯入': '演示211摄像机'
+//   }
+//   return deviceMap[type] || '演示102摄像机'
+// }
 
 
 
@@ -485,100 +761,12 @@ const closeVideoDialog = () => {
 // 定时刷新数据
 let refreshInterval = null
 
-// 初始化告警趋势图
-const initTrendChart = () => {
-  if (!trendChart.value) return
-  
-  // 动态加载 Chart.js
-  if (typeof Chart === 'undefined') {
-    const script = document.createElement('script')
-    script.src = 'https://cdn.jsdelivr.net/npm/chart.js'
-    script.onload = () => {
-      createChart()
-    }
-    document.head.appendChild(script)
-  } else {
-    createChart()
-  }
-}
-
-// 创建图表
-const createChart = () => {
-  const ctx = trendChart.value.getContext('2d')
-  const gradient = ctx.createLinearGradient(0, 0, 0, 180)
-  gradient.addColorStop(0, 'rgba(0, 212, 255, 0.4)')
-  gradient.addColorStop(1, 'rgba(0, 212, 255, 0.05)')
-
-  // eslint-disable-next-line no-undef
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
-      datasets: [{
-        label: '告警数量',
-        data: [2, 5, 3, 8, 12, 6, 4],
-        borderColor: '#00d4ff',
-        backgroundColor: gradient,
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: '#00d4ff',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
-        pointRadius: 5,
-        pointHoverRadius: 7
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        }
-      },
-      scales: {
-        x: {
-          grid: {
-            color: 'rgba(0, 150, 255, 0.1)',
-            borderColor: 'rgba(0, 150, 255, 0.3)'
-          },
-          ticks: {
-            color: '#88ccff',
-            font: {
-              size: 11
-            }
-          }
-        },
-        y: {
-          grid: {
-            color: 'rgba(0, 150, 255, 0.1)',
-            borderColor: 'rgba(0, 150, 255, 0.3)'
-          },
-          ticks: {
-            color: '#88ccff',
-            font: {
-              size: 11
-            }
-          }
-        }
-      },
-      interaction: {
-        intersect: false,
-        mode: 'index'
-      }
-    }
-  })
-}
+// SVG图表已替代Chart.js，相关代码已移除
+// 如果需要动态更新图表数据，可以直接修改trendChartData的值
 
 onMounted(() => {
   loadDashboardData()
   loadCadMapData()
-  
-  // 延迟初始化图表
-  setTimeout(() => {
-    initTrendChart()
-  }, 100)
   
   // 每30秒刷新一次数据
   refreshInterval = setInterval(() => {
@@ -631,11 +819,12 @@ onUnmounted(() => {
 .left-panel, .right-panel {
   display: flex;
   flex-direction: column;
-  gap: 0; /* 完全去除卡片间隔 */
+  gap: 15px; /* 恢复卡片间隔，让透明效果更明显 */
   height: calc(100vh - 110px); /* 调整高度计算：80px header + 30px padding */
   overflow: hidden; /* 不允许滚动，强制卡片拉伸 */
-  padding: 0; /* 确保面板内部没有padding */
+  padding: 10px; /* 添加内边距 */
   margin: 0; /* 确保面板没有margin */
+  background: transparent; /* 确保面板背景透明 */
 }
 
 /* 中央内容区域 */
@@ -664,57 +853,208 @@ onUnmounted(() => {
 
 /* 小部件样式 */
 .widget {
-  background: url('@/assets/images/main/main-container1.png') center/cover no-repeat;
-  background-size: 100% 100%; /* 强制背景图填满整个卡片 */
-  border: none;
-  border-radius: 0; /* 去除圆角，让卡片完全连接 */
+  background: transparent; /* 完全透明背景 */
+  border: 1px solid transparent; /* 透明边框，保留边界但不可见 */
+  border-radius: 8px; /* 轻微圆角 */
   padding: 25px 15px 15px 15px;
-  backdrop-filter: blur(10px);
-  box-shadow: none; /* 去除阴影避免视觉间隙 */
+  box-shadow: none; /* 移除所有阴影效果 */
   text-align: center;
   position: relative;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  flex: 1 1 0; /* 更强制的flex分配 */
+  flex: 1 1 0; /* 默认flex分配 */
   min-height: 0; /* 移除最小高度限制，让flex完全控制 */
   margin: 0 !important; /* 强制确保没有外边距 */
-  padding-top: 25px !important;
+  padding-top: 45px !important; /* 增加顶部内边距为图片留出空间 */
   padding-bottom: 15px !important;
   box-sizing: border-box; /* 确保盒模型正确 */
 }
 
-.widget:hover {
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+/* 告警统计 - 适中高度 */
+.widget-alarm {
+  flex: 1 1 0; /* 调整到1倍高度 */
 }
 
-/* 第一个卡片顶部圆角 */
-.widget:first-child {
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
+/* 任务统计 - 保持原有高度 */
+.widget-task {
+  flex: 1 1 0; /* 保持1倍高度 */
 }
 
-/* 最后一个卡片底部圆角 */
-.widget:last-child {
-  border-bottom-left-radius: 8px;
-  border-bottom-right-radius: 8px;
+/* 事件通知 - 增加高度 */
+.widget-event {
+  flex: 1.4 1 0; /* 增加到1.4倍高度 */
 }
+
+/* 小部件顶部图片 */
+.widget::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 0;
+  right: 0;
+  opacity: 0.5;
+  width: 100%; /* 铺满整个宽度 */
+  height: 40px; /* 缩短高度 */
+  background: url('@/assets/images/main/main-containier-header.png') center/cover no-repeat;
+  z-index: 3;
+}
+
+/* 移除widget悬停效果 */
+
+/* 移除特殊圆角设置，使用统一的圆角 */
 
 .widget-title {
   color: #00d4ff;
-  font-size: 16px;
+  font-size: 18px; /* 从16px调大到18px */
   font-weight: bold;
+  font-style: italic; /* 添加倾斜样式 */
   margin-bottom: 15px;
-  text-align: center;
+  text-align: center; /* 改回居中对齐 */
   position: absolute;
-  top: 3px;
+  top: 12px; /* 向上移动，让标题显示在标题栏图片内部 */
   left: 50%;
-  transform: translateX(-50%);
-  z-index: 3;
+  transform: translateX(-50%); /* 恢复居中变换 */
+  z-index: 4; /* 提高层级确保显示在图片上方 */
   width: calc(100% - 30px);
 }
 
-/* 统计网格 */
+/* 设备统计容器 */
+.device-stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 0;
+  height: 100%;
+  justify-content: space-around;
+}
+
+.device-category {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px 10px;
+  background: transparent;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.device-category:hover {
+  background: transparent;
+}
+
+.device-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.device-icon {
+  width: 70px;
+  height: 70px;
+  flex-shrink: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.3));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  top: 28px; /* 增加到28像素，继续向下移动图标 */
+}
+
+.camera-icon {
+  background-image: url('@/assets/images/main/main-container-camera.png');
+}
+
+.algorithm-icon {
+  background-image: url('@/assets/images/main/main-container-algorithm.png');
+}
+
+.device-info-box {
+  flex: 1;
+  background-image: url('@/assets/images/main/main-container-box.png');
+  background-size: 120% 70%; /* 宽度拉长到120%，高度压缩到70% */
+  background-repeat: no-repeat;
+  background-position: center;
+  padding: 10px 30px; /* 减少上下内边距，增加左右内边距 */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 35px; /* 减少最小高度 */
+  position: relative;
+  opacity: 0.5; /* 添加透明度 */
+}
+
+.device-type {
+  font-size: 16px;
+  font-weight: bold;
+  color: #00d4ff;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.device-total {
+  flex-shrink: 0;
+}
+
+.total-number {
+  font-size: 24px;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+.unit-text {
+  font-size: 18px;
+  font-weight: normal;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+  margin-left: 2px;
+}
+
+.unit-text-small {
+  font-size: 14px;
+  font-weight: normal;
+  color: inherit;
+  text-shadow: 0 0 6px currentColor;
+  margin-left: 1px;
+}
+
+.device-details {
+  display: flex;
+  justify-content: space-around;
+  gap: 20px;
+  padding-left: 85px; /* 对齐到图标右侧 (70px图标 + 15px间隔) */
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.detail-number {
+  font-size: 20px;
+  font-weight: bold;
+  text-shadow: 0 0 8px currentColor;
+  line-height: 1;
+}
+
+.detail-label {
+  color: #88ccff;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1;
+}
+
+
+/* 统计网格 - 保留用于其他组件 */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -728,16 +1068,14 @@ onUnmounted(() => {
 .stat-item {
   text-align: center;
   padding: 12px;
-  background: rgba(0, 150, 255, 0.1);
+  background: transparent; /* 透明背景 */
   border-radius: 6px;
-  border: 1px solid rgba(0, 150, 255, 0.2);
-  transition: all 0.3s ease;
+  border: 1px solid transparent; /* 透明边框，保留边界但不可见 */
+  box-shadow: none; /* 移除发光效果 */
+  transition: none; /* 移除过渡效果 */
 }
 
-.stat-item:hover {
-  background: rgba(0, 150, 255, 0.2);
-  transform: translateY(-2px);
-}
+/* 移除stat-item悬停效果 */
 
 .stat-number {
   font-size: 24px;
@@ -756,9 +1094,10 @@ onUnmounted(() => {
 .single-stat {
   text-align: center;
   padding: 15px;
-  background: rgba(0, 150, 255, 0.1);
+  background: transparent; /* 透明背景 */
   border-radius: 6px;
-  border: 1px solid rgba(0, 150, 255, 0.2);
+  border: 1px solid transparent; /* 透明边框，保留边界但不可见 */
+  box-shadow: none; /* 移除发光效果 */
   position: relative;
   z-index: 2;
   margin-top: 10px;
@@ -804,10 +1143,12 @@ onUnmounted(() => {
   align-items: center;
   padding: 10px 12px;
   margin-bottom: 8px;
-  background: rgba(0, 100, 200, 0.1);
+  background: transparent; /* 透明背景 */
   border-radius: 4px;
-  border-left: 3px solid #00d4ff;
-  transition: all 0.3s ease;
+  border-left: 3px solid transparent; /* 透明左边框 */
+  border: 1px solid transparent; /* 透明边框，保留边界但不可见 */
+  box-shadow: none; /* 移除发光效果 */
+  transition: none; /* 移除过渡效果 */
   font-size: 14px;
   cursor: pointer;
   position: relative;
@@ -819,9 +1160,186 @@ onUnmounted(() => {
   margin-top: 10px;
 }
 
-.list-item:hover {
-  background: rgba(0, 150, 255, 0.2);
-  transform: translateX(5px);
+/* 移除list-item悬停效果 */
+
+/* 告警统计专用样式 */
+.alarm-stats-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.main-alarm-display {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.alarm-label {
+  color: #88ccff;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.alarm-counter {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.counter-digit {
+  display: inline-block;
+  width: 35px;
+  height: 45px;
+  line-height: 45px;
+  background: linear-gradient(135deg, rgba(0, 150, 255, 0.2) 0%, rgba(0, 200, 255, 0.3) 100%);
+  border: 1px solid rgba(0, 150, 255, 0.4);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 
+    0 0 10px rgba(0, 150, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+}
+
+.alarm-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alarm-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+}
+
+.stat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stat-dot.processed {
+  background: #ffaa00;
+  box-shadow: 0 0 8px rgba(255, 170, 0, 0.5);
+}
+
+.stat-dot.unprocessed {
+  background: #00aaff;
+  box-shadow: 0 0 8px rgba(0, 170, 255, 0.5);
+}
+
+.stat-text {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* 环形图样式 */
+.alarm-chart-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 50px;
+  height: 100%;
+  padding: 15px 0;
+}
+
+.chart-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.chart-decoration {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  height: 150px;
+  background: url('@/assets/images/main/main-container-circle.png') center/contain no-repeat;
+  opacity: 0.5;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.alarm-ring-chart {
+  filter: drop-shadow(0 0 8px rgba(0, 150, 255, 0.3));
+  position: relative;
+  z-index: 2;
+}
+
+.processed-arc {
+  stroke: #00aaff;
+  filter: drop-shadow(0 0 6px rgba(0, 170, 255, 0.6));
+  animation: drawProcessedArc 2s ease-in-out;
+}
+
+.unprocessed-arc {
+  stroke: #ffaa00;
+  filter: drop-shadow(0 0 6px rgba(255, 170, 0, 0.6));
+  animation: drawUnprocessedArc 2s ease-in-out 0.3s both;
+}
+
+@keyframes drawProcessedArc {
+  from {
+    stroke-dasharray: 0 300;
+  }
+}
+
+@keyframes drawUnprocessedArc {
+  from {
+    stroke-dasharray: 0 300;
+  }
+}
+
+.chart-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  justify-content: center;
+  min-width: 140px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 5px 0;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-dot.processed {
+  background: #00aaff;
+  box-shadow: 0 0 6px rgba(0, 170, 255, 0.5);
+}
+
+.legend-dot.unprocessed {
+  background: #ffaa00;
+  box-shadow: 0 0 6px rgba(255, 170, 0, 0.5);
+}
+
+.legend-text {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 500;
 }
 
 /* 事件内容 */
@@ -874,7 +1392,141 @@ onUnmounted(() => {
   50% { opacity: 0.5; }
 }
 
-/* 排行榜计数 */
+/* 新的排行榜图表样式 */
+.ranking-chart-container {
+  position: relative;
+  height: 100%;
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ranking-chart {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.ranking-bar {
+  opacity: 0;
+  animation: slideInBar 1s ease-out forwards;
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+@keyframes slideInBar {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.ranking-labels {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 15px 0;
+}
+
+.ranking-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 5px;
+  opacity: 0;
+  animation: slideInText 0.8s ease-out forwards;
+  position: relative;
+  transform: translateY(-2px);
+}
+
+@keyframes slideInText {
+  from {
+    opacity: 0;
+    transform: translateX(-20px) translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) translateY(-2px);
+  }
+}
+
+.rank-badge {
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 6px;
+  border-radius: 6px;
+  text-align: center;
+  min-width: 42px;
+  width: 42px;
+  text-shadow: 0 0 6px currentColor;
+  border: 1px solid currentColor;
+  box-shadow: 0 0 8px currentColor;
+  flex-shrink: 0;
+}
+
+.rank-1 {
+  background: linear-gradient(135deg, #ff6b35, #ff8c42);
+  color: #ffffff;
+  border-color: #ff6b35;
+}
+
+.rank-2 {
+  background: linear-gradient(135deg, #ffa500, #ffb84d);
+  color: #ffffff;
+  border-color: #ffa500;
+}
+
+.rank-3 {
+  background: linear-gradient(135deg, #00bfff, #42d4ff);
+  color: #ffffff;
+  border-color: #00bfff;
+}
+
+.rank-4 {
+  background: linear-gradient(135deg, #1e90ff, #4da6ff);
+  color: #ffffff;
+  border-color: #1e90ff;
+}
+
+.rank-5 {
+  background: linear-gradient(135deg, #4682b4, #6ba3d0);
+  color: #ffffff;
+  border-color: #4682b4;
+}
+
+.device-name {
+  flex: 1;
+  margin-left: 5px;
+  font-size: 14px;
+  color: #ffffff;
+  font-weight: 500;
+  text-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+  text-align: left;
+}
+
+.count-value {
+  font-size: 16px;
+  font-weight: bold;
+  color: #00ff88;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  min-width: 25px;
+  width: 25px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* 排行榜计数 - 保留旧样式作为备用 */
 .ranking-count {
   font-size: 16px;
   font-weight: bold;
@@ -882,7 +1534,81 @@ onUnmounted(() => {
   text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
 }
 
-/* 图表容器 */
+/* SVG图表容器 */
+.svg-chart-container {
+  height: 180px;
+  margin-top: 15px;
+  position: relative;
+  z-index: 2;
+  padding: 0;
+  margin-left: -15px;
+  margin-right: -15px;
+}
+
+.trend-chart {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+.trend-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  animation: drawLine 2s ease-in-out forwards;
+}
+
+@keyframes drawLine {
+  from {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    opacity: 1;
+  }
+  to {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.data-point {
+  opacity: 0;
+  animation: showPoint 0.5s ease-in-out forwards;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.data-point:hover {
+  r: 5;
+  filter: drop-shadow(0 0 10px #00d4ff);
+}
+
+@keyframes showPoint {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.grid-lines {
+  opacity: 0;
+  animation: fadeInGrid 1s ease-in-out 0.5s forwards;
+}
+
+@keyframes fadeInGrid {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 保留旧的图表容器样式作为备用 */
 .chart-container {
   height: 180px;
   margin-top: 15px;

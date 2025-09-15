@@ -216,7 +216,7 @@ export default {
 
 /* 首页专用头部样式 */
 .home-header {
-  background: url('@/assets/images/main/main-header.png') center/cover no-repeat, 
+  background: url('@/assets/images/main/main-header1.png') center/cover no-repeat, 
               linear-gradient(135deg, 
                 rgba(15, 25, 45, 0.8) 0%, 
                 rgba(20, 35, 60, 0.8) 50%, 
