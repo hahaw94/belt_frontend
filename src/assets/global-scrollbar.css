@@ -90,3 +90,58 @@
 .el-dialog__body::-webkit-scrollbar-thumb:hover {
   background: #a1a1a1;
 }
+
+/* 全局强制覆盖Element Plus下拉菜单样式 */
+.el-dropdown-menu {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.el-dropdown-menu .el-dropdown-menu__item {
+  color: #00d4ff !important;
+  background: transparent !important;
+  transition: all 0.3s ease !important;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.6) !important;
+}
+
+.el-dropdown-menu .el-dropdown-menu__item:hover {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  color: #00ffff !important;
+}
+
+.el-dropdown-menu .el-dropdown-menu__item.is-disabled {
+  color: rgba(0, 212, 255, 0.6) !important;
+  background: rgba(0, 150, 255, 0.1) !important;
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.3) !important;
+}
+
+.el-dropdown-menu .el-dropdown-menu__item .el-icon {
+  color: rgba(0, 255, 255, 0.7) !important;
+  margin-right: 8px !important;
+}
+
+.el-dropdown-menu .el-dropdown-menu__item:hover .el-icon {
+  color: #00ffff !important;
+}
+
+/* 强制覆盖popper容器样式 */
+.el-popper {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-popper.is-dark {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 针对具体的dropdown popper */
+.el-popper[data-popper-placement] {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}

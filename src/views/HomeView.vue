@@ -446,6 +446,104 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 自定义摄像头弹窗 -->
+    <teleport to="body">
+      <div 
+        v-if="cameraPopupVisible" 
+        class="custom-modal-overlay"
+        @click.self="closeCameraPopup"
+      >
+        <div class="custom-modal">
+          <!-- 弹窗头部 -->
+          <div class="custom-modal-header">
+            <h3 class="custom-modal-title">{{ currentCameraPopup.device_name }} - 实时画面</h3>
+            <button class="custom-modal-close" @click="closeCameraPopup">&times;</button>
+          </div>
+          
+          <!-- 弹窗内容 -->
+          <div class="custom-modal-body">
+            <!-- 视频区域 -->
+            <div class="video-display-area">
+              <img 
+                :src="currentCameraPopup.image" 
+                :alt="currentCameraPopup.device_name"
+                class="full-video-image"
+              />
+            </div>
+            
+            <!-- 信息区域 -->
+            <div class="info-display-area">
+              <div class="camera-details">
+                <p><strong>设备名称：</strong>{{ currentCameraPopup.device_name }}</p>
+                <p><strong>设备状态：</strong>
+                  <span class="status-tag" :class="currentCameraPopup.status === '在线' ? 'status-online' : 'status-offline'">
+                    {{ currentCameraPopup.status }}
+                  </span>
+                </p>
+                <p><strong>告警时间：</strong>{{ currentCameraPopup.alert_time }}</p>
+                <p><strong>告警类型：</strong>{{ currentCameraPopup.alert_type }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
+    <!-- 背景摄像头图标 -->
+    <div class="background-cameras">
+      <div 
+        class="background-camera-icon camera-1" 
+        @click="showCameraPopup(cameraData[0])"
+        @mouseenter="showTooltip($event, cameraData[0])"
+        @mouseleave="hideTooltip"
+        title="点击查看摄像头画面"
+      >
+      </div>
+      <div 
+        class="background-camera-icon camera-2" 
+        @click="showCameraPopup(cameraData[1])"
+        @mouseenter="showTooltip($event, cameraData[1])"
+        @mouseleave="hideTooltip"
+        title="点击查看摄像头画面"
+      >
+      </div>
+    </div>
+
+    <!-- 摄像头悬停提示框 -->
+    <teleport to="body">
+      <div 
+        v-if="tooltipVisible"
+        class="camera-tooltip"
+        :style="{
+          left: tooltipPosition.x + 'px',
+          top: tooltipPosition.y + 'px'
+        }"
+      >
+        <div class="tooltip-background">
+          <div class="tooltip-content">
+            <div class="tooltip-header">实时告警</div>
+            <div class="tooltip-image">
+              <img :src="tooltipData.image" :alt="tooltipData.device_name" />
+            </div>
+            <div class="tooltip-info">
+              <div class="info-item">
+                <span class="info-label">设备名称:</span>
+                <span class="info-value">{{ tooltipData.device_name }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">事件名称:</span>
+                <span class="info-value">{{ tooltipData.alert_type }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">告警时间:</span>
+                <span class="info-value">{{ tooltipData.alert_time }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -465,6 +563,16 @@ const alarmDetailVisible = ref(false)
 // 新增状态
 const showAlertPopup = ref(false)
 const currentAlert = ref({})
+
+// 摄像头弹窗状态
+const cameraPopupVisible = ref(false)
+const currentCameraPopup = ref({})
+
+// Tooltip状态
+const tooltipVisible = ref(false)
+const tooltipPosition = ref({ x: 0, y: 0 })
+const tooltipData = ref({})
+let tooltipTimer = null
 
 // 数据看板数据
 const dashboardData = reactive({
@@ -639,6 +747,26 @@ const currentCamera = ref({})
 // 选中的告警
 const selectedAlarm = ref({})
 
+// 背景摄像头数据
+const cameraData = ref([
+  {
+    id: 1,
+    device_name: '摄像机1',
+    status: '在线',
+    image: 'https://via.placeholder.com/600x400/1a1a1a/00d4ff?text=摄像机1实时画面',
+    alert_time: '2024-08-27 14:02:45',
+    alert_type: '未戴安全帽'
+  },
+  {
+    id: 2,
+    device_name: '摄像机2', 
+    status: '在线',
+    image: 'https://via.placeholder.com/600x400/1a1a1a/00d4ff?text=摄像机2实时画面',
+    alert_time: '2024-08-27 13:58:32',
+    alert_type: '异常行为'
+  }
+])
+
 // 这些函数暂时注释，如果需要可以取消注释
 // const getStatusColor = (rate) => {
 //   if (rate >= 0.9) return 'success'
@@ -684,6 +812,74 @@ const closeAlert = () => {
 const showAlertDetails = () => {
   ElMessage.info('跳转到告警详情页面...')
   showAlertPopup.value = false
+}
+
+// 显示摄像头弹窗
+const showCameraPopup = (camera) => {
+  if (!camera) return
+  currentCameraPopup.value = camera
+  cameraPopupVisible.value = true
+}
+
+// 关闭摄像头弹窗
+const closeCameraPopup = () => {
+  cameraPopupVisible.value = false
+  currentCameraPopup.value = {}
+}
+
+// 显示tooltip
+const showTooltip = (event, cameraData) => {
+  // 清除之前的定时器
+  if (tooltipTimer) {
+    clearTimeout(tooltipTimer)
+  }
+  
+  // 设置tooltip数据
+  tooltipData.value = cameraData
+  
+  // 计算tooltip位置
+  const rect = event.target.getBoundingClientRect()
+  tooltipPosition.value = {
+    x: rect.right + 20, // 在摄像头右侧显示，留20px间距
+    y: rect.top + rect.height / 2 - 125 // 垂直居中对齐摄像头
+  }
+  
+  // 边界检查
+  const tooltipWidth = 380 // 从300px扩大到380px
+  const tooltipHeight = 250 // 从200px扩大到250px
+  
+  // 防止超出右边界，如果右侧空间不够则显示在左侧
+  if (tooltipPosition.value.x + tooltipWidth > window.innerWidth) {
+    tooltipPosition.value.x = rect.left - tooltipWidth - 20 // 显示在摄像头左侧
+  }
+  
+  // 防止超出左边界
+  if (tooltipPosition.value.x < 20) {
+    tooltipPosition.value.x = 20
+  }
+  
+  // 防止超出上边界
+  if (tooltipPosition.value.y < 20) {
+    tooltipPosition.value.y = 20
+  }
+  
+  // 防止超出下边界
+  if (tooltipPosition.value.y + tooltipHeight > window.innerHeight) {
+    tooltipPosition.value.y = window.innerHeight - tooltipHeight - 20
+  }
+  
+  // 延迟显示tooltip
+  tooltipTimer = setTimeout(() => {
+    tooltipVisible.value = true
+  }, 300)
+}
+
+// 隐藏tooltip
+const hideTooltip = () => {
+  if (tooltipTimer) {
+    clearTimeout(tooltipTimer)
+  }
+  tooltipVisible.value = false
 }
 
 // 模拟实时数据更新
@@ -836,30 +1032,33 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 220px; /* 增加高度从180px到220px */
+  height: 280px; /* 进一步增加高度从220px到280px */
   background: linear-gradient(
     to bottom,
-    rgba(0, 40, 80, 0.45) 0%,     /* 加强顶部透明度 */
-    rgba(0, 35, 70, 0.40) 8%,     /* 更密集的渐变层次 */
-    rgba(0, 32, 64, 0.35) 15%,
-    rgba(0, 28, 56, 0.30) 22%,
-    rgba(0, 25, 50, 0.26) 30%,
-    rgba(0, 22, 44, 0.22) 38%,
-    rgba(0, 20, 40, 0.18) 45%,
-    rgba(0, 18, 36, 0.15) 52%,
-    rgba(0, 15, 30, 0.12) 60%,
-    rgba(0, 13, 26, 0.09) 68%,
-    rgba(0, 12, 24, 0.07) 75%,
-    rgba(0, 10, 20, 0.05) 82%,
-    rgba(0, 8, 16, 0.03) 88%,
-    rgba(0, 6, 12, 0.02) 94%,
-    rgba(0, 4, 8, 0.01) 97%,
+    rgba(0, 50, 100, 0.75) 0%,    /* 大幅加强顶部透明度从0.45到0.75 */
+    rgba(0, 45, 90, 0.70) 6%,     /* 更密集且更深的渐变层次 */
+    rgba(0, 42, 84, 0.65) 12%,
+    rgba(0, 38, 76, 0.60) 18%,
+    rgba(0, 35, 70, 0.55) 24%,
+    rgba(0, 32, 64, 0.50) 30%,
+    rgba(0, 30, 60, 0.45) 36%,
+    rgba(0, 28, 56, 0.40) 42%,
+    rgba(0, 25, 50, 0.35) 48%,
+    rgba(0, 22, 44, 0.30) 54%,
+    rgba(0, 20, 40, 0.25) 60%,
+    rgba(0, 18, 36, 0.20) 66%,
+    rgba(0, 15, 30, 0.16) 72%,
+    rgba(0, 13, 26, 0.12) 78%,
+    rgba(0, 12, 24, 0.09) 84%,
+    rgba(0, 10, 20, 0.06) 90%,
+    rgba(0, 8, 16, 0.04) 94%,
+    rgba(0, 6, 12, 0.02) 97%,
     transparent 100%
   );
   pointer-events: none;
   z-index: 1;
-  /* 添加柔和的模糊效果增强过渡感 */
-  backdrop-filter: blur(0.5px);
+  /* 增强模糊效果 */
+  backdrop-filter: blur(1px);
 }
 
 /* 增强的底部渐变过渡效果 - 与顶部呼应 */
@@ -869,141 +1068,202 @@ onUnmounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 150px; /* 增加高度从120px到150px */
+  height: 200px; /* 进一步增加高度从150px到200px */
   background: linear-gradient(
     to top,
-    rgba(0, 30, 60, 0.25) 0%,     /* 加强底部透明度 */
-    rgba(0, 25, 50, 0.20) 15%,    /* 更密集的渐变层次 */
-    rgba(0, 22, 44, 0.16) 30%,
-    rgba(0, 18, 36, 0.12) 45%,
-    rgba(0, 15, 30, 0.09) 60%,
-    rgba(0, 13, 26, 0.06) 75%,
-    rgba(0, 10, 20, 0.04) 85%,
-    rgba(0, 8, 16, 0.025) 92%,
-    rgba(0, 5, 10, 0.01) 96%,
+    rgba(0, 45, 90, 0.55) 0%,     /* 大幅加强底部透明度从0.25到0.55 */
+    rgba(0, 40, 80, 0.50) 10%,    /* 更密集且更深的渐变层次 */
+    rgba(0, 38, 76, 0.45) 20%,
+    rgba(0, 35, 70, 0.40) 30%,
+    rgba(0, 32, 64, 0.35) 40%,
+    rgba(0, 30, 60, 0.30) 50%,
+    rgba(0, 25, 50, 0.25) 60%,
+    rgba(0, 22, 44, 0.20) 70%,
+    rgba(0, 18, 36, 0.15) 78%,
+    rgba(0, 15, 30, 0.12) 84%,
+    rgba(0, 13, 26, 0.09) 88%,
+    rgba(0, 10, 20, 0.06) 92%,
+    rgba(0, 8, 16, 0.04) 95%,
+    rgba(0, 5, 10, 0.02) 98%,
     transparent 100%
   );
   pointer-events: none;
   z-index: 1;
-  /* 添加轻微的模糊效果 */
-  backdrop-filter: blur(0.3px);
+  /* 增强模糊效果 */
+  backdrop-filter: blur(0.8px);
 }
 
-/* 左侧渐变过渡效果 */
+/* 左侧渐变过渡效果 - 回到原始方法 */
 .left-gradient-overlay {
   position: fixed;
   top: 0;
   left: 0;
-  width: 250px;
+  width: 450px;
   height: 100vh;
   background: linear-gradient(
     to right,
-    rgba(0, 30, 60, 0.25) 0%,
-    rgba(0, 28, 56, 0.22) 10%,
-    rgba(0, 25, 50, 0.18) 20%,
-    rgba(0, 22, 44, 0.15) 30%,
-    rgba(0, 20, 40, 0.12) 40%,
-    rgba(0, 18, 36, 0.09) 50%,
-    rgba(0, 15, 30, 0.06) 60%,
-    rgba(0, 12, 24, 0.04) 70%,
-    rgba(0, 10, 20, 0.025) 80%,
-    rgba(0, 8, 16, 0.015) 90%,
+    rgba(0, 50, 100, 0.65) 0%,
+    rgba(0, 48, 96, 0.60) 5%,
+    rgba(0, 45, 90, 0.55) 10%,
+    rgba(0, 42, 84, 0.50) 15%,
+    rgba(0, 40, 80, 0.45) 20%,
+    rgba(0, 38, 76, 0.40) 25%,
+    rgba(0, 35, 70, 0.35) 30%,
+    rgba(0, 32, 64, 0.30) 35%,
+    rgba(0, 30, 60, 0.25) 40%,
+    rgba(0, 28, 56, 0.22) 45%,
+    rgba(0, 25, 50, 0.19) 50%,
+    rgba(0, 22, 44, 0.16) 55%,
+    rgba(0, 20, 40, 0.13) 60%,
+    rgba(0, 18, 36, 0.10) 65%,
+    rgba(0, 15, 30, 0.08) 70%,
+    rgba(0, 13, 26, 0.06) 75%,
+    rgba(0, 12, 24, 0.04) 80%,
+    rgba(0, 10, 20, 0.03) 85%,
+    rgba(0, 8, 16, 0.02) 90%,
+    rgba(0, 6, 12, 0.01) 95%,
     transparent 100%
   );
   pointer-events: none;
   z-index: 1;
 }
 
-/* 右侧渐变过渡效果 */
+/* 右侧渐变过渡效果 - 回到原始方法 */
 .right-gradient-overlay {
   position: fixed;
   top: 0;
   right: 0;
-  width: 250px;
+  width: 450px;
   height: 100vh;
   background: linear-gradient(
     to left,
-    rgba(0, 30, 60, 0.25) 0%,
-    rgba(0, 28, 56, 0.22) 10%,
-    rgba(0, 25, 50, 0.18) 20%,
-    rgba(0, 22, 44, 0.15) 30%,
-    rgba(0, 20, 40, 0.12) 40%,
-    rgba(0, 18, 36, 0.09) 50%,
-    rgba(0, 15, 30, 0.06) 60%,
-    rgba(0, 12, 24, 0.04) 70%,
-    rgba(0, 10, 20, 0.025) 80%,
-    rgba(0, 8, 16, 0.015) 90%,
+    rgba(0, 50, 100, 0.65) 0%,
+    rgba(0, 48, 96, 0.60) 5%,
+    rgba(0, 45, 90, 0.55) 10%,
+    rgba(0, 42, 84, 0.50) 15%,
+    rgba(0, 40, 80, 0.45) 20%,
+    rgba(0, 38, 76, 0.40) 25%,
+    rgba(0, 35, 70, 0.35) 30%,
+    rgba(0, 32, 64, 0.30) 35%,
+    rgba(0, 30, 60, 0.25) 40%,
+    rgba(0, 28, 56, 0.22) 45%,
+    rgba(0, 25, 50, 0.19) 50%,
+    rgba(0, 22, 44, 0.16) 55%,
+    rgba(0, 20, 40, 0.13) 60%,
+    rgba(0, 18, 36, 0.10) 65%,
+    rgba(0, 15, 30, 0.08) 70%,
+    rgba(0, 13, 26, 0.06) 75%,
+    rgba(0, 12, 24, 0.04) 80%,
+    rgba(0, 10, 20, 0.03) 85%,
+    rgba(0, 8, 16, 0.02) 90%,
+    rgba(0, 6, 12, 0.01) 95%,
     transparent 100%
   );
   pointer-events: none;
   z-index: 1;
 }
 
-/* 角落渐变效果基础样式 */
+/* 角落渐变效果基础样式 - 扩大影响范围 */
 .corner-gradient {
   position: fixed;
-  width: 300px;
-  height: 300px;
+  width: 600px; /* 从400px大幅增加到600px，扩大影响范围 */
+  height: 600px; /* 从400px大幅增加到600px，扩大影响范围 */
   pointer-events: none;
   z-index: 1;
 }
 
-/* 左上角渐变 */
+/* 左上角渐变 - 更自然的径向过渡 */
 .corner-gradient.top-left {
   top: 0;
   left: 0;
   background: radial-gradient(
     ellipse at top left,
-    rgba(0, 40, 80, 0.15) 0%,
-    rgba(0, 35, 70, 0.12) 20%,
-    rgba(0, 30, 60, 0.09) 40%,
-    rgba(0, 25, 50, 0.06) 60%,
-    rgba(0, 20, 40, 0.03) 80%,
+    rgba(0, 60, 120, 0.35) 0%,   /* 降低起始强度，让过渡更自然 */
+    rgba(0, 58, 116, 0.32) 8%,   /* 增加更多细腻的过渡层次 */
+    rgba(0, 56, 112, 0.29) 16%,
+    rgba(0, 54, 108, 0.26) 24%,
+    rgba(0, 52, 104, 0.23) 32%,
+    rgba(0, 50, 100, 0.20) 40%,
+    rgba(0, 45, 90, 0.17) 48%,
+    rgba(0, 40, 80, 0.14) 56%,
+    rgba(0, 35, 70, 0.11) 64%,
+    rgba(0, 30, 60, 0.08) 72%,
+    rgba(0, 25, 50, 0.06) 80%,
+    rgba(0, 20, 40, 0.04) 87%,
+    rgba(0, 15, 30, 0.02) 93%,
+    rgba(0, 10, 20, 0.01) 97%,
     transparent 100%
   );
 }
 
-/* 右上角渐变 */
+/* 右上角渐变 - 更自然的径向过渡 */
 .corner-gradient.top-right {
   top: 0;
   right: 0;
   background: radial-gradient(
     ellipse at top right,
-    rgba(0, 40, 80, 0.15) 0%,
-    rgba(0, 35, 70, 0.12) 20%,
-    rgba(0, 30, 60, 0.09) 40%,
-    rgba(0, 25, 50, 0.06) 60%,
-    rgba(0, 20, 40, 0.03) 80%,
+    rgba(0, 60, 120, 0.35) 0%,   /* 降低起始强度，让过渡更自然 */
+    rgba(0, 58, 116, 0.32) 8%,   /* 增加更多细腻的过渡层次 */
+    rgba(0, 56, 112, 0.29) 16%,
+    rgba(0, 54, 108, 0.26) 24%,
+    rgba(0, 52, 104, 0.23) 32%,
+    rgba(0, 50, 100, 0.20) 40%,
+    rgba(0, 45, 90, 0.17) 48%,
+    rgba(0, 40, 80, 0.14) 56%,
+    rgba(0, 35, 70, 0.11) 64%,
+    rgba(0, 30, 60, 0.08) 72%,
+    rgba(0, 25, 50, 0.06) 80%,
+    rgba(0, 20, 40, 0.04) 87%,
+    rgba(0, 15, 30, 0.02) 93%,
+    rgba(0, 10, 20, 0.01) 97%,
     transparent 100%
   );
 }
 
-/* 左下角渐变 */
+/* 左下角渐变 - 更自然的径向过渡 */
 .corner-gradient.bottom-left {
   bottom: 0;
   left: 0;
   background: radial-gradient(
     ellipse at bottom left,
-    rgba(0, 40, 80, 0.12) 0%,
-    rgba(0, 35, 70, 0.09) 20%,
-    rgba(0, 30, 60, 0.07) 40%,
-    rgba(0, 25, 50, 0.05) 60%,
-    rgba(0, 20, 40, 0.025) 80%,
+    rgba(0, 55, 110, 0.28) 0%,   /* 降低起始强度，让过渡更自然 */
+    rgba(0, 53, 106, 0.25) 8%,   /* 增加更多细腻的过渡层次 */
+    rgba(0, 51, 102, 0.23) 16%,
+    rgba(0, 49, 98, 0.21) 24%,
+    rgba(0, 47, 94, 0.19) 32%,
+    rgba(0, 45, 90, 0.17) 40%,
+    rgba(0, 42, 84, 0.14) 48%,
+    rgba(0, 38, 76, 0.12) 56%,
+    rgba(0, 34, 68, 0.10) 64%,
+    rgba(0, 30, 60, 0.08) 72%,
+    rgba(0, 25, 50, 0.06) 80%,
+    rgba(0, 20, 40, 0.04) 87%,
+    rgba(0, 15, 30, 0.02) 93%,
+    rgba(0, 10, 20, 0.01) 97%,
     transparent 100%
   );
 }
 
-/* 右下角渐变 */
+/* 右下角渐变 - 更自然的径向过渡 */
 .corner-gradient.bottom-right {
   bottom: 0;
   right: 0;
   background: radial-gradient(
     ellipse at bottom right,
-    rgba(0, 40, 80, 0.12) 0%,
-    rgba(0, 35, 70, 0.09) 20%,
-    rgba(0, 30, 60, 0.07) 40%,
-    rgba(0, 25, 50, 0.05) 60%,
-    rgba(0, 20, 40, 0.025) 80%,
+    rgba(0, 55, 110, 0.28) 0%,   /* 降低起始强度，让过渡更自然 */
+    rgba(0, 53, 106, 0.25) 8%,   /* 增加更多细腻的过渡层次 */
+    rgba(0, 51, 102, 0.23) 16%,
+    rgba(0, 49, 98, 0.21) 24%,
+    rgba(0, 47, 94, 0.19) 32%,
+    rgba(0, 45, 90, 0.17) 40%,
+    rgba(0, 42, 84, 0.14) 48%,
+    rgba(0, 38, 76, 0.12) 56%,
+    rgba(0, 34, 68, 0.10) 64%,
+    rgba(0, 30, 60, 0.08) 72%,
+    rgba(0, 25, 50, 0.06) 80%,
+    rgba(0, 20, 40, 0.04) 87%,
+    rgba(0, 15, 30, 0.02) 93%,
+    rgba(0, 10, 20, 0.01) 97%,
     transparent 100%
   );
 }
@@ -2240,6 +2500,292 @@ onUnmounted(() => {
   .main-content {
     height: 400px;
   }
+}
+
+/* 背景摄像头图标样式 */
+.background-cameras {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.background-camera-icon {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background-image: url('@/assets/images/main/main-camera.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.background-camera-icon.camera-1 {
+  top: 35%;
+  left: 35%;
+}
+
+.background-camera-icon.camera-2 {
+  top: 35%;
+  right: 30%;
+}
+
+
+/* 自定义弹窗样式 */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+}
+
+.custom-modal {
+  width: 800px;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: linear-gradient(135deg, #0a1929 0%, #1a2332 50%, #0d1b2a 100%);
+  border: 2px solid rgba(0, 212, 255, 0.6);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.custom-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 15px 20px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+  background: linear-gradient(135deg, #0a1929 0%, #1a2332 50%, #0d1b2a 100%);
+}
+
+.custom-modal-title {
+  color: #00d4ff;
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0;
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 0.8),
+    0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.custom-modal-close {
+  background: none;
+  border: none;
+  color: #ffffff;
+  font-size: 24px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.custom-modal-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #00d4ff;
+  transform: scale(1.1);
+}
+
+.custom-modal-body {
+  padding: 20px;
+  background: linear-gradient(135deg, #0a1929 0%, #1a2332 50%, #0d1b2a 100%);
+}
+
+/* 视频显示区域 */
+.video-display-area {
+  width: 100%;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  margin-bottom: 20px;
+}
+
+.full-video-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+/* 信息显示区域 */
+.info-display-area {
+  padding: 0 10px;
+}
+
+.camera-details p {
+  margin: 12px 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: white;
+  text-shadow: 
+    0 0 8px rgba(255, 255, 255, 0.6),
+    0 0 4px rgba(0, 0, 0, 0.8);
+}
+
+.camera-details strong {
+  color: #88ccff;
+  text-shadow: 
+    0 0 10px rgba(136, 204, 255, 0.8),
+    0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+/* 自定义状态标签 */
+.status-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-shadow: none;
+}
+
+.status-tag.status-online {
+  background: rgba(0, 255, 136, 0.2);
+  border: 1px solid #00ff88;
+  color: #00ff88;
+}
+
+.status-tag.status-offline {
+  background: rgba(255, 68, 68, 0.2);
+  border: 1px solid #ff4444;
+  color: #ff4444;
+}
+
+/* 摄像头悬停提示框样式 */
+.camera-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  width: 380px;
+  height: 250px;
+}
+
+.tooltip-background {
+  width: 100%;
+  height: 100%;
+  background-image: url('@/assets/images/main/main-camera-box.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(0, 212, 255, 0.3);
+}
+
+.tooltip-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: white;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+}
+
+.tooltip-header {
+  font-size: 18px;
+  font-weight: bold;
+  color: #ff6666;
+  text-align: center;
+  margin-bottom: 15px;
+  text-shadow: 
+    0 0 10px rgba(255, 102, 102, 1),
+    0 0 8px rgba(0, 0, 0, 1),
+    0 2px 4px rgba(0, 0, 0, 1);
+}
+
+.tooltip-image {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 12px 0;
+}
+
+.tooltip-image img {
+  max-width: 100%;
+  max-height: 120px;
+  border-radius: 6px;
+  border: 2px solid rgba(0, 212, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip-info {
+  margin-top: 12px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.info-label {
+  color: #88ccff;
+  font-weight: 500;
+  text-shadow: 
+    0 0 6px rgba(136, 204, 255, 0.8),
+    0 0 4px rgba(0, 0, 0, 1);
+}
+
+.info-value {
+  color: #ffffff;
+  font-weight: 500;
+  text-shadow: 
+    0 0 8px rgba(255, 255, 255, 0.8),
+    0 0 4px rgba(0, 0, 0, 1);
+  max-width: 200px;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* 背景摄像头图标悬停效果增强 */
+.background-camera-icon {
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+}
+
+.background-camera-icon:hover {
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 15px rgba(0, 212, 255, 0.8));
 }
 
 

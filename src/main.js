@@ -13,6 +13,8 @@ import { ElMessage } from 'element-plus'
 
 // 引入全局滚动条样式
 import '@/assets/global-scrollbar.css'
+// 引入下拉菜单主题覆盖样式（必须在Element Plus样式之后）
+import '@/assets/dropdown-theme-override.css'
 
 // 在开发环境中导入Mock测试
 if (process.env.NODE_ENV === 'development') {

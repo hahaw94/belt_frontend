@@ -318,28 +318,42 @@ export default {
 
 /* 下拉菜单样式优化 */
 :deep(.el-dropdown-menu) {
-  background: rgba(15, 25, 45, 0.95);
-  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
   backdrop-filter: blur(10px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 强制覆盖Element Plus默认的popper样式 */
+:deep(.el-popper.is-dark) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-popper) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
 }
 
 :deep(.el-dropdown-menu__item) {
-  color: rgba(255, 255, 255, 0.9);
+  color: #00d4ff !important;
+  background: transparent !important;
   transition: all 0.3s ease;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
 }
 
 :deep(.el-dropdown-menu__item:hover) {
   background: linear-gradient(90deg, 
     rgba(0, 255, 255, 0.08) 0%, 
     rgba(0, 255, 255, 0.12) 50%, 
-    rgba(0, 255, 255, 0.08) 100%);
-  color: #00ffff;
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  color: #00ffff !important;
 }
 
 :deep(.el-dropdown-menu__item.is-disabled) {
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(0, 150, 255, 0.1);
+  color: rgba(0, 212, 255, 0.6) !important;
+  background: rgba(0, 150, 255, 0.1) !important;
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.3);
 }
 
 :deep(.el-dropdown-menu__item .el-icon) {

@@ -1,0 +1,94 @@
+/* Element Plus 下拉菜单主题覆盖样式 */
+/* 这个文件专门用于强制覆盖 Element Plus 的下拉菜单默认样式 */
+
+/* 最高优先级的下拉菜单容器样式 */
+.el-dropdown-menu,
+.el-popper.el-dropdown__popper,
+.el-popper[data-popper-placement^="bottom"],
+.el-popper[data-popper-placement^="top"],
+.el-popper[x-placement^="bottom"],
+.el-popper[x-placement^="top"] {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  backdrop-filter: blur(12px) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6) !important;
+  border-radius: 8px !important;
+}
+
+/* 下拉菜单项样式 */
+.el-dropdown-menu__item,
+.el-dropdown-menu .el-dropdown-menu__item {
+  color: #00d4ff !important;
+  background: transparent !important;
+  transition: all 0.3s ease !important;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.6) !important;
+  padding: 8px 16px !important;
+  font-size: 14px !important;
+}
+
+/* 下拉菜单项悬停样式 */
+.el-dropdown-menu__item:hover,
+.el-dropdown-menu .el-dropdown-menu__item:hover {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.1) 0%, 
+    rgba(0, 255, 255, 0.15) 50%, 
+    rgba(0, 255, 255, 0.1) 100%) !important;
+  color: #00ffff !important;
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.8) !important;
+}
+
+/* 禁用状态的菜单项 */
+.el-dropdown-menu__item.is-disabled,
+.el-dropdown-menu .el-dropdown-menu__item.is-disabled {
+  color: rgba(0, 212, 255, 0.5) !important;
+  background: rgba(0, 150, 255, 0.08) !important;
+  text-shadow: 0 0 6px rgba(0, 212, 255, 0.3) !important;
+  cursor: not-allowed !important;
+}
+
+/* 菜单项图标样式 */
+.el-dropdown-menu__item .el-icon,
+.el-dropdown-menu .el-dropdown-menu__item .el-icon {
+  color: rgba(0, 255, 255, 0.8) !important;
+  margin-right: 8px !important;
+  font-size: 16px !important;
+}
+
+.el-dropdown-menu__item:hover .el-icon,
+.el-dropdown-menu .el-dropdown-menu__item:hover .el-icon {
+  color: #00ffff !important;
+  filter: drop-shadow(0 0 6px rgba(0, 255, 255, 0.6)) !important;
+}
+
+/* 分割线样式 */
+.el-dropdown-menu__item--divided,
+.el-dropdown-menu .el-dropdown-menu__item--divided {
+  border-top: 1px solid rgba(0, 255, 255, 0.2) !important;
+  margin-top: 4px !important;
+}
+
+/* 强制覆盖所有可能的 popper 样式 */
+[data-popper-placement] {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+}
+
+/* 针对 Vue 3 + Element Plus 的特殊处理 */
+.el-popper__arrow::before {
+  border-bottom-color: rgba(0, 255, 255, 0.4) !important;
+  border-top-color: rgba(0, 255, 255, 0.4) !important;
+}
+
+.el-popper[data-popper-placement^="bottom"] .el-popper__arrow::before {
+  border-bottom-color: rgba(0, 255, 255, 0.4) !important;
+}
+
+.el-popper[data-popper-placement^="top"] .el-popper__arrow::before {
+  border-top-color: rgba(0, 255, 255, 0.4) !important;
+}
+
+/* 确保箭头背景与容器一致 */
+.el-popper__arrow::after {
+  border-bottom-color: rgba(15, 25, 45, 0.98) !important;
+  border-top-color: rgba(15, 25, 45, 0.98) !important;
+}
