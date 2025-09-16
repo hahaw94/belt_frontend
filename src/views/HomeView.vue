@@ -829,54 +829,64 @@ onUnmounted(() => {
   position: relative;
 }
 
-/* 添加顶部渐变过渡效果 */
+/* 增强的顶部渐变过渡效果 - 让header区域与背景地图更自然融合 */
 .industrial-dashboard::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 180px;
+  height: 220px; /* 增加高度从180px到220px */
   background: linear-gradient(
     to bottom,
-    rgba(0, 30, 60, 0.3) 0%,
-    rgba(0, 28, 56, 0.26) 10%,
-    rgba(0, 25, 50, 0.22) 20%,
-    rgba(0, 23, 46, 0.18) 30%,
-    rgba(0, 20, 40, 0.15) 40%,
-    rgba(0, 18, 36, 0.12) 50%,
-    rgba(0, 15, 30, 0.09) 60%,
-    rgba(0, 13, 26, 0.06) 70%,
-    rgba(0, 10, 20, 0.04) 80%,
-    rgba(0, 8, 16, 0.025) 90%,
-    rgba(0, 5, 10, 0.01) 95%,
+    rgba(0, 40, 80, 0.45) 0%,     /* 加强顶部透明度 */
+    rgba(0, 35, 70, 0.40) 8%,     /* 更密集的渐变层次 */
+    rgba(0, 32, 64, 0.35) 15%,
+    rgba(0, 28, 56, 0.30) 22%,
+    rgba(0, 25, 50, 0.26) 30%,
+    rgba(0, 22, 44, 0.22) 38%,
+    rgba(0, 20, 40, 0.18) 45%,
+    rgba(0, 18, 36, 0.15) 52%,
+    rgba(0, 15, 30, 0.12) 60%,
+    rgba(0, 13, 26, 0.09) 68%,
+    rgba(0, 12, 24, 0.07) 75%,
+    rgba(0, 10, 20, 0.05) 82%,
+    rgba(0, 8, 16, 0.03) 88%,
+    rgba(0, 6, 12, 0.02) 94%,
+    rgba(0, 4, 8, 0.01) 97%,
     transparent 100%
   );
   pointer-events: none;
   z-index: 1;
+  /* 添加柔和的模糊效果增强过渡感 */
+  backdrop-filter: blur(0.5px);
 }
 
-/* 添加底部渐变过渡效果 */
+/* 增强的底部渐变过渡效果 - 与顶部呼应 */
 .industrial-dashboard::after {
   content: '';
   position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
-  height: 120px;
+  height: 150px; /* 增加高度从120px到150px */
   background: linear-gradient(
     to top,
-    rgba(0, 20, 40, 0.2) 0%,
-    rgba(0, 18, 36, 0.16) 20%,
-    rgba(0, 15, 30, 0.12) 40%,
-    rgba(0, 13, 26, 0.08) 60%,
-    rgba(0, 10, 20, 0.05) 80%,
-    rgba(0, 8, 16, 0.025) 90%,
-    rgba(0, 5, 10, 0.01) 95%,
+    rgba(0, 30, 60, 0.25) 0%,     /* 加强底部透明度 */
+    rgba(0, 25, 50, 0.20) 15%,    /* 更密集的渐变层次 */
+    rgba(0, 22, 44, 0.16) 30%,
+    rgba(0, 18, 36, 0.12) 45%,
+    rgba(0, 15, 30, 0.09) 60%,
+    rgba(0, 13, 26, 0.06) 75%,
+    rgba(0, 10, 20, 0.04) 85%,
+    rgba(0, 8, 16, 0.025) 92%,
+    rgba(0, 5, 10, 0.01) 96%,
     transparent 100%
   );
   pointer-events: none;
   z-index: 1;
+  /* 添加轻微的模糊效果 */
+  backdrop-filter: blur(0.3px);
 }
 
 /* 左侧渐变过渡效果 */
@@ -1097,18 +1107,20 @@ onUnmounted(() => {
   flex: 1.4 1 0; /* 增加到1.4倍高度 */
 }
 
-/* 小部件顶部图片 */
+/* 小部件顶部图片 - 增强清晰度 */
 .widget::before {
   content: '';
   position: absolute;
   top: 5px;
   left: 0;
   right: 0;
-  opacity: 0.8;
+  opacity: 0.95; /* 从0.8提高到0.95，增强可见性 */
   width: 100%; /* 铺满整个宽度 */
   height: 40px; /* 缩短高度 */
   background: url('@/assets/images/main/main-containier-header.png') center/cover no-repeat;
   z-index: 3;
+  /* 增强图片锐度 */
+  filter: contrast(1.15) brightness(1.1) saturate(1.2);
 }
 
 /* 移除widget悬停效果 */
@@ -1176,12 +1188,20 @@ onUnmounted(() => {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.3));
+  /* 增强图标发光效果和清晰度 */
+  filter:
+    drop-shadow(0 0 12px rgba(0, 255, 255, 0.6))
+    drop-shadow(0 0 6px rgba(255, 255, 255, 0.3))
+    contrast(1.2)
+    brightness(1.15)
+    saturate(1.3);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   top: 28px; /* 增加到28像素，继续向下移动图标 */
+  /* 增加图标的可见度 */
+  opacity: 0.95;
 }
 
 .camera-icon {
@@ -1204,7 +1224,9 @@ onUnmounted(() => {
   justify-content: space-between;
   min-height: 35px; /* 减少最小高度 */
   position: relative;
-  opacity: 0.8; /* 提高透明度 */
+  opacity: 0.92; /* 从0.8提高到0.92，增强背景图片可见性 */
+  /* 增强背景图片的锐度和对比度 */
+  filter: contrast(1.1) brightness(1.08);
 }
 
 .device-type {
@@ -1360,8 +1382,15 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   background: url('@/assets/images/main/main-container-circle2.png') center/contain no-repeat;
-  opacity: 0.9;
+  opacity: 0.95; /* 从0.9提高到0.95 */
   z-index: 1;
+  /* 增强圆圈图片的清晰度和发光效果 */
+  filter:
+    contrast(1.15)
+    brightness(1.1)
+    saturate(1.2)
+    drop-shadow(0 0 8px rgba(0, 255, 255, 0.4))
+    drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
 }
 
 .circle-content {
@@ -1396,7 +1425,7 @@ onUnmounted(() => {
     0 0 8px rgba(136, 204, 255, 0.8);
 }
 
-/* 四角数据显示 */
+/* 四角数据显示 - 增强图片清晰度 */
 .corner-data {
   position: absolute;
   display: flex;
@@ -1408,9 +1437,16 @@ onUnmounted(() => {
   width: 140px; /* 从110px增加到140px，增大约27% */
   height: 45px; /* 从45px增加到55px，增大约22% */
   background: url('@/assets/images/main/main-container-box1.png') center/100% 100% no-repeat;
-  opacity: 0.95; /* 进一步提高透明度 */
+  opacity: 0.97; /* 从0.95进一步提高到0.97 */
   padding: 8px 12px; /* 添加内边距让文字位置更好 */
   box-sizing: border-box;
+  /* 增强背景图片的清晰度和发光效果 */
+  filter:
+    contrast(1.12)
+    brightness(1.08)
+    saturate(1.15)
+    drop-shadow(0 0 6px rgba(0, 200, 255, 0.3))
+    drop-shadow(0 0 3px rgba(255, 255, 255, 0.15));
 }
 
 .top-left {
@@ -1500,7 +1536,7 @@ onUnmounted(() => {
   color: #ff4444;
 }
 
-/* 列表项样式 */
+/* 列表项样式 - 增强背景图片清晰度 */
 .list-item {
   display: flex;
   justify-content: space-between;
@@ -1521,7 +1557,9 @@ onUnmounted(() => {
   cursor: pointer;
   position: relative;
   z-index: 2;
-  opacity: 0.9; /* 提高背景图片透明度 */
+  opacity: 0.94; /* 从0.9提高到0.94，增强背景图片可见性 */
+  /* 增强背景图片的清晰度和对比度 */
+  filter: contrast(1.08) brightness(1.05) saturate(1.1);
 }
 
 /* 事件列表、排行榜列表容器 */
@@ -1668,9 +1706,16 @@ onUnmounted(() => {
   width: 150px;
   height: 150px;
   background: url('@/assets/images/main/main-container-circle.png') center/contain no-repeat;
-  opacity: 0.8;
+  opacity: 0.92; /* 从0.8提高到0.92，增强可见性 */
   z-index: 1;
   pointer-events: none;
+  /* 增强装饰圆圈的清晰度和发光效果 */
+  filter:
+    contrast(1.12)
+    brightness(1.08)
+    saturate(1.15)
+    drop-shadow(0 0 8px rgba(0, 200, 255, 0.4))
+    drop-shadow(0 0 4px rgba(255, 255, 255, 0.2));
 }
 
 .alarm-ring-chart {
