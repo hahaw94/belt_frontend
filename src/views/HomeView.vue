@@ -447,42 +447,61 @@
       </div>
     </el-dialog>
 
-    <!-- 自定义摄像头弹窗 -->
+    <!-- 自定义摄像头弹窗 - 实时视频播放 -->
     <teleport to="body">
       <div 
         v-if="cameraPopupVisible" 
         class="custom-modal-overlay"
         @click.self="closeCameraPopup"
       >
-        <div class="custom-modal">
+        <div class="custom-modal live-video-modal">
           <!-- 弹窗头部 -->
           <div class="custom-modal-header">
-            <h3 class="custom-modal-title">{{ currentCameraPopup.device_name }} - 实时画面</h3>
+            <h3 class="custom-modal-title">
+              {{ currentCameraPopup.device_name }} - 实时直播
+              <span class="live-badge">
+                <span class="live-dot-small"></span>
+                LIVE
+              </span>
+            </h3>
             <button class="custom-modal-close" @click="closeCameraPopup">&times;</button>
           </div>
           
           <!-- 弹窗内容 -->
           <div class="custom-modal-body">
-            <!-- 视频区域 -->
+            <!-- 实时视频播放区域 -->
             <div class="video-display-area">
-              <img 
-                :src="currentCameraPopup.image" 
-                :alt="currentCameraPopup.device_name"
-                class="full-video-image"
-              />
+              <div class="video-player-container">
+                <!-- HLS视频播放器组件 -->
+                <HLSVideoPlayer 
+                  :src="getStreamUrl(currentCameraPopup.stream_name)"
+                  :poster="getStreamSnapshot(currentCameraPopup.stream_name)"
+                  :autoplay="true"
+                />
+              </div>
             </div>
             
             <!-- 信息区域 -->
             <div class="info-display-area">
               <div class="camera-details">
-                <p><strong>设备名称：</strong>{{ currentCameraPopup.device_name }}</p>
-                <p><strong>设备状态：</strong>
-                  <span class="status-tag" :class="currentCameraPopup.status === '在线' ? 'status-online' : 'status-offline'">
-                    {{ currentCameraPopup.status }}
+                <div class="detail-row">
+                  <span class="detail-label">设备名称：</span>
+                  <span class="detail-value">{{ currentCameraPopup.device_name }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">推流状态：</span>
+                  <span class="detail-value" :class="isStreamOnline(currentCameraPopup.stream_name) ? 'status-online' : 'status-offline'">
+                    {{ isStreamOnline(currentCameraPopup.stream_name) ? '在线直播' : '离线' }}
                   </span>
-                </p>
-                <p><strong>告警时间：</strong>{{ currentCameraPopup.alert_time }}</p>
-                <p><strong>告警类型：</strong>{{ currentCameraPopup.alert_type }}</p>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">推流地址：</span>
+                  <span class="detail-value stream-url">rtmp://localhost:1935/live/{{ currentCameraPopup.stream_name }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">播放协议：</span>
+                  <span class="detail-value">HLS (HTTP Live Streaming)</span>
+                </div>
               </div>
             </div>
           </div>
@@ -510,7 +529,7 @@
       </div>
     </div>
 
-    <!-- 摄像头悬停提示框 -->
+    <!-- 摄像头悬停提示框 - 实时视频预览 -->
     <teleport to="body">
       <div 
         v-if="tooltipVisible"
@@ -522,9 +541,19 @@
       >
         <div class="tooltip-background">
           <div class="tooltip-content">
-            <div class="tooltip-header">实时告警</div>
+            <div class="tooltip-header">实时画面预览</div>
             <div class="tooltip-image">
-              <img :src="tooltipData.image" :alt="tooltipData.device_name" />
+              <!-- 实时截图预览 -->
+              <img 
+                :src="getStreamSnapshot(tooltipData.stream_name)" 
+                :alt="tooltipData.device_name"
+                class="live-snapshot"
+                @error="handleSnapshotError"
+              />
+              <div class="live-indicator">
+                <span class="live-dot"></span>
+                LIVE
+              </div>
             </div>
             <div class="tooltip-info">
               <div class="info-item">
@@ -532,12 +561,14 @@
                 <span class="info-value">{{ tooltipData.device_name }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">事件名称:</span>
-                <span class="info-value">{{ tooltipData.alert_type }}</span>
+                <span class="info-label">推流状态:</span>
+                <span class="info-value" :class="isStreamOnline(tooltipData.stream_name) ? 'status-online' : 'status-offline'">
+                  {{ isStreamOnline(tooltipData.stream_name) ? '在线' : '离线' }}
+                </span>
               </div>
               <div class="info-item">
-                <span class="info-label">告警时间:</span>
-                <span class="info-value">{{ tooltipData.alert_time }}</span>
+                <span class="info-label">点击查看:</span>
+                <span class="info-value">全屏实时画面</span>
               </div>
             </div>
           </div>
@@ -552,6 +583,7 @@ import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { dashboardApi } from '@/api/dashboard'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
+import HLSVideoPlayer from '@/components/HLSVideoPlayer.vue'
 // import { useAuthStore } from '@/stores/auth'
 // const authStore = useAuthStore() // 暂时注释，如果需要可以取消注释
 const loading = ref(false)
@@ -747,12 +779,13 @@ const currentCamera = ref({})
 // 选中的告警
 const selectedAlarm = ref({})
 
-// 背景摄像头数据
+// 背景摄像头数据 - 支持实时视频流
 const cameraData = ref([
   {
     id: 1,
     device_name: '摄像机1',
     status: '在线',
+    stream_name: 'camera1', // OBS推流密钥
     image: 'https://via.placeholder.com/600x400/1a1a1a/00d4ff?text=摄像机1实时画面',
     alert_time: '2024-08-27 14:02:45',
     alert_type: '未戴安全帽'
@@ -761,11 +794,25 @@ const cameraData = ref([
     id: 2,
     device_name: '摄像机2', 
     status: '在线',
+    stream_name: 'camera2', // OBS推流密钥
     image: 'https://via.placeholder.com/600x400/1a1a1a/00d4ff?text=摄像机2实时画面',
     alert_time: '2024-08-27 13:58:32',
     alert_type: '异常行为'
   }
 ])
+
+// 视频流相关状态
+const streamStatus = ref({
+  camera1: false,
+  camera2: false
+})
+
+// 流媒体服务器配置
+const streamConfig = {
+  baseUrl: 'http://localhost:8000',
+  hlsPath: '/hls',
+  snapshotPath: '/snapshots'
+}
 
 // 这些函数暂时注释，如果需要可以取消注释
 // const getStatusColor = (rate) => {
@@ -825,6 +872,53 @@ const showCameraPopup = (camera) => {
 const closeCameraPopup = () => {
   cameraPopupVisible.value = false
   currentCameraPopup.value = {}
+}
+
+// 获取HLS流地址
+const getStreamUrl = (streamName) => {
+  if (!streamName) return ''
+  return `${streamConfig.baseUrl}${streamConfig.hlsPath}/${streamName}/index.m3u8`
+}
+
+// 获取实时截图地址
+const getStreamSnapshot = (streamName) => {
+  if (!streamName) return ''
+  // 添加时间戳防止缓存
+  const timestamp = Date.now()
+  return `${streamConfig.baseUrl}${streamConfig.snapshotPath}/${streamName}_latest.jpg?t=${timestamp}`
+}
+
+// 检查流是否在线
+const isStreamOnline = (streamName) => {
+  return streamStatus.value[streamName] || false
+}
+
+// 处理截图加载错误
+const handleSnapshotError = (event) => {
+  console.warn('截图加载失败:', event.target.src)
+  // 可以设置默认图片
+  event.target.src = '/src/assets/images/main/main-camera-box.png'
+}
+
+// 这些视频加载函数已由 HLSVideoPlayer 组件内部处理
+
+// 检查流状态
+const checkStreamStatus = async () => {
+  try {
+    // 检查每个摄像头的流状态
+    for (const camera of cameraData.value) {
+      const streamName = camera.stream_name
+      try {
+        // 尝试获取HLS播放列表来检查流是否存在
+        const response = await fetch(getStreamUrl(streamName), { method: 'HEAD' })
+        streamStatus.value[streamName] = response.ok
+      } catch (error) {
+        streamStatus.value[streamName] = false
+      }
+    }
+  } catch (error) {
+    console.error('检查流状态失败:', error)
+  }
 }
 
 // 显示tooltip
@@ -991,6 +1085,20 @@ onMounted(() => {
     loadDashboardData()
     updateRealTimeData()
   }, 30000)
+  
+  // 初始化视频流状态检查
+  checkStreamStatus()
+  
+  // 每10秒检查一次流状态
+  const streamCheckInterval = setInterval(() => {
+    checkStreamStatus()
+  }, 10000)
+  
+  // 在组件卸载时清除定时器
+  onUnmounted(() => {
+    if (refreshInterval) clearInterval(refreshInterval)
+    if (streamCheckInterval) clearInterval(streamCheckInterval)
+  })
   
   // 8秒后显示告警弹窗
   setTimeout(() => {
@@ -2786,6 +2894,212 @@ onUnmounted(() => {
 .background-camera-icon:hover {
   transform: scale(1.2);
   filter: drop-shadow(0 0 15px rgba(0, 212, 255, 0.8));
+}
+
+/* 实时视频相关样式 */
+.live-video-modal {
+  width: 1200px !important;
+  max-width: 95vw !important;
+  height: 800px;
+  max-height: 90vh;
+}
+
+.live-video-modal .custom-modal-body {
+  display: flex;
+  height: calc(100% - 80px);
+}
+
+.video-display-area {
+  flex: 2;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  margin-right: 20px;
+}
+
+.video-player-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.live-video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.video-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  text-align: center;
+  z-index: 10;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 212, 255, 0.3);
+  border-top: 4px solid #00d4ff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.video-offline {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  text-align: center;
+  z-index: 10;
+}
+
+.offline-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  opacity: 0.6;
+}
+
+.offline-tip {
+  font-size: 14px;
+  color: #999;
+  margin-top: 5px;
+}
+
+.info-display-area {
+  flex: 1;
+  padding: 0 20px;
+}
+
+.camera-details {
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.detail-label {
+  color: #00d4ff;
+  font-weight: bold;
+  min-width: 80px;
+}
+
+.detail-value {
+  color: #fff;
+  text-align: right;
+  flex: 1;
+  margin-left: 10px;
+}
+
+.stream-url {
+  font-family: monospace;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px 8px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(45deg, #ff4444, #ff6666);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: bold;
+  margin-left: 10px;
+  animation: pulse 2s infinite;
+}
+
+.live-dot-small {
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  border-radius: 50%;
+  margin-right: 4px;
+  animation: blink 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+/* 悬停预览样式增强 */
+.live-snapshot {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.live-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: linear-gradient(45deg, #ff4444, #ff6666);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  animation: pulse 2s infinite;
+}
+
+.live-dot {
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  margin-right: 3px;
+  animation: blink 1s infinite;
+}
+
+.status-online {
+  color: #00ff88 !important;
+  font-weight: bold;
+}
+
+.status-offline {
+  color: #ff4444 !important;
+  font-weight: bold;
 }
 
 
