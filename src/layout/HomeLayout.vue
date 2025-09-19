@@ -3,6 +3,11 @@
     <el-container class="layout-container">
       <!-- 首页专用Header -->
       <el-header class="home-header">
+        <!-- 最左侧logo -->
+        <div class="header-logo">
+          <img :src="currentLogoUrl" alt="Logo" class="app-logo" />
+        </div>
+
         <div class="header-left">
           <!-- 首页/总览按钮 -->
           <button class="nav-button home-button" @click="goToHome">
@@ -20,23 +25,23 @@
           <button class="nav-button function-button" @click="goToFunctionList">
             <span>功能列表</span>
           </button>
-          
-          <!-- 用户下拉菜单移到右侧区域内 -->
-          <div class="user-dropdown">
-            <el-dropdown>
-              <span class="el-dropdown-link">
-                <el-avatar :size="30" :src="userAvatarUrl"></el-avatar>
-                <span style="margin-left: 8px;">{{ displayUsername }}</span>
-                <el-icon class="el-icon--right"><arrow-down /></el-icon>
-              </span>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item @click="showProfileModal">个人资料</el-dropdown-item>
-                  <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
-          </div>
+        </div>
+
+        <!-- 最右侧用户菜单 -->
+        <div class="header-user">
+          <el-dropdown>
+            <span class="el-dropdown-link">
+              <el-avatar :size="30" :src="userAvatarUrl"></el-avatar>
+              <span style="margin-left: 8px;">{{ displayUsername }}</span>
+              <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="showProfileModal">个人资料</el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </el-header>
 
@@ -59,6 +64,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
+import { useSystemStore } from '@/stores/system';
 import ProfileModal from '@/components/ProfileModal.vue';
 import { usePermissions } from '@/composables/usePermissions';
 import { ArrowDown } from '@element-plus/icons-vue';
@@ -72,6 +78,7 @@ export default {
   setup() {
     const router = useRouter();
     const authStore = useAuthStore();
+    const systemStore = useSystemStore();
     const { checkMenuPermission, checkChildPermission } = usePermissions();
     
     const userAvatarUrl = ref(require('@/assets/images/main/main-head.png'));
@@ -84,6 +91,9 @@ export default {
       }
       return authStore.username || authStore.userInfo?.username || '游客';
     });
+
+    // 当前logo URL
+    const currentLogoUrl = computed(() => systemStore.currentLogoUrl);
 
 
     // 导航到首页
@@ -134,12 +144,14 @@ export default {
     };
 
     onMounted(() => {
-      // 不再需要加载logo配置
+      // 加载logo配置
+      systemStore.fetchLogoConfig();
     });
 
     return {
       userAvatarUrl,
       displayUsername,
+      currentLogoUrl,
       checkMenuPermission,
       checkChildPermission,
       goToHome,
@@ -178,7 +190,7 @@ export default {
   background-blend-mode: overlay;
   color: #fff;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: auto 1fr auto 1fr auto;
   align-items: center;
   gap: 20px;
   height: 80px;
@@ -192,6 +204,15 @@ export default {
 }
 
 /* 移除头部闪光效果 */
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 2;
+  position: relative;
+  margin-left: 20px;
+}
 
 .header-left {
   display: flex;
@@ -272,18 +293,23 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 20px;
   z-index: 2;
   position: relative;
   transform: translateX(20%);
 }
 
-.header-right .user-dropdown {
+.header-user {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   z-index: 2;
-  margin-left: auto;
+  position: relative;
+  margin-right: 20px;
+}
+
+.app-logo {
+  height: 35px;
+  filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.4));
 }
 
 
@@ -375,7 +401,7 @@ export default {
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .home-header {
-    grid-template-columns: minmax(140px, 1fr) auto minmax(140px, 1fr);
+    grid-template-columns: auto minmax(120px, 1fr) auto minmax(120px, 1fr) auto;
     gap: 15px;
     padding: 0 20px;
   }
@@ -391,21 +417,29 @@ export default {
     font-size: 24px;
     letter-spacing: 1px;
   }
+
+  .header-logo {
+    margin-left: 10px;
+  }
+
+  .header-user {
+    margin-right: 10px;
+  }
 }
 
 @media (max-width: 768px) {
   .home-header {
-    grid-template-columns: auto 1fr auto;
-    gap: 10px;
-    padding: 0 15px;
+    grid-template-columns: auto auto 1fr auto auto;
+    gap: 5px;
+    padding: 0 10px;
     height: 70px;
   }
 
   .nav-button {
-    min-width: 100px;
+    min-width: 80px;
     height: 40px;
     font-size: 12px;
-    padding: 10px 20px;
+    padding: 10px 15px;
   }
 
   .nav-button span {
@@ -437,20 +471,33 @@ export default {
   .el-dropdown-link span {
     display: none;
   }
+
+  .header-logo {
+    margin-left: 5px;
+  }
+
+  .header-user {
+    margin-right: 5px;
+  }
+
+  .app-logo {
+    height: 28px;
+  }
 }
 
 @media (max-width: 480px) {
   .home-header {
-    gap: 5px;
-    padding: 0 10px;
+    grid-template-columns: auto auto 1fr auto auto;
+    gap: 2px;
+    padding: 0 5px;
     height: 60px;
   }
 
   .nav-button {
-    min-width: 80px;
+    min-width: 60px;
     height: 35px;
     font-size: 11px;
-    padding: 8px 15px;
+    padding: 8px 10px;
   }
 
   .app-title {
@@ -460,6 +507,18 @@ export default {
   .el-avatar {
     width: 24px !important;
     height: 24px !important;
+  }
+
+  .header-logo {
+    margin-left: 2px;
+  }
+
+  .header-user {
+    margin-right: 2px;
+  }
+
+  .app-logo {
+    height: 24px;
   }
 }
 </style>
