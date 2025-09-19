@@ -62,8 +62,16 @@ export function createFaviconFromImage(imageUrl, size = 32) {
       
       img.onload = () => {
         try {
-          // 在画布上绘制图片
-          ctx.drawImage(img, 0, 0, size, size)
+          // 检测图片是否需要增强处理
+          const needsEnhancement = checkIfNeedsEnhancement(img)
+          
+          if (needsEnhancement) {
+            // 添加细微的阴影和描边增强可见性
+            addSubtleEnhancement(ctx, img, size)
+          } else {
+            // 直接绘制图片
+            ctx.drawImage(img, 0, 0, size, size)
+          }
           
           // 转换为data URL
           const dataUrl = canvas.toDataURL('image/png')
@@ -88,6 +96,117 @@ export function createFaviconFromImage(imageUrl, size = 32) {
       reject(error)
     }
   })
+}
+
+/**
+ * 检测图片是否需要增强处理（透明底板或白色内容）
+ * @param {HTMLImageElement} img - 图片元素
+ * @returns {boolean} - 是否需要增强处理
+ */
+function checkIfNeedsEnhancement(img) {
+  try {
+    // 创建临时画布来分析图片
+    const tempCanvas = document.createElement('canvas')
+    const tempCtx = tempCanvas.getContext('2d')
+    tempCanvas.width = 32
+    tempCanvas.height = 32
+    
+    // 绘制图片到临时画布
+    tempCtx.drawImage(img, 0, 0, 32, 32)
+    
+    // 获取图片数据
+    const imageData = tempCtx.getImageData(0, 0, 32, 32)
+    const data = imageData.data
+    
+    let transparentPixels = 0
+    let lightPixels = 0
+    let totalPixels = 0
+    
+    // 分析像素
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i]
+      const g = data[i + 1]
+      const b = data[i + 2]
+      const a = data[i + 3]
+      
+      totalPixels++
+      
+      // 检查透明或半透明像素
+      if (a < 200) {
+        transparentPixels++
+      }
+      
+      // 检查浅色像素（白色、浅灰色等）
+      if (a >= 128) {
+        const brightness = (r * 0.299 + g * 0.587 + b * 0.114)
+        if (brightness > 200) {
+          lightPixels++
+        }
+      }
+    }
+    
+    // 如果透明像素比例超过15%，或者浅色像素比例超过50%，则需要增强
+    const transparentRatio = transparentPixels / totalPixels
+    const lightRatio = lightPixels / totalPixels
+    
+    return transparentRatio > 0.15 || lightRatio > 0.5
+  } catch (error) {
+    console.warn('Failed to analyze image, applying enhancement as fallback:', error)
+    return true // 如果分析失败，默认应用增强
+  }
+}
+
+/**
+ * 添加细微的阴影和描边增强
+ * @param {CanvasRenderingContext2D} ctx - 画布上下文
+ * @param {HTMLImageElement} img - 图片元素
+ * @param {number} size - 尺寸
+ */
+function addSubtleEnhancement(ctx, img, size) {
+  // 保存当前状态
+  ctx.save()
+  
+  // 1. 添加细微的外阴影
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.3)'
+  ctx.shadowBlur = 2
+  ctx.shadowOffsetX = 1
+  ctx.shadowOffsetY = 1
+  
+  // 绘制主图片
+  ctx.drawImage(img, 0, 0, size, size)
+  
+  // 重置阴影
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
+  ctx.shadowOffsetX = 0
+  ctx.shadowOffsetY = 0
+  
+  // 2. 添加细微的深色描边（通过多次偏移绘制实现）
+  ctx.globalCompositeOperation = 'destination-over' // 在现有内容下方绘制
+  ctx.globalAlpha = 0.2
+  
+  // 创建描边效果 - 在8个方向上偏移1像素绘制暗色版本
+  const offsets = [
+    [-1, -1], [0, -1], [1, -1],
+    [-1,  0],          [1,  0],
+    [-1,  1], [0,  1], [1,  1]
+  ]
+  
+  // 应用暗色滤镜
+  ctx.filter = 'brightness(0.3) contrast(2)'
+  
+  offsets.forEach(([dx, dy]) => {
+    ctx.drawImage(img, dx, dy, size, size)
+  })
+  
+  // 恢复状态
+  ctx.restore()
+  
+  // 3. 再次绘制原图确保清晰度
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.globalAlpha = 1
+  ctx.filter = 'none'
+  ctx.drawImage(img, 0, 0, size, size)
 }
 
 /**
