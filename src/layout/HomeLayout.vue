@@ -203,6 +203,31 @@ export default {
   overflow: hidden;
 }
 
+/* 为header添加边缘渐变效果，与按钮更好融合 */
+.home-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    linear-gradient(to bottom,
+      rgba(0, 255, 255, 0.08) 0%,
+      transparent 15%,
+      transparent 85%,
+      rgba(0, 255, 255, 0.08) 100%),
+    linear-gradient(to right,
+      rgba(0, 255, 255, 0.06) 0%,
+      transparent 20%,
+      transparent 80%,
+      rgba(0, 255, 255, 0.06) 100%);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
 /* 移除头部闪光效果 */
 
 .header-logo {
@@ -218,7 +243,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  z-index: 2;
+  z-index: 3;
   position: relative;
   transform: translateX(-27%);
 }
@@ -256,6 +281,28 @@ export default {
   background-position: center;
   background-repeat: no-repeat;
   z-index: -1;
+  transition: all 0.3s ease;
+}
+
+/* 为按钮添加连接过渡效果 */
+.nav-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 255, 255, 0.05) 0%,
+    rgba(0, 255, 255, 0.1) 50%,
+    rgba(0, 255, 255, 0.05) 100%
+  );
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: 8px;
+  filter: blur(2px);
 }
 
 .home-button::before {
@@ -266,12 +313,65 @@ export default {
   background-image: url('@/assets/images/main/main-header-right.png');
 }
 
+/* 为左右按钮添加特殊的融合效果 */
+.header-left::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -10px;
+  right: -10px;
+  bottom: -5px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 255, 255, 0.1) 0%,
+    rgba(0, 255, 255, 0.05) 40%,
+    transparent 70%
+  );
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: 15px;
+}
+
+.header-right::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -10px;
+  right: -10px;
+  bottom: -5px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 255, 255, 0.1) 0%,
+    rgba(0, 255, 255, 0.05) 40%,
+    transparent 70%
+  );
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: 15px;
+}
+
+.header-left:hover::before,
+.header-right:hover::before {
+  opacity: 1;
+}
+
 .nav-button:hover {
   transform: translateY(-2px);
   background: none !important;
   background-color: transparent !important;
   color: #ffffff;
   text-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+}
+
+.nav-button:hover::after {
+  opacity: 1;
+}
+
+.nav-button:hover::before {
+  filter: brightness(1.2) contrast(1.1);
+  transform: scale(1.02);
 }
 
 .nav-button span {
@@ -283,7 +383,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  z-index: 3;
   text-align: center;
   position: relative;
   transform: translateX(-20%);
@@ -293,9 +393,9 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  z-index: 2;
+  z-index: 3;
   position: relative;
-  transform: translateX(20%);
+  transform: translateX(18%);
 }
 
 .header-user {

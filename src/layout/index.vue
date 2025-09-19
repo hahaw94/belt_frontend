@@ -497,7 +497,7 @@ export default {
   justify-content: flex-start;
   z-index: 2;
   position: relative;
-  transform: translateX(20%);
+  transform: translateX(18%);
 }
 
 .header-user {
