@@ -25,6 +25,19 @@ const routes = [
         name: 'home',
         component: HomeView,
         meta: { title: '首页/总览' }
+      },
+    ]
+  },
+  // 功能列表页面（带左侧菜单）
+  {
+    path: '/function-list',
+    component: Layout,
+    children: [
+      {
+        path: '',
+        name: 'function-list',
+        component: () => import('../views/FunctionList.vue'),
+        meta: { title: '功能列表' }
       }
     ]
   },
