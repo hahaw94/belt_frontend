@@ -34,10 +34,10 @@ export default {
 .function-list-page {
   min-height: 100vh;
   position: relative;
-  background: linear-gradient(135deg,
-    rgba(10, 15, 30, 0.95) 0%,
-    rgba(15, 25, 45, 0.95) 50%,
-    rgba(10, 15, 30, 0.95) 100%);
+  background: url('@/assets/images/main/main-background.png') center/cover no-repeat,
+              linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+  background-blend-mode: overlay;
+  background-attachment: fixed;
   padding: 40px;
   display: flex;
   align-items: center;
@@ -76,17 +76,8 @@ export default {
   text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
   margin-bottom: 20px;
   letter-spacing: 3px;
-  animation: glow-pulse 2s ease-in-out infinite alternate;
 }
 
-@keyframes glow-pulse {
-  from {
-    text-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
-  }
-  to {
-    text-shadow: 0 0 30px rgba(0, 255, 255, 1), 0 0 40px rgba(0, 255, 255, 0.6);
-  }
-}
 
 .subtitle {
   font-size: 24px;
@@ -135,17 +126,8 @@ export default {
   font-size: 48px;
   color: #00d4ff;
   text-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
-  animation: arrow-float 2s ease-in-out infinite;
 }
 
-@keyframes arrow-float {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(10px);
-  }
-}
 
 .text-container {
   text-align: left;

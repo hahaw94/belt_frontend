@@ -675,7 +675,7 @@ onMounted(() => {
 <style scoped>
 .statistics-analysis {
   padding: 20px;
-  background-color: #f5f7fa;
+  background: transparent;
   min-height: calc(100vh - 60px);
 }
 

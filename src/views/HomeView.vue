@@ -1,5 +1,18 @@
 <template>
   <div class="industrial-dashboard">
+    <!-- 可拖拽地图叠加层 -->
+    <div class="map-container"
+         :class="{ 'dragging': isDragging }">
+      <img ref="mapImage"
+           src="@/assets/images/main/main-map.png"
+           alt="地图"
+           class="draggable-map"
+           :style="{ transform: `translate(${mapPosition.x}px, ${mapPosition.y}px)` }"
+           @mousedown="startDrag"
+           @dragstart.prevent
+           @selectstart.prevent>
+    </div>
+
     <!-- 左侧渐变过渡效果 -->
     <div class="left-gradient-overlay"></div>
     <!-- 右侧渐变过渡效果 -->
@@ -592,6 +605,13 @@ const alarmDetailVisible = ref(false)
 // const cadMapContainer = ref(null) // 暂时注释，如果需要可以取消注释
 // const trendChart = ref(null) // 已替换为SVG图表
 
+// 地图拖拽相关状态
+const mapImage = ref(null)
+const mapPosition = reactive({ x: 0, y: 0 })
+const isDragging = ref(false)
+const dragStartPos = reactive({ x: 0, y: 0 })
+const dragStartMapPos = reactive({ x: 0, y: 0 })
+
 // 新增状态
 const showAlertPopup = ref(false)
 const currentAlert = ref({})
@@ -772,6 +792,49 @@ const unprocessedArcLength = computed(() => {
 
 
 // 已删除CAD图层数据相关代码
+
+// 地图拖拽方法
+const startDrag = (event) => {
+  console.log('拖拽开始', event) // 调试信息
+  event.preventDefault()
+  event.stopPropagation()
+
+  isDragging.value = true
+  dragStartPos.x = event.clientX
+  dragStartPos.y = event.clientY
+  dragStartMapPos.x = mapPosition.x
+  dragStartMapPos.y = mapPosition.y
+
+  // 添加全局鼠标事件监听器
+  document.addEventListener('mousemove', handleMouseMove, { passive: false })
+  document.addEventListener('mouseup', handleMouseUp)
+  document.body.style.cursor = 'grabbing'
+  document.body.style.userSelect = 'none'
+}
+
+const handleMouseMove = (event) => {
+  if (!isDragging.value) return
+  event.preventDefault()
+
+  const deltaX = event.clientX - dragStartPos.x
+  const deltaY = event.clientY - dragStartPos.y
+
+  mapPosition.x = dragStartMapPos.x + deltaX
+  mapPosition.y = dragStartMapPos.y + deltaY
+
+  console.log('拖拽中', { deltaX, deltaY, x: mapPosition.x, y: mapPosition.y }) // 调试信息
+}
+
+const handleMouseUp = () => {
+  console.log('拖拽结束') // 调试信息
+  isDragging.value = false
+  document.body.style.cursor = 'default'
+  document.body.style.userSelect = ''
+
+  // 移除全局事件监听器
+  document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mouseup', handleMouseUp)
+}
 
 // 当前摄像头
 const currentCamera = ref({})
@@ -1115,6 +1178,11 @@ onUnmounted(() => {
   if (refreshInterval) {
     clearInterval(refreshInterval)
   }
+  // 清理地图拖拽事件监听器
+  document.removeEventListener('mousemove', handleMouseMove)
+  document.removeEventListener('mouseup', handleMouseUp)
+  document.body.style.cursor = 'default'
+  document.body.style.userSelect = ''
 })
 </script>
 
@@ -1122,11 +1190,8 @@ onUnmounted(() => {
 /* 工业风格深色主题 */
 .industrial-dashboard {
   font-family: 'Microsoft YaHei', Arial, sans-serif;
-  /* 将1.png设置为整个页面的背景图片 */
-  background: url('@/assets/images/main/1.png') center/cover no-repeat fixed;
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
+  /* 背景现在由App.vue统一管理 */
+  background: transparent;
   color: #ffffff;
   min-height: 100vh;
   overflow-x: hidden;
@@ -1269,6 +1334,69 @@ onUnmounted(() => {
   );
   pointer-events: none;
   z-index: 1;
+}
+
+/* 可拖拽地图容器 */
+.map-container {
+  position: fixed;
+  top: 80px; /* 从标题栏下方开始 */
+  left: 0;
+  width: 100%;
+  height: calc(100vh - 80px); /* 减去标题栏高度 */
+  overflow: hidden;
+  z-index: 0;
+  cursor: grab;
+}
+
+.map-container:hover {
+  cursor: grab;
+}
+
+.map-container:active {
+  cursor: grabbing;
+}
+
+/* 可拖拽地图图片 */
+.draggable-map {
+  width: 150%; /* 增大地图尺寸以提供更多拖拽空间 */
+  height: 150%;
+  object-fit: cover;
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  cursor: grab; /* 为图片添加抓手光标 */
+}
+
+.draggable-map:active {
+  cursor: grabbing;
+}
+
+/* 拖拽时的样式 */
+.map-container.dragging {
+  cursor: grabbing !important;
+}
+
+.map-container.dragging .draggable-map {
+  opacity: 0.6; /* 拖拽时稍微提高透明度 */
+}
+
+/* 地图容器响应式适配 */
+@media (max-width: 768px) {
+  .map-container {
+    top: 70px; /* 移动端标题栏高度 */
+    height: calc(100vh - 70px);
+  }
+}
+
+@media (max-width: 480px) {
+  .map-container {
+    top: 60px; /* 小屏幕设备标题栏高度 */
+    height: calc(100vh - 60px);
+  }
 }
 
 /* 角落渐变效果基础样式 - 扩大影响范围 */

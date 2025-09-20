@@ -333,6 +333,10 @@ export default {
   height: 100vh; /* 确保整个布局容器占满视口高度 */
   display: flex;
   flex-direction: column;
+  background: url('@/assets/images/main/main-background.png') center/cover no-repeat,
+              linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+  background-blend-mode: overlay;
+  background-attachment: fixed;
 }
 
 .layout-container {
