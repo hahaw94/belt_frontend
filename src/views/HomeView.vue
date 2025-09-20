@@ -38,7 +38,7 @@
               <div class="chart-wrapper">
                 <!-- 装饰圆圈背景 -->
                 <div class="chart-decoration"></div>
-                <svg class="alarm-ring-chart" width="130" height="130" viewBox="0 0 100 100">
+                <svg class="alarm-ring-chart" viewBox="0 0 100 100" style="width: 75%; height: auto; aspect-ratio: 1;">
                   <!-- 背景圆环 -->
                   <circle
                     cx="50"
@@ -46,7 +46,7 @@
                     r="40"
                     fill="none"
                     stroke="rgba(0, 150, 255, 0.2)"
-                    stroke-width="8"
+                    stroke-width="6"
                   />
                   <!-- 已处理圆弧 -->
                   <circle
@@ -55,7 +55,7 @@
                     r="40"
                     fill="none"
                     stroke="#00aaff"
-                    stroke-width="8"
+                    stroke-width="6"
                     :stroke-dasharray="processedArcLength + ' ' + (totalCircumference - processedArcLength)"
                     stroke-dashoffset="0"
                     class="processed-arc"
@@ -68,7 +68,7 @@
                     r="40"
                     fill="none"
                     stroke="#ffaa00"
-                    stroke-width="8"
+                    stroke-width="6"
                     :stroke-dasharray="unprocessedArcLength + ' ' + (totalCircumference - unprocessedArcLength)"
                     :stroke-dashoffset="-processedArcLength"
                     class="unprocessed-arc"
@@ -346,31 +346,31 @@
               <!-- 网格线 -->
               <g class="grid-lines">
                 <!-- 水平网格线 -->
-                <line v-for="i in 7" :key="'h-' + i" 
-                      :x1="25" :y1="15 + (i-1) * 23" 
-                      :x2="300" :y2="15 + (i-1) * 23" 
-                      stroke="#00bfff" stroke-width="0.5" 
-                      stroke-dasharray="2,2" opacity="0.4"/>
+                <line v-for="i in 7" :key="'h-' + i"
+                      :x1="30" :y1="20 + (i-1) * 16.67"
+                      :x2="290" :y2="20 + (i-1) * 16.67"
+                      stroke="#00bfff" stroke-width="0.3"
+                      stroke-dasharray="3,3" opacity="0.6"/>
                 
                 <!-- 垂直网格线 -->
-                <line v-for="i in 12" :key="'v-' + i" 
-                      :x1="25 + (i-1) * 24" :y1="15" 
-                      :x2="25 + (i-1) * 24" :y2="150" 
-                      stroke="#00bfff" stroke-width="0.5" 
-                      stroke-dasharray="2,2" opacity="0.3"/>
+                <line v-for="i in 12" :key="'v-' + i"
+                      :x1="30 + (i-1) * 24" :y1="20"
+                      :x2="30 + (i-1) * 24" :y2="120"
+                      stroke="#00bfff" stroke-width="0.3"
+                      stroke-dasharray="3,3" opacity="0.4"/>
               </g>
               
               <!-- Y轴刻度标签 -->
               <g class="y-axis-labels">
                 <text v-for="(value, index) in yAxisLabels" :key="'y-' + index"
-                      :x="18" :y="155 - index * 23" 
-                      fill="#88ccff" font-size="10" text-anchor="end">{{ value }}</text>
+                      :x="25" :y="120 - index * 16.67"
+                      fill="#88ccff" font-size="10" text-anchor="end" dominant-baseline="central">{{ value }}</text>
               </g>
               
               <!-- X轴刻度标签 -->
               <g class="x-axis-labels">
                 <text v-for="(time, index) in xAxisLabels" :key="'x-' + index"
-                      :x="25 + index * 24" :y="168" 
+                      :x="30 + index * 24" :y="140" 
                       fill="#88ccff" font-size="10" text-anchor="middle">{{ time }}</text>
               </g>
               
@@ -722,8 +722,8 @@ const yAxisLabels = computed(() => {
 const chartPoints = computed(() => {
   const maxValue = Math.max(...yAxisLabels.value)
   return trendChartData.value.map((value, index) => ({
-    x: 25 + index * 24, // 调整起始位置和间距以匹配新的viewBox
-    y: 150 - (value / maxValue) * 135 // 调整Y轴范围以匹配新的高度
+    x: 30 + index * 24, // 与垂直网格线对齐
+    y: 120 - (value / maxValue) * 100 // Y轴范围 20-120，总高度100
   }))
 })
 
@@ -741,15 +741,15 @@ const linePath = computed(() => {
 // 区域填充路径
 const areaPath = computed(() => {
   if (chartPoints.value.length === 0) return ''
-  
-  let path = `M ${chartPoints.value[0].x} 150` // 调整基线位置以匹配新的Y轴底部
+
+  let path = `M ${chartPoints.value[0].x} 120` // 与网格线底部对齐
   path += ` L ${chartPoints.value[0].x} ${chartPoints.value[0].y}`
-  
+
   for (let i = 1; i < chartPoints.value.length; i++) {
     path += ` L ${chartPoints.value[i].x} ${chartPoints.value[i].y}`
   }
-  
-  path += ` L ${chartPoints.value[chartPoints.value.length - 1].x} 150 Z` // 调整基线位置
+
+  path += ` L ${chartPoints.value[chartPoints.value.length - 1].x} 120 Z` // 与网格线底部对齐
   return path
 })
 
@@ -1140,7 +1140,7 @@ onUnmounted(() => {
   top: 0;
   left: 0;
   right: 0;
-  height: 280px; /* 进一步增加高度从220px到280px */
+  height: 35vh; /* 调整为视口高度的35% */
   background: linear-gradient(
     to bottom,
     rgba(0, 50, 100, 0.75) 0%,    /* 大幅加强顶部透明度从0.45到0.75 */
@@ -1176,7 +1176,7 @@ onUnmounted(() => {
   bottom: 0;
   left: 0;
   right: 0;
-  height: 200px; /* 进一步增加高度从150px到200px */
+  height: 25vh; /* 调整为视口高度的25% */
   background: linear-gradient(
     to top,
     rgba(0, 45, 90, 0.55) 0%,     /* 大幅加强底部透明度从0.25到0.55 */
@@ -1275,7 +1275,7 @@ onUnmounted(() => {
 .corner-gradient {
   position: fixed;
   width: 600px; /* 从400px大幅增加到600px，扩大影响范围 */
-  height: 600px; /* 从400px大幅增加到600px，扩大影响范围 */
+  height: 75vh; /* 调整为视口高度的75% */
   pointer-events: none;
   z-index: 1;
 }
@@ -1381,7 +1381,7 @@ onUnmounted(() => {
 /* 主容器三栏布局 - 全屏宽度 */
 .dashboard-container {
   display: grid;
-  grid-template-columns: 480px 1fr 480px; /* 从420px增加到480px，进一步加宽左右面板 */
+  grid-template-columns: 24% 1fr 24%; /* 调整两边宽度为24% */
   grid-template-rows: 1fr;
   height: calc(100vh - 80px); /* 减去新的header高度 */
   gap: 15px; /* 减少间隙从20px到15px，让布局更紧凑 */
@@ -1521,8 +1521,8 @@ onUnmounted(() => {
 .device-stats-container {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 10px 0;
+  gap: 1.8%; /* 缩小间距 */
+  padding: 1% 0; /* 缩小内边距 */
   height: 100%;
   justify-content: space-around;
 }
@@ -1530,8 +1530,8 @@ onUnmounted(() => {
 .device-category {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 15px 10px;
+  gap: 1.2%; /* 缩小间距 */
+  padding: 1.5% 1%; /* 缩小内边距 */
   background: transparent;
   border: none;
   position: relative;
@@ -1546,12 +1546,14 @@ onUnmounted(() => {
 .device-header {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 2%; /* 缩小间距 */
 }
 
 .device-icon {
-  width: 70px;
-  height: 70px;
+  width: 10%; /* 进一步缩小图标 */
+  height: auto;
+  aspect-ratio: 1; /* 保持正方形比例 */
+  max-width: 50px; /* 缩小最大宽度限制 */
   flex-shrink: 0;
   background-size: contain;
   background-repeat: no-repeat;
@@ -1586,11 +1588,11 @@ onUnmounted(() => {
   background-size: 120% 70%; /* 宽度拉长到120%，高度压缩到70% */
   background-repeat: no-repeat;
   background-position: center;
-  padding: 10px 30px; /* 减少上下内边距，增加左右内边距 */
+  padding: 1.5% 4%; /* 调整为相对内边距 */
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 35px; /* 减少最小高度 */
+  min-height: 4vh; /* 调整为相对高度 */
   position: relative;
   opacity: 0.92; /* 从0.8提高到0.92，增强背景图片可见性 */
   /* 增强背景图片的锐度和对比度 */
@@ -1613,7 +1615,7 @@ onUnmounted(() => {
 }
 
 .total-number {
-  font-size: 24px;
+  font-size: 1.4em; /* 调整为相对字体大小，稍微缩小 */
   font-weight: bold;
   color: #ffffff;
   text-shadow: 
@@ -1624,7 +1626,7 @@ onUnmounted(() => {
 }
 
 .unit-text {
-  font-size: 18px;
+  font-size: 1.1em; /* 调整为相对字体大小，稍微缩小 */
   font-weight: normal;
   color: #ffffff;
   text-shadow: 
@@ -1635,7 +1637,7 @@ onUnmounted(() => {
 }
 
 .unit-text-small {
-  font-size: 14px;
+  font-size: 0.85em; /* 调整为相对字体大小，稍微缩小 */
   font-weight: normal;
   color: inherit;
   text-shadow: 0 0 6px currentColor;
@@ -1645,16 +1647,16 @@ onUnmounted(() => {
 .device-details {
   display: flex;
   justify-content: space-around;
-  gap: 20px;
-  padding-left: 85px; /* 对齐到图标右侧 (70px图标 + 15px间隔) */
+  gap: 2.5%; /* 缩小间距 */
+  padding-left: 14%; /* 调整为相对内边距 */
 }
 
 .detail-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 14px;
+  gap: 0.6%; /* 调整为相对间距 */
+  font-size: 0.85em; /* 调整为相对字体大小，稍微缩小 */
   text-align: center;
 }
 
@@ -1736,7 +1738,7 @@ onUnmounted(() => {
   left: 50%;
   transform: translate(-50%, -50%);
   width: 200px; /* 从120px增加到160px */
-  height: 200px; /* 从120px增加到160px */
+  height: 25vh; /* 调整为视口高度的25% */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1803,7 +1805,7 @@ onUnmounted(() => {
   text-align: center;
   z-index: 4; /* 提高层级，显示在连接线之上 */
   width: 140px; /* 从110px增加到140px，增大约27% */
-  height: 45px; /* 从45px增加到55px，增大约22% */
+  height: 5.5vh; /* 调整为视口高度的5.5% */
   background: url('@/assets/images/main/main-container-box1.png') center/100% 100% no-repeat;
   opacity: 0.97; /* 从0.95进一步提高到0.97 */
   padding: 8px 12px; /* 添加内边距让文字位置更好 */
@@ -1943,18 +1945,18 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100%;
   justify-content: space-between;
-  padding: 10px 0;
+  padding: 1.5% 0; /* 调整为相对内边距 */
 }
 
 .main-alarm-display {
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 2%; /* 减少底部间距，使饼状图向上移动 */
 }
 
 .alarm-label {
   color: #88ccff;
-  font-size: 14px;
-  margin-bottom: 15px;
+  font-size: 15px; /* 从14px增加到18px */
+  margin-bottom: 2.5%; /* 调整为相对间距 */
   text-shadow: 
     0 0 12px rgba(136, 204, 255, 1),
     0 0 8px rgba(0, 0, 0, 1),
@@ -1965,15 +1967,15 @@ onUnmounted(() => {
 .alarm-counter {
   display: flex;
   justify-content: center;
-  gap: 3px;
-  margin-bottom: 10px;
+  gap: 0.5%; /* 调整为相对间距 */
+  margin-bottom: 1.5%; /* 调整为相对间距 */
 }
 
 .counter-digit {
   display: inline-block;
-  width: 35px;
-  height: 45px;
-  line-height: 45px;
+  width: 8%; /* 缩小数字框宽度 */
+  height: 3.5vh; /* 缩小数字框高度 */
+  line-height: 3.5vh;
   background: linear-gradient(135deg, 
     rgba(0, 150, 255, 0.3) 0%,
     rgba(0, 100, 200, 0.25) 50%,
@@ -1982,7 +1984,7 @@ onUnmounted(() => {
   border: 1px solid rgba(0, 200, 255, 0.4);
   border-radius: 6px;
   color: #ffffff;
-  font-size: 22px;
+  font-size: 18px; /* 缩小数字字体以匹配缩小的框 */
   font-weight: bold;
   text-align: center;
   box-shadow: 
@@ -2054,9 +2056,9 @@ onUnmounted(() => {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  gap: 50px;
+  gap: 7%; /* 适度放大图表间距 */
   height: 100%;
-  padding: 15px 0;
+  padding: 1% 0 3% 0; /* 减少顶部内边距，增加底部内边距，整体向上移动 */
 }
 
 .chart-wrapper {
@@ -2064,6 +2066,8 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   flex-shrink: 0;
+  width: 100%;
+  max-width: 135px; /* 适度放大最大宽度 */
 }
 
 .chart-decoration {
@@ -2071,8 +2075,9 @@ onUnmounted(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 150px;
-  height: 150px;
+  width: 75%; /* 适度放大装饰图片宽度 */
+  height: auto; /* 自动高度保持比例 */
+  aspect-ratio: 1; /* 保持正方形比例 */
   background: url('@/assets/images/main/main-container-circle.png') center/contain no-repeat;
   opacity: 0.92; /* 从0.8提高到0.92，增强可见性 */
   z-index: 1;
@@ -2119,21 +2124,21 @@ onUnmounted(() => {
 .chart-legend {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 2.2%; /* 适度放大图例间距 */
   justify-content: center;
-  min-width: 140px;
+  min-width: 28%; /* 适度放大图例容器宽度 */
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 5px 0;
+  gap: 2%; /* 调整为相对间距 */
+  padding: 1% 0; /* 调整为相对内边距 */
 }
 
 .legend-dot {
-  width: 12px;
-  height: 12px;
+  width: 0.8em; /* 调整为相对尺寸 */
+  height: 0.8em; /* 调整为相对尺寸 */
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -2150,7 +2155,7 @@ onUnmounted(() => {
 
 .legend-text {
   color: #ffffff;
-  font-size: 15px;
+  font-size: 0.95em; /* 适度放大文字大小 */
   font-weight: 500;
   text-shadow: 
     0 0 10px rgba(255, 255, 255, 1),
@@ -2402,18 +2407,19 @@ onUnmounted(() => {
 
 /* SVG图表容器 */
 .svg-chart-container {
-  height: 240px; /* 从180px增加到240px，增大60px */
-  margin-top: 15px;
+  height: 26vh; /* 稍微增加高度 */
+  margin-top: 1.5%;
   position: relative;
   z-index: 2;
-  padding: 0;
-  margin-left: -15px;
-  margin-right: -15px;
+  padding: 1% 3%; /* 优化内边距 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .trend-chart {
-  width: 100%;
-  height: 100%;
+  width: 95%; /* 调整为95%宽度 */
+  height: 95%; /* 调整高度 */
   background: transparent;
 }
 
@@ -2476,7 +2482,7 @@ onUnmounted(() => {
 
 /* 保留旧的图表容器样式作为备用 */
 .chart-container {
-  height: 180px;
+  height: 22vh; /* 调整为视口高度的22% */
   margin-top: 15px;
   position: relative;
   z-index: 2;
@@ -2572,7 +2578,7 @@ onUnmounted(() => {
 /* 响应式设计 */
 @media (max-width: 1600px) {
   .dashboard-container {
-    grid-template-columns: 440px 1fr 440px; /* 中等屏幕下稍微缩小 */
+    grid-template-columns: 24% 1fr 24%; /* 保持24%宽度 */
     gap: 15px;
     padding: 10px;
   }
@@ -2580,7 +2586,7 @@ onUnmounted(() => {
 
 @media (max-width: 1400px) {
   .dashboard-container {
-    grid-template-columns: 400px 1fr 400px; /* 从380px增加到400px */
+    grid-template-columns: 24% 1fr 24%; /* 保持24%宽度 */
     gap: 12px;
     padding: 12px;
   }
@@ -2588,7 +2594,7 @@ onUnmounted(() => {
 
 @media (max-width: 1200px) {
   .dashboard-container {
-    grid-template-columns: 360px 1fr 360px; /* 从350px增加到360px */
+    grid-template-columns: 24% 1fr 24%; /* 保持24%宽度 */
     gap: 10px;
     padding: 10px;
   }
@@ -2606,7 +2612,7 @@ onUnmounted(() => {
   }
   
   .main-content {
-    height: 400px;
+    height: 50vh; /* 调整为视口高度的50% */
   }
 }
 
@@ -2730,7 +2736,7 @@ onUnmounted(() => {
 /* 视频显示区域 */
 .video-display-area {
   width: 100%;
-  height: 400px;
+  height: 50vh; /* 调整为视口高度的50% */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2795,7 +2801,7 @@ onUnmounted(() => {
   z-index: 9999;
   pointer-events: none;
   width: 380px;
-  height: 250px;
+  height: 31vh; /* 调整为视口高度的31% */
 }
 
 .tooltip-background {
@@ -2900,7 +2906,7 @@ onUnmounted(() => {
 .live-video-modal {
   width: 1200px !important;
   max-width: 95vw !important;
-  height: 800px;
+  height: 80vh; /* 调整为视口高度的80% */
   max-height: 90vh;
 }
 
