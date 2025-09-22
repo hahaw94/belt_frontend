@@ -7,10 +7,13 @@
            src="@/assets/images/main/main-map.png"
            alt="地图"
            class="draggable-map"
-           :style="{ transform: `translate(${mapPosition.x}px, ${mapPosition.y}px)` }"
+           :style="{ transform: `translateX(-50%) translate(${mapPosition.x}px, ${mapPosition.y}px)` }"
            @mousedown="startDrag"
+           @touchstart="startTouchDrag"
            @dragstart.prevent
-           @selectstart.prevent>
+           @selectstart.prevent
+           @contextmenu.prevent>
+      
     </div>
 
     <!-- 左侧渐变过渡效果 -->
@@ -166,21 +169,6 @@
 
       <!-- 中央内容区域 - 已删除地图框，仅保留背景 -->
       <div class="main-content">
-        <!-- 实时告警弹窗 -->
-        <div 
-          v-if="showAlertPopup" 
-          class="alert-popup" 
-          @click="showAlertDetails"
-        >
-          <button class="close-btn" @click.stop="closeAlert">&times;</button>
-          <div class="alert-content">
-            <h3>🚨 实时告警</h3>
-            <p><strong>设备名称:</strong> {{ currentAlert.device_name }}</p>
-            <p><strong>事件名称:</strong> {{ currentAlert.type }}</p>
-            <p><strong>告警时间:</strong> {{ currentAlert.time }}</p>
-            <p class="alert-tip">点击查看详情 →</p>
-                </div>
-              </div>
               </div>
 
       <!-- 右侧面板 -->
@@ -588,11 +576,40 @@
         </div>
       </div>
     </teleport>
+
+    <!-- 实时告警弹窗 - 使用 teleport 直接渲染到 body -->
+    <teleport to="body">
+      <div 
+        v-if="showAlertPopup" 
+        class="alert-popup-overlay"
+        @click.self="closeAlert"
+      >
+        <div 
+          class="alert-popup-container"
+          @click="showAlertDetails"
+          @mouseover="() => console.log('弹窗容器鼠标悬停')"
+        >
+          <button 
+            class="alert-close-btn" 
+            @click.stop="closeAlert"
+            @mouseover="() => console.log('关闭按钮鼠标悬停')"
+            title="关闭告警"
+          >&times;</button>
+          <div class="alert-popup-content">
+            <h3>🚨 实时告警</h3>
+            <p><strong>设备名称:</strong> {{ currentAlert.device_name }}</p>
+            <p><strong>事件名称:</strong> {{ currentAlert.type }}</p>
+            <p><strong>告警时间:</strong> {{ currentAlert.time }}</p>
+            <p class="alert-tip">点击查看详情 →</p>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script setup name="HomeView">
-import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { dashboardApi } from '@/api/dashboard'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
@@ -607,7 +624,8 @@ const alarmDetailVisible = ref(false)
 
 // 地图拖拽相关状态
 const mapImage = ref(null)
-const mapPosition = reactive({ x: 0, y: 0 })
+// 调整初始位置，让地图更好地居中显示，避免图片被切割
+const mapPosition = reactive({ x: 0, y: 0 }) // 初始位置居中，高度匹配容器
 const isDragging = ref(false)
 const dragStartPos = reactive({ x: 0, y: 0 })
 const dragStartMapPos = reactive({ x: 0, y: 0 })
@@ -795,7 +813,21 @@ const unprocessedArcLength = computed(() => {
 
 // 地图拖拽方法
 const startDrag = (event) => {
-  console.log('拖拽开始', event) // 调试信息
+  // 检查是否点击了弹窗区域，如果是则不启动拖拽
+  if (showAlertPopup.value) {
+    const alertPopup = document.querySelector('.alert-popup')
+    if (alertPopup) {
+      const rect = alertPopup.getBoundingClientRect()
+      const x = event.clientX
+      const y = event.clientY
+      
+      // 如果点击位置在弹窗区域内，不启动拖拽
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return
+      }
+    }
+  }
+
   event.preventDefault()
   event.stopPropagation()
 
@@ -807,33 +839,185 @@ const startDrag = (event) => {
 
   // 添加全局鼠标事件监听器
   document.addEventListener('mousemove', handleMouseMove, { passive: false })
-  document.addEventListener('mouseup', handleMouseUp)
+  document.addEventListener('mouseup', handleMouseUp, { passive: false })
+  
+  // 添加容器事件监听，确保在容器范围内也能响应
+  const mapContainer = document.querySelector('.map-container')
+  if (mapContainer) {
+    mapContainer.addEventListener('mousemove', handleMouseMove, { passive: false })
+    mapContainer.addEventListener('mouseup', handleMouseUp, { passive: false })
+    mapContainer.addEventListener('mouseleave', handleMouseUp, { passive: false })
+  }
+  
   document.body.style.cursor = 'grabbing'
   document.body.style.userSelect = 'none'
+  
+  // 禁用页面滚动
+  document.body.style.overflow = 'hidden'
 }
 
 const handleMouseMove = (event) => {
   if (!isDragging.value) return
+  
+  // 检查是否在弹窗区域内，如果是则不处理拖拽
+  if (showAlertPopup.value) {
+    const alertPopup = document.querySelector('.alert-popup')
+    if (alertPopup) {
+      const rect = alertPopup.getBoundingClientRect()
+      const x = event.clientX
+      const y = event.clientY
+      
+      // 如果鼠标位置在弹窗区域内，不处理拖拽
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return
+      }
+    }
+  }
+  
   event.preventDefault()
+  event.stopPropagation()
 
   const deltaX = event.clientX - dragStartPos.x
   const deltaY = event.clientY - dragStartPos.y
 
-  mapPosition.x = dragStartMapPos.x + deltaX
-  mapPosition.y = dragStartMapPos.y + deltaY
+  // 计算新位置
+  let newX = dragStartMapPos.x + deltaX
+  let newY = dragStartMapPos.y + deltaY
 
-  console.log('拖拽中', { deltaX, deltaY, x: mapPosition.x, y: mapPosition.y }) // 调试信息
+  // 边界限制 - 图片高度100%容器，只允许左右拖拽
+  const maxX = 400  // 向右最大移动距离，允许看到图片右侧内容
+  const minX = -400 // 向左最大移动距离，允许看到图片左侧内容
+  const maxY = 0    // 不允许上下移动，图片高度已匹配容器
+  const minY = 0    // 不允许上下移动，图片高度已匹配容器
+
+  newX = Math.max(minX, Math.min(maxX, newX))
+  newY = Math.max(minY, Math.min(maxY, newY))
+
+  mapPosition.x = newX
+  mapPosition.y = newY
 }
 
-const handleMouseUp = () => {
-  console.log('拖拽结束') // 调试信息
+const handleMouseUp = (event) => {
+  if (event) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
   isDragging.value = false
   document.body.style.cursor = 'default'
   document.body.style.userSelect = ''
+  document.body.style.overflow = ''
+
+  // 强制重新渲染地图，确保内容正确显示
+  nextTick(() => {
+    if (mapImage.value) {
+      mapImage.value.style.transform = `translateX(-50%) translate(${mapPosition.x}px, ${mapPosition.y}px)`
+    }
+  })
 
   // 移除全局事件监听器
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
+  document.removeEventListener('touchmove', handleTouchMove)
+  document.removeEventListener('touchend', handleTouchEnd)
+  
+  // 移除容器事件监听器
+  const mapContainer = document.querySelector('.map-container')
+  if (mapContainer) {
+    mapContainer.removeEventListener('mousemove', handleMouseMove)
+    mapContainer.removeEventListener('mouseup', handleMouseUp)
+    mapContainer.removeEventListener('mouseleave', handleMouseUp)
+    mapContainer.removeEventListener('touchmove', handleTouchMove)
+    mapContainer.removeEventListener('touchend', handleTouchEnd)
+  }
+}
+
+// 触摸设备拖拽支持
+const startTouchDrag = (event) => {
+  const touch = event.touches[0]
+  if (!touch) return
+
+  // 检查是否触摸了弹窗区域，如果是则不启动拖拽
+  if (showAlertPopup.value) {
+    const alertPopup = document.querySelector('.alert-popup')
+    if (alertPopup) {
+      const rect = alertPopup.getBoundingClientRect()
+      const x = touch.clientX
+      const y = touch.clientY
+      
+      // 如果触摸位置在弹窗区域内，不启动拖拽
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return
+      }
+    }
+  }
+
+  event.preventDefault()
+  event.stopPropagation()
+
+  isDragging.value = true
+  dragStartPos.x = touch.clientX
+  dragStartPos.y = touch.clientY
+  dragStartMapPos.x = mapPosition.x
+  dragStartMapPos.y = mapPosition.y
+
+  // 添加触摸事件监听器
+  document.addEventListener('touchmove', handleTouchMove, { passive: false })
+  document.addEventListener('touchend', handleTouchEnd, { passive: false })
+  
+  const mapContainer = document.querySelector('.map-container')
+  if (mapContainer) {
+    mapContainer.addEventListener('touchmove', handleTouchMove, { passive: false })
+    mapContainer.addEventListener('touchend', handleTouchEnd, { passive: false })
+  }
+  
+  document.body.style.overflow = 'hidden'
+}
+
+const handleTouchMove = (event) => {
+  if (!isDragging.value) return
+  event.preventDefault()
+  event.stopPropagation()
+
+  const touch = event.touches[0]
+  if (!touch) return
+
+  const deltaX = touch.clientX - dragStartPos.x
+  const deltaY = touch.clientY - dragStartPos.y
+
+  // 计算新位置
+  let newX = dragStartMapPos.x + deltaX
+  let newY = dragStartMapPos.y + deltaY
+
+  // 边界限制 - 图片高度100%容器，只允许左右拖拽
+  const maxX = 400  // 向右最大移动距离，允许看到图片右侧内容
+  const minX = -400 // 向左最大移动距离，允许看到图片左侧内容
+  const maxY = 0    // 不允许上下移动，图片高度已匹配容器
+  const minY = 0    // 不允许上下移动，图片高度已匹配容器
+
+  newX = Math.max(minX, Math.min(maxX, newX))
+  newY = Math.max(minY, Math.min(maxY, newY))
+
+  mapPosition.x = newX
+  mapPosition.y = newY
+}
+
+const handleTouchEnd = (event) => {
+  if (event) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
+
+  isDragging.value = false
+
+  // 强制重新渲染地图，确保内容正确显示
+  nextTick(() => {
+    if (mapImage.value) {
+      mapImage.value.style.transform = `translateX(-50%) translate(${mapPosition.x}px, ${mapPosition.y}px)`
+    }
+  })
+  
+  handleMouseUp()
 }
 
 // 当前摄像头
@@ -914,7 +1098,12 @@ const formatEventTime = (timeStr) => {
 
 
 // 关闭告警弹窗
-const closeAlert = () => {
+const closeAlert = (event) => {
+  console.log('closeAlert called', event) // 添加调试日志
+  if (event) {
+    event.preventDefault()
+    event.stopPropagation()
+  }
   showAlertPopup.value = false
 }
 
@@ -1181,8 +1370,28 @@ onUnmounted(() => {
   // 清理地图拖拽事件监听器
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
+  document.removeEventListener('touchmove', handleTouchMove)
+  document.removeEventListener('touchend', handleTouchEnd)
+  
+  // 清理容器事件监听器
+  const mapContainer = document.querySelector('.map-container')
+  if (mapContainer) {
+    mapContainer.removeEventListener('mousemove', handleMouseMove)
+    mapContainer.removeEventListener('mouseup', handleMouseUp)
+    mapContainer.removeEventListener('mouseleave', handleMouseUp)
+    mapContainer.removeEventListener('touchmove', handleTouchMove)
+    mapContainer.removeEventListener('touchend', handleTouchEnd)
+  }
+  
+  // 恢复页面状态
   document.body.style.cursor = 'default'
   document.body.style.userSelect = ''
+  document.body.style.overflow = ''
+  
+  // 清理tooltip定时器
+  if (tooltipTimer) {
+    clearTimeout(tooltipTimer)
+  }
 })
 </script>
 
@@ -1336,16 +1545,20 @@ onUnmounted(() => {
   z-index: 1;
 }
 
-/* 可拖拽地图容器 */
+/* 可拖拽地图容器 - 限制在中间52%区域，优化以显示更多地图内容 */
 .map-container {
   position: fixed;
-  top: 80px; /* 从标题栏下方开始 */
-  left: 0;
-  width: 100%;
-  height: calc(100vh - 80px); /* 减去标题栏高度 */
-  overflow: hidden;
-  z-index: 0;
+  top: 80px; /* 增加顶部边距，避免与标题栏重叠 */
+  left: calc(24% + 5px + 5px); /* 减少左侧间距，给地图更多空间 */
+  width: calc(52% - 10px); /* 减少宽度扣减，为地图留更多空间 */
+  height: calc(100vh - 120px); /* 调整高度，为顶部和底部留出空间 */
+  overflow: hidden; /* 保持hidden，防止滚动条 */
+  z-index: 15; /* 提高层级，确保在渐变遮罩之上但不影响弹窗 */
   cursor: grab;
+  /* 确保容器可以接收鼠标事件，但不要拦截弹窗 */
+  pointer-events: auto;
+  /* 添加边框调试（可选） */
+  /* border: 1px solid rgba(255, 0, 0, 0.3); */
 }
 
 .map-container:hover {
@@ -1358,10 +1571,13 @@ onUnmounted(() => {
 
 /* 可拖拽地图图片 */
 .draggable-map {
-  width: 150%; /* 增大地图尺寸以提供更多拖拽空间 */
-  height: 150%;
-  object-fit: cover;
-  opacity: 0.4;
+  position: absolute;
+  top: 0; /* 顶部对齐容器 */
+  left: 50%; /* 水平居中 */
+  width: auto; /* 自动宽度，保持图片比例 */
+  height: 100%; /* 高度设置为容器高度 */
+  object-fit: contain; /* 使用contain保持完整图片内容 */
+  opacity: 0.5; /* 适当提高透明度，让地图更清晰 */
   transition: opacity 0.3s ease;
   user-select: none;
   -webkit-user-drag: none;
@@ -1369,6 +1585,18 @@ onUnmounted(() => {
   -moz-user-select: none;
   -ms-user-select: none;
   cursor: grab; /* 为图片添加抓手光标 */
+  /* 确保图片可以接收鼠标事件 */
+  pointer-events: auto;
+  /* 防止图片被选中 */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* 确保图片完全覆盖并可拖拽 */
+  min-width: 100vw;
+  min-height: 100vh;
 }
 
 .draggable-map:active {
@@ -1381,21 +1609,48 @@ onUnmounted(() => {
 }
 
 .map-container.dragging .draggable-map {
-  opacity: 0.6; /* 拖拽时稍微提高透明度 */
+  opacity: 0.7; /* 拖拽时保持较高透明度，确保内容可见 */
+  cursor: grabbing !important;
 }
 
+
 /* 地图容器响应式适配 */
+@media (max-width: 1600px) {
+  .map-container {
+    left: calc(24% + 10px + 15px); /* 左侧面板24% + dashboard padding + grid gap */
+    width: calc(52% - 30px); /* 中间区域52% - 两边的grid gap */
+  }
+}
+
+@media (max-width: 1400px) {
+  .map-container {
+    left: calc(24% + 12px + 12px); /* 调整padding和gap */
+    width: calc(52% - 24px);
+  }
+}
+
+@media (max-width: 1200px) {
+  .map-container {
+    left: calc(24% + 10px + 10px); /* 调整padding和gap */
+    width: calc(52% - 20px);
+  }
+}
+
 @media (max-width: 768px) {
   .map-container {
-    top: 70px; /* 移动端标题栏高度 */
-    height: calc(100vh - 70px);
+    top: 80px; /* 移动端适当调整顶部间距 */
+    left: 0; /* 移动端恢复全屏 */
+    width: 100vw;
+    height: calc(100vh - 120px); /* 为移动端留出更多边距 */
   }
 }
 
 @media (max-width: 480px) {
   .map-container {
-    top: 60px; /* 小屏幕设备标题栏高度 */
-    height: calc(100vh - 60px);
+    top: 70px; /* 小屏幕适当调整顶部间距 */
+    left: 0; /* 小屏幕恢复全屏 */
+    width: 100vw;
+    height: calc(100vh - 100px); /* 为小屏幕留出足够边距 */
   }
 }
 
@@ -2618,7 +2873,7 @@ onUnmounted(() => {
 
 /* 告警弹窗 */
 .alert-popup {
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -2630,7 +2885,10 @@ onUnmounted(() => {
   box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
   animation: alertPulse 2s infinite;
   cursor: pointer;
-  z-index: 1000;
+  z-index: 10000 !important;
+  pointer-events: auto !important;
+  /* 确保弹窗不被其他元素遮挡 */
+  isolation: isolate;
 }
 
 @keyframes alertPulse {
@@ -2670,7 +2928,7 @@ onUnmounted(() => {
   border: none;
   color: white;
   font-size: 20px;
-  cursor: pointer;
+  cursor: pointer !important;
   width: 25px;
   height: 25px;
   display: flex;
@@ -2678,6 +2936,13 @@ onUnmounted(() => {
   justify-content: center;
   border-radius: 50%;
   transition: background 0.3s ease;
+  z-index: 10001 !important;
+  pointer-events: auto !important;
+  /* 确保按钮始终可点击 */
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .close-btn:hover {
@@ -3234,6 +3499,108 @@ onUnmounted(() => {
 .status-offline {
   color: #ff4444 !important;
   font-weight: bold;
+}
+
+/* 新的告警弹窗样式 - 使用 teleport 到 body */
+.alert-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+  /* 使用更强制的居中方法 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.alert-popup-container {
+  /* 使用绝对定位的居中方案作为备用 */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 68, 68, 0.95);
+  border: 2px solid #ff4444;
+  border-radius: 10px;
+  padding: 25px;
+  min-width: 350px;
+  max-width: 90vw;
+  box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
+  cursor: pointer;
+  pointer-events: auto !important;
+  /* 确保居中不被动画影响 */
+  margin: 0;
+  animation: alertPulseNew 2s infinite;
+}
+
+/* 新的动画，保持居中定位 */
+@keyframes alertPulseNew {
+  0%, 100% { 
+    box-shadow: 0 0 30px rgba(255, 68, 68, 0.5);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 50px rgba(255, 68, 68, 0.8);
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+}
+
+.alert-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer !important;
+  width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.3s ease;
+  z-index: 100000 !important;
+  pointer-events: auto !important;
+  user-select: none;
+}
+
+.alert-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.alert-popup-content {
+  color: white;
+  /* 移除 pointer-events: none，使内容区域可以点击 */
+}
+
+.alert-popup-content h3 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: white;
+}
+
+.alert-popup-content p {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: white;
+}
+
+.alert-popup-content .alert-tip {
+  margin-top: 10px;
+  font-size: 12px;
+  opacity: 0.8;
 }
 
 
