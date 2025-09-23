@@ -182,51 +182,26 @@ export default {
 
 /* 首页专用头部样式 */
 .home-header {
-  background: url('@/assets/images/main/main-header2.png') center center/cover no-repeat,
-              linear-gradient(135deg,
-                rgba(15, 25, 45, 0.8) 0%,
-                rgba(20, 35, 60, 0.8) 50%,
-                rgba(25, 40, 65, 0.8) 100%);
-  background-blend-mode: overlay;
+  background: url('@/assets/images/main/main-header2.png') center center/cover no-repeat;
+  /* 完全移除渐变背景，只保留背景图片 */
   color: #fff;
   display: grid;
   grid-template-columns: auto 1fr auto 1fr auto;
   align-items: center;
   gap: 20px;
-  height: 80px;
+  height: 70px; /* 缩小高度，改善观感 */
   padding: 0 30px;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.3),
-    0 0 40px rgba(0, 255, 255, 0.1),
-    inset 0 1px 0 rgba(0, 255, 255, 0.2);
+  box-shadow: none; /* 完全移除所有阴影效果 */
+  border: none; /* 确保没有边框 */
+  outline: none; /* 确保没有轮廓 */
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* 允许内容溢出 */
+  z-index: 1000; /* 确保在最顶层 */
 }
 
-/* 为header添加边缘渐变效果，与按钮更好融合 */
-.home-header::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background:
-    linear-gradient(to bottom,
-      rgba(0, 255, 255, 0.08) 0%,
-      transparent 15%,
-      transparent 85%,
-      rgba(0, 255, 255, 0.08) 100%),
-    linear-gradient(to right,
-      rgba(0, 255, 255, 0.06) 0%,
-      transparent 20%,
-      transparent 80%,
-      rgba(0, 255, 255, 0.06) 100%);
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.6;
-  transition: opacity 0.3s ease;
-}
+/* 删除多余的延伸伪元素 */
+
+/* 删除旧的边缘渐变效果，防止与延伸效果冲突 */
 
 /* 移除头部闪光效果 */
 
@@ -446,7 +421,7 @@ export default {
   padding: 0;
   flex: 1;
   overflow-y: auto;
-  height: calc(100vh - 80px);
+  height: calc(100vh - 70px); /* 调整为新的header高度 */
 }
 
 /* 下拉菜单样式优化 */

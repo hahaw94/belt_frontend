@@ -1545,15 +1545,16 @@ onUnmounted(() => {
   z-index: 1;
 }
 
+
 /* 可拖拽地图容器 - 限制在中间52%区域，优化以显示更多地图内容 */
 .map-container {
   position: fixed;
-  top: 80px; /* 增加顶部边距，避免与标题栏重叠 */
+  top: 50px; /* 向上移动，让缩小的header遮盖地图 */
   left: calc(24% + 5px + 5px); /* 减少左侧间距，给地图更多空间 */
   width: calc(52% - 10px); /* 减少宽度扣减，为地图留更多空间 */
-  height: calc(100vh - 120px); /* 调整高度，为顶部和底部留出空间 */
+  height: calc(100vh - 50px); /* 调整为新的重叠位置 */
   overflow: hidden; /* 保持hidden，防止滚动条 */
-  z-index: 15; /* 提高层级，确保在渐变遮罩之上但不影响弹窗 */
+  z-index: 5; /* 降低层级，确保不遮挡摄像头等重要元素 */
   cursor: grab;
   /* 确保容器可以接收鼠标事件，但不要拦截弹窗 */
   pointer-events: auto;
@@ -1577,7 +1578,7 @@ onUnmounted(() => {
   width: auto; /* 自动宽度，保持图片比例 */
   height: 100%; /* 高度设置为容器高度 */
   object-fit: contain; /* 使用contain保持完整图片内容 */
-  opacity: 0.5; /* 适当提高透明度，让地图更清晰 */
+  opacity: 0.9; /* 增加不透明度，让标题栏遮盖效果更明显 */
   transition: opacity 0.3s ease;
   user-select: none;
   -webkit-user-drag: none;
@@ -1638,7 +1639,7 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .map-container {
-    top: 80px; /* 移动端适当调整顶部间距 */
+    top: 80px; /* 向上移动，让header可以重叠到地图上 */
     left: 0; /* 移动端恢复全屏 */
     width: 100vw;
     height: calc(100vh - 120px); /* 为移动端留出更多边距 */
@@ -1647,7 +1648,7 @@ onUnmounted(() => {
 
 @media (max-width: 480px) {
   .map-container {
-    top: 70px; /* 小屏幕适当调整顶部间距 */
+    top: 80px; /* 向上移动，让header可以重叠到地图上 */
     left: 0; /* 小屏幕恢复全屏 */
     width: 100vw;
     height: calc(100vh - 100px); /* 为小屏幕留出足够边距 */
@@ -1766,7 +1767,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 24% 1fr 24%; /* 调整两边宽度为24% */
   grid-template-rows: 1fr;
-  height: calc(100vh - 80px); /* 减去新的header高度 */
+  height: calc(100vh - 50px); /* 向上移动，创造重叠效果 */
   gap: 15px; /* 减少间隙从20px到15px，让布局更紧凑 */
   padding: 10px; /* 减少外边距从15px到10px */
   max-width: 100vw;
@@ -1799,7 +1800,7 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 15px; /* 恢复卡片间隔，让透明效果更明显 */
-  height: calc(100vh - 110px); /* 调整高度计算：80px header + 30px padding */
+  height: calc(100vh - 60px); /* 向上移动，与缩小的header配合 */
   overflow: hidden; /* 不允许滚动，强制卡片拉伸 */
   padding: 10px; /* 添加内边距 */
   margin: 0; /* 确保面板没有margin */
@@ -1816,7 +1817,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: calc(100vh - 110px); /* 与左右面板保持一致的高度 */
+  height: calc(100vh - 60px); /* 与左右面板保持一致的高度 */
   /* 移除背景，让整体背景透过 */
   background: transparent;
 }
@@ -3017,7 +3018,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 10;
+  z-index: 25; /* 提高到25，确保在地图和标题栏之上 */
 }
 
 .background-camera-icon {
@@ -3030,6 +3031,7 @@ onUnmounted(() => {
   background-position: center;
   cursor: pointer;
   pointer-events: auto;
+  z-index: 26; /* 确保摄像头图标在最顶层 */
 }
 
 .background-camera-icon.camera-1 {

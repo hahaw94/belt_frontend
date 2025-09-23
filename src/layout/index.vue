@@ -345,34 +345,33 @@ export default {
 
 /* 科技感头部样式 */
 .layout-header {
-  background: url('@/assets/images/main/main-header2.png') center center/cover no-repeat,
-              linear-gradient(135deg,
-                rgba(15, 25, 45, 0.8) 0%,
-                rgba(20, 35, 60, 0.8) 50%,
-                rgba(25, 40, 65, 0.8) 100%);
-  background-blend-mode: overlay;
+  background: url('@/assets/images/main/main-header2.png') center center/cover no-repeat;
+  /* 完全移除渐变背景，只保留背景图片 */
   color: #fff;
   display: grid;
   grid-template-columns: auto 1fr auto 1fr auto;
   align-items: center;
   gap: 20px;
-  height: 80px;
+  height: 70px; /* 缩小高度，改善观感 */
+  overflow: visible; /* 允许内容溢出 */
+  z-index: 1000; /* 确保在最顶层 */
+  position: relative; /* 确保定位正确 */
   padding: 0 30px;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.3),
-    0 0 40px rgba(0, 255, 255, 0.1),
-    inset 0 1px 0 rgba(0, 255, 255, 0.2);
-  position: relative;
-  overflow: hidden;
+  box-shadow: none; /* 完全移除所有阴影效果 */
+  border: none; /* 确保没有边框 */
+  outline: none; /* 确保没有轮廓 */
 }
+
+/* 删除多余的伪元素，保持上方正确的遮盖效果 */
+
 
 /* 首页专用头部样式 */
 .layout-header.home-header {
-  background: url('@/assets/images/main/main-header1.png') center/cover no-repeat, 
-              linear-gradient(135deg, 
-                rgba(15, 25, 45, 0.8) 0%, 
-                rgba(20, 35, 60, 0.8) 50%, 
-                rgba(25, 40, 65, 0.8) 100%);
+  background: url('@/assets/images/main/main-header1.png') center/cover no-repeat,
+              linear-gradient(135deg,
+                rgba(15, 25, 45, 1) 0%,
+                rgba(20, 35, 60, 1) 50%,
+                rgba(25, 40, 65, 1) 100%);
   background-blend-mode: overlay;
 }
 
@@ -534,7 +533,7 @@ export default {
 
 .layout-body-container {
   flex: 1;
-  height: calc(100vh - 80px); /* 减去头部高度 */
+  height: calc(100vh - 70px); /* 调整为新的header高度 */
 }
 
 /* 科技感侧边栏样式 */
