@@ -288,7 +288,7 @@
           <el-input-number
             v-model="positionForm.position_x"
             :min="0"
-            :max="currentLayer?.image_width || 1920"
+            :max="currentLayer?.image_width || window.innerWidth"
             style="width: 100%;"
           />
         </el-form-item>
@@ -296,7 +296,7 @@
           <el-input-number
             v-model="positionForm.position_y"
             :min="0"
-            :max="currentLayer?.image_height || 1080"
+            :max="currentLayer?.image_height || window.innerHeight"
             style="width: 100%;"
           />
         </el-form-item>
@@ -373,8 +373,8 @@ export default {
     
     const zoomLevel = ref(1)
     const canvasSize = reactive({
-      width: 1920,
-      height: 1080
+      width: screen.availWidth || screen.width || window.innerWidth,
+      height: screen.availHeight || screen.height || window.innerHeight
     })
     
     const positionForm = reactive({

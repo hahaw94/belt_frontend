@@ -26,8 +26,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const latestAlarms = ref([])
   const mapConfig = ref({
     background_image: '',
-    width: 1920,
-    height: 1080
+    width: screen.availWidth || screen.width || window.innerWidth,
+    height: screen.availHeight || screen.height || window.innerHeight
   })
   const cameraPoints = ref([])
   const selectedCamera = ref(null)

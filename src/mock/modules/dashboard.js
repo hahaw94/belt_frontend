@@ -73,8 +73,8 @@ class DashboardMockData {
     return {
       map_config: {
         background_image: '/uploads/maps/belt_layout.png',
-        width: 1920,
-        height: 1080
+        width: screen.availWidth || screen.width || window.innerWidth,
+        height: screen.availHeight || screen.height || window.innerHeight
       },
       camera_points: [
         {
@@ -135,7 +135,12 @@ class DashboardMockData {
       stream_url: camera.stream_url,
       backup_url: camera.stream_url.replace('rtmp', 'rtsp').replace('1935', '554'),
       status: camera.status,
-      resolution: '1920x1080',
+      resolution: (() => {
+        // 优先使用屏幕分辨率，如果不可用则使用窗口分辨率
+        const screenWidth = screen.availWidth || screen.width || window.innerWidth;
+        const screenHeight = screen.availHeight || screen.height || window.innerHeight;
+        return `${screenWidth}x${screenHeight}`;
+      })(),
       fps: 25
     }
   }

@@ -388,6 +388,7 @@ export default {
     rgba(0, 255, 255, 0.1) 50%, 
     transparent 100%);
   animation: tech-shimmer 3s ease-in-out infinite;
+  pointer-events: none; /* 确保不阻挡点击事件 */
 }
 
 @keyframes tech-shimmer {
@@ -507,9 +508,13 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  z-index: 2;
+  z-index: 10000;
   position: relative;
   margin-right: 20px;
+}
+
+.header-user .el-dropdown {
+  z-index: 10000;
 }
 
 .el-dropdown-link {
@@ -519,6 +524,9 @@ export default {
   align-items: center;
   transition: all 0.3s ease;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+  pointer-events: auto; /* 确保可以点击 */
+  position: relative;
+  z-index: 10000;
 }
 
 .el-dropdown-link:hover {
@@ -905,17 +913,20 @@ export default {
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+  z-index: 10001 !important;
 }
 
 /* 强制覆盖Element Plus默认的popper样式 */
 :deep(.el-popper.is-dark) {
   background: rgba(15, 25, 45, 0.95) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  z-index: 10001 !important;
 }
 
 :deep(.el-popper) {
   background: rgba(15, 25, 45, 0.95) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  z-index: 10001 !important;
 }
 
 :deep(.el-dropdown-menu__item) {

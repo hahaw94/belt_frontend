@@ -182,21 +182,36 @@ export default {
 
 /* 首页专用头部样式 */
 .home-header {
-  background: url('@/assets/images/main/main-header2.png') center center/cover no-repeat;
-  /* 完全移除渐变背景，只保留背景图片 */
+  /* 移除背景图片，改为使用伪元素 */
   color: #fff;
   display: grid;
-  grid-template-columns: auto 1fr auto 1fr auto;
+  grid-template-columns: auto 0.5fr 0.6fr 0.5fr auto;
   align-items: center;
-  gap: 20px;
-  height: 70px; /* 缩小高度，改善观感 */
+  justify-items: center; /* 让所有项目居中对齐 */
+  gap: 8px; /* 进一步减少间隙，让按钮更靠近中心 */
+  height: 60px; /* 缩小容器高度 */
   padding: 0 30px;
-  box-shadow: none; /* 完全移除所有阴影效果 */
-  border: none; /* 确保没有边框 */
-  outline: none; /* 确保没有轮廓 */
+  box-shadow: none;
+  border: none;
+  outline: none;
   position: relative;
   overflow: visible; /* 允许内容溢出 */
   z-index: 1000; /* 确保在最顶层 */
+  background: transparent; /* 容器背景透明 */
+}
+
+/* 使用伪元素创建可以突破容器的背景图片 */
+.home-header::before {
+  content: '';
+  position: absolute;
+  top: -7vh; /* 减少向上延伸 */
+  left: -4vw; /* 减少向左延伸 */
+  right: -8vw; /* 减少向右延伸 */
+  bottom: -3.8vh; /* 减少向下延伸 */
+  background: url('@/assets/images/main/main-header2.png') center center/cover no-repeat;
+  /* 使用center center确保图片居中显示，cover确保完全覆盖 */
+  z-index: -1; /* 放在内容下方 */
+  pointer-events: none; /* 不影响点击事件 */
 }
 
 /* 删除多余的延伸伪元素 */
@@ -217,10 +232,10 @@ export default {
 .header-left {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-end; /* 改为右对齐，向中间靠拢 */
   z-index: 3;
   position: relative;
-  transform: translateX(-27%);
+  /* 移除transform，让按钮自然居中 */
 }
 
 .nav-button {
@@ -232,13 +247,13 @@ export default {
   background-color: transparent !important;
   color: #00d4ff;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 14px;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-  padding: 15px 40px;
+  padding: 10px 25px;
   border-radius: 0;
   box-shadow: none;
-  min-width: 140px;
-  height: 50px;
+  min-width: 100px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -361,23 +376,23 @@ export default {
   z-index: 3;
   text-align: center;
   position: relative;
-  transform: translateX(-20%);
+  /* 移除transform，让标题真正居中 */
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: flex-start; /* 改为左对齐，向中间靠拢 */
   z-index: 3;
   position: relative;
-  transform: translateX(18%);
+  /* 移除transform，让按钮自然居中 */
 }
 
 .header-user {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  z-index: 2;
+  z-index: 10000;
   position: relative;
   margin-right: 20px;
 }
@@ -389,12 +404,13 @@ export default {
 
 
 .app-title {
-  font-size: 28px;
+  font-size: 32px; /* 从28px增加到32px */
   font-weight: bold;
   font-style: italic;
   color: #00d4ff;
   text-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
   letter-spacing: 2px;
+  transform: translateY(3px); /* 向下移动3px */
 }
 
 .el-dropdown-link {
@@ -404,6 +420,9 @@ export default {
   align-items: center;
   transition: all 0.3s ease;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+  pointer-events: auto; /* 确保可以点击 */
+  position: relative;
+  z-index: 10000;
 }
 
 .el-dropdown-link:hover {
@@ -421,7 +440,9 @@ export default {
   padding: 0;
   flex: 1;
   overflow-y: auto;
-  height: calc(100vh - 70px); /* 调整为新的header高度 */
+  height: calc(100vh - 60px); /* 调整为新的header高度 */
+  position: relative;
+  z-index: 50; /* 设置较低的z-index，确保header能够覆盖 */
 }
 
 /* 下拉菜单样式优化 */
@@ -430,17 +451,20 @@ export default {
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+  z-index: 10001 !important;
 }
 
 /* 强制覆盖Element Plus默认的popper样式 */
 :deep(.el-popper.is-dark) {
   background: rgba(15, 25, 45, 0.95) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  z-index: 10001 !important;
 }
 
 :deep(.el-popper) {
   background: rgba(15, 25, 45, 0.95) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  z-index: 10001 !important;
 }
 
 :deep(.el-dropdown-menu__item) {

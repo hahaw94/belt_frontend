@@ -13,6 +13,8 @@
   backdrop-filter: blur(12px) !important;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6) !important;
   border-radius: 8px !important;
+  z-index: 10001 !important;
+  pointer-events: auto !important;
 }
 
 /* 下拉菜单项样式 */

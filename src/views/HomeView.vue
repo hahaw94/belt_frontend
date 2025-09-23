@@ -1549,12 +1549,12 @@ onUnmounted(() => {
 /* 可拖拽地图容器 - 限制在中间52%区域，优化以显示更多地图内容 */
 .map-container {
   position: fixed;
-  top: 50px; /* 向上移动，让缩小的header遮盖地图 */
+  top: 20px; /* 进一步向上移动，让header的伪元素能够覆盖地图顶部 */
   left: calc(24% + 5px + 5px); /* 减少左侧间距，给地图更多空间 */
   width: calc(52% - 10px); /* 减少宽度扣减，为地图留更多空间 */
-  height: calc(100vh - 50px); /* 调整为新的重叠位置 */
+  height: calc(100vh - 20px); /* 调整高度，让地图从顶部开始 */
   overflow: hidden; /* 保持hidden，防止滚动条 */
-  z-index: 5; /* 降低层级，确保不遮挡摄像头等重要元素 */
+  z-index: 900; /* 提高层级，确保在background-cameras之上，但仍低于header的1000 */
   cursor: grab;
   /* 确保容器可以接收鼠标事件，但不要拦截弹窗 */
   pointer-events: auto;
@@ -1767,12 +1767,13 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: 24% 1fr 24%; /* 调整两边宽度为24% */
   grid-template-rows: 1fr;
-  height: calc(100vh - 50px); /* 向上移动，创造重叠效果 */
-  gap: 15px; /* 减少间隙从20px到15px，让布局更紧凑 */
-  padding: 10px; /* 减少外边距从15px到10px */
+  height: calc(100vh - 60px); /* 调整为新的header高度 */
+  gap: 10px; /* 减少间隙，为内容留更多空间 */
+  padding: 5px; /* 减少外边距，为内容留更多空间 */
   max-width: 100vw;
   position: relative;
-  z-index: 2; /* 确保内容显示在渐变遮罩之上 */
+  z-index: 500; /* 提高层级，确保在地图之上，但低于header */
+  box-sizing: border-box; /* 确保padding包含在总高度内 */
 }
 
 /* 添加整体氛围光效 */
@@ -1799,14 +1800,23 @@ onUnmounted(() => {
 .left-panel, .right-panel {
   display: flex;
   flex-direction: column;
-  gap: 15px; /* 恢复卡片间隔，让透明效果更明显 */
-  height: calc(100vh - 60px); /* 向上移动，与缩小的header配合 */
-  overflow: hidden; /* 不允许滚动，强制卡片拉伸 */
-  padding: 10px; /* 添加内边距 */
+  gap: 10px; /* 减少卡片间隔，为内容留更多空间 */
+  height: calc(100vh - 60px); /* 调整为新的header高度 */
+  overflow: hidden !important; /* 强制不允许滚动 */
+  padding: 5px; /* 减少内边距，为内容留更多空间 */
   margin: 0; /* 确保面板没有margin */
   background: transparent; /* 确保面板背景透明 */
   /* 添加轻微的背景模糊以增强层次感 */
   backdrop-filter: blur(1px);
+  box-sizing: border-box; /* 确保padding包含在总高度内 */
+  /* 强制禁用滚动条 */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* 隐藏左右面板的WebKit滚动条 */
+.left-panel::-webkit-scrollbar, .right-panel::-webkit-scrollbar {
+  display: none;
 }
 
 /* 中央内容区域 */
@@ -1817,7 +1827,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: calc(100vh - 60px); /* 与左右面板保持一致的高度 */
+  height: calc(100vh - 60px); /* 调整为新的header高度 */
   /* 移除背景，让整体背景透过 */
   background: transparent;
 }
@@ -1828,7 +1838,7 @@ onUnmounted(() => {
   background: transparent; /* 完全透明背景 */
   border: none; /* 完全移除边框 */
   border-radius: 0; /* 移除圆角 */
-  padding: 25px 15px 15px 15px;
+  padding: 20px 10px 10px 10px; /* 减少内边距 */
   box-shadow: none; /* 移除所有阴影 */
   backdrop-filter: none; /* 移除背景模糊效果 */
   text-align: center;
@@ -1839,8 +1849,8 @@ onUnmounted(() => {
   flex: 1 1 0; /* 默认flex分配 */
   min-height: 0; /* 移除最小高度限制，让flex完全控制 */
   margin: 0 !important; /* 强制确保没有外边距 */
-  padding-top: 45px !important; /* 增加顶部内边距为图片留出空间 */
-  padding-bottom: 15px !important;
+  padding-top: 40px !important; /* 减少顶部内边距 */
+  padding-bottom: 10px !important; /* 减少底部内边距 */
   box-sizing: border-box; /* 确保盒模型正确 */
 }
 
@@ -1905,8 +1915,8 @@ onUnmounted(() => {
 .device-stats-container {
   display: flex;
   flex-direction: column;
-  gap: 1.8%; /* 缩小间距 */
-  padding: 1% 0; /* 缩小内边距 */
+  gap: 1%; /* 进一步缩小间距 */
+  padding: 0.5% 0; /* 进一步缩小内边距 */
   height: 100%;
   justify-content: space-around;
 }
@@ -2105,13 +2115,13 @@ onUnmounted(() => {
 /* 任务统计容器 */
 .task-stats-container {
   position: relative;
-  width: calc(100% - 30px); /* 与标题框宽度保持一致 */
+  width: calc(100% - 20px); /* 调整宽度，适应更紧凑的布局 */
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px 0; /* 移除左右padding，使用width控制 */
-  margin: 0 15px; /* 使用margin确保与标题框对齐 */
+  padding: 10px 0; /* 减少内边距 */
+  margin: 0 10px; /* 减少margin */
 }
 
 
@@ -2329,7 +2339,7 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100%;
   justify-content: space-between;
-  padding: 1.5% 0; /* 调整为相对内边距 */
+  padding: 0.5% 0; /* 减少内边距，为内容留更多空间 */
 }
 
 .main-alarm-display {
@@ -2791,11 +2801,11 @@ onUnmounted(() => {
 
 /* SVG图表容器 */
 .svg-chart-container {
-  height: 26vh; /* 稍微增加高度 */
-  margin-top: 1.5%;
+  height: 24vh; /* 调整高度适应紧凑布局 */
+  margin-top: 0.5%; /* 减少顶部边距 */
   position: relative;
   z-index: 2;
-  padding: 1% 3%; /* 优化内边距 */
+  padding: 0.5% 2%; /* 减少内边距 */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2970,11 +2980,51 @@ onUnmounted(() => {
 }
 
 /* 响应式设计 */
+/* 针对1080p分辨率的专门优化 */
+@media (max-height: 1080px) and (min-height: 1000px) {
+  .dashboard-container {
+    height: calc(100vh - 80px); /* 为1080p增加更多高度余量 */
+    gap: 8px; /* 进一步减少间隙 */
+    padding: 3px; /* 进一步减少内边距 */
+  }
+  
+  .left-panel, .right-panel {
+    height: calc(100vh - 80px); /* 与容器保持一致 */
+    gap: 8px; /* 减少卡片间隔 */
+    padding: 3px; /* 减少内边距 */
+  }
+  
+  .widget {
+    padding-top: 35px !important; /* 减少顶部内边距 */
+    padding-bottom: 8px !important; /* 减少底部内边距 */
+  }
+  
+  .main-content {
+    height: calc(100vh - 80px); /* 与其他组件保持一致 */
+  }
+  
+  /* 优化特定组件的高度 */
+  .svg-chart-container {
+    height: 20vh; /* 在1080p下进一步减少图表高度 */
+    margin-top: 0; /* 移除顶部边距 */
+    padding: 0.2% 1%; /* 进一步减少内边距 */
+  }
+  
+  .alarm-chart-container {
+    padding: 0.5% 0 1% 0; /* 减少内边距 */
+  }
+  
+  .device-stats-container {
+    gap: 0.5%; /* 进一步减少间距 */
+    padding: 0.2% 0; /* 进一步减少内边距 */
+  }
+}
+
 @media (max-width: 1600px) {
   .dashboard-container {
     grid-template-columns: 24% 1fr 24%; /* 保持24%宽度 */
-    gap: 15px;
-    padding: 10px;
+    gap: 10px;
+    padding: 5px;
   }
 }
 
@@ -3018,7 +3068,7 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 25; /* 提高到25，确保在地图和标题栏之上 */
+  z-index: 800; /* 提高层级，确保在地图和内容之上，但低于header */
 }
 
 .background-camera-icon {
@@ -3031,7 +3081,7 @@ onUnmounted(() => {
   background-position: center;
   cursor: pointer;
   pointer-events: auto;
-  z-index: 26; /* 确保摄像头图标在最顶层 */
+  z-index: 850; /* 确保摄像头图标在正确层级 */
 }
 
 .background-camera-icon.camera-1 {

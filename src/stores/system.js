@@ -19,6 +19,19 @@ export const useSystemStore = defineStore('system', () => {
     max_camera_count: 1000,
     current_camera_count: 0
   })
+
+  // 动态更新窗口尺寸
+  const updateWindowSize = () => {
+    if (typeof window !== 'undefined') {
+      mapConfig.value.width = screen.availWidth || screen.width || window.innerWidth
+      mapConfig.value.height = screen.availHeight || screen.height || window.innerHeight
+    }
+  }
+
+  // 监听窗口大小变化
+  if (typeof window !== 'undefined') {
+    window.addEventListener('resize', updateWindowSize)
+  }
   
   const versionInfo = ref({
     version: '',        // 后端字段：软件版本号
@@ -30,8 +43,8 @@ export const useSystemStore = defineStore('system', () => {
   
   const mapConfig = ref({
     background_image: '',
-    width: 1920,
-    height: 1080,
+    width: screen.availWidth || screen.width || window.innerWidth,
+    height: screen.availHeight || screen.height || window.innerHeight,
     camera_positions: []
   })
   
@@ -448,8 +461,8 @@ export const useSystemStore = defineStore('system', () => {
   const resetMapConfig = () => {
     mapConfig.value = {
       background_image: '',
-      width: 1920,
-      height: 1080,
+      width: screen.availWidth || screen.width || window.innerWidth,
+      height: screen.availHeight || screen.height || window.innerHeight,
       camera_positions: []
     }
   }
@@ -654,6 +667,7 @@ export const useSystemStore = defineStore('system', () => {
     updateLogoConfig,
     resetLogoConfig,
     updateFaviconFromLogo,
+    updateWindowSize,
     clearUploadProgress,
     clearBackupProgress,
     clearUpgradeProgress,
