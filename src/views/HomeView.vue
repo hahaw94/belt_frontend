@@ -512,21 +512,25 @@
 
     <!-- 背景摄像头图标 -->
     <div class="background-cameras">
-      <div 
-        class="background-camera-icon camera-1" 
+      <div
+        class="background-camera-icon camera-1"
         @click="showCameraPopup(cameraData[0])"
         @mouseenter="showTooltip($event, cameraData[0])"
         @mouseleave="hideTooltip"
         title="点击查看摄像头画面"
       >
+        <!-- 添加可见的文字标识 -->
+        <div class="camera-label">摄像机1</div>
       </div>
-      <div 
-        class="background-camera-icon camera-2" 
+      <div
+        class="background-camera-icon camera-2"
         @click="showCameraPopup(cameraData[1])"
         @mouseenter="showTooltip($event, cameraData[1])"
         @mouseleave="hideTooltip"
         title="点击查看摄像头画面"
       >
+        <!-- 添加可见的文字标识 -->
+        <div class="camera-label">摄像机2</div>
       </div>
     </div>
 
@@ -1228,28 +1232,28 @@ const hideTooltip = () => {
   tooltipVisible.value = false
 }
 
-// 模拟实时数据更新
+// 模拟实时数据更新 - 暂时禁用告警弹窗
 const updateRealTimeData = () => {
   // 更新告警统计数据
   const totalAlerts = Math.floor(Math.random() * 15) + 5
   const processedAlerts = Math.floor(totalAlerts * 0.4)
   const processingAlerts = Math.floor(totalAlerts * 0.1)
   const unprocessedAlerts = totalAlerts - processedAlerts - processingAlerts
-  
+
   dashboardData.alarm_stats.today_total = totalAlerts
   dashboardData.alarm_stats.processed = processedAlerts
   dashboardData.alarm_stats.unprocessed = unprocessedAlerts
   dashboardData.alarm_stats.processing = processingAlerts
 
-  // 随机显示告警弹窗
-  if (Math.random() > 0.85) {
-    currentAlert.value = {
-      device_name: '摄像机1',
-      type: '未戴安全帽',
-      time: new Date().toLocaleString('zh-CN')
-    }
-    showAlertPopup.value = true
-  }
+  // 随机显示告警弹窗 - 暂时禁用
+  // if (Math.random() > 0.85) {
+  //   currentAlert.value = {
+  //     device_name: '摄像机1',
+  //     type: '未戴安全帽',
+  //     time: new Date().toLocaleString('zh-CN')
+  //   }
+  //   showAlertPopup.value = true
+  // }
 }
 
 // 加载数据看板数据
@@ -1258,11 +1262,12 @@ const loadDashboardData = async () => {
   try {
     const response = await dashboardApi.getOverview()
     if (response.success) {
-      Object.assign(dashboardData, response.body)
+      Object.assign(dashboardData, response.data)
     }
   } catch (error) {
     console.error('加载数据看板失败:', error)
-    ElMessage.error('加载数据失败')
+    // 暂时禁用错误提示，避免资源不存在时的错误弹窗
+    // ElMessage.error('加载数据失败')
   } finally {
     loading.value = false
   }
@@ -1352,15 +1357,15 @@ onMounted(() => {
     if (streamCheckInterval) clearInterval(streamCheckInterval)
   })
   
-  // 8秒后显示告警弹窗
-  setTimeout(() => {
-    currentAlert.value = {
-      device_name: '摄像机1',
-      type: '未戴安全帽',
-      time: new Date().toLocaleString('zh-CN')
-    }
-    showAlertPopup.value = true
-  }, 8000)
+  // 8秒后显示告警弹窗 - 暂时禁用
+  // setTimeout(() => {
+  //   currentAlert.value = {
+  //     device_name: '摄像机1',
+  //     type: '未戴安全帽',
+  //     time: new Date().toLocaleString('zh-CN')
+  //   }
+  //   showAlertPopup.value = true
+  // }, 8000)
 })
 
 onUnmounted(() => {
@@ -3068,30 +3073,61 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 800; /* 提高层级，确保在地图和内容之上，但低于header */
+  z-index: 1100; /* 大幅提高层级，确保在所有内容之上 */
 }
 
 .background-camera-icon {
   position: absolute;
-  width: 40px;
-  height: 40px;
+  width: 50px; /* 增大图标尺寸，提高可见性 */
+  height: 50px; /* 增大图标尺寸，提高可见性 */
   background-image: url('@/assets/images/main/main-camera.png');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
   cursor: pointer;
-  pointer-events: auto;
-  z-index: 850; /* 确保摄像头图标在正确层级 */
+  pointer-events: auto !important; /* 强制启用点击事件 */
+  z-index: 1000; /* 提高层级，确保在所有内容之上 */
+  /* 增强图标的可见性和交互反馈 */
+  filter:
+    drop-shadow(0 0 8px rgba(0, 212, 255, 0.6))
+    drop-shadow(0 0 4px rgba(255, 255, 255, 0.3))
+    contrast(1.3)
+    brightness(1.2)
+    saturate(1.4);
+  transition: all 0.3s ease;
+  /* 确保图标始终可见 */
+  opacity: 0.95;
 }
 
 .background-camera-icon.camera-1 {
-  top: 35%;
-  left: 35%;
+  top: 40%; /* 调整到更显眼的位置 */
+  left: 40%; /* 调整到更显眼的位置 */
 }
 
 .background-camera-icon.camera-2 {
-  top: 35%;
-  right: 30%;
+  top: 40%; /* 调整到更显眼的位置 */
+  right: 35%; /* 调整到更显眼的位置 */
+}
+
+/* 摄像头标签样式 */
+.camera-label {
+  position: absolute;
+  top: -30px; /* 显示在摄像头图标上方 */
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 212, 255, 0.9);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1001;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  /* 添加轻微的动画效果 */
+  animation: labelFloat 2s ease-in-out infinite;
 }
 
 
@@ -3337,14 +3373,52 @@ onUnmounted(() => {
 }
 
 /* 背景摄像头图标悬停效果增强 */
-.background-camera-icon {
-  transition: all 0.3s ease;
-  filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.3));
+.background-camera-icon:hover {
+  transform: scale(1.3); /* 增大悬停缩放效果 */
+  filter:
+    drop-shadow(0 0 15px rgba(0, 212, 255, 1.0))
+    drop-shadow(0 0 8px rgba(255, 255, 255, 0.6))
+    contrast(1.4)
+    brightness(1.3)
+    saturate(1.5);
+  /* 增加边框高亮效果 */
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+  border-radius: 50%;
 }
 
-.background-camera-icon:hover {
-  transform: scale(1.2);
-  filter: drop-shadow(0 0 15px rgba(0, 212, 255, 0.8));
+/* 为摄像头添加脉冲动画，增强可见性 */
+.background-camera-icon::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: cameraPulse 3s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes cameraPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+@keyframes labelFloat {
+  0%, 100% {
+    transform: translateX(-50%) translateY(0px);
+  }
+  50% {
+    transform: translateX(-50%) translateY(-3px);
+  }
 }
 
 /* 实时视频相关样式 */

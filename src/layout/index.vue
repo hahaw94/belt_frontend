@@ -345,24 +345,22 @@ export default {
 
 /* 科技感头部样式 */
 .layout-header {
-  background: url('@/assets/images/main/main-header2.png') center center/cover no-repeat;
-  /* 完全移除渐变背景，只保留背景图片 */
+  background: url('@/assets/images/main/header-simple.png') center center/cover no-repeat;
   color: #fff;
   display: grid;
-  grid-template-columns: auto 1fr auto 1fr auto;
+  grid-template-columns: auto 0.5fr 0.6fr 0.5fr auto;
   align-items: center;
-  gap: 20px;
-  height: 70px; /* 缩小高度，改善观感 */
+  justify-items: center; /* 让所有项目居中对齐 */
+  gap: 8px; /* 进一步减少间隙，让按钮更靠近中心 */
+  height: 60px; /* 缩小容器高度 */
+  padding: 0 30px;
+  box-shadow: none;
+  border: none;
+  outline: none;
+  position: relative;
   overflow: visible; /* 允许内容溢出 */
   z-index: 1000; /* 确保在最顶层 */
-  position: relative; /* 确保定位正确 */
-  padding: 0 30px;
-  box-shadow: none; /* 完全移除所有阴影效果 */
-  border: none; /* 确保没有边框 */
-  outline: none; /* 确保没有轮廓 */
 }
-
-/* 删除多余的伪元素，保持上方正确的遮盖效果 */
 
 
 /* 首页专用头部样式 */
@@ -375,27 +373,6 @@ export default {
   background-blend-mode: overlay;
 }
 
-/* 头部科技感背景效果 */
-.layout-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(0, 255, 255, 0.1) 50%, 
-    transparent 100%);
-  animation: tech-shimmer 3s ease-in-out infinite;
-  pointer-events: none; /* 确保不阻挡点击事件 */
-}
-
-@keyframes tech-shimmer {
-  0% { left: -100%; }
-  50% { left: 100%; }
-  100% { left: 100%; }
-}
 
 .header-logo {
   display: flex;
@@ -409,10 +386,10 @@ export default {
 .header-left {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  z-index: 2;
+  justify-content: flex-end; /* 改为右对齐，向中间靠拢 */
+  z-index: 3;
   position: relative;
-  transform: translateX(-27%);
+  /* 移除transform，让按钮自然居中 */
 }
 
 .app-logo {
@@ -429,13 +406,13 @@ export default {
   background-color: transparent !important;
   color: #00d4ff;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 14px;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-  padding: 15px 40px;
+  padding: 10px 25px;
   border-radius: 0;
   box-shadow: none;
-  min-width: 140px;
-  height: 50px;
+  min-width: 100px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -453,6 +430,28 @@ export default {
   background-position: center;
   background-repeat: no-repeat;
   z-index: -1;
+  transition: all 0.3s ease;
+}
+
+/* 为按钮添加连接过渡效果 */
+.nav-button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 255, 255, 0.05) 0%,
+    rgba(0, 255, 255, 0.1) 50%,
+    rgba(0, 255, 255, 0.05) 100%
+  );
+  z-index: -2;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: 8px;
+  filter: blur(2px);
 }
 
 .home-button::before {
@@ -463,12 +462,65 @@ export default {
   background-image: url('@/assets/images/main/main-header-right.png');
 }
 
+/* 为左右按钮添加特殊的融合效果 */
+.header-left::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -10px;
+  right: -10px;
+  bottom: -5px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 255, 255, 0.1) 0%,
+    rgba(0, 255, 255, 0.05) 40%,
+    transparent 70%
+  );
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: 15px;
+}
+
+.header-right::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -10px;
+  right: -10px;
+  bottom: -5px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 255, 255, 0.1) 0%,
+    rgba(0, 255, 255, 0.05) 40%,
+    transparent 70%
+  );
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: 15px;
+}
+
+.header-left:hover::before,
+.header-right:hover::before {
+  opacity: 1;
+}
+
 .nav-button:hover {
   transform: translateY(-2px);
   background: none !important;
   background-color: transparent !important;
   color: #ffffff;
   text-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+}
+
+.nav-button:hover::after {
+  opacity: 1;
+}
+
+.nav-button:hover::before {
+  filter: brightness(1.2) contrast(1.1);
+  transform: scale(1.02);
 }
 
 .nav-button span {
@@ -480,28 +532,29 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  z-index: 3;
   text-align: center;
   position: relative;
-  transform: translateX(-20%);
+  /* 移除transform，让标题真正居中 */
 }
 
 .app-title {
-  font-size: 28px;
+  font-size: 32px; /* 从28px增加到32px */
   font-weight: bold;
   font-style: italic;
   color: #00d4ff;
   text-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
   letter-spacing: 2px;
+  transform: translateY(3px); /* 向下移动3px */
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  z-index: 2;
+  justify-content: flex-start; /* 改为左对齐，向中间靠拢 */
+  z-index: 3;
   position: relative;
-  transform: translateX(18%);
+  /* 移除transform，让按钮自然居中 */
 }
 
 .header-user {
@@ -541,7 +594,7 @@ export default {
 
 .layout-body-container {
   flex: 1;
-  height: calc(100vh - 70px); /* 调整为新的header高度 */
+  height: calc(100vh - 60px); /* 调整为新的header高度 */
 }
 
 /* 科技感侧边栏样式 */
