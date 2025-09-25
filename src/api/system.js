@@ -1,6 +1,129 @@
 import request from './index'
 
 /**
+ * GB28181设备管理相关API（用于系统配置中的设备监控）
+ */
+export const gb28181API = {
+  // 获取GB28181设备列表
+  getDevices() {
+    return request.get('/api/v1/video/devices')
+  },
+
+  // 获取GB28181摄像头列表
+  getCameras(params = {}) {
+    return request.get('/api/v1/video/cameras', { params })
+  },
+
+  // 按分类获取摄像头
+  getCamerasByCategory(params = {}) {
+    return request.get('/api/v1/video/cameras/by-category', { params })
+  },
+
+  // 更新摄像头分类
+  updateCameraCategory(id, category) {
+    return request.put(`/api/v1/video/cameras/${id}/category`, { category })
+  },
+
+  // 获取未绑定摄像头
+  getUnboundCameras(params = {}) {
+    return request.get('/api/v1/video/cameras/unbound', { params })
+  },
+
+  // 绑定摄像头到图层
+  bindCameraToLayer(id, data) {
+    return request.post(`/api/v1/video/cameras/${id}/bind`, data)
+  },
+
+  // 解绑摄像头
+  unbindCameraFromLayer(id) {
+    return request.delete(`/api/v1/video/cameras/${id}/unbind`)
+  },
+
+  // 获取图层摄像头
+  getCamerasByLayer(params = {}) {
+    return request.get('/api/v1/video/cameras/by-layer', { params })
+  },
+
+  // 更新摄像头位置
+  updateCameraPosition(id, data) {
+    return request.put(`/api/v1/video/cameras/${id}/position`, data)
+  },
+
+  // 单个摄像头同步
+  syncSingleCamera(id) {
+    return request.post(`/api/v1/video/cameras/${id}/sync`)
+  },
+
+  // 创建设备
+  createDevice(data) {
+    return request.post('/api/v1/video/devices', data)
+  },
+
+  // 更新设备
+  updateDevice(id, data) {
+    return request.post(`/api/v1/video/devices/${id}`, data)
+  },
+
+  // 删除设备
+  deleteDevice(id) {
+    return request.delete(`/api/v1/video/devices/${id}`)
+  },
+
+  // 创建通道
+  createChannel(deviceId, data) {
+    return request.post(`/api/v1/video/devices/${deviceId}/channels`, data)
+  },
+
+  // 更新通道
+  updateChannel(id, data) {
+    return request.post(`/api/v1/video/channels/${id}`, data)
+  },
+
+  // 删除通道
+  deleteChannel(id) {
+    return request.delete(`/api/v1/video/channels/${id}`)
+  },
+
+  // 获取录像列表
+  getRecords(channelId, params = {}) {
+    const query = new URLSearchParams(params).toString()
+    return request.get(`/api/v1/video/channels/${channelId}/records${query ? '?' + query : ''}`)
+  },
+
+  // 智能同步摄像头
+  smartSyncCameras(forceSync = false) {
+    return request.post('/api/v1/video/cameras/smart-sync', null, {
+      params: { force_sync: forceSync }
+    })
+  },
+
+  // 获取设备通道
+  getDeviceChannels(deviceId) {
+    return request.get(`/api/v1/video/devices/${deviceId}/channels`)
+  },
+
+  // 获取流列表
+  getStreams() {
+    return request.get('/api/v1/video/streams')
+  },
+
+  // 开始播放
+  startPlay(channelId, data = {}) {
+    return request.post(`/api/v1/video/channels/${channelId}/play`, data)
+  },
+
+  // 停止播放
+  stopPlay(streamId) {
+    return request.delete(`/api/v1/video/streams/${streamId}`)
+  },
+
+  // 获取播放地址
+  getPlayUrls(streamId) {
+    return request.get(`/api/v1/video/streams/${streamId}/urls`)
+  }
+}
+
+/**
  * 系统配置相关API
  */
 export const systemAPI = {
@@ -88,34 +211,56 @@ export const systemAPI = {
   },
 
   // ===================== GB28181平台对接 =====================
-  // 获取GB28181平台列表
+  // 获取GB28181配置
+  getGB28181Config() {
+    return request.get('/api/v1/system/management/gb28181')
+  },
+
+  // 设置GB28181配置
+  setGB28181Config(data) {
+    return request.put('/api/v1/system/management/gb28181', data)
+  },
+
+  // 注意：以下平台管理接口在当前后端中尚未实现，保留作为未来扩展
+  // 获取GB28181平台列表 - 未实现
   getGB28181Platforms() {
-    return request.get('/api/v1/system/management/gb28181/platforms')
+    // 替代方案：返回空列表或模拟数据
+    return Promise.resolve({ code: 200, data: [] })
   },
 
-  // 添加GB28181平台
-  addGB28181Platform(data) {
-    return request.post('/api/v1/system/management/gb28181/platforms', data)
+  // 添加GB28181平台 - 未实现
+  addGB28181Platform() {
+    console.warn('GB28181平台管理功能尚未在后端实现')
+    return Promise.resolve({ code: 200, message: '功能开发中...' })
   },
 
-  // 更新GB28181平台
-  updateGB28181Platform(id, data) {
-    return request.put(`/api/v1/system/management/gb28181/platforms/${id}`, data)
+  // 更新GB28181平台 - 未实现
+  updateGB28181Platform() {
+    console.warn('GB28181平台管理功能尚未在后端实现')
+    return Promise.resolve({ code: 200, message: '功能开发中...' })
   },
 
-  // 删除GB28181平台
-  deleteGB28181Platform(id) {
-    return request.delete(`/api/v1/system/management/gb28181/platforms/${id}`)
+  // 删除GB28181平台 - 未实现
+  deleteGB28181Platform() {
+    console.warn('GB28181平台管理功能尚未在后端实现')
+    return Promise.resolve({ code: 200, message: '功能开发中...' })
   },
 
-  // 切换GB28181平台启用状态
-  toggleGB28181Platform(id, enabled) {
-    return request.put(`/api/v1/system/management/gb28181/platforms/${id}/toggle`, { enabled })
+  // 切换GB28181平台启用状态 - 未实现
+  toggleGB28181Platform() {
+    console.warn('GB28181平台管理功能尚未在后端实现')
+    return Promise.resolve({ code: 200, message: '功能开发中...' })
   },
 
-  // 测试GB28181连接
-  testGB28181Connection(id) {
-    return request.post(`/api/v1/system/management/gb28181/platforms/${id}/test`)
+  // 测试GB28181连接 - 未实现
+  testGB28181Connection() {
+    console.warn('GB28181平台管理功能尚未在后端实现')
+    return Promise.resolve({ code: 200, message: '测试功能开发中...' })
+  },
+
+  // 获取GB28181连接状态 - 未实现
+  getGB28181Status() {
+    return Promise.resolve({ code: 200, data: { status: 'unknown', message: '状态检查功能开发中...' } })
   },
 
   // ===================== 系统维护 =====================

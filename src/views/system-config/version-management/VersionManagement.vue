@@ -92,7 +92,48 @@
     <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>系统恢复</span>
+          <div class="header-title-with-help">
+            <span>系统恢复</span>
+            <el-tooltip
+              effect="dark"
+              placement="right"
+              popper-class="version-check-tooltip"
+              :show-after="300"
+            >
+              <template #content>
+                <div class="version-check-info">
+                  <div class="tooltip-title">备份恢复中的版本检查</div>
+                  <div class="tooltip-section">
+                    <div class="section-title">1. 备份时记录版本信息</div>
+                    <div class="section-content">
+                      • 每个备份都会记录创建时的系统版本号<br/>
+                      • 版本信息存储在备份的元数据文件中<br/>
+                      • 包含系统版本、创建时间、创建者等信息
+                    </div>
+                  </div>
+                  <div class="tooltip-section">
+                    <div class="section-title">2. 恢复时的版本兼容性检查</div>
+                    <div class="section-content">
+                      恢复过程中会进行以下检查：<br/>
+                      <strong>检查流程：</strong><br/>
+                      • 读取备份文件中的版本信息<br/>
+                      • 获取当前系统版本<br/>
+                      • 进行版本兼容性分析<br/>
+                      • 根据检查结果决定是否允许恢复<br/><br/>
+                      <strong>检查规则：</strong><br/>
+                      <span style="color: #67C23A;">完全相同版本：直接允许，最安全</span><br/>
+                      <span style="color: #E6A23C;">备份版本更高：警告但允许，可能需要后续升级</span><br/>
+                      <span style="color: #E6A23C;">同主版本内：警告但允许，通常安全</span><br/>
+                      <span style="color: #F56C6C;">跨主版本：错误级别，但可通过强制恢复</span>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <el-icon class="help-icon">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </div>
         </div>
       </template>
       <div class="restore-section">
@@ -129,7 +170,52 @@
     <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>系统升级</span>
+          <div class="header-title-with-help">
+            <span>系统升级</span>
+            <el-tooltip
+              effect="dark"
+              placement="right"
+              popper-class="version-check-tooltip"
+              :show-after="300"
+            >
+              <template #content>
+                <div class="version-check-info">
+                  <div class="tooltip-title">版本号管理规则</div>
+                  <div class="tooltip-section">
+                    <div class="section-title">版本号格式</div>
+                    <div class="section-content">
+                      系统采用标准的三段式版本号格式：主版本.次版本.补丁版本（如2.0.1），<br/>
+                      支持带v前缀的格式但会自动清理。
+                    </div>
+                  </div>
+                  <div class="tooltip-section">
+                    <div class="section-title">升级规则</div>
+                    <div class="section-content">
+                      <strong>绝对禁止：</strong><br/>
+                      • 跨主版本升级（如1.x.x到2.x.x）<br/>
+                      • 任何形式的降级<br/><br/>
+                      <strong>允许的升级：</strong><br/>
+                      • 补丁版本升级最安全，可直接进行<br/>
+                      • 次版本升级需要谨慎，最多允许跳跃2个版本（如1.2.x到1.4.x）<br/>
+                      • 超过2个版本跳跃会被拒绝，需要分步升级
+                    </div>
+                  </div>
+                  <div class="tooltip-section">
+                    <div class="section-title">安全机制</div>
+                    <div class="section-content">
+                      • 升级前会自动检查版本兼容性<br/>
+                      • 根据风险等级给出不同的处理建议（信息、警告、错误）<br/>
+                      • 默认在升级前创建系统备份<br/>
+                      • 支持升级失败时的自动回滚
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <el-icon class="help-icon">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+          </div>
         </div>
       </template>
       <div class="upgrade-section">
@@ -449,7 +535,7 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, Plus, UploadFilled } from '@element-plus/icons-vue'
+import { Refresh, Plus, UploadFilled, QuestionFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
 import { useTaskProgress } from '@/composables/useTaskProgress'
 import { createSystemBackup } from '@/api/map'
@@ -2897,5 +2983,84 @@ onMounted(async () => {
 
 .minio-buckets-container::-webkit-scrollbar-thumb:active {
   background: rgba(0, 255, 255, 0.8);
+}
+
+/* 版本检查提示框样式 */
+:deep(.version-check-tooltip) {
+  max-width: 600px !important;
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.version-check-tooltip .el-popper__arrow) {
+  border-right-color: rgba(0, 255, 255, 0.3) !important;
+}
+
+.version-check-info {
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.version-check-info .tooltip-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #00ffff;
+  margin-bottom: 16px;
+  text-align: center;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.version-check-info .tooltip-section {
+  margin-bottom: 16px;
+}
+
+.version-check-info .tooltip-section:last-child {
+  margin-bottom: 0;
+}
+
+.version-check-info .section-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: #00ffff;
+  margin-bottom: 8px;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.version-check-info .section-content {
+  color: rgba(255, 255, 255, 0.9);
+  margin-left: 12px;
+  line-height: 1.8;
+  font-size: 15px;
+}
+
+.version-check-info .section-content strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* 标题和帮助图标布局 */
+.header-title-with-help {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.help-icon {
+  font-size: 20px;
+  color: #409EFF;
+  cursor: help;
+  transition: all 0.3s ease;
+}
+
+.help-icon:hover {
+  color: #00ffff !important;
+  transform: scale(1.2);
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
 }
 </style>

@@ -69,11 +69,17 @@ export function setupMock(axiosInstance) {
   mock.onPut(/\/api\/v1\/system\/.*/).passThrough()
   mock.onDelete(/\/api\/v1\/system\/.*/).passThrough()
   
+  // 板卡管理相关接口不拦截，直接调用后端API
+  mock.onGet(/\/api\/v1\/algorithm\/boards.*/).passThrough()
+  mock.onPost(/\/api\/v1\/algorithm\/boards.*/).passThrough()
+  mock.onPut(/\/api\/v1\/algorithm\/boards.*/).passThrough()
+  mock.onDelete(/\/api\/v1\/algorithm\/boards.*/).passThrough()
+  
   // 其他未匹配的请求通过
   mock.onAny().passThrough()
 
   console.log('🎉 Mock 拦截器已启用')
-  console.log('💡 注意: 认证、用户管理和系统配置（版本管理、地图管理、基础管理）接口已完全移除Mock拦截，直接调用后端API，其他模块使用Mock数据')
+  console.log('💡 注意: 认证、用户管理、系统配置和板卡管理接口已完全移除Mock拦截，直接调用后端API，其他模块使用Mock数据')
 }
 
 /**
