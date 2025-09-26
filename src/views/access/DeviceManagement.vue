@@ -1,146 +1,169 @@
 <template>
-  <div class="tech-page-container">
-    <!-- 科技背景效果 -->
-    <div class="tech-background"></div>
+  <div class="user-management-integrated-container tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background">
+    </div>
     
-    <h2>智能板卡管理</h2>
+    <h2>智能板卡设备管理</h2>
 
-    <!-- 搜索筛选区域 -->
-    <div class="search-filters-card tech-card mb-20">
-      <div class="search-filters-header">
-        <span class="filter-title">搜索筛选</span>
-        <div class="header-stats">
-          <el-tag class="stat-tag online" size="small">
-            <i class="status-dot online"></i>
-            在线: {{ onlineBoardCount }}
-          </el-tag>
-          <el-tag class="stat-tag offline" size="small">
-            <i class="status-dot offline"></i>
-            离线: {{ offlineBoardCount }}
-          </el-tag>
-        </div>
-      </div>
-      <div class="search-filters-content">
-        <div class="filter-row">
-          <div class="filter-item">
-            <label for="deviceNameFilter">设备名称</label>
-            <el-input
-              v-model="boardSearchForm.deviceName"
-              id="deviceNameFilter"
-              placeholder="搜索设备名称"
-              class="tech-input"
-              clearable
-              @keyup.enter="handleBoardSearch"
-              @clear="handleBoardSearch"
-            />
-          </div>
-          <div class="filter-item">
-            <label for="deviceCodeFilter">设备编号</label>
-            <el-input
-              v-model="boardSearchForm.deviceCode"
-              id="deviceCodeFilter"
-              placeholder="搜索设备编号"
-              class="tech-input"
-              clearable
-              @keyup.enter="handleBoardSearch"
-              @clear="handleBoardSearch"
-            />
-          </div>
-          <div class="filter-item">
-            <label for="deviceStatusFilter">设备状态</label>
-            <el-select
-              v-model="boardSearchForm.status"
-              id="deviceStatusFilter"
-              placeholder="全部"
-              class="tech-select"
-              clearable
-              @change="handleBoardSearch"
-            >
-              <el-option label="全部" value="" />
-              <el-option label="在线" value="online" />
-              <el-option label="离线" value="offline" />
-              <el-option label="错误" value="error" />
-            </el-select>
-          </div>
-          <div class="filter-item">
-            <label for="manufacturerFilter">设备厂商</label>
-            <el-select
-              v-model="boardSearchForm.manufacturer"
-              id="manufacturerFilter"
-              placeholder="全部"
-              class="tech-select"
-              clearable
-              @change="handleBoardSearch"
-            >
-              <el-option label="全部" value="" />
-              <el-option label="海康威视" value="海康威视" />
-              <el-option label="大华" value="大华" />
-              <el-option label="华为" value="华为" />
-            </el-select>
-          </div>
-          <div class="filter-actions">
-            <el-button :icon="Refresh" class="tech-button-sm" @click="resetBoardSearch">重置</el-button>
-          </div>
-        </div>
-      </div>
+    <!-- 页面操作区 -->
+    <div class="page-operations">
+      <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="showAddBoard">添加设备</el-button>
+      <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="getBoardStats" :loading="boardStatsLoading">获取统计</el-button>
+      <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getBoardList" :loading="boardLoading">刷新列表</el-button>
     </div>
 
-    <!-- 操作控制台 -->
-    <el-card class="tech-card operation-section">
-      <template #header>
-        <div class="card-header">
-          <span>操作控制台</span>
-          <div class="operation-stats">
-            <span class="total-count">总计: {{ totalBoards }}个设备</span>
+      <!-- 设备搜索和筛选 -->
+      <div class="search-filters-card tech-card mb-20">
+        <div class="search-filters-header">
+          <span class="filter-title">搜索筛选</span>
+          <div class="header-stats">
+            <el-tag class="stat-tag online" size="small">
+              <i class="status-dot online"></i>
+              在线: {{ onlineBoardCount }}
+            </el-tag>
+            <el-tag class="stat-tag offline" size="small">
+              <i class="status-dot offline"></i>
+              离线: {{ offlineBoardCount }}
+            </el-tag>
           </div>
         </div>
-      </template>
-      
-      <div class="operation-toolbar">
-        <div class="left-operations">
-          <el-button class="tech-button success" :icon="Plus" @click="showAddBoard">
-            <span class="button-text">添加设备</span>
-          </el-button>
-          <el-button class="tech-button info" :icon="Upload" @click="getBoardStats" :loading="boardStatsLoading">
-            <span class="button-text">获取统计</span>
-          </el-button>
-        </div>
-        <div class="right-operations">
-          <el-button class="tech-button refresh" :icon="Refresh" @click="getBoardList" :loading="boardLoading">
-            <span class="button-text">刷新数据</span>
-          </el-button>
+        <div class="search-filters-content">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label for="deviceNameFilter">设备名称</label>
+              <el-input
+                v-model="boardSearchForm.deviceName"
+                id="deviceNameFilter"
+                placeholder="搜索设备名称"
+                class="tech-input"
+                clearable
+                @keyup.enter="handleBoardSearch"
+                @clear="handleBoardSearch"
+              />
+            </div>
+            <div class="filter-item">
+              <label for="deviceCodeFilter">设备编号</label>
+              <el-input
+                v-model="boardSearchForm.deviceCode"
+                id="deviceCodeFilter"
+                placeholder="搜索设备编号"
+                class="tech-input"
+                clearable
+                @keyup.enter="handleBoardSearch"
+                @clear="handleBoardSearch"
+              />
+            </div>
+            <div class="filter-item">
+              <label for="deviceStatusFilter">设备状态</label>
+              <el-select
+                v-model="boardSearchForm.status"
+                id="deviceStatusFilter"
+                placeholder="全部"
+                class="tech-select"
+                clearable
+                @change="handleBoardSearch"
+              >
+                <el-option label="全部" value="" />
+                <el-option label="在线" value="online" />
+                <el-option label="离线" value="offline" />
+                <el-option label="错误" value="error" />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label for="manufacturerFilter">设备厂商</label>
+              <el-select
+                v-model="boardSearchForm.manufacturer"
+                id="manufacturerFilter"
+                placeholder="全部"
+                class="tech-select"
+                clearable
+                @change="handleBoardSearch"
+              >
+                <el-option label="全部" value="" />
+                <el-option label="海康威视" value="海康威视" />
+                <el-option label="大华" value="大华" />
+                <el-option label="华为" value="华为" />
+              </el-select>
+            </div>
+            <div class="filter-actions">
+              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleBoardSearch">搜索</el-button>
+              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetBoardSearch">重置</el-button>
+            </div>
+          </div>
         </div>
       </div>
-    </el-card>
 
-    <!-- 设备列表 -->
-    <el-card class="tech-card board-list-section">
-      <template #header>
-        <div class="card-header">
-          <span>智能板卡设备列表</span>
-          <div class="list-controls">
-            <el-button-group class="view-controls">
-              <el-button class="tech-button-sm" size="small">表格视图</el-button>
-              <el-button class="tech-button-sm" size="small">卡片视图</el-button>
-            </el-button-group>
-          </div>
+      <!-- 自定义表格 -->
+      <div class="custom-table" v-loading="boardLoading">
+        <!-- 表格头部 -->
+        <div class="table-header">
+          <div class="header-cell expand-cell"></div>
+          <div class="header-cell id-cell">设备ID</div>
+          <div class="header-cell name-cell">设备名称</div>
+          <div class="header-cell number-cell">设备编号</div>
+          <div class="header-cell ip-cell">设备IP</div>
+          <div class="header-cell status-cell">设备状态</div>
+          <div class="header-cell firmware-cell">固件版本</div>
+          <div class="header-cell camera-cell">绑定摄像机</div>
+          <div class="header-cell action-cell">操作</div>
         </div>
-      </template>
 
-      <div class="tech-table-container">
-        <el-table 
-          :data="paginatedBoards" 
-          v-loading="boardLoading" 
-          class="tech-table"
-          :header-cell-style="{ background: 'rgba(20, 30, 50, 0.8)', color: '#00ffff', fontWeight: '600' }"
-          :row-style="{ background: 'rgba(15, 25, 45, 0.95)' }"
-          stripe>
-          
-          <el-table-column type="expand" width="60">
-          <template #default="{ row }">
+        <!-- 表格内容 -->
+        <div class="table-body">
+          <div
+            v-for="(row, index) in paginatedBoards"
+            :key="row.ID || row.id || index"
+            class="table-row-wrapper"
+          >
+            <!-- 主行 -->
+            <div class="table-row" :class="{ 'expanded': expandedRows.has(row.ID || row.id) }">
+              <div class="body-cell expand-cell">
+                <button
+                  class="expand-btn"
+                  @click="toggleExpand(row)"
+                  :class="{ 'expanded': expandedRows.has(row.ID || row.id) }"
+                >
+                  <span class="expand-icon">▶</span>
+                </button>
+              </div>
+              <div class="body-cell id-cell">{{ row.ID || row.id || 'N/A' }}</div>
+              <div class="body-cell name-cell">{{ row.DeviceName || row.device_name || 'N/A' }}</div>
+              <div class="body-cell number-cell">{{ row.DeviceNumber || row.device_number || 'N/A' }}</div>
+              <div class="body-cell ip-cell">{{ row.DeviceIP || row.device_ip || 'N/A' }}</div>
+              <div class="body-cell status-cell">
+                <span class="status-tag" :class="getStatusClass(row.DeviceStatus || row.device_status)">
+                  {{ getStatusText(row.DeviceStatus || row.device_status) }}
+                </span>
+              </div>
+              <div class="body-cell firmware-cell">{{ row.FirmwareVersion || row.firmware_version || 'N/A' }}</div>
+              <div class="body-cell camera-cell">
+                <span v-if="row.BoundCameraName || row.bound_camera_name" class="camera-tag bound">
+                  {{ row.BoundCameraName || row.bound_camera_name }}
+                </span>
+                <span v-else class="camera-tag unbound">未绑定</span>
+              </div>
+              <div class="body-cell action-cell">
+                <button class="action-btn view-btn" @click="viewBoardDetail(row)">
+                  <i class="btn-icon">👁</i>详情
+                </button>
+                <button class="action-btn edit-btn" @click="editBoard(row)">
+                  <i class="btn-icon">✏</i>编辑
+                </button>
+                <button class="action-btn bind-btn" @click="showBindCamera(row)">
+                  <i class="btn-icon">🔗</i>绑定
+                </button>
+                <button class="action-btn delete-btn" @click="deleteBoard(row)">
+                  <i class="btn-icon">🗑</i>删除
+                </button>
+              </div>
+            </div>
+
+            <!-- 展开行 -->
+            <div v-if="expandedRows.has(row.ID || row.id)" class="expanded-row">
               <div class="device-detail-panel">
                 <div class="detail-title">
-                  <i class="detail-icon"></i>
+                  <i class="detail-icon">🔧</i>
                   设备详细信息
                 </div>
                 <div class="detail-grid">
@@ -163,7 +186,7 @@
                       <span class="value">{{ row.DeviceIP || row.device_ip || 'N/A' }}</span>
                     </div>
                   </div>
-                  
+
                   <div class="detail-group">
                     <h4>连接配置</h4>
                     <div class="detail-item">
@@ -179,7 +202,7 @@
                       <span class="value">{{ row.BoundCameraName || row.bound_camera_name || '未绑定' }}</span>
                     </div>
                   </div>
-                  
+
                   <div class="detail-group">
                     <h4>算法信息</h4>
                     <div class="detail-item">
@@ -195,7 +218,7 @@
                       <span class="value">{{ row.FirmwareVersion || row.firmware_version || 'N/A' }}</span>
                     </div>
                   </div>
-                  
+
                   <div class="detail-group">
                     <h4>状态信息</h4>
                     <div class="detail-item">
@@ -220,136 +243,24 @@
                     </div>
                   </div>
                 </div>
+              </div>
             </div>
-          </template>
-        </el-table-column>
-          
-          <el-table-column label="设备ID" width="100" align="center">
-          <template #default="{ row }">
-              <span class="device-id">{{ row.ID || row.id || 'N/A' }}</span>
-          </template>
-        </el-table-column>
-          
-          <el-table-column label="设备信息" min-width="200">
-          <template #default="{ row }">
-              <div class="device-info">
-            <div class="device-name">
-                  <i class="device-icon"></i>
-                  {{ row.DeviceName || row.device_name || 'N/A' }}
-                </div>
-                <div class="device-code">
-                  编号: {{ row.DeviceNumber || row.device_number || 'N/A' }}
-                </div>
-                <div class="device-ip">
-                  <i class="ip-icon"></i>
-                  {{ row.DeviceIP || row.device_ip || 'N/A' }}
-                </div>
-            </div>
-          </template>
-        </el-table-column>
-          
-          <el-table-column label="设备状态" width="120" align="center">
-          <template #default="{ row }">
-              <div class="status-indicator" :class="getStatusClass(row.DeviceStatus || row.device_status)">
-                <i class="status-dot" :class="getStatusClass(row.DeviceStatus || row.device_status)"></i>
-                <span>{{ getStatusText(row.DeviceStatus || row.device_status) }}</span>
-              </div>
-          </template>
-        </el-table-column>
-          
-          <el-table-column label="固件版本" width="120" align="center">
-          <template #default="{ row }">
-              <span class="firmware-version">{{ row.FirmwareVersion || row.firmware_version || '未知' }}</span>
-          </template>
-        </el-table-column>
-          
-          <el-table-column label="绑定摄像机" min-width="150">
-          <template #default="{ row }">
-              <div class="camera-binding">
-                <span v-if="row.BoundCameraName || row.bound_camera_name" class="bound-camera">
-                  <i class="camera-icon"></i>
-                  {{ row.BoundCameraName || row.bound_camera_name }}
-            </span>
-                <span v-else class="unbound-camera">
-                  <i class="unbound-icon"></i>
-                  未绑定
-                </span>
-              </div>
-          </template>
-        </el-table-column>
-          
-          <el-table-column label="操作" width="320" align="center" fixed="right">
-          <template #default="{ row }">
-              <div class="action-buttons">
-                <el-button 
-                  class="tech-button-sm view" 
-                  size="small" 
-                  :icon="View" 
-                  @click="viewBoardDetail(row)" 
-                  title="查看详情">
-                  详情
-                </el-button>
-                <el-button 
-                  class="tech-button-sm edit" 
-                  size="small" 
-                  :icon="Edit" 
-                  @click="editBoard(row)" 
-                  title="编辑">
-                  编辑
-                </el-button>
-                <el-button 
-                  class="tech-button-sm bind" 
-                  size="small" 
-                  :icon="Setting" 
-                  @click="showBindCamera(row)" 
-                  title="绑定摄像机">
-                  绑定
-                </el-button>
-                <el-button 
-                  class="tech-button-sm upgrade" 
-                  size="small" 
-                  @click="upgradeFirmware(row)" 
-                  title="固件升级">
-                  升级
-                </el-button>
-                <el-button 
-                  class="tech-button-sm test" 
-                  size="small" 
-                  @click="testBoardConnection(row)" 
-                  title="测试连接">
-                  测试
-                </el-button>
-                <el-button 
-                  class="tech-button-sm delete" 
-                  size="small" 
-                  :icon="Delete" 
-                  @click="deleteBoard(row)" 
-                  title="删除">
-                  删除
-                </el-button>
-              </div>
-          </template>
-        </el-table-column>
-      </el-table>
+          </div>
+        </div>
       </div>
 
-      <!-- 智能分页控制器 -->
-      <div class="pagination-container">
-        <div class="pagination-info">
-          <span>显示 {{ (boardPagination.pageNum - 1) * boardPagination.pageSize + 1 }} - {{ Math.min(boardPagination.pageNum * boardPagination.pageSize, boardPagination.total) }} 条，共 {{ boardPagination.total }} 条记录</span>
-        </div>
+      <!-- 分页组件 -->
+      <div class="flex-center">
         <el-pagination
           v-model:current-page="boardPagination.pageNum"
           v-model:page-size="boardPagination.pageSize"
           :page-sizes="[10, 20, 50, 100]"
           :total="boardPagination.total"
           layout="total, sizes, prev, pager, next, jumper"
-          class="tech-pagination"
           @size-change="handleBoardSizeChange"
           @current-change="handleBoardCurrentChange"
         />
       </div>
-    </el-card>
 
     <!-- 设备配置对话框 -->
     <el-dialog 
@@ -543,13 +454,16 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Refresh, Plus, Upload, View, Edit, Setting, Delete
+  Refresh, Plus, Upload, Search, RefreshRight
 } from '@element-plus/icons-vue'
 import { deviceApi } from '@/api/device'
 
 // 响应式数据
 const boardLoading = ref(false)
 const boardStatsLoading = ref(false)
+
+// 展开行管理
+const expandedRows = ref(new Set())
 
 // 板卡对话框状态
 const boardDialogVisible = ref(false)
@@ -642,7 +556,7 @@ const filteredBoards = computed(() => {
   return filtered
 })
 
-const totalBoards = computed(() => filteredBoards.value.length)
+// const totalBoards = computed(() => filteredBoards.value.length)
 
 const paginatedBoards = computed(() => {
   const start = (boardPagination.pageNum - 1) * boardPagination.pageSize
@@ -684,6 +598,18 @@ const bindRules = {
 onMounted(() => {
   getBoardList()
 })
+
+// ==================== 展开/折叠功能 ====================
+
+// 切换行展开状态
+const toggleExpand = (row) => {
+  const rowId = row.ID || row.id
+  if (expandedRows.value.has(rowId)) {
+    expandedRows.value.delete(rowId)
+  } else {
+    expandedRows.value.add(rowId)
+  }
+}
 
 // ==================== 板卡管理方法 ====================
 
@@ -1007,33 +933,33 @@ const saveCameraBinding = async () => {
 
 
 // 固件升级
-const upgradeFirmware = async (board) => {
-  ElMessage.info(`固件升级功能：${board.deviceName}`)
-  // TODO: 实现固件升级功能
-}
+// const upgradeFirmware = async (board) => {
+//   ElMessage.info(`固件升级功能：${board.deviceName}`)
+//   // TODO: 实现固件升级功能
+// }
 
 // 测试板卡连接
-const testBoardConnection = async (board) => {
-  try {
-    const boardId = board.ID || board.id
-    const boardName = board.DeviceName || board.device_name || '未知板卡'
-    
-    if (!boardId) {
-      ElMessage.error('板卡ID不存在，无法测试连接')
-      return
-    }
-    
-    const response = await deviceApi.testBoardConnection(boardId)
-    if (response && response.code === 200) {
-      ElMessage.success(`板卡 ${boardName} 连接测试成功`)
-    } else {
-      ElMessage.error(`板卡 ${boardName} 连接测试失败`)
-    }
-  } catch (error) {
-    console.error('测试连接错误:', error)
-    ElMessage.error('连接测试失败：' + error.message)
-  }
-}
+// const testBoardConnection = async (board) => {
+//   try {
+//     const boardId = board.ID || board.id
+//     const boardName = board.DeviceName || board.device_name || '未知板卡'
+//     
+//     if (!boardId) {
+//       ElMessage.error('板卡ID不存在，无法测试连接')
+//       return
+//     }
+//     
+//     const response = await deviceApi.testBoardConnection(boardId)
+//     if (response && response.code === 200) {
+//       ElMessage.success(`板卡 ${boardName} 连接测试成功`)
+//     } else {
+//       ElMessage.error(`板卡 ${boardName} 连接测试失败`)
+//     }
+//   } catch (error) {
+//     console.error('测试连接错误:', error)
+//     ElMessage.error('连接测试失败：' + error.message)
+//   }
+// }
 
 // 板卡分页变化
 const handleBoardCurrentChange = (pageNum) => {
@@ -1095,21 +1021,22 @@ const getStatusClass = (status) => {
   }
   return classMap[status] || 'offline'
 }
+
 </script>
 
 <style scoped>
-/* ==================== 科技感页面容器 ==================== */
+/* 页面容器 */
 .tech-page-container {
   position: relative;
   width: 100%;
-  min-height: 100vh;
-  padding: 24px 20px;
-  background: transparent;
-  overflow-y: auto;
-  overflow-x: hidden;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
+  min-height: 100vh; /* 最小高度为视口高度，允许内容撑开 */
+  max-height: 100vh; /* 最大高度为视口高度，超出时滚动 */
+  padding: 20px;
+  padding-bottom: 40px; /* 底部额外留白，确保分页控件可见 */
+  background: transparent; /* 使用全局背景 */
+  overflow-y: auto; /* 垂直滚动 */
+  overflow-x: hidden; /* 隐藏水平滚动 */
+  box-sizing: border-box; /* 包含padding在内的盒子模型 */
 }
 
 .tech-page-container::-webkit-scrollbar {
@@ -1148,24 +1075,6 @@ const getStatusClass = (status) => {
     radial-gradient(circle at 40% 80%, rgba(0, 255, 255, 0.03) 0%, transparent 50%);
 }
 
-.tech-background::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-  animation: grid-move 20s linear infinite;
-}
-
-@keyframes grid-move {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(50px, 50px); }
-}
 
 /* ==================== 页面标题 ==================== */
 .tech-page-container h2 {
@@ -1193,6 +1102,28 @@ const getStatusClass = (status) => {
     0 0 20px rgba(0, 255, 255, 0.1) !important;
   margin-bottom: 20px;
   transition: all 0.3s ease;
+}
+
+/* ==================== 页面标题 ==================== */
+.tech-page-container h2 {
+  position: relative;
+  z-index: 10;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 20px 0 30px 0;
+  padding-left: 0;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+  letter-spacing: 1px;
+}
+
+/* ==================== 页面操作区 ==================== */
+.page-operations {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+  justify-content: flex-end;
 }
 
 .tech-card:hover {
@@ -1345,7 +1276,9 @@ const getStatusClass = (status) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  padding: 15px 0 20px 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
 }
 
 .left-operations, .right-operations {
@@ -1354,11 +1287,6 @@ const getStatusClass = (status) => {
   align-items: center;
 }
 
-.operation-stats .total-count {
-  color: rgba(0, 255, 255, 0.8);
-  font-size: 14px;
-  font-weight: 500;
-}
 
 /* ==================== 科技感按钮 ==================== */
 .tech-button {
@@ -1470,182 +1398,310 @@ const getStatusClass = (status) => {
   background: rgba(255, 107, 107, 0.1) !important;
 }
 
-/* ==================== 表格样式 ==================== */
-.tech-table-container {
-  margin: 20px 0;
+/* ==================== 自定义表格样式 ==================== */
+.custom-table {
+  background: rgba(15, 25, 45, 0.95);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.1);
 }
 
-.tech-table {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 8px !important;
+/* 表格头部 */
+.table-header {
+  display: grid;
+  grid-template-columns: 60px 80px 1fr 150px 150px 100px 120px 150px 280px;
+  background: rgba(20, 30, 50, 0.8);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
 }
 
-.tech-table :deep(.el-table__header) {
-  background: rgba(20, 30, 50, 0.8) !important;
-}
-
-.tech-table :deep(.el-table__body) {
-  background: rgba(15, 25, 45, 0.95) !important;
-}
-
-.tech-table :deep(.el-table__row) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  transition: all 0.3s ease;
-}
-
-.tech-table :deep(.el-table__row:hover) {
-  background: rgba(0, 255, 255, 0.08) !important;
-}
-
-.tech-table :deep(.el-table__row--striped) {
-  background: rgba(20, 30, 50, 0.6) !important;
-}
-
-.tech-table :deep(.el-table__row--striped:hover) {
-  background: rgba(0, 255, 255, 0.08) !important;
-}
-
-.tech-table :deep(.el-table th) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  color: #00ffff !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  font-weight: 600 !important;
+.header-cell {
+  padding: 12px 8px;
+  color: #00ffff;
+  font-weight: 600;
+  text-align: center;
+  border-right: 1px solid rgba(0, 255, 255, 0.1);
   text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
-}
-
-.tech-table :deep(.el-table td) {
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-/* ==================== 设备信息样式 ==================== */
-.device-id {
-  color: #00ffff;
-  font-weight: 600;
-  font-family: 'Courier New', monospace;
-  text-shadow: 0 0 6px rgba(0, 255, 255, 0.4);
-}
-
-.device-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.device-name {
-  color: #ffffff;
-  font-weight: 600;
   font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
-.device-code {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 12px;
-  font-family: 'Courier New', monospace;
+.header-cell:last-child {
+  border-right: none;
 }
 
-.device-ip {
-  color: #00ffff;
-  font-size: 12px;
-  font-family: 'Courier New', monospace;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* 表格主体 */
+.table-body {
+  background: rgba(15, 25, 45, 0.95);
 }
 
-.device-icon::before {
-  content: '📟';
-  font-size: 12px;
+.table-row-wrapper {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
 }
 
-.ip-icon::before {
-  content: '🌐';
-  font-size: 10px;
+.table-row-wrapper:last-child {
+  border-bottom: none;
 }
 
-/* ==================== 状态指示器 ==================== */
-.status-indicator {
+.table-row {
+  display: grid;
+  grid-template-columns: 60px 80px 1fr 150px 150px 100px 120px 150px 280px;
+  transition: all 0.3s ease;
+  background: rgba(15, 25, 45, 0.95);
+}
+
+.table-row:nth-child(even) {
+  background: rgba(20, 30, 50, 0.6);
+}
+
+.body-cell {
+  padding: 12px 8px;
+  color: rgba(255, 255, 255, 0.9);
+  border-right: 1px solid rgba(0, 255, 255, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  font-size: 13px;
+  min-height: 48px;
+}
+
+.body-cell:last-child {
+  border-right: none;
+}
+
+/* 展开按钮 */
+.expand-cell {
+  justify-content: center;
+}
+
+.expand-btn {
+  background: transparent;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  color: #00ffff;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.expand-btn:hover {
+  background: rgba(0, 255, 255, 0.1);
+  border-color: rgba(0, 255, 255, 0.5);
+}
+
+.expand-icon {
+  transition: transform 0.3s ease;
+  font-size: 12px;
+}
+
+.expand-btn.expanded .expand-icon {
+  transform: rotate(90deg);
+}
+
+/* ID单元格 */
+.id-cell {
+  color: #00ffff;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.4);
+}
+
+/* 名称单元格 */
+.name-cell {
+  justify-content: flex-start;
+  padding-left: 12px;
+}
+
+/* 编号单元格 */
+.number-cell {
+  font-family: 'Courier New', monospace;
+  justify-content: flex-start;
+  padding-left: 12px;
+}
+
+/* IP单元格 */
+.ip-cell {
+  color: #00ffff;
+  font-family: 'Courier New', monospace;
+}
+
+/* 状态标签 */
+.status-tag {
   padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-tag.online {
+  background: rgba(0, 255, 0, 0.1);
+  color: #00ff00;
+  border: 1px solid rgba(0, 255, 0, 0.3);
+}
+
+.status-tag.offline {
+  background: rgba(255, 69, 0, 0.1);
+  color: #ff4500;
+  border: 1px solid rgba(255, 69, 0, 0.3);
+}
+
+.status-tag.error {
+  background: rgba(255, 255, 0, 0.1);
+  color: #ffff00;
+  border: 1px solid rgba(255, 255, 0, 0.3);
+}
+
+/* 固件版本 */
+.firmware-cell {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+/* 摄像机标签 */
+.camera-tag {
+  padding: 3px 8px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
 }
 
-.status-indicator.online {
+.camera-tag.bound {
   background: rgba(0, 255, 0, 0.1);
   color: #00ff00;
+  border: 1px solid rgba(0, 255, 0, 0.3);
 }
 
-.status-indicator.offline {
-  background: rgba(255, 69, 0, 0.1);
-  color: #ff4500;
-}
-
-.status-indicator.error {
-  background: rgba(255, 255, 0, 0.1);
-  color: #ffff00;
-}
-
-/* ==================== 固件版本 ==================== */
-.firmware-version {
-  color: rgba(255, 255, 255, 0.8);
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  padding: 2px 8px;
-  background: rgba(0, 255, 255, 0.1);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-}
-
-/* ==================== 摄像机绑定 ==================== */
-.camera-binding {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.bound-camera {
-  color: #00ff00;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-}
-
-.unbound-camera {
+.camera-tag.unbound {
+  background: rgba(255, 107, 107, 0.1);
   color: #ff6b6b;
+  border: 1px solid rgba(255, 107, 107, 0.3);
+}
+
+/* 操作按钮 */
+.action-cell {
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.action-btn {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 11px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 3px;
+  min-width: 50px;
+  justify-content: center;
 }
 
-.camera-icon::before {
-  content: '📹';
-  font-size: 12px;
-}
-
-.unbound-icon::before {
-  content: '❌';
+.btn-icon {
   font-size: 10px;
 }
 
-/* ==================== 操作按钮组 ==================== */
-.action-buttons {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  justify-content: center;
+.view-btn {
+  color: #87ceeb;
+  border-color: rgba(135, 206, 235, 0.4);
 }
+
+.view-btn:hover {
+  background: rgba(135, 206, 235, 0.1);
+  border-color: rgba(135, 206, 235, 0.6);
+}
+
+.edit-btn {
+  color: #00ff00;
+  border-color: rgba(0, 255, 0, 0.4);
+}
+
+.edit-btn:hover {
+  background: rgba(0, 255, 0, 0.1);
+  border-color: rgba(0, 255, 0, 0.6);
+}
+
+.bind-btn {
+  color: #ffff00;
+  border-color: rgba(255, 255, 0, 0.4);
+}
+
+.bind-btn:hover {
+  background: rgba(255, 255, 0, 0.1);
+  border-color: rgba(255, 255, 0, 0.6);
+}
+
+.delete-btn {
+  color: #ff6b6b;
+  border-color: rgba(255, 107, 107, 0.4);
+}
+
+.delete-btn:hover {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: rgba(255, 107, 107, 0.6);
+}
+
+/* 展开行 */
+.expanded-row {
+  background: rgba(20, 30, 50, 0.6);
+  border-top: 1px solid rgba(0, 255, 255, 0.2);
+  animation: expandAnimation 0.3s ease-out;
+}
+
+@keyframes expandAnimation {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+
+/* 分页组件样式 */
+.flex-center {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+:deep(.el-pagination) {
+  color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pager li) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  margin: 0 2px !important;
+}
+
+:deep(.el-pagination .el-pager li.is-active) {
+  background: rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+}
+
 
 /* ==================== 详情面板 ==================== */
 .device-detail-panel {
@@ -1667,9 +1723,9 @@ const getStatusClass = (status) => {
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
 }
 
-.detail-icon::before {
-  content: '🔧';
+.detail-icon {
   font-size: 16px;
+  margin-right: 5px;
 }
 
 .detail-grid {
@@ -1732,45 +1788,6 @@ const getStatusClass = (status) => {
   color: #ffff00;
 }
 
-/* ==================== 分页样式 ==================== */
-.pagination-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 20px;
-  padding: 15px 20px;
-  background: rgba(20, 30, 50, 0.6);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 8px;
-}
-
-.pagination-info span {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-}
-
-.tech-pagination :deep(.el-pagination) {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.tech-pagination :deep(.el-pagination .el-pager li) {
-  background: rgba(0, 255, 255, 0.1) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  margin: 0 4px !important;
-  border-radius: 4px !important;
-}
-
-.tech-pagination :deep(.el-pagination .el-pager li:hover) {
-  background: rgba(0, 255, 255, 0.2) !important;
-  border-color: rgba(0, 255, 255, 0.4) !important;
-}
-
-.tech-pagination :deep(.el-pagination .el-pager li.is-active) {
-  background: rgba(0, 255, 255, 0.3) !important;
-  border-color: rgba(0, 255, 255, 0.6) !important;
-  color: #00ffff !important;
-}
 
 /* ==================== 输入框样式 ==================== */
 .tech-input :deep(.el-input__wrapper),
@@ -1882,6 +1899,7 @@ const getStatusClass = (status) => {
   align-items: center;
   gap: 10px;
 }
+
 
 .view-controls {
   display: flex;

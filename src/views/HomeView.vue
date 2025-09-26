@@ -272,32 +272,32 @@
               </defs>
               
               <!-- 灰色背景柱 -->
-              <rect 
+              <rect
                 v-for="(item, index) in rankingChartData"
                 :key="'bg-' + index"
                 :x="3"
-                :y="18 + index * 18"
+                :y="10 + index * 18"
                 :width="94"
-                :height="4"
+                :height="6"
                 fill="url(#grayBackground)"
                 stroke="rgba(102, 102, 102, 0.3)"
                 stroke-width="0.1"
-                rx="0.5"
+                rx="1"
                 class="ranking-bar-background"
               />
-              
+
               <!-- 数据柱 -->
-              <rect 
+              <rect
                 v-for="(item, index) in rankingChartData"
                 :key="index"
                 :x="3"
-                :y="18 + index * 18"
+                :y="10 + index * 18"
                 :width="item.percentage * 94"
-                :height="4"
+                :height="6"
                 :fill="`url(#barGradient${index + 1})`"
                 :stroke="item.strokeColor"
                 stroke-width="0.1"
-                rx="0.5"
+                rx="1"
                 class="ranking-bar"
                 :style="{ animationDelay: index * 0.2 + 's' }"
               />
@@ -1859,19 +1859,19 @@ onUnmounted(() => {
   box-sizing: border-box; /* 确保盒模型正确 */
 }
 
-/* 告警统计 - 适中高度 */
+/* 告警统计 - 统一高度 */
 .widget-alarm {
-  flex: 1 1 0; /* 调整到1倍高度 */
+  flex: 1 1 0; /* 统一设置为1倍高度 */
 }
 
-/* 任务统计 - 保持原有高度 */
+/* 任务统计 - 统一高度 */
 .widget-task {
-  flex: 1 1 0; /* 保持1倍高度 */
+  flex: 1 1 0; /* 统一设置为1倍高度 */
 }
 
-/* 事件通知 - 增加高度 */
+/* 事件通知 - 统一高度 */
 .widget-event {
-  flex: 1.4 1 0; /* 增加到1.4倍高度 */
+  flex: 1 1 0; /* 调整为1倍高度，与其他数据框保持一致 */
 }
 
 /* 小部件顶部图片 - 增强清晰度 */
@@ -2646,7 +2646,7 @@ onUnmounted(() => {
 .ranking-chart-container {
   position: relative;
   height: 100%;
-  padding: 10px 0;
+  padding: 0; /* 移除内边距，使用精确定位 */
   display: flex;
   flex-direction: column;
 }
@@ -2696,47 +2696,58 @@ onUnmounted(() => {
   position: relative;
   z-index: 2;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  padding: 15px 0;
+  /* 移除flex布局，改用绝对定位精确控制 */
 }
 
 .ranking-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 32px;
-  padding: 0 5px;
+  position: absolute;
+  width: 100%;
+  height: 6%; /* 直接匹配条形图的高度 */
+  padding: 0 1%;
   opacity: 0;
   animation: slideInText 0.8s ease-out forwards;
-  position: relative;
-  transform: translateY(-2px);
+  /* 使用绝对定位精确控制位置，确保与SVG条形图对齐 */
 }
+
+/* 为每个排行项目设置精确的位置，与SVG条形柱对齐 */
+/* SVG条形图Y坐标: 10, 28, 46, 64, 82 (起始10，间隔18) */
+/* 微调位置以实现完美对齐 */
+.ranking-item:nth-child(1) { top: 9%; } /* 稍微上移 */
+.ranking-item:nth-child(2) { top: 27%; } /* 稍微上移 */
+.ranking-item:nth-child(3) { top: 45%; } /* 稍微上移 */
+.ranking-item:nth-child(4) { top: 63%; } /* 稍微上移 */
+.ranking-item:nth-child(5) { top: 81%; } /* 稍微上移 */
 
 @keyframes slideInText {
   from {
     opacity: 0;
-    transform: translateX(-20px) translateY(-2px);
+    transform: translateX(-20px);
   }
   to {
     opacity: 1;
-    transform: translateX(0) translateY(-2px);
+    transform: translateX(0);
   }
 }
 
 .rank-badge {
-  font-size: 12px;
+  font-size: 0.75vw; /* 12px 转换为相对单位 */
   font-weight: bold;
-  padding: 4px 6px;
-  border-radius: 6px;
+  padding: 0.25vw 0.375vw; /* 4px 6px 转换为相对单位 */
+  border-radius: 0.375vw; /* 6px 转换为相对单位 */
   text-align: center;
-  min-width: 42px;
-  width: 42px;
-  text-shadow: 0 0 6px currentColor;
+  min-width: 2.625vw; /* 42px 转换为相对单位 */
+  width: 2.625vw;
+  text-shadow: 0 0 0.375vw currentColor; /* 6px 转换为相对单位 */
   border: none;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 0.5vw currentColor; /* 8px 转换为相对单位 */
   flex-shrink: 0;
+  /* 确保垂直居中对齐 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .rank-1 {
@@ -2771,29 +2782,36 @@ onUnmounted(() => {
 
 .device-name {
   flex: 1;
-  margin-left: 5px;
-  font-size: 14px;
+  margin-left: 0.5vw; /* 8px 转换为相对单位 */
+  font-size: 0.875vw; /* 14px 转换为相对单位 */
   color: #ffffff;
   font-weight: 500;
-  text-shadow: 
-    0 0 8px rgba(255, 255, 255, 0.8),
-    0 0 6px rgba(0, 0, 0, 1),
-    0 1px 3px rgba(0, 0, 0, 0.9);
+  text-shadow:
+    0 0 0.5vw rgba(255, 255, 255, 0.8), /* 8px 转换为相对单位 */
+    0 0 0.375vw rgba(0, 0, 0, 1), /* 6px 转换为相对单位 */
+    0 0.0625vw 0.1875vw rgba(0, 0, 0, 0.9); /* 1px 3px 转换为相对单位 */
   text-align: left;
+  /* 确保文字垂直居中 */
+  display: flex;
+  align-items: center;
 }
 
 .count-value {
-  font-size: 16px;
+  font-size: 1vw; /* 16px 转换为相对单位 */
   font-weight: bold;
   color: #00ff88;
-  text-shadow: 
-    0 0 12px rgba(0, 255, 136, 0.8),
-    0 0 8px rgba(0, 0, 0, 1),
-    0 2px 4px rgba(0, 0, 0, 0.9);
-  min-width: 25px;
-  width: 25px;
+  text-shadow:
+    0 0 0.75vw rgba(0, 255, 136, 0.8), /* 12px 转换为相对单位 */
+    0 0 0.5vw rgba(0, 0, 0, 1), /* 8px 转换为相对单位 */
+    0 0.125vw 0.25vw rgba(0, 0, 0, 0.9); /* 2px 4px 转换为相对单位 */
+  min-width: 1.875vw; /* 30px 转换为相对单位 */
+  width: 1.875vw;
   text-align: right;
   flex-shrink: 0;
+  /* 确保数值垂直居中 */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
 /* 排行榜计数 - 保留旧样式作为备用 */
@@ -3041,12 +3059,66 @@ onUnmounted(() => {
   }
 }
 
+/* 大屏幕优化 (1920px+) */
+@media (min-width: 1920px) {
+  .rank-badge {
+    font-size: 0.6vw; /* 超大屏幕适当缩小字体 */
+    padding: 0.2vw 0.3vw;
+    min-width: 2vw;
+    width: 2vw;
+  }
+
+  .device-name {
+    font-size: 0.7vw;
+    margin-left: 0.4vw;
+  }
+
+  .count-value {
+    font-size: 0.8vw;
+    min-width: 1.5vw;
+    width: 1.5vw;
+  }
+
+  /* 超大屏幕下精确位置调整 */
+  .ranking-item:nth-child(1) { top: 9%; }
+  .ranking-item:nth-child(2) { top: 27%; }
+  .ranking-item:nth-child(3) { top: 45%; }
+  .ranking-item:nth-child(4) { top: 63%; }
+  .ranking-item:nth-child(5) { top: 81%; }
+}
+
 @media (max-width: 1200px) {
   .dashboard-container {
     grid-template-columns: 24% 1fr 24%; /* 保持24%宽度 */
     gap: 10px;
     padding: 10px;
   }
+
+  /* 中等屏幕高频告警排行响应式优化 */
+  .rank-badge {
+    font-size: 0.9vw; /* 适中屏幕适当缩小字体 */
+    padding: 0.24vw 0.4vw;
+    min-width: 3vw;
+    width: 3vw;
+  }
+
+  .device-name {
+    font-size: 1vw;
+    margin-left: 0.55vw;
+  }
+
+  .count-value {
+    font-size: 1.2vw;
+    min-width: 2.2vw;
+    width: 2.2vw;
+  }
+
+  /* 中等屏幕下微调位置 */
+  .ranking-item:nth-child(1) { top: 9%; }
+  .ranking-item:nth-child(2) { top: 27%; }
+  .ranking-item:nth-child(3) { top: 45%; }
+  .ranking-item:nth-child(4) { top: 63%; }
+  .ranking-item:nth-child(5) { top: 81%; }
 }
 
 @media (max-width: 768px) {
@@ -3055,14 +3127,44 @@ onUnmounted(() => {
     grid-template-rows: auto auto auto;
     height: auto;
   }
-  
+
   .left-panel, .right-panel {
     max-height: none;
   }
-  
+
   .main-content {
     height: 50vh; /* 调整为视口高度的50% */
   }
+
+  /* 移动端高频告警排行响应式优化 */
+  .rank-badge {
+    font-size: 2.5vw; /* 移动端使用较大的vw值以保证可读性 */
+    padding: 0.5vw 1vw;
+    min-width: 8vw;
+    width: 8vw;
+  }
+
+  .device-name {
+    font-size: 3vw;
+    margin-left: 1.5vw;
+  }
+
+  .count-value {
+    font-size: 3.5vw;
+    min-width: 6vw;
+    width: 6vw;
+  }
+
+  /* 移动端下微调位置，考虑到触摸操作需要更大间距 */
+  .ranking-item {
+    height: 8%; /* 移动端适当增加高度 */
+  }
+
+  .ranking-item:nth-child(1) { top: 7%; }
+  .ranking-item:nth-child(2) { top: 25%; }
+  .ranking-item:nth-child(3) { top: 43%; }
+  .ranking-item:nth-child(4) { top: 61%; }
+  .ranking-item:nth-child(5) { top: 79%; }
 }
 
 /* 背景摄像头图标样式 */

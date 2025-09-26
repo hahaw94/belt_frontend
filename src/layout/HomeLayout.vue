@@ -204,11 +204,11 @@ export default {
 .home-header::before {
   content: '';
   position: absolute;
-  top: -7vh; /* 减少向上延伸 */
-  left: -4vw; /* 减少向左延伸 */
-  right: -8vw; /* 减少向右延伸 */
-  bottom: -3.8vh; /* 减少向下延伸 */
-  background: url('@/assets/images/main/main-header2.png') center center/cover no-repeat;
+  top: -7vh; /* 再次减少向上延伸 */
+  left: -16.5vw; /* 从左边挤压，向右收缩 */
+  right: -18vw; /* 从右边挤压，向左收缩 */
+  bottom: -2vh; /* 再次减少向下延伸 */
+  background: url('@/assets/images/main/main-header7.png') center center/70% 100% no-repeat;
   /* 使用center center确保图片居中显示，cover确保完全覆盖 */
   z-index: -1; /* 放在内容下方 */
   pointer-events: none; /* 不影响点击事件 */
