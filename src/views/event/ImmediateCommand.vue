@@ -1,6 +1,6 @@
 <template>
   <div class="immediate-command">
-    <div class="control-panel">
+    <div class="control-panel tech-card">
       <el-form :inline="true" :model="searchForm">
         <el-form-item label="时间范围">
           <el-date-picker
@@ -32,10 +32,10 @@
       </el-form>
     </div>
 
-    <div class="content-area">
-      <el-tabs v-model="activeTab" class="command-tabs">
+    <div class="content-area tech-card">
+      <el-tabs v-model="activeTab" class="command-tabs" @tab-change="handleTabChange">
         <el-tab-pane label="待处理告警" name="pending">
-          <el-table :data="pendingAlarms" style="width: 100%">
+          <el-table :key="'pending-table'" :data="pendingAlarms" style="width: 100%">
             <el-table-column type="selection" width="55" />
             <el-table-column type="index" width="50" />
             <el-table-column prop="time" label="时间" width="180" />
@@ -80,7 +80,7 @@
         </el-tab-pane>
 
         <el-tab-pane label="已处理告警" name="processed">
-          <el-table :data="processedAlarms" style="width: 100%">
+          <el-table :key="'processed-table'" :data="processedAlarms" style="width: 100%">
             <el-table-column type="index" width="50" />
             <el-table-column prop="time" label="时间" width="180" />
             <el-table-column prop="type" label="告警类型" width="120" />
@@ -212,9 +212,21 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, nextTick, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
+
+// 处理 ResizeObserver 错误
+const handleResizeObserverError = () => {
+  const resizeObserverErrDiv = document.getElementById('webpack-dev-server-client-overlay-div')
+  const resizeObserverErr = document.getElementById('webpack-dev-server-client-overlay')
+  if (resizeObserverErr) {
+    resizeObserverErr.setAttribute('style', 'display: none')
+  }
+  if (resizeObserverErrDiv) {
+    resizeObserverErrDiv.setAttribute('style', 'display: none')
+  }
+}
 
 export default {
   name: 'ImmediateCommand',
@@ -393,6 +405,41 @@ export default {
       handleProcess(row)
     }
 
+    // 标签页切换处理
+    const handleTabChange = async (tabName) => {
+      try {
+        console.log('Tab changed to:', tabName)
+        // 使用 nextTick 确保 DOM 更新完成
+        await nextTick()
+        
+        // 延迟处理以避免 ResizeObserver 错误
+        setTimeout(() => {
+          handleResizeObserverError()
+        }, 100)
+      } catch (error) {
+        console.warn('Tab change error:', error)
+      }
+    }
+
+    // 组件挂载时处理 ResizeObserver 错误
+    onMounted(() => {
+      // 全局错误处理
+      window.addEventListener('error', (e) => {
+        if (e.message && e.message.includes('ResizeObserver loop completed')) {
+          e.stopImmediatePropagation()
+          handleResizeObserverError()
+        }
+      })
+
+      // 处理未捕获的 Promise 错误
+      window.addEventListener('unhandledrejection', (e) => {
+        if (e.reason && e.reason.message && e.reason.message.includes('ResizeObserver')) {
+          e.preventDefault()
+          handleResizeObserverError()
+        }
+      })
+    })
+
     return {
       searchForm,
       currentPage,
@@ -416,7 +463,8 @@ export default {
       handleIgnore,
       handleSizeChange,
       handleCurrentChange,
-      handleRowClick
+      handleRowClick,
+      handleTabChange
     }
   }
 }
@@ -431,19 +479,24 @@ export default {
   gap: 20px;
 }
 
+/* 科技感卡片样式 */
+.tech-card {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
 .control-panel {
-  background: #fff;
   padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .content-area {
   flex: 1;
-  background: #fff;
   padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
 }
@@ -465,5 +518,394 @@ export default {
 
 .el-pagination {
   margin-top: 16px;
+}
+
+/* Element Plus 组件深色主题样式 */
+:deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  background: rgba(25, 35, 55, 0.95) !important;
+  border-color: #00ffff !important;
+  box-shadow: 
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    0 0 15px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-input__inner) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-style: italic !important;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown) {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+  border-radius: 4px !important;
+  margin: 2px 4px !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+  transform: translateX(2px) !important;
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.25) !important;
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-date-editor) {
+  background: rgba(20, 30, 50, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+:deep(.el-date-editor:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-date-editor.is-active) {
+  background: rgba(25, 35, 55, 0.95) !important;
+  border-color: #00ffff !important;
+  box-shadow: 
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    0 0 15px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-picker-panel) {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-picker-panel__body) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-date-table) {
+  background: transparent !important;
+}
+
+:deep(.el-date-table td) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-date-table td:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-date-table td.current) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-tabs) {
+  background: transparent !important;
+}
+
+:deep(.el-tabs__header) {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-tabs__nav-wrap) {
+  background: transparent !important;
+}
+
+:deep(.el-tabs__nav) {
+  background: transparent !important;
+}
+
+:deep(.el-tabs__item) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border: none !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-tabs__item:hover) {
+  color: rgba(0, 255, 255, 0.8) !important;
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-tabs__active-bar) {
+  background: linear-gradient(90deg, #00ffff 0%, rgba(0, 255, 255, 0.6) 100%) !important;
+  height: 3px !important;
+  border-radius: 2px !important;
+}
+
+:deep(.el-tabs__content) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-tab-pane) {
+  background: transparent !important;
+}
+
+:deep(.el-table) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-table th) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table td) {
+  background: rgba(15, 25, 45, 0.6) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table tr) {
+  background: transparent !important;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(20, 30, 50, 0.4) !important;
+}
+
+:deep(.el-table__body tr:hover td) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table__header-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.el-table__body-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.el-table__empty-block) {
+  background: transparent !important;
+}
+
+:deep(.el-table__empty-text) {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:deep(.el-checkbox) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background: rgba(0, 255, 255, 0.8) !important;
+  border-color: #00ffff !important;
+}
+
+:deep(.el-checkbox__inner) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-checkbox__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+}
+
+:deep(.el-tag) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-tag--primary) {
+  background: rgba(0, 150, 200, 0.6) !important;
+  border-color: rgba(0, 200, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--success) {
+  background: rgba(103, 194, 58, 0.6) !important;
+  border-color: rgba(103, 194, 58, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--warning) {
+  background: rgba(230, 162, 60, 0.6) !important;
+  border-color: rgba(230, 162, 60, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--danger) {
+  background: rgba(245, 108, 108, 0.6) !important;
+  border-color: rgba(245, 108, 108, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--info) {
+  background: rgba(144, 147, 153, 0.6) !important;
+  border-color: rgba(144, 147, 153, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-button-group) {
+  background: transparent !important;
+}
+
+:deep(.el-button-group .el-button) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-button-group .el-button:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-pagination) {
+  background: transparent !important;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next),
+:deep(.el-pagination .el-pager li) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-pagination .btn-prev:hover),
+:deep(.el-pagination .btn-next:hover),
+:deep(.el-pagination .el-pager li:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pager li.is-active) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  border-color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pagination__sizes .el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-pagination .el-pagination__jump .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-dialog) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-dialog__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+}
+
+:deep(.el-dialog__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-textarea__inner) {
+  background: rgba(20, 30, 50, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.el-textarea__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2) !important;
 }
 </style>

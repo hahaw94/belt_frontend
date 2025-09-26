@@ -1,6 +1,6 @@
 <template>
   <div class="recording-statistics">
-    <el-card v-loading="loading">
+    <el-card class="tech-card" v-loading="loading">
       <template #header>
         <span>录像统计</span>
       </template>
@@ -9,7 +9,7 @@
       <div class="statistics-overview">
         <el-row :gutter="24">
           <el-col :span="6">
-            <div class="stat-card">
+            <div class="stat-card tech-card">
               <div class="stat-icon total">
                 <el-icon><VideoCamera /></el-icon>
               </div>
@@ -20,7 +20,7 @@
             </div>
           </el-col>
           <el-col :span="6">
-            <div class="stat-card">
+            <div class="stat-card tech-card">
               <div class="stat-icon size">
                 <el-icon><FolderOpened /></el-icon>
               </div>
@@ -31,7 +31,7 @@
             </div>
           </el-col>
           <el-col :span="6">
-            <div class="stat-card">
+            <div class="stat-card tech-card">
               <div class="stat-icon available">
                 <el-icon><Coin /></el-icon>
               </div>
@@ -42,7 +42,7 @@
             </div>
           </el-col>
           <el-col :span="6">
-            <div class="stat-card">
+            <div class="stat-card tech-card">
               <div class="stat-icon average">
                 <el-icon><TrendCharts /></el-icon>
               </div>
@@ -59,7 +59,7 @@
       <div class="config-info">
         <el-row :gutter="24">
           <el-col :span="12">
-            <el-card shadow="never">
+            <el-card class="tech-card" shadow="never">
               <template #header>
                 <span>存储配置</span>
               </template>
@@ -84,7 +84,7 @@
             </el-card>
           </el-col>
           <el-col :span="12">
-            <el-card shadow="never">
+            <el-card class="tech-card" shadow="never">
               <template #header>
                 <span>存储使用率</span>
               </template>
@@ -108,7 +108,7 @@
       <div class="charts-section">
         <el-row :gutter="24">
           <el-col :span="12">
-            <el-card shadow="never">
+            <el-card class="tech-card" shadow="never">
               <template #header>
                 <div class="chart-header">
                   <span>录像数量趋势</span>
@@ -130,7 +130,7 @@
             </el-card>
           </el-col>
           <el-col :span="12">
-            <el-card shadow="never">
+            <el-card class="tech-card" shadow="never">
               <template #header>
                 <span>告警类型分布</span>
               </template>
@@ -148,7 +148,7 @@
 
       <!-- 设备录像统计 -->
       <div class="device-statistics">
-        <el-card shadow="never">
+        <el-card class="tech-card" shadow="never">
           <template #header>
             <span>各设备录像统计</span>
           </template>
@@ -171,7 +171,7 @@
 
       <!-- 清理历史 -->
       <div class="cleanup-history">
-        <el-card shadow="never">
+        <el-card class="tech-card" shadow="never">
           <template #header>
             <div class="card-header">
               <span>清理历史</span>
@@ -425,6 +425,35 @@ onUnmounted(() => {
 <style scoped>
 .recording-statistics {
   padding: 20px;
+  height: calc(100vh - 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 科技感卡片样式 */
+.tech-card {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-card :deep(.el-card__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+  color: #00ffff !important;
+  padding: 16px 20px !important;
+}
+
+.tech-card :deep(.el-card__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  padding: 20px !important;
+  border-radius: 0 0 12px 12px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .statistics-overview {
@@ -435,15 +464,19 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   padding: 20px;
-  background: #f8f9ff;
+  background: rgba(20, 30, 50, 0.6);
   border-radius: 8px;
-  border-left: 4px solid #409eff;
+  border-left: 4px solid rgba(0, 255, 255, 0.8);
   transition: all 0.3s;
+  backdrop-filter: blur(5px);
 }
 
 .stat-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 
+    0 8px 20px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(0, 255, 255, 0.2);
+  background: rgba(25, 35, 55, 0.7);
 }
 
 .stat-icon {
@@ -458,10 +491,10 @@ onUnmounted(() => {
   color: white;
 }
 
-.stat-icon.total { background: #409eff; }
-.stat-icon.size { background: #67c23a; }
-.stat-icon.available { background: #e6a23c; }
-.stat-icon.average { background: #f56c6c; }
+.stat-icon.total { background: linear-gradient(135deg, rgba(0, 150, 255, 0.8), rgba(0, 200, 255, 0.9)); }
+.stat-icon.size { background: linear-gradient(135deg, rgba(103, 194, 58, 0.8), rgba(120, 210, 75, 0.9)); }
+.stat-icon.available { background: linear-gradient(135deg, rgba(230, 162, 60, 0.8), rgba(245, 180, 80, 0.9)); }
+.stat-icon.average { background: linear-gradient(135deg, rgba(245, 108, 108, 0.8), rgba(255, 130, 130, 0.9)); }
 
 .stat-content {
   flex: 1;
@@ -470,13 +503,14 @@ onUnmounted(() => {
 .stat-number {
   font-size: 24px;
   font-weight: bold;
-  color: #303133;
+  color: rgba(255, 255, 255, 0.95);
   margin-bottom: 4px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: rgba(0, 255, 255, 0.8);
 }
 
 .config-info,
@@ -491,7 +525,7 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 12px;
   padding: 8px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
 }
 
 .config-item:last-child {
@@ -501,12 +535,12 @@ onUnmounted(() => {
 
 .config-label {
   width: 100px;
-  color: #606266;
+  color: rgba(255, 255, 255, 0.8);
   font-weight: 500;
 }
 
 .config-value {
-  color: #303133;
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .storage-usage {
@@ -518,7 +552,7 @@ onUnmounted(() => {
   justify-content: space-between;
   margin-top: 12px;
   font-size: 14px;
-  color: #606266;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .chart-header {
@@ -536,18 +570,176 @@ onUnmounted(() => {
 
 .chart-placeholder {
   text-align: center;
-  color: #909399;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .chart-icon {
   font-size: 48px;
   margin-bottom: 16px;
-  color: #c0c4cc;
+  color: rgba(0, 255, 255, 0.5);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* Element Plus 组件深色主题样式 */
+:deep(.el-table) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-table th) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table td) {
+  background: rgba(15, 25, 45, 0.6) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table tr) {
+  background: transparent !important;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(20, 30, 50, 0.4) !important;
+}
+
+:deep(.el-table__body tr:hover td) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table__header-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.el-table__body-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.el-table__empty-block) {
+  background: transparent !important;
+}
+
+:deep(.el-table__empty-text) {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown) {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+  border-radius: 4px !important;
+  margin: 2px 4px !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+  transform: translateX(2px) !important;
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.25) !important;
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-progress) {
+  background: transparent !important;
+}
+
+:deep(.el-progress-bar) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border-radius: 10px !important;
+}
+
+:deep(.el-progress-bar__outer) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 10px !important;
+}
+
+:deep(.el-progress-bar__inner) {
+  border-radius: 10px !important;
+}
+
+:deep(.el-tag) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-tag--success) {
+  background: rgba(103, 194, 58, 0.6) !important;
+  border-color: rgba(103, 194, 58, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--warning) {
+  background: rgba(230, 162, 60, 0.6) !important;
+  border-color: rgba(230, 162, 60, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--danger) {
+  background: rgba(245, 108, 108, 0.6) !important;
+  border-color: rgba(245, 108, 108, 0.5) !important;
+  color: #ffffff !important;
+}
+
+/* 滚动条样式 */
+.recording-statistics::-webkit-scrollbar {
+  width: 8px;
+}
+
+.recording-statistics::-webkit-scrollbar-track {
+  background: rgba(20, 30, 50, 0.3);
+  border-radius: 4px;
+}
+
+.recording-statistics::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.recording-statistics::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
 }
 </style> 

@@ -3,11 +3,10 @@
     <h2>算法仓</h2>
 
     <!-- 算法上传 -->
-    <el-card class="upload-card mb-20" shadow="hover">
+    <el-card class="upload-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>算法模型上传</span>
-          <el-tag type="info" size="small">每个算法最多存储5个模型</el-tag>
         </div>
       </template>
       <div class="upload-content">
@@ -69,7 +68,7 @@
     </el-card>
 
     <!-- 算法列表 -->
-    <el-card class="algorithm-list-card" shadow="hover">
+    <el-card class="algorithm-list-card tech-card" shadow="hover">
       <template #header>
         <div class="card-header">
           <span>算法版本列表</span>
@@ -315,6 +314,32 @@ const getStatusType = (status) => {
   padding: 20px;
 }
 
+/* 科技感卡片样式 */
+.tech-card {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-card :deep(.el-card__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+  color: #00ffff !important;
+  padding: 16px 20px !important;
+}
+
+.tech-card :deep(.el-card__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  padding: 20px !important;
+  border-radius: 0 0 12px 12px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -344,16 +369,286 @@ const getStatusType = (status) => {
   margin-top: 20px;
 }
 
-:deep(.el-card__header) {
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #ebeef5;
-}
-
 :deep(.el-upload-dragger) {
   width: 100%;
 }
 
+/* Element Plus 组件深色主题样式 */
+:deep(.el-table) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-table th) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table td) {
+  background: rgba(15, 25, 45, 0.6) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table tr) {
+  background: transparent !important;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(20, 30, 50, 0.4) !important;
+}
+
+:deep(.el-table__body tr:hover td) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-upload) {
+  background: transparent !important;
+}
+
+:deep(.el-upload-dragger) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 2px dashed rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 8px !important;
+}
+
+:deep(.el-upload-dragger:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  background: rgba(20, 30, 50, 0.8) !important;
+}
+
+:deep(.el-upload__text) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-upload__text em) {
+  color: #00ffff !important;
+}
+
+:deep(.el-upload__tip) {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:deep(.el-icon--upload) {
+  color: rgba(0, 255, 255, 0.7) !important;
+}
+
+:deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.4) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-input__inner) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+:deep(.el-textarea__inner) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.el-textarea__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.4) !important;
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-textarea__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
 :deep(.el-alert) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
   margin-bottom: 20px;
+}
+
+:deep(.el-alert__title) {
+  color: #00ffff !important;
+}
+
+:deep(.el-alert__description) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-alert__icon) {
+  color: rgba(0, 255, 255, 0.7) !important;
+}
+
+:deep(.el-pagination) {
+  background: transparent !important;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next),
+:deep(.el-pagination .el-pager li) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-pagination .btn-prev:hover),
+:deep(.el-pagination .btn-next:hover),
+:deep(.el-pagination .el-pager li:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pager li.is-active) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  border-color: #00ffff !important;
+}
+
+/* 更强力的表格样式覆盖 */
+:deep(.el-table__header-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.el-table__body-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.el-table--border) {
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table--border::after) {
+  background-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table::before) {
+  background-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table th.is-leaf) {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table td) {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table--striped .el-table__body tr:nth-child(2n) td) {
+  background: rgba(20, 30, 50, 0.3) !important;
+}
+
+/* 分页组件更强力的样式覆盖 */
+:deep(.el-pagination__total) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-pagination__sizes) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-pagination__sizes .el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-pagination__jump) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-pagination .btn-prev:disabled),
+:deep(.el-pagination .btn-next:disabled) {
+  background: rgba(20, 30, 50, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 下拉选择器样式 */
+:deep(.el-select-dropdown) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+/* 标签组件样式 */
+:deep(.el-tag) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-tag--primary) {
+  background: rgba(0, 150, 200, 0.6) !important;
+  border-color: rgba(0, 200, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--success) {
+  background: rgba(103, 194, 58, 0.6) !important;
+  border-color: rgba(103, 194, 58, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--warning) {
+  background: rgba(230, 162, 60, 0.6) !important;
+  border-color: rgba(230, 162, 60, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--danger) {
+  background: rgba(245, 108, 108, 0.6) !important;
+  border-color: rgba(245, 108, 108, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--info) {
+  background: rgba(144, 147, 153, 0.6) !important;
+  border-color: rgba(144, 147, 153, 0.5) !important;
+  color: #ffffff !important;
 }
 </style>

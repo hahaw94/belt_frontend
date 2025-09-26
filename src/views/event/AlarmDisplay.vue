@@ -1,6 +1,6 @@
 <template>
   <div class="alarm-display">
-    <div class="search-panel">
+    <div class="search-panel tech-card">
       <el-form :inline="true" :model="searchForm">
         <el-form-item label="时间范围">
           <el-date-picker
@@ -44,7 +44,7 @@
       </el-form>
     </div>
 
-    <div class="content-area">
+    <div class="content-area tech-card">
       <el-table
         :data="alarmList"
         style="width: 100%"
@@ -327,19 +327,24 @@ export default {
   gap: 20px;
 }
 
+/* 科技感卡片样式 */
+.tech-card {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
 .search-panel {
-  background: #fff;
   padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .content-area {
   flex: 1;
-  background: #fff;
   padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
 }
@@ -364,7 +369,7 @@ export default {
 
 .detail-item .label {
   width: 80px;
-  color: #606266;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .detail-images {
@@ -379,5 +384,295 @@ export default {
   height: 150px;
   border-radius: 4px;
   cursor: pointer;
+}
+
+/* Element Plus 组件深色主题样式 */
+:deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  background: rgba(25, 35, 55, 0.95) !important;
+  border-color: #00ffff !important;
+  box-shadow: 
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    0 0 15px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-input__inner) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-style: italic !important;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown) {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+  border-radius: 4px !important;
+  margin: 2px 4px !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+  transform: translateX(2px) !important;
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.25) !important;
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-date-editor) {
+  background: rgba(20, 30, 50, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+:deep(.el-date-editor:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-date-editor.is-active) {
+  background: rgba(25, 35, 55, 0.95) !important;
+  border-color: #00ffff !important;
+  box-shadow: 
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    0 0 15px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-picker-panel) {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-picker-panel__body) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-date-table) {
+  background: transparent !important;
+}
+
+:deep(.el-date-table td) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-date-table td:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-date-table td.current) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-table) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-table th) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-table td) {
+  background: rgba(15, 25, 45, 0.6) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table tr) {
+  background: transparent !important;
+}
+
+:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
+  background: rgba(20, 30, 50, 0.4) !important;
+}
+
+:deep(.el-table__body tr:hover td) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-table__header-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.el-table__body-wrapper) {
+  background: transparent !important;
+}
+
+:deep(.el-table__empty-block) {
+  background: transparent !important;
+}
+
+:deep(.el-table__empty-text) {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+:deep(.el-tag) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-tag--primary) {
+  background: rgba(0, 150, 200, 0.6) !important;
+  border-color: rgba(0, 200, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--success) {
+  background: rgba(103, 194, 58, 0.6) !important;
+  border-color: rgba(103, 194, 58, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--warning) {
+  background: rgba(230, 162, 60, 0.6) !important;
+  border-color: rgba(230, 162, 60, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--danger) {
+  background: rgba(245, 108, 108, 0.6) !important;
+  border-color: rgba(245, 108, 108, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--info) {
+  background: rgba(144, 147, 153, 0.6) !important;
+  border-color: rgba(144, 147, 153, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-pagination) {
+  background: transparent !important;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next),
+:deep(.el-pagination .el-pager li) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-pagination .btn-prev:hover),
+:deep(.el-pagination .btn-next:hover),
+:deep(.el-pagination .el-pager li:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pager li.is-active) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  border-color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pagination__sizes .el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-pagination .el-pagination__jump .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-dialog) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-dialog__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+}
+
+:deep(.el-dialog__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 </style>

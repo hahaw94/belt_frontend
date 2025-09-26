@@ -4,7 +4,7 @@
     <div class="overview-section">
       <el-row :gutter="24">
         <el-col :span="6">
-          <div class="stat-card primary">
+          <div class="stat-card tech-card primary">
             <div class="stat-icon">
               <el-icon><DataAnalysis /></el-icon>
             </div>
@@ -16,7 +16,7 @@
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="stat-card success">
+          <div class="stat-card tech-card success">
             <div class="stat-icon">
               <el-icon><Compass /></el-icon>
             </div>
@@ -28,7 +28,7 @@
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="stat-card warning">
+          <div class="stat-card tech-card warning">
             <div class="stat-icon">
               <el-icon><Warning /></el-icon>
             </div>
@@ -40,7 +40,7 @@
           </div>
         </el-col>
         <el-col :span="6">
-          <div class="stat-card info">
+          <div class="stat-card tech-card info">
             <div class="stat-icon">
               <el-icon><TrendCharts /></el-icon>
             </div>
@@ -104,6 +104,15 @@
           </el-button-group>
         </div>
         <div class="actions">
+          <div class="auto-refresh">
+            <span class="filter-label">自动刷新：</span>
+            <el-switch 
+              v-model="autoRefreshEnabled" 
+              @change="toggleAutoRefresh"
+              active-text=""
+              inactive-text=""
+            />
+          </div>
           <el-button type="primary" @click="refreshData">
             <el-icon><Refresh /></el-icon>
             刷新数据
@@ -120,42 +129,17 @@
     <el-row :gutter="24" class="chart-section">
       <!-- 告警趋势图 -->
       <el-col :span="12">
-        <el-card class="chart-card" shadow="hover">
+        <el-card class="chart-card tech-card" shadow="hover">
           <template #header>
             <div class="chart-header">
               <span class="chart-title">告警趋势分析</span>
-              <el-select
-                v-model="trendGranularity"
-                size="small"
-                style="width: 100px;"
-                @change="loadTrendData"
-              >
-                <el-option label="按天" value="day" />
-                <el-option label="按小时" value="hour" />
-              </el-select>
             </div>
           </template>
           <div class="chart-container" id="alarmTrendChart">
             <div class="chart-placeholder">
               <el-icon class="chart-icon"><TrendCharts /></el-icon>
               <p>告警趋势图表</p>
-              <small>集成图表库（如 ECharts）显示告警趋势</small>
-              <div class="trend-data">
-                <el-table :data="trendData" size="small">
-                  <el-table-column prop="date" label="日期" width="120" />
-                  <el-table-column prop="count" label="告警数量" width="80" />
-                  <el-table-column prop="trend" label="趋势" width="80">
-                    <template #default="scope">
-                      <el-tag
-                        :type="scope.row.trend === '上升' ? 'danger' : 'success'"
-                        size="small"
-                      >
-                        {{ scope.row.trend }}
-                      </el-tag>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </div>
+              
             </div>
           </div>
         </el-card>
@@ -163,23 +147,23 @@
 
       <!-- 告警类型分布 -->
       <el-col :span="12">
-        <el-card class="chart-card" shadow="hover">
+        <el-card class="chart-card tech-card" shadow="hover">
           <template #header>
             <div class="chart-header">
               <span class="chart-title">告警类型分布</span>
-              <el-button type="text" size="small" @click="viewTypeDetails">详细分析</el-button>
             </div>
           </template>
           <div class="chart-container" id="alarmTypeChart">
             <div class="chart-placeholder">
               <el-icon class="chart-icon"><PieChart /></el-icon>
               <p>告警类型分布图</p>
-              <small>集成图表库（如 ECharts）显示类型分布</small>
+              
               <div class="type-statistics">
                 <div
                   v-for="(item, index) in typeStatistics"
                   :key="index"
                   class="type-item"
+                  @click="viewTypeDetails(item.type)"
                 >
                   <div class="type-indicator" :style="{ backgroundColor: getTypeColor(index) }"></div>
                   <div class="type-info">
@@ -188,6 +172,9 @@
                       <span class="type-count">{{ item.count }}</span>
                       <span class="type-percentage">{{ (item.percentage * 100).toFixed(1) }}%</span>
                     </div>
+                  </div>
+                  <div class="type-actions">
+                    <el-icon class="action-icon"><ArrowRight /></el-icon>
                   </div>
                 </div>
               </div>
@@ -272,9 +259,20 @@
             <div
               v-for="(item, index) in deviceStatistics"
               :key="index"
-              class="dimension-item"
+              class="dimension-item device-item"
             >
-              <div class="item-name">{{ item.device_name }}</div>
+              <div class="item-info">
+                <div class="item-name">{{ item.device_name }}</div>
+                <div class="item-status">
+                  <el-tag
+                    :type="item.status === 'online' ? 'success' : item.status === 'warning' ? 'warning' : 'danger'"
+                    size="small"
+                  >
+                    {{ item.status === 'online' ? '在线' : item.status === 'warning' ? '警告' : '离线' }}
+                  </el-tag>
+                  <span class="last-update">{{ item.lastUpdate }}</span>
+                </div>
+              </div>
               <div class="item-progress">
                 <el-progress
                   :percentage="(item.count / maxDeviceCount) * 100"
@@ -388,7 +386,7 @@
 </template>
 
 <script setup name="StatisticsAnalysis">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { statisticsApi } from '@/api/statistics'
 import { ElMessage } from 'element-plus'
 import { 
@@ -398,7 +396,8 @@ import {
   TrendCharts, 
   PieChart, 
   Refresh, 
-  Download 
+  Download,
+  ArrowRight 
 } from '@element-plus/icons-vue'
 
 const loading = ref(false)
@@ -409,6 +408,8 @@ const timeRange = ref([])
 const quickTimeFilter = ref('week')
 const trendGranularity = ref('day')
 const selectedDimension = ref('type')
+const autoRefreshEnabled = ref(true)
+const refreshInterval = ref(null)
 
 // 统计概览数据
 const overviewData = reactive({
@@ -458,11 +459,11 @@ const timeStatistics = ref([
 
 // 设备统计
 const deviceStatistics = ref([
-  { device_name: '前门摄像头', count: 25 },
-  { device_name: '后门摄像头', count: 18 },
-  { device_name: '皮带头部摄像头', count: 22 },
-  { device_name: '皮带尾部摄像头', count: 20 },
-  { device_name: '侧门摄像头', count: 16 }
+  { device_name: '前门摄像头', count: 25, status: 'online', lastUpdate: '2分钟前' },
+  { device_name: '后门摄像头', count: 18, status: 'online', lastUpdate: '1分钟前' },
+  { device_name: '皮带头部摄像头', count: 22, status: 'warning', lastUpdate: '5分钟前' },
+  { device_name: '皮带尾部摄像头', count: 20, status: 'online', lastUpdate: '3分钟前' },
+  { device_name: '侧门摄像头', count: 16, status: 'offline', lastUpdate: '15分钟前' }
 ])
 
 // 详细表格数据
@@ -558,16 +559,55 @@ const onTimeRangeChange = () => {
   }
 }
 
+
 // 加载趋势数据
 const loadTrendData = async () => {
   try {
+    // 根据时间粒度生成模拟数据
+    const generateTrendData = () => {
+      const data = []
+      const now = new Date()
+      const count = trendGranularity.value === 'hour' ? 24 : 
+                   trendGranularity.value === 'day' ? 7 : 
+                   trendGranularity.value === 'week' ? 4 : 12
+      
+      for (let i = count - 1; i >= 0; i--) {
+        let date = ''
+        const baseCount = Math.floor(Math.random() * 30) + 10
+        
+        if (trendGranularity.value === 'hour') {
+          const hour = new Date(now.getTime() - i * 60 * 60 * 1000)
+          date = hour.getHours().toString().padStart(2, '0') + ':00'
+        } else if (trendGranularity.value === 'day') {
+          const day = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
+          date = (day.getMonth() + 1).toString().padStart(2, '0') + '-' + day.getDate().toString().padStart(2, '0')
+        } else if (trendGranularity.value === 'week') {
+          date = `第${count - i}周`
+        } else {
+          const month = new Date(now.getFullYear(), now.getMonth() - i, 1)
+          date = (month.getMonth() + 1).toString().padStart(2, '0') + '月'
+        }
+        
+        data.push({
+          date,
+          count: baseCount,
+          trend: Math.random() > 0.5 ? '上升' : '下降'
+        })
+      }
+      return data
+    }
+    
+    trendData.value = generateTrendData()
+    
     // TODO: 调用实际的API
     // const response = await statisticsApi.getAlarmTrend({
     //   start_date: timeRange.value[0],
     //   end_date: timeRange.value[1],
     //   granularity: trendGranularity.value
     // })
-    ElMessage.success('趋势数据已更新')
+    // trendData.value = response.body.trend_data
+    
+    ElMessage.success(`已切换到按${trendGranularity.value === 'hour' ? '小时' : trendGranularity.value === 'day' ? '天' : trendGranularity.value === 'week' ? '周' : '月'}显示的趋势数据`)
   } catch (error) {
     ElMessage.error('加载趋势数据失败')
   }
@@ -610,8 +650,11 @@ const refreshData = async () => {
 }
 
 // 查看类型详情
-const viewTypeDetails = () => {
+const viewTypeDetails = (type = null) => {
   selectedDimension.value = 'type'
+  if (type) {
+    ElMessage.info(`正在查看 "${type}" 的详细信息`)
+  }
   loadDetailData()
 }
 
@@ -666,9 +709,45 @@ const exportDetailData = () => {
   ElMessage.info('导出详细统计数据')
 }
 
+// 切换自动刷新
+const toggleAutoRefresh = (enabled) => {
+  if (enabled) {
+    startAutoRefresh()
+    ElMessage.success('已开启自动刷新，每30秒更新一次数据')
+  } else {
+    stopAutoRefresh()
+    ElMessage.info('已关闭自动刷新')
+  }
+}
+
+// 开始自动刷新
+const startAutoRefresh = () => {
+  stopAutoRefresh() // 确保没有重复的定时器
+  refreshInterval.value = setInterval(() => {
+    refreshData()
+  }, 30000) // 30秒刷新一次
+}
+
+// 停止自动刷新
+const stopAutoRefresh = () => {
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value)
+    refreshInterval.value = null
+  }
+}
+
+// 组件卸载时清理定时器
+onBeforeUnmount(() => {
+  stopAutoRefresh()
+})
+
 onMounted(() => {
   // 初始化本周数据
   setQuickTime('week')
+  // 如果自动刷新已启用，开始自动刷新
+  if (autoRefreshEnabled.value) {
+    startAutoRefresh()
+  }
 })
 </script>
 
@@ -676,6 +755,32 @@ onMounted(() => {
 .statistics-analysis {
   padding: 20px;
   background: transparent;
+}
+
+/* 科技感卡片样式 */
+.tech-card {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-card :deep(.el-card__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+  color: #00ffff !important;
+  padding: 16px 20px !important;
+}
+
+.tech-card :deep(.el-card__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  padding: 20px !important;
+  border-radius: 0 0 12px 12px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
   min-height: calc(100vh - 60px);
 }
 
@@ -684,7 +789,8 @@ onMounted(() => {
 }
 
 .stat-card {
-  background: white;
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
   border-radius: 12px;
   padding: 24px;
   display: flex;
@@ -773,6 +879,13 @@ onMounted(() => {
 .actions {
   margin-left: auto;
   display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.auto-refresh {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -790,6 +903,12 @@ onMounted(() => {
   align-items: center;
 }
 
+.chart-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .chart-title {
   font-size: 16px;
   font-weight: bold;
@@ -802,18 +921,22 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   flex-direction: column;
+  background: rgba(15, 25, 45, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px;
+  backdrop-filter: blur(5px) !important;
 }
 
 .chart-placeholder {
   text-align: center;
-  color: #909399;
+  color: #ffffff !important;
   width: 100%;
 }
 
 .chart-icon {
   font-size: 48px;
+  color: rgba(0, 255, 255, 0.7) !important;
   margin-bottom: 16px;
-  color: #c0c4cc;
 }
 
 .trend-data {
@@ -835,7 +958,30 @@ onMounted(() => {
   gap: 12px;
   padding: 8px;
   border-radius: 6px;
-  background: #f8f9fa;
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.type-item:hover {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border-color: rgba(0, 255, 255, 0.4) !important;
+  transform: translateX(4px);
+}
+
+.type-actions {
+  margin-left: auto;
+}
+
+.action-icon {
+  color: rgba(0, 255, 255, 0.7) !important;
+  transition: all 0.3s ease;
+}
+
+.type-item:hover .action-icon {
+  color: #00ffff !important;
 }
 
 .type-indicator {
@@ -907,6 +1053,49 @@ onMounted(() => {
   border-bottom: none;
 }
 
+.device-item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  background: rgba(20, 30, 50, 0.4) !important;
+  border: 1px solid rgba(0, 255, 255, 0.15) !important;
+  margin-bottom: 8px;
+}
+
+.device-item:last-child {
+  margin-bottom: 0;
+}
+
+.item-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.item-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.last-update {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.device-item .item-progress {
+  margin: 0;
+}
+
+.device-item .item-count {
+  align-self: flex-end;
+  margin-top: 4px;
+}
+
 .item-name {
   width: 120px;
   font-size: 14px;
@@ -914,6 +1103,12 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.device-item .item-name {
+  width: auto;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 500;
 }
 
 .item-progress {
@@ -985,5 +1180,151 @@ onMounted(() => {
     margin-right: 0;
     margin-bottom: 16px;
   }
+}
+
+/* Element Plus 组件深色主题 */
+/* 表单标签 */
+:deep(.el-form-item__label) {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+/* 输入框 */
+:deep(.el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 选择器 */
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.el-select .el-input__inner) {
+  color: #ffffff !important;
+}
+
+:deep(.el-select .el-input__suffix) {
+  color: rgba(0, 255, 255, 0.7) !important;
+}
+
+/* 选择器下拉面板 */
+:deep(.el-select-dropdown) {
+  background: linear-gradient(135deg,
+    rgba(15, 25, 45, 0.95) 0%,
+    rgba(20, 30, 50, 0.95) 100%) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown__item) {
+  background: transparent !important;
+  color: #ffffff !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-select-dropdown__item.is-selected) {
+  background: rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+  font-weight: 600 !important;
+}
+
+/* 日期选择器 */
+:deep(.el-date-editor) {
+  --el-input-bg-color: rgba(20, 30, 50, 0.6) !important;
+  --el-input-border-color: rgba(0, 255, 255, 0.2) !important;
+  --el-input-text-color: #ffffff !important;
+  --el-input-hover-border-color: rgba(0, 255, 255, 0.4) !important;
+  --el-input-focus-border-color: #00ffff !important;
+}
+
+:deep(.el-date-editor .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 按钮 */
+:deep(.el-button) {
+  --el-button-bg-color: rgba(20, 30, 50, 0.8) !important;
+  --el-button-border-color: rgba(0, 255, 255, 0.3) !important;
+  --el-button-text-color: #ffffff !important;
+  --el-button-hover-bg-color: rgba(0, 255, 255, 0.2) !important;
+  --el-button-hover-border-color: #00ffff !important;
+  --el-button-hover-text-color: #00ffff !important;
+}
+
+:deep(.el-button--primary) {
+  --el-button-bg-color: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 200, 255, 0.3)) !important;
+  --el-button-border-color: #00ffff !important;
+  --el-button-text-color: #00ffff !important;
+  --el-button-hover-bg-color: linear-gradient(135deg, rgba(0, 255, 255, 0.5), rgba(0, 200, 255, 0.5)) !important;
+}
+
+/* 卡片组件 */
+:deep(.el-card) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-card__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  font-weight: 600 !important;
+}
+
+:deep(.el-card__body) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 文字颜色修正 */
+.chart-title,
+.section-title,
+.card-title {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+.chart-placeholder p,
+.chart-placeholder span {
+  color: rgba(255, 255, 255, 0.7) !important;
 }
 </style>

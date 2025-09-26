@@ -1,6 +1,6 @@
 <template>
   <div class="log-center">
-    <el-card>
+    <el-card class="tech-card">
       <template #header>
         <div class="card-header">
           <span class="card-title">系统操作日志</span>
@@ -142,12 +142,15 @@
       </div>
 
       <!-- 日志列表 -->
+      <div class="tech-table">
       <el-table 
         v-loading="loading" 
         :data="logList" 
         style="width: 100%"
         :row-class-name="getRowClassName"
         @row-click="viewLogDetail"
+          stripe
+          border
       >
         <el-table-column type="expand">
           <template #default="props">
@@ -192,6 +195,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <!-- 分页 -->
       <div class="pagination-container">
@@ -534,6 +538,32 @@ onMounted(() => {
   padding: 20px;
 }
 
+/* 科技感卡片样式 */
+.tech-card {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-card :deep(.el-card__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+  color: #00ffff !important;
+  padding: 16px 20px !important;
+}
+
+.tech-card :deep(.el-card__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  padding: 20px !important;
+  border-radius: 0 0 12px 12px !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -554,8 +584,10 @@ onMounted(() => {
 .search-bar {
   margin-bottom: 20px;
   padding: 20px;
-  background: #f8f9fa;
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
   border-radius: 8px;
+  backdrop-filter: blur(5px) !important;
 }
 
 .quick-filters {
@@ -567,15 +599,20 @@ onMounted(() => {
 
 .filter-label {
   font-weight: 500;
-  color: #606266;
+  color: #ffffff !important;
 }
 
 .log-stats {
   margin-bottom: 20px;
   padding: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 255, 0.15) 0%, 
+    rgba(20, 30, 50, 0.8) 50%, 
+    rgba(0, 255, 255, 0.15) 100%) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
   border-radius: 12px;
   color: white;
+  backdrop-filter: blur(10px) !important;
 }
 
 .stat-item {
@@ -612,9 +649,10 @@ onMounted(() => {
 
 .log-detail-expand {
   padding: 20px;
-  background: #f8f9fa;
+  background: rgba(20, 30, 50, 0.6) !important;
   margin: 0 20px 20px 20px;
   border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
 }
 
 .log-detail-dialog {
@@ -626,13 +664,15 @@ onMounted(() => {
   max-height: 200px;
   overflow-y: auto;
   padding: 12px;
-  background: #f5f7fa;
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
   border-radius: 4px;
   font-family: 'Courier New', monospace;
   font-size: 13px;
   line-height: 1.6;
   white-space: pre-wrap;
   word-break: break-word;
+  color: #ffffff !important;
 }
 
 .export-progress {
@@ -649,29 +689,463 @@ onMounted(() => {
   padding: 20px;
 }
 
-/* 表格行样式 */
-:deep(.error-row) {
-  background-color: #fef0f0;
+/* 科技感表格 - 与用户列表完全一致的样式 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
 }
 
-:deep(.warning-row) {
-  background-color: #fdf6ec;
+/* 表格整体容器 - 彻底移除所有边框 */
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+  border-collapse: separate !important;
 }
 
-:deep(.failed-row) {
-  background-color: #fef0f0;
+.tech-table :deep(.el-table::before) {
+  display: none !important;
 }
 
-:deep(.error-row:hover) {
-  background-color: #fde2e2 !important;
+.tech-table :deep(.el-table::after) {
+  display: none !important;
 }
 
-:deep(.warning-row:hover) {
-  background-color: #faecd8 !important;
+/* 表格头部样式 - 参考用户列表的头部设计 */
+.tech-table :deep(.el-table__header-wrapper) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
 }
 
-:deep(.failed-row:hover) {
-  background-color: #fde2e2 !important;
+.tech-table :deep(.el-table__header-wrapper .el-table__header) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px 12px !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+/* 表格头部发光效果 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.6) 50%, 
+    transparent 100%);
+  opacity: 0.8;
+}
+
+/* 表格主体样式 - 参考用户列表的行设计 */
+.tech-table :deep(.el-table__body-wrapper) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__body) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+}
+
+/* 交替行颜色 - 创建微妙的斑马纹效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
+  background: rgba(25, 35, 55, 0.6) !important;
+}
+
+/* 悬停效果 - 参考用户列表的交互效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+
+/* 单元格样式 - 参考用户列表的单元格设计 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  background: transparent !important;
+  padding: 14px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 特殊行样式 - 错误/警告行的深色主题适配 */
+.tech-table :deep(.error-row) {
+  background: rgba(220, 20, 60, 0.15) !important;
+}
+
+.tech-table :deep(.warning-row) {
+  background: rgba(255, 193, 7, 0.15) !important;
+}
+
+.tech-table :deep(.failed-row) {
+  background: rgba(220, 20, 60, 0.15) !important;
+}
+
+.tech-table :deep(.error-row:hover) {
+  background: rgba(220, 20, 60, 0.25) !important;
+}
+
+.tech-table :deep(.warning-row:hover) {
+  background: rgba(255, 193, 7, 0.25) !important;
+}
+
+.tech-table :deep(.failed-row:hover) {
+  background: rgba(220, 20, 60, 0.25) !important;
+}
+
+/* 移除所有可能的白色边框 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+}
+
+/* 边框控制 */
+.tech-table :deep(.el-table--border td) {
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table--border th) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-table :deep(td:last-child),
+.tech-table :deep(th:last-child) {
+  border-right: none !important;
+}
+
+/* Element Plus 组件深色主题 */
+/* 表单标签 */
+:deep(.el-form-item__label) {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+
+/* 输入框 */
+:deep(.el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 选择器 */
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+}
+
+:deep(.el-select .el-input__inner) {
+  color: #ffffff !important;
+}
+
+:deep(.el-select .el-input__suffix) {
+  color: rgba(0, 255, 255, 0.7) !important;
+}
+
+/* 选择器下拉面板 */
+:deep(.el-select-dropdown) {
+  background: linear-gradient(135deg,
+    rgba(15, 25, 45, 0.95) 0%,
+    rgba(20, 30, 50, 0.95) 100%) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown__item) {
+  background: transparent !important;
+  color: #ffffff !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-select-dropdown__item.is-selected) {
+  background: rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+  font-weight: 600 !important;
+}
+
+/* 日期选择器 */
+:deep(.el-date-editor) {
+  --el-input-bg-color: rgba(20, 30, 50, 0.6) !important;
+  --el-input-border-color: rgba(0, 255, 255, 0.2) !important;
+  --el-input-text-color: #ffffff !important;
+  --el-input-hover-border-color: rgba(0, 255, 255, 0.4) !important;
+  --el-input-focus-border-color: #00ffff !important;
+}
+
+:deep(.el-date-editor .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 按钮 */
+:deep(.el-button) {
+  --el-button-bg-color: rgba(20, 30, 50, 0.8) !important;
+  --el-button-border-color: rgba(0, 255, 255, 0.3) !important;
+  --el-button-text-color: #ffffff !important;
+  --el-button-hover-bg-color: rgba(0, 255, 255, 0.2) !important;
+  --el-button-hover-border-color: #00ffff !important;
+  --el-button-hover-text-color: #00ffff !important;
+}
+
+:deep(.el-button--primary) {
+  --el-button-bg-color: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 200, 255, 0.3)) !important;
+  --el-button-border-color: #00ffff !important;
+  --el-button-text-color: #00ffff !important;
+  --el-button-hover-bg-color: linear-gradient(135deg, rgba(0, 255, 255, 0.5), rgba(0, 200, 255, 0.5)) !important;
+}
+
+:deep(.el-button--small) {
+  --el-button-size: 24px !important;
+}
+
+/* 按钮组 */
+:deep(.el-button-group .el-button) {
+  border-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 标签 */
+:deep(.el-tag) {
+  background: rgba(0, 255, 255, 0.15) !important;
+  border-color: rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-tag--success) {
+  background: rgba(103, 194, 58, 0.15) !important;
+  border-color: rgba(103, 194, 58, 0.3) !important;
+  color: #67c23a !important;
+}
+
+:deep(.el-tag--warning) {
+  background: rgba(230, 162, 60, 0.15) !important;
+  border-color: rgba(230, 162, 60, 0.3) !important;
+  color: #e6a23c !important;
+}
+
+:deep(.el-tag--danger) {
+  background: rgba(245, 108, 108, 0.15) !important;
+  border-color: rgba(245, 108, 108, 0.3) !important;
+  color: #f56c6c !important;
+}
+
+:deep(.el-tag--info) {
+  background: rgba(144, 147, 153, 0.15) !important;
+  border-color: rgba(144, 147, 153, 0.3) !important;
+  color: #909399 !important;
+}
+
+/* 分页 */
+:deep(.el-pagination) {
+  --el-pagination-bg-color: transparent !important;
+  --el-pagination-text-color: #ffffff !important;
+  --el-pagination-border-color: rgba(0, 255, 255, 0.2) !important;
+  --el-pagination-hover-color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pager li) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-pagination .el-pager li:hover) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pager li.is-active) {
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 200, 255, 0.3)) !important;
+  color: #00ffff !important;
+  border-color: #00ffff !important;
+}
+
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-pagination .btn-prev:hover),
+:deep(.el-pagination .btn-next:hover) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+/* 对话框 */
+:deep(.el-dialog) {
+  background: linear-gradient(135deg,
+    rgba(15, 25, 45, 0.95) 0%,
+    rgba(20, 30, 50, 0.95) 50%,
+    rgba(15, 25, 45, 0.95) 100%) !important;
+  border: 2px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 16px !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(0, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-dialog__header) {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  padding: 20px !important;
+}
+
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-dialog__body) {
+  background: transparent !important;
+  color: #ffffff !important;
+  padding: 20px !important;
+}
+
+/* 描述列表 */
+:deep(.el-descriptions) {
+  --el-descriptions-table-border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  --el-descriptions-item-bordered-label-background: rgba(20, 30, 50, 0.8) !important;
+}
+
+:deep(.el-descriptions__table) {
+  background: transparent !important;
+}
+
+:deep(.el-descriptions__cell) {
+  background: rgba(20, 30, 50, 0.4) !important;
+  color: #ffffff !important;
+  border-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-descriptions__label) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  color: #00ffff !important;
+  font-weight: 600 !important;
+}
+
+/* 进度条 */
+:deep(.el-progress) {
+  --el-progress-bg-color: rgba(20, 30, 50, 0.6) !important;
+}
+
+:deep(.el-progress__text) {
+  color: #ffffff !important;
+}
+
+/* 结果组件 */
+:deep(.el-result__title) {
+  color: #ffffff !important;
+}
+
+:deep(.el-result__subtitle) {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Loading 遮罩 */
+:deep(.el-loading-mask) {
+  background-color: rgba(15, 25, 45, 0.8) !important;
+}
+
+:deep(.el-loading-text) {
+  color: #00ffff !important;
 }
 
 /* 响应式设计 */
