@@ -98,13 +98,12 @@
       <div class="custom-table" v-loading="boardLoading">
         <!-- 表格头部 -->
         <div class="table-header">
-          <div class="header-cell expand-cell"></div>
           <div class="header-cell id-cell">设备ID</div>
           <div class="header-cell name-cell">设备名称</div>
           <div class="header-cell number-cell">设备编号</div>
           <div class="header-cell ip-cell">设备IP</div>
           <div class="header-cell status-cell">设备状态</div>
-          <div class="header-cell firmware-cell">固件版本</div>
+          <div class="header-cell stream-status-cell">推流状态</div>
           <div class="header-cell camera-cell">绑定摄像机</div>
           <div class="header-cell action-cell">操作</div>
         </div>
@@ -117,16 +116,7 @@
             class="table-row-wrapper"
           >
             <!-- 主行 -->
-            <div class="table-row" :class="{ 'expanded': expandedRows.has(row.ID || row.id) }">
-              <div class="body-cell expand-cell">
-                <button
-                  class="expand-btn"
-                  @click="toggleExpand(row)"
-                  :class="{ 'expanded': expandedRows.has(row.ID || row.id) }"
-                >
-                  <span class="expand-icon">▶</span>
-                </button>
-              </div>
+            <div class="table-row">
               <div class="body-cell id-cell">{{ row.ID || row.id || 'N/A' }}</div>
               <div class="body-cell name-cell">{{ row.DeviceName || row.device_name || 'N/A' }}</div>
               <div class="body-cell number-cell">{{ row.DeviceNumber || row.device_number || 'N/A' }}</div>
@@ -136,7 +126,11 @@
                   {{ getStatusText(row.DeviceStatus || row.device_status) }}
                 </span>
               </div>
-              <div class="body-cell firmware-cell">{{ row.FirmwareVersion || row.firmware_version || 'N/A' }}</div>
+              <div class="body-cell stream-status-cell">
+                <span class="status-tag" :class="getStreamStatusClass(row.StreamStatus || row.stream_status)">
+                  {{ getStreamStatusText(row.StreamStatus || row.stream_status) }}
+                </span>
+              </div>
               <div class="body-cell camera-cell">
                 <span v-if="row.BoundCameraName || row.bound_camera_name" class="camera-tag bound">
                   {{ row.BoundCameraName || row.bound_camera_name }}
@@ -150,99 +144,12 @@
                 <button class="action-btn edit-btn" @click="editBoard(row)">
                   <i class="btn-icon">✏</i>编辑
                 </button>
-                <button class="action-btn bind-btn" @click="showBindCamera(row)">
-                  <i class="btn-icon">🔗</i>绑定
+                <button class="action-btn stream-btn" @click="showStreamInfo(row)">
+                  <i class="btn-icon">📺</i>流信息
                 </button>
                 <button class="action-btn delete-btn" @click="deleteBoard(row)">
                   <i class="btn-icon">🗑</i>删除
                 </button>
-              </div>
-            </div>
-
-            <!-- 展开行 -->
-            <div v-if="expandedRows.has(row.ID || row.id)" class="expanded-row">
-              <div class="device-detail-panel">
-                <div class="detail-title">
-                  <i class="detail-icon">🔧</i>
-                  设备详细信息
-                </div>
-                <div class="detail-grid">
-                  <div class="detail-group">
-                    <h4>基础信息</h4>
-                    <div class="detail-item">
-                      <span class="label">设备ID:</span>
-                      <span class="value">{{ row.ID || row.id || 'N/A' }}</span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">设备名称:</span>
-                      <span class="value">{{ row.DeviceName || row.device_name || 'N/A' }}</span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">设备编号:</span>
-                      <span class="value">{{ row.DeviceNumber || row.device_number || 'N/A' }}</span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">设备IP:</span>
-                      <span class="value">{{ row.DeviceIP || row.device_ip || 'N/A' }}</span>
-                    </div>
-                  </div>
-
-                  <div class="detail-group">
-                    <h4>连接配置</h4>
-                    <div class="detail-item">
-                      <span class="label">RTSP端口:</span>
-                      <span class="value">{{ row.RtspPort || row.rtsp_port || 'N/A' }}</span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">RTSP路径:</span>
-                      <span class="value">{{ row.RtspPath || row.rtsp_path || 'N/A' }}</span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">绑定摄像机:</span>
-                      <span class="value">{{ row.BoundCameraName || row.bound_camera_name || '未绑定' }}</span>
-                    </div>
-                  </div>
-
-                  <div class="detail-group">
-                    <h4>算法信息</h4>
-                    <div class="detail-item">
-                      <span class="label">模型类型:</span>
-                      <span class="value">{{ row.AlgorithmModelType || row.algorithm_model_type || 'N/A' }}</span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">模型版本:</span>
-                      <span class="value">{{ row.AlgorithmModelVersion || row.algorithm_model_version || 'N/A' }}</span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">固件版本:</span>
-                      <span class="value">{{ row.FirmwareVersion || row.firmware_version || 'N/A' }}</span>
-                    </div>
-                  </div>
-
-                  <div class="detail-group">
-                    <h4>状态信息</h4>
-                    <div class="detail-item">
-                      <span class="label">设备状态:</span>
-                      <span class="value status" :class="getStatusClass(row.DeviceStatus || row.device_status)">
-                        {{ getStatusText(row.DeviceStatus || row.device_status) }}
-                      </span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">流状态:</span>
-                      <span class="value status" :class="getStatusClass(row.StreamStatus || row.stream_status)">
-                        {{ getStatusText(row.StreamStatus || row.stream_status) }}
-                      </span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">创建时间:</span>
-                      <span class="value">{{ formatTime(row.CreatedAt || row.created_at) }}</span>
-                    </div>
-                    <div class="detail-item">
-                      <span class="label">更新时间:</span>
-                      <span class="value">{{ formatTime(row.UpdatedAt || row.updated_at) }}</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
@@ -376,6 +283,39 @@
               </el-input>
         </el-form-item>
           </div>
+          
+          <div class="form-section">
+            <h3 class="section-title">摄像机绑定配置</h3>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="绑定摄像机">
+                  <el-select 
+                    v-model="boardForm.cameraId" 
+                    placeholder="请选择要绑定的摄像机" 
+                    style="width: 100%" 
+                    filterable
+                    clearable
+                    class="tech-select">
+                <el-option
+                  v-for="camera in cameraList"
+                  :key="camera.cameraId"
+                  :label="`${camera.deviceName} (${camera.ipAddress})`"
+                  :value="camera.cameraId">
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="摄像机名称">
+                  <el-input 
+                    v-model="boardForm.cameraName" 
+                    placeholder="请输入摄像机显示名称"
+                    class="tech-input">
+                  </el-input>
+            </el-form-item>
+          </el-col>
+        </el-row>
+          </div>
       </el-form>
       </div>
       <template #footer>
@@ -391,58 +331,189 @@
       </template>
     </el-dialog>
 
-    <!-- 摄像机绑定对话框 -->
+
+    <!-- 流信息对话框 -->
     <el-dialog 
-      v-model="bindCameraDialogVisible" 
-      title="摄像机绑定配置" 
-      width="700px"
+      v-model="streamInfoDialogVisible" 
+      title="设备流信息" 
+      width="800px"
       class="tech-dialog"
       :modal-class="'tech-modal'"
       destroy-on-close>
-      <div class="dialog-content">
-        <el-form :model="bindForm" :rules="bindRules" ref="bindFormRef" label-width="120px" class="tech-form">
-          <div class="form-section">
-            <h3 class="section-title">绑定配置</h3>
-        <el-form-item label="板卡设备">
-              <el-input 
-                :model-value="currentBoardForBinding?.DeviceName || currentBoardForBinding?.device_name" 
-                readonly 
-                class="tech-input readonly">
-              </el-input>
-        </el-form-item>
-        <el-form-item label="选择摄像机" prop="cameraId">
-              <el-select 
-                v-model="bindForm.cameraId" 
-                placeholder="请选择要绑定的摄像机" 
-                style="width: 100%" 
-                filterable
-                class="tech-select">
-            <el-option
-              v-for="camera in cameraList"
-              :key="camera.cameraId"
-              :label="`${camera.deviceName} (${camera.ipAddress})`"
-              :value="camera.cameraId">
-            </el-option>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="摄像机名称">
-              <el-input 
-                v-model="bindForm.cameraName" 
-                placeholder="请输入摄像机显示名称"
-                class="tech-input">
-              </el-input>
-        </el-form-item>
+      <div class="dialog-content" v-loading="streamInfoLoading">
+        <div class="stream-info-panel">
+          <div class="info-section">
+            <h3 class="section-title">流基本信息</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="label">流ID:</span>
+                <span class="value">{{ streamInfo.stream_id || 'N/A' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">推流状态:</span>
+                <span class="value" :class="getStreamStatusClass(streamInfo.status)">
+                  {{ getStreamStatusText(streamInfo.status) }}
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="label">开始时间:</span>
+                <span class="value">{{ formatTime(streamInfo.start_time) }}</span>
+              </div>
+              <div class="info-item">
+                <span class="label">最后活跃:</span>
+                <span class="value">{{ formatTime(streamInfo.last_active_time) }}</span>
+              </div>
+            </div>
           </div>
-      </el-form>
+          
+          <div class="info-section" v-if="streamInfo.play_urls && Object.keys(streamInfo.play_urls).length > 0">
+            <h3 class="section-title">播放地址</h3>
+            <div class="play-urls-list">
+              <div 
+                v-for="(url, type) in streamInfo.play_urls" 
+                :key="type" 
+                class="url-item">
+                <div class="url-type">{{ type.toUpperCase() }}:</div>
+                <div class="url-content">
+                  <code class="url-code">{{ url }}</code>
+                  <button class="copy-btn" @click="copyToClipboard(url)">复制</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="info-section" v-else>
+            <h3 class="section-title">播放地址</h3>
+            <div class="no-data">
+              <p>暂无播放地址</p>
+            </div>
+          </div>
+        </div>
       </div>
       <template #footer>
         <div class="dialog-footer-actions">
-          <el-button class="tech-button cancel" @click="bindCameraDialogVisible = false">
-            取消绑定
+          <el-button class="tech-button" @click="refreshStreamInfo" :loading="streamInfoLoading">
+            刷新信息
           </el-button>
-          <el-button class="tech-button primary" @click="saveCameraBinding" :loading="bindSaving">
-            <span v-if="!bindSaving">确认绑定</span>
-            <span v-else>正在绑定...</span>
+          <el-button class="tech-button cancel" @click="streamInfoDialogVisible = false">
+            关闭
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 设备详情对话框 -->
+    <el-dialog 
+      v-model="deviceDetailDialogVisible" 
+      title="设备详细信息" 
+      width="900px"
+      class="tech-dialog"
+      :modal-class="'tech-modal'"
+      destroy-on-close>
+      <div class="dialog-content" v-loading="deviceDetailLoading">
+        <div class="device-full-detail-panel">
+          <div class="detail-section">
+            <h3 class="section-title">基础设备信息</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">设备ID:</span>
+                <span class="value">{{ deviceDetail.id || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">设备名称:</span>
+                <span class="value">{{ deviceDetail.deviceName || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">设备编号:</span>
+                <span class="value">{{ deviceDetail.deviceNumber || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">设备IP:</span>
+                <span class="value">{{ deviceDetail.deviceIP || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">设备型号:</span>
+                <span class="value">{{ deviceDetail.model || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">厂商:</span>
+                <span class="value">{{ deviceDetail.manufacturer || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="detail-section">
+            <h3 class="section-title">状态与配置</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">设备状态:</span>
+                <span class="value" :class="getStatusClass(deviceDetail.deviceStatus)">
+                  {{ getStatusText(deviceDetail.deviceStatus) }}
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="label">推流状态:</span>
+                <span class="value" :class="getStreamStatusClass(deviceDetail.streamStatus)">
+                  {{ getStreamStatusText(deviceDetail.streamStatus) }}
+                </span>
+              </div>
+              <div class="detail-item">
+                <span class="label">固件版本:</span>
+                <span class="value">{{ deviceDetail.firmwareVersion || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">RTSP端口:</span>
+                <span class="value">{{ deviceDetail.rtspPort || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">RTSP路径:</span>
+                <span class="value">{{ deviceDetail.rtspPath || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">序列号:</span>
+                <span class="value">{{ deviceDetail.serialNumber || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="detail-section">
+            <h3 class="section-title">绑定与算法信息</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">绑定摄像机:</span>
+                <span class="value">{{ deviceDetail.boundCameraName || '未绑定' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">算法模型类型:</span>
+                <span class="value">{{ deviceDetail.algorithmModelType || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">算法模型版本:</span>
+                <span class="value">{{ deviceDetail.algorithmModelVersion || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">安装位置:</span>
+                <span class="value">{{ deviceDetail.location || 'N/A' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">创建时间:</span>
+                <span class="value">{{ formatTime(deviceDetail.createdAt) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">更新时间:</span>
+                <span class="value">{{ formatTime(deviceDetail.updatedAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer-actions">
+          <el-button class="tech-button" @click="refreshDeviceDetail" :loading="deviceDetailLoading">
+            刷新信息
+          </el-button>
+          <el-button class="tech-button cancel" @click="deviceDetailDialogVisible = false">
+            关闭
           </el-button>
         </div>
       </template>
@@ -462,8 +533,6 @@ import { deviceApi } from '@/api/device'
 const boardLoading = ref(false)
 const boardStatsLoading = ref(false)
 
-// 展开行管理
-const expandedRows = ref(new Set())
 
 // 板卡对话框状态
 const boardDialogVisible = ref(false)
@@ -471,20 +540,56 @@ const boardDialogTitle = ref('添加智能板卡')
 const editingBoardId = ref(null)
 const boardSaving = ref(false)
 
-// 绑定对话框状态
-const bindCameraDialogVisible = ref(false)
-const bindSaving = ref(false)
-const currentBoardForBinding = ref(null)
+
+// 流信息对话框状态
+const streamInfoDialogVisible = ref(false)
+const streamInfoLoading = ref(false)
+const currentBoardForStream = ref(null)
+
+// 设备详情对话框状态
+const deviceDetailDialogVisible = ref(false)
+const deviceDetailLoading = ref(false)
+const currentBoardForDetail = ref(null)
 
 // 摄像机列表
 const cameraList = ref([])
+
+// 流信息数据
+const streamInfo = reactive({
+  stream_id: '',
+  status: '',
+  start_time: '',
+  last_active_time: '',
+  play_urls: {}
+})
+
+// 设备详情数据
+const deviceDetail = reactive({
+  id: '',
+  deviceName: '',
+  deviceNumber: '',
+  deviceIP: '',
+  model: '',
+  manufacturer: '',
+  deviceStatus: '',
+  streamStatus: '',
+  firmwareVersion: '',
+  rtspPort: '',
+  rtspPath: '',
+  serialNumber: '',
+  boundCameraName: '',
+  algorithmModelType: '',
+  algorithmModelVersion: '',
+  location: '',
+  createdAt: '',
+  updatedAt: ''
+})
 
 // 板卡数据
 const boardList = ref([])
 
 // 表单引用
 const boardFormRef = ref()
-const bindFormRef = ref()
 
 // 板卡搜索表单
 const boardSearchForm = reactive({
@@ -504,14 +609,11 @@ const boardForm = reactive({
   model: '',
   location: '',
   serialNumber: '',
-  firmwareVersion: ''
-})
-
-// 绑定表单
-const bindForm = reactive({
+  firmwareVersion: '',
   cameraId: '',
   cameraName: ''
 })
+
 
 // 板卡分页
 const boardPagination = reactive({
@@ -589,27 +691,12 @@ const boardRules = {
   port: [{ required: true, message: '请输入通信端口', trigger: 'blur' }]
 }
 
-const bindRules = {
-  cameraId: [{ required: true, message: '请选择摄像机', trigger: 'change' }],
-  cameraName: [{ required: true, message: '请输入摄像机名称', trigger: 'blur' }]
-}
 
 // 生命周期
 onMounted(() => {
   getBoardList()
 })
 
-// ==================== 展开/折叠功能 ====================
-
-// 切换行展开状态
-const toggleExpand = (row) => {
-  const rowId = row.ID || row.id
-  if (expandedRows.value.has(rowId)) {
-    expandedRows.value.delete(rowId)
-  } else {
-    expandedRows.value.add(rowId)
-  }
-}
 
 // ==================== 板卡管理方法 ====================
 
@@ -620,6 +707,7 @@ const getBoardList = async () => {
     
     // 检查认证状态
     const token = localStorage.getItem('token')
+    console.log('当前Token状态:', token ? '已设置' : '未设置')
     if (!token) {
       ElMessage.error('请先登录')
       return
@@ -637,6 +725,7 @@ const getBoardList = async () => {
     }
     
     console.log('API请求参数:', apiParams)
+    console.log('请求URL: /api/v1/algorithm/boards')
     const response = await deviceApi.getBoardList(apiParams)
     
     console.log('板卡API响应:', response)
@@ -736,13 +825,125 @@ const showAddBoard = () => {
     model: '',
     location: '',
     serialNumber: '',
-    firmwareVersion: ''
+    firmwareVersion: '',
+    cameraId: '',
+    cameraName: ''
   })
+  // 获取摄像机列表
+  getCameraList()
 }
 
 // 查看板卡详情
-const viewBoardDetail = (board) => {
-  ElMessage.info(`查看板卡详情：${board.DeviceName || board.device_name}`)
+const viewBoardDetail = async (board) => {
+  try {
+    currentBoardForDetail.value = board
+    deviceDetailDialogVisible.value = true
+    deviceDetailLoading.value = true
+    
+    const boardId = board.ID || board.id
+    console.log('正在获取设备详情...', boardId)
+    
+    const response = await deviceApi.getBoardDetail(boardId)
+    
+    if (response && response.code === 200) {
+      const detail = response.data
+      Object.assign(deviceDetail, {
+        id: detail.ID || detail.id || '',
+        deviceName: detail.DeviceName || detail.device_name || '',
+        deviceNumber: detail.DeviceNumber || detail.device_number || '',
+        deviceIP: detail.DeviceIP || detail.device_ip || '',
+        model: detail.model || detail.device_model || '',
+        manufacturer: detail.manufacturer || detail.vendor || '',
+        deviceStatus: detail.DeviceStatus || detail.device_status || '',
+        streamStatus: detail.StreamStatus || detail.stream_status || '',
+        firmwareVersion: detail.FirmwareVersion || detail.firmware_version || '',
+        rtspPort: detail.RtspPort || detail.rtsp_port || '',
+        rtspPath: detail.RtspPath || detail.rtsp_path || '',
+        serialNumber: detail.serialNumber || detail.serial_number || detail.sn || '',
+        boundCameraName: detail.BoundCameraName || detail.bound_camera_name || '',
+        algorithmModelType: detail.AlgorithmModelType || detail.algorithm_model_type || '',
+        algorithmModelVersion: detail.AlgorithmModelVersion || detail.algorithm_model_version || '',
+        location: detail.location || detail.install_location || '',
+        createdAt: detail.CreatedAt || detail.created_at || '',
+        updatedAt: detail.UpdatedAt || detail.updated_at || ''
+      })
+    } else {
+      ElMessage.error('获取设备详情失败')
+    }
+  } catch (error) {
+    console.error('获取设备详情错误:', error)
+    ElMessage.error('获取设备详情失败：' + error.message)
+  } finally {
+    deviceDetailLoading.value = false
+  }
+}
+
+// 显示流信息对话框
+const showStreamInfo = async (board) => {
+  try {
+    currentBoardForStream.value = board
+    streamInfoDialogVisible.value = true
+    streamInfoLoading.value = true
+    
+    const boardId = board.ID || board.id
+    console.log('正在获取流信息...', boardId)
+    
+    const response = await deviceApi.getBoardStreamInfo(boardId)
+    
+    if (response && response.code === 200) {
+      const stream = response.data
+      Object.assign(streamInfo, {
+        stream_id: stream.stream_id || '',
+        status: stream.status || '',
+        start_time: stream.start_time || '',
+        last_active_time: stream.last_active_time || '',
+        play_urls: stream.play_urls || {}
+      })
+    } else {
+      ElMessage.error('获取流信息失败')
+    }
+  } catch (error) {
+    console.error('获取流信息错误:', error)
+    ElMessage.error('获取流信息失败：' + error.message)
+  } finally {
+    streamInfoLoading.value = false
+  }
+}
+
+// 刷新流信息
+const refreshStreamInfo = () => {
+  if (currentBoardForStream.value) {
+    showStreamInfo(currentBoardForStream.value)
+  }
+}
+
+// 刷新设备详情
+const refreshDeviceDetail = () => {
+  if (currentBoardForDetail.value) {
+    viewBoardDetail(currentBoardForDetail.value)
+  }
+}
+
+// 复制到剪贴板
+const copyToClipboard = async (text) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制到剪贴板')
+  } catch (error) {
+    console.error('复制失败:', error)
+    // 降级方案
+    const textArea = document.createElement('textarea')
+    textArea.value = text
+    document.body.appendChild(textArea)
+    textArea.select()
+    try {
+      document.execCommand('copy')
+      ElMessage.success('已复制到剪贴板')
+    } catch (fallbackError) {
+      ElMessage.error('复制失败')
+    }
+    document.body.removeChild(textArea)
+  }
 }
 
 // 显示编辑板卡对话框
@@ -759,8 +960,12 @@ const editBoard = (board) => {
     model: board.model || board.device_model || '',
     location: board.location || board.install_location || '',
     serialNumber: board.serialNumber || board.serial_number || board.sn || '',
-    firmwareVersion: board.FirmwareVersion || board.firmware_version || ''
+    firmwareVersion: board.FirmwareVersion || board.firmware_version || '',
+    cameraId: board.BoundCameraID || board.bound_camera_id || '',
+    cameraName: board.BoundCameraName || board.bound_camera_name || ''
   })
+  // 获取摄像机列表
+  getCameraList()
 }
 
 // 保存板卡
@@ -865,17 +1070,6 @@ const deleteBoard = async (board) => {
   }
 }
 
-// 显示绑定摄像机对话框
-const showBindCamera = (board) => {
-  currentBoardForBinding.value = board
-  bindCameraDialogVisible.value = true
-  Object.assign(bindForm, {
-    cameraId: board.BoundCameraID || board.bound_camera_id || '',
-    cameraName: board.BoundCameraName || board.bound_camera_name || ''
-  })
-  // 获取摄像机列表
-  getCameraList()
-}
 
 // 获取摄像机列表
 const getCameraList = async () => {
@@ -910,26 +1104,6 @@ const getCameraList = async () => {
   }
 }
 
-// 保存摄像机绑定
-const saveCameraBinding = async () => {
-  try {
-    bindSaving.value = true
-
-    const response = await deviceApi.bindBoardToCamera(currentBoardForBinding.value.boardId, bindForm)
-    if (response.data && response.data.code === 200) {
-      ElMessage.success('摄像机绑定成功')
-      bindCameraDialogVisible.value = false
-      getBoardList()
-    } else {
-      ElMessage.error(response.data?.message || '绑定摄像机失败')
-    }
-  } catch (error) {
-    console.error('绑定摄像机错误:', error)
-    ElMessage.error('绑定摄像机失败：' + error.message)
-  } finally {
-    bindSaving.value = false
-  }
-}
 
 
 // 固件升级
@@ -1015,6 +1189,36 @@ const getStatusClass = (status) => {
     '离线': 'offline',
     '错误': 'error',
     'connected': 'online',
+    'disconnected': 'offline',
+    'active': 'online',
+    'inactive': 'offline'
+  }
+  return classMap[status] || 'offline'
+}
+
+// 获取推流状态文本
+const getStreamStatusText = (status) => {
+  const textMap = {
+    'streaming': '推流中',
+    'stopped': '已停止',
+    'error': '推流错误',
+    'paused': '已暂停',
+    'connecting': '连接中',
+    'disconnected': '已断开',
+    'active': '推流中',
+    'inactive': '已停止'
+  }
+  return textMap[status] || status || '未知'
+}
+
+// 获取推流状态样式类
+const getStreamStatusClass = (status) => {
+  const classMap = {
+    'streaming': 'online',
+    'stopped': 'offline',
+    'error': 'error',
+    'paused': 'offline',
+    'connecting': 'online',
     'disconnected': 'offline',
     'active': 'online',
     'inactive': 'offline'
@@ -1414,7 +1618,7 @@ const getStatusClass = (status) => {
 /* 表格头部 */
 .table-header {
   display: grid;
-  grid-template-columns: 60px 80px 1fr 150px 150px 100px 120px 150px 280px;
+  grid-template-columns: 80px 1fr 150px 150px 100px 120px 150px 280px;
   background: rgba(20, 30, 50, 0.8);
   border-bottom: 1px solid rgba(0, 255, 255, 0.2);
 }
@@ -1448,7 +1652,7 @@ const getStatusClass = (status) => {
 
 .table-row {
   display: grid;
-  grid-template-columns: 60px 80px 1fr 150px 150px 100px 120px 150px 280px;
+  grid-template-columns: 80px 1fr 150px 150px 100px 120px 150px 280px;
   transition: all 0.3s ease;
   background: rgba(15, 25, 45, 0.95);
 }
@@ -1472,38 +1676,6 @@ const getStatusClass = (status) => {
   border-right: none;
 }
 
-/* 展开按钮 */
-.expand-cell {
-  justify-content: center;
-}
-
-.expand-btn {
-  background: transparent;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  color: #00ffff;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.expand-btn:hover {
-  background: rgba(0, 255, 255, 0.1);
-  border-color: rgba(0, 255, 255, 0.5);
-}
-
-.expand-icon {
-  transition: transform 0.3s ease;
-  font-size: 12px;
-}
-
-.expand-btn.expanded .expand-icon {
-  transform: rotate(90deg);
-}
 
 /* ID单元格 */
 .id-cell {
@@ -1561,10 +1733,9 @@ const getStatusClass = (status) => {
   border: 1px solid rgba(255, 255, 0, 0.3);
 }
 
-/* 固件版本 */
-.firmware-cell {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
+/* 推流状态 */
+.stream-status-cell {
+  justify-content: center;
 }
 
 /* 摄像机标签 */
@@ -1632,14 +1803,14 @@ const getStatusClass = (status) => {
   border-color: rgba(0, 255, 0, 0.6);
 }
 
-.bind-btn {
-  color: #ffff00;
-  border-color: rgba(255, 255, 0, 0.4);
+.stream-btn {
+  color: #00bfff;
+  border-color: rgba(0, 191, 255, 0.4);
 }
 
-.bind-btn:hover {
-  background: rgba(255, 255, 0, 0.1);
-  border-color: rgba(255, 255, 0, 0.6);
+.stream-btn:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-color: rgba(0, 191, 255, 0.6);
 }
 
 .delete-btn {
@@ -1652,23 +1823,6 @@ const getStatusClass = (status) => {
   border-color: rgba(255, 107, 107, 0.6);
 }
 
-/* 展开行 */
-.expanded-row {
-  background: rgba(20, 30, 50, 0.6);
-  border-top: 1px solid rgba(0, 255, 255, 0.2);
-  animation: expandAnimation 0.3s ease-out;
-}
-
-@keyframes expandAnimation {
-  from {
-    opacity: 0;
-    max-height: 0;
-  }
-  to {
-    opacity: 1;
-    max-height: 500px;
-  }
-}
 
 /* 分页组件样式 */
 .flex-center {
@@ -1891,6 +2045,152 @@ const getStatusClass = (status) => {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
+}
+
+/* ==================== 流信息面板样式 ==================== */
+.stream-info-panel {
+  background: rgba(20, 30, 50, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.info-section {
+  margin-bottom: 25px;
+  padding: 15px;
+  background: rgba(15, 25, 45, 0.8);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.info-section:last-child {
+  margin-bottom: 0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.info-item:last-child {
+  border-bottom: none;
+}
+
+.info-item .label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  min-width: 90px;
+}
+
+.info-item .value {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: right;
+}
+
+.info-item .value.online {
+  color: #00ff00;
+}
+
+.info-item .value.offline {
+  color: #ff4500;
+}
+
+.info-item .value.error {
+  color: #ffff00;
+}
+
+/* 播放地址列表样式 */
+.play-urls-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.url-item {
+  background: rgba(15, 25, 45, 0.8);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.url-type {
+  color: #00ffff;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 8px;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
+}
+
+.url-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.url-code {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  word-break: break-all;
+}
+
+.copy-btn {
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  color: #00ffff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.copy-btn:hover {
+  background: rgba(0, 255, 255, 0.2);
+  border-color: rgba(0, 255, 255, 0.6);
+}
+
+.no-data {
+  text-align: center;
+  padding: 20px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ==================== 设备详情面板样式 ==================== */
+.device-full-detail-panel {
+  background: rgba(20, 30, 50, 0.6);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.detail-section {
+  margin-bottom: 25px;
+  padding: 15px;
+  background: rgba(15, 25, 45, 0.8);
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.detail-section:last-child {
+  margin-bottom: 0;
 }
 
 /* ==================== 视图控制 ==================== */
