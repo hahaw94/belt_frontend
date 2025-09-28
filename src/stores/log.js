@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { logAPI } from '@/api/log'
+import { logApi } from '@/api/log'
 
 /**
  * 日志管理Store
@@ -123,7 +123,7 @@ export const useLogStore = defineStore('log', () => {
         ...params
       }
       
-      const response = await logAPI.getLogs(queryParams)
+      const response = await logApi.getSystemLogs(queryParams)
       if (response.success) {
         logs.value = response.body.logs
         pagination.value.total = response.body.total
@@ -150,7 +150,7 @@ export const useLogStore = defineStore('log', () => {
     exportProgress.value.message = '开始导出日志...'
     
     try {
-      const response = await logAPI.exportLogs({
+      const response = await logApi.exportLogs({
         ...filters.value,
         ...exportParams
       }, (progress) => {
@@ -185,7 +185,7 @@ export const useLogStore = defineStore('log', () => {
    */
   const fetchLogStatistics = async (params = {}) => {
     try {
-      const response = await logAPI.getLogStatistics(params)
+      const response = await logApi.getLogStatistics(params)
       if (response.success) {
         statistics.value = response.body
         return response

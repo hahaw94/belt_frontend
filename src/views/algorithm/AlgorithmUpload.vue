@@ -336,8 +336,11 @@ const getAlgorithmList = async () => {
     const response = await algorithmApi.getAlgorithmList()
     console.log('算法上传页面API响应:', response)
     if (response.success) {
-      algorithmList.value = response.body.algorithms || []
-      pagination.total = response.body.total || 0
+      // 适配新的响应格式
+      const algorithms = response.data?.algorithms || response.body?.algorithms || []
+      const total = response.data?.total || response.body?.total || 0
+      algorithmList.value = algorithms
+      pagination.total = total
       console.log('算法上传页面数据:', algorithmList.value)
     } else {
       ElMessage.error(response.message || '获取算法列表失败')

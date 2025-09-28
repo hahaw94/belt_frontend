@@ -744,15 +744,25 @@ onMounted(() => {
 const getAlgorithmList = async () => {
   try {
     const response = await algorithmApi.getAlgorithmList()
-    console.log('算法API响应:', response)
+    console.log('🔍 算法API完整响应:', response)
+    console.log('🔍 response.data:', response.data)
+    console.log('🔍 response.data.algorithms:', response.data?.algorithms)
+    console.log('🔍 response.body:', response.body)
+    
     if (response.success) {
-      algorithmList.value = response.body.algorithms || []
-      console.log('算法列表数据:', algorithmList.value)
+      // 适配新的响应格式
+      const algorithms = response.data?.algorithms || response.body?.algorithms || []
+      console.log('🎯 提取的算法数据:', algorithms)
+      console.log('🎯 算法数据长度:', algorithms.length)
+      
+      algorithmList.value = algorithms
+      console.log('✅ 最终设置的算法列表:', algorithmList.value)
     } else {
+      console.error('❌ API响应失败:', response)
       ElMessage.error(response.message || '获取算法列表失败')
     }
   } catch (error) {
-    console.error('算法API错误:', error)
+    console.error('❌ 算法API错误:', error)
     ElMessage.error('获取算法列表失败：' + error.message)
   }
 }
@@ -760,16 +770,23 @@ const getAlgorithmList = async () => {
 const getAnalysisCards = async () => {
   try {
     const response = await algorithmApi.getAnalysisCards()
-    console.log('分析板卡API响应:', response)
+    console.log('🔍 分析板卡API完整响应:', response)
+    console.log('🔍 response.data:', response.data)
+    console.log('🔍 response.data.analysis_cards:', response.data?.analysis_cards)
+    
     if (response.success) {
-      analysisCards.value = response.body.analysis_cards || []
-      console.log('分析板卡数据:', analysisCards.value)
+      // 适配新的响应格式
+      const cards = response.data?.analysis_cards || response.body?.analysis_cards || []
+      console.log('🎯 提取的分析板卡数据:', cards)
+      console.log('🎯 分析板卡数据长度:', cards.length)
+      
+      analysisCards.value = cards
+      console.log('✅ 最终设置的分析板卡列表:', analysisCards.value)
     } else {
-      ElMessage.error(response.message || '获取分析板卡失败')
+      console.error('❌ 分析板卡API响应失败:', response)
     }
   } catch (error) {
-    console.error('分析板卡API错误:', error)
-    ElMessage.error('获取分析板卡失败：' + error.message)
+    console.error('❌ 分析板卡API错误:', error)
   }
 }
 

@@ -5,6 +5,9 @@
         <div class="card-header">
           <span>录像管理</span>
                            <div class="header-actions">
+                   <el-button type="info" @click="testMockData" size="small">
+                     🧪 测试Mock
+                   </el-button>
                    <el-button type="success" @click="manualRefresh" :loading="loading">
                      <el-icon><Refresh /></el-icon>
                      手动刷新
@@ -360,13 +363,19 @@ const getAlarmTypeColor = (type) => {
 
 // 加载录像列表
 const loadRecordingList = async () => {
-
+  console.log('🎯 开始加载录像列表...')
   loading.value = true
   try {
     // 设置搜索条件 - 确保时间格式正确
-    const filters = {
-      device_id: searchForm.device_id ? parseInt(searchForm.device_id) : null,
-      alarm_type: searchForm.alarm_type || null
+    const filters = {}
+    
+    // 只有非空值才添加到过滤条件
+    if (searchForm.device_id && searchForm.device_id !== '') {
+      filters.device_id = parseInt(searchForm.device_id)
+    }
+    
+    if (searchForm.alarm_type && searchForm.alarm_type !== '') {
+      filters.alarm_type = searchForm.alarm_type
     }
     
     // 处理时间范围，确保格式正确
@@ -379,6 +388,7 @@ const loadRecordingList = async () => {
       }
     }
     
+    console.log('🎯 录像列表过滤条件:', filters)
 
     recordingStore.setFilters(filters)
 
@@ -391,14 +401,14 @@ const loadRecordingList = async () => {
     // 使用store加载数据
     await recordingStore.fetchRecordings()
     
-
+    console.log('🎯 录像列表加载完成，数据数量:', recordingStore.recordings.length)
     
     // 更新本地数据
     recordingList.value = recordingStore.recordings
     pagination.total = recordingStore.pagination.total
   } catch (error) {
-
-    ElMessage.error('加载录像列表失败')
+    console.error('🎯 录像列表加载失败:', error)
+    ElMessage.error('加载录像列表失败: ' + error.message)
   } finally {
     loading.value = false
   }
@@ -913,6 +923,27 @@ const cleanupOldRecordings = async () => {
     if (error !== 'cancel') {
       ElMessage.error('清理操作失败')
     }
+  }
+}
+
+// 测试Mock数据
+const testMockData = async () => {
+  console.log('🧪 开始测试录像Mock数据...')
+  ElMessage.info('正在测试Mock数据，请查看控制台输出')
+  
+  try {
+    // 导入测试函数
+    const { testRecordingMock } = await import('@/test-recording-mock')
+    const result = await testRecordingMock()
+    
+    if (result) {
+      ElMessage.success('Mock数据测试成功！请查看控制台详细输出')
+    } else {
+      ElMessage.error('Mock数据测试失败！请查看控制台错误信息')
+    }
+  } catch (error) {
+    console.error('测试失败:', error)
+    ElMessage.error('测试执行失败：' + error.message)
   }
 }
 

@@ -306,11 +306,10 @@ const getAnalysisCards = async () => {
       analysisCards.value = response.body.analysis_cards || []
       console.log('设备详情页分析板卡数据:', analysisCards.value)
     } else {
-      ElMessage.error(response.message || '获取分析板卡失败')
+      console.error('设备详情页分析板卡API响应失败:', response)
     }
   } catch (error) {
     console.error('设备详情页分析板卡API错误:', error)
-    ElMessage.error('获取分析板卡失败：' + error.message)
   }
 }
 

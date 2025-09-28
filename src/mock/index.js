@@ -6,9 +6,10 @@ import { deviceMockData } from './modules/device'
 import { statisticsMockData } from './modules/statistics'
 import { logMockData } from './modules/log'
 import { dashboardMockData } from './modules/dashboard'
-import { algorithmMockData } from './modules/algorithm'
+import { algorithmMockData, analysisCardMockData } from './modules/algorithm'
 import { detectionMockData } from './modules/detection'
 import { eventMockData } from './modules/event'
+import { recordingMockData } from './modules/recording'
 
 
 
@@ -29,8 +30,10 @@ export function setupMock(axiosInstance) {
     setupDeviceMock(mock)
     console.log('✓ 设备管理Mock已注册')
     
+    console.log('🔧 开始注册算法管理Mock...')
     setupAlgorithmMock(mock)
     console.log('✓ 算法管理Mock已注册')
+    console.log('🔧 算法Mock数据初始化检查:', algorithmMockData.getAllAlgorithms())
     
     // setupUserMock(mock) // 已禁用，直接调用后端API
     // console.log('✓ 用户管理Mock已注册')
@@ -40,6 +43,8 @@ export function setupMock(axiosInstance) {
     setupDashboardMock(mock)
     setupDetectionMock(mock)
     setupEventMock(mock)
+    setupRecordingMock(mock)
+    console.log('✓ 录像管理Mock已注册')
 
     
     console.log('✓ 所有Mock模块已注册')
@@ -216,16 +221,13 @@ function setupDeviceMock(mock) {
 
   // 获取智能分析板卡列表
   mock.onGet('/api/devices/analysis-cards').reply(() => {
-    const analysisCards = deviceMockData.getAnalysisCards()
+    // 使用算法模块中更丰富的分析板卡数据
+    const analysisCardsData = analysisCardMockData.getAllAnalysisCards()
     
     return [200, {
-      error: 0,
-      body: {
-        analysis_cards: analysisCards,
-        total: analysisCards.length
-      },
+      code: 200,
       message: '获取分析板卡列表成功',
-      success: true
+      data: analysisCardsData
     }]
   })
 
@@ -553,11 +555,14 @@ function setupDashboardMock(mock) {
 function setupAlgorithmMock(mock) {
   // 获取算法列表
   mock.onGet('/api/algorithms').reply(() => {
+    console.log('🎯 算法Mock拦截器被调用: /api/algorithms')
+    const data = algorithmMockData.getAllAlgorithms()
+    console.log('🎯 算法Mock返回数据:', data)
+    
     return [200, {
-      error: 0,
-      body: algorithmMockData.getAllAlgorithms(),
+      code: 200,
       message: '获取算法列表成功',
-      success: true
+      data: data
     }]
   })
 
@@ -742,7 +747,7 @@ function setupAlgorithmMock(mock) {
     }]
   })
 
-  // 注意：分析卡和摄像机列表接口已在设备管理Mock中定义，这里不重复定义以避免冲突
+  // 注意：分析板卡相关接口已在设备管理Mock中统一处理，避免重复定义
 }
 
 /**
@@ -872,6 +877,256 @@ function setupEventMock(mock) {
       },
       message: '获取点位列表成功',
       success: true
+    }]
+  })
+}
+
+/**
+ * 录像管理Mock
+ */
+function setupRecordingMock(mock) {
+  // 获取录像列表
+  mock.onPost('/api/recordings/list').reply(config => {
+    console.log('🎯 录像Mock拦截器被调用: /api/recordings/list')
+    
+    const params = JSON.parse(config.data || '{}')
+    const page = parseInt(params.page) || 1
+    const pageSize = parseInt(params.page_size) || 10
+    
+    console.log('📋 录像列表请求参数:', params)
+    
+    // 构建过滤条件
+    const filters = {}
+    if (params.device_id) filters.device_id = params.device_id
+    if (params.alarm_type) filters.alarm_type = params.alarm_type
+    if (params.start_time) filters.start_time = params.start_time
+    if (params.end_time) filters.end_time = params.end_time
+    if (params.keyword) filters.keyword = params.keyword
+    
+    const result = recordingMockData.getPaginatedRecordings(filters, page, pageSize)
+    
+    console.log('📋 录像Mock返回数据:', {
+      recordingsCount: result.recordings.length,
+      total: result.total,
+      page: result.page,
+      pageSize: result.page_size
+    })
+    
+    return [200, {
+      code: 200,
+      message: '获取录像列表成功',
+      data: {
+        recordings: result.recordings,
+        pagination: {
+          page: result.page,
+          page_size: result.page_size,
+          total: result.total,
+          total_pages: result.total_pages
+        }
+      },
+      success: true
+    }]
+  })
+
+  // 获取录像播放地址
+  mock.onGet(/\/api\/recordings\/[^/]+\/play/).reply(config => {
+    const recordingId = config.url.match(/\/api\/recordings\/([^/]+)\/play/)[1]
+    console.log('🎯 录像播放Mock拦截器被调用:', recordingId)
+    
+    const recording = recordingMockData.getRecordingById(recordingId)
+    
+    if (!recording) {
+      return [404, {
+        error: 6001,
+        body: {},
+        message: '录像文件不存在',
+        success: false
+      }]
+    }
+
+    // 生成模拟播放URL
+    const baseUrl = 'http://localhost:8080'
+    const playUrls = {
+      mp4: `${baseUrl}/api/recordings/stream/${recordingId}/mp4`,
+      hls: `${baseUrl}/api/recordings/stream/${recordingId}/hls`,
+      download: `${baseUrl}/api/recordings/download/${recordingId}`
+    }
+
+    return [200, {
+      error: 0,
+      body: {
+        play_urls: playUrls,
+        recording_info: {
+          id: recording.id,
+          device_name: recording.device_name,
+          alarm_type: recording.alarm_type,
+          duration: recording.duration,
+          resolution: recording.resolution,
+          fps: recording.fps,
+          file_size: recording.file_size
+        }
+      },
+      message: '获取播放地址成功',
+      success: true
+    }]
+  })
+
+  // 上传录像文件
+  mock.onPost('/api/recordings/upload').reply(() => {
+    console.log('🎯 录像上传Mock拦截器被调用')
+    
+    // 模拟上传延迟
+    return new Promise(resolve => {
+      setTimeout(() => {
+        const newRecording = recordingMockData.addRecording({
+          device_id: Math.floor(Math.random() * 12) + 1,
+          device_name: '上传设备',
+          alarm_type: '手动上传',
+          filename: 'uploaded_video.mp4'
+        })
+
+        resolve([200, {
+          error: 0,
+          body: {
+            recording_id: newRecording.id,
+            message: '录像上传成功'
+          },
+          message: '录像上传成功',
+          success: true
+        }])
+      }, 1000) // 模拟1秒上传时间
+    })
+  })
+
+  // 删除录像文件
+  mock.onDelete(/\/api\/recordings\/[^/]+$/).reply(config => {
+    const recordingId = config.url.match(/\/api\/recordings\/([^/]+)$/)[1]
+    console.log('🎯 录像删除Mock拦截器被调用:', recordingId)
+    
+    const success = recordingMockData.deleteRecording(recordingId)
+    
+    return [200, {
+      error: success ? 0 : 6001,
+      body: {},
+      message: success ? '录像删除成功' : '录像文件不存在',
+      success
+    }]
+  })
+
+  // 下载录像文件
+  mock.onGet(/\/api\/recordings\/download\/[^/]+/).reply(config => {
+    const recordingId = config.url.match(/\/api\/recordings\/download\/([^/]+)/)[1]
+    console.log('🎯 录像下载Mock拦截器被调用:', recordingId)
+    
+    const recording = recordingMockData.getRecordingById(recordingId)
+    
+    if (!recording) {
+      return [404, {
+        error: 6001,
+        body: {},
+        message: '录像文件不存在',
+        success: false
+      }]
+    }
+
+    // 模拟下载文件
+    const mockFileContent = `Mock录像文件内容 - ${recording.device_name} - ${recording.alarm_type}`
+    
+    return [200, new Blob([mockFileContent], { 
+      type: 'video/mp4' 
+    }), {
+      'Content-Disposition': `attachment; filename="${recording.device_name}_${recording.alarm_type}_${recording.start_time}.mp4"`
+    }]
+  })
+
+  // 获取录像统计信息
+  mock.onGet('/api/recordings/statistics').reply(() => {
+    console.log('🎯 录像统计Mock拦截器被调用')
+    
+    const statistics = recordingMockData.getStatistics()
+    
+    return [200, {
+      code: 200,
+      message: '获取录像统计成功',
+      data: {
+        statistics: statistics,
+        device_options: recordingMockData.getDeviceOptions(),
+        alarm_types: recordingMockData.getAlarmTypes()
+      },
+      success: true
+    }]
+  })
+
+  // 清理过期录像
+  mock.onPost('/api/recordings/cleanup').reply(config => {
+    console.log('🎯 录像清理Mock拦截器被调用')
+    
+    const { days_to_keep = 90 } = JSON.parse(config.data || '{}')
+    const cleanedCount = recordingMockData.cleanupOldRecordings(days_to_keep)
+    
+    return [200, {
+      error: 0,
+      body: {
+        cleaned_count: cleanedCount,
+        remaining_count: recordingMockData.getAllRecordings().length
+      },
+      message: `成功清理 ${cleanedCount} 条过期录像`,
+      success: true
+    }]
+  })
+
+  // 获取录像流（用于视频播放）
+  mock.onGet(/\/api\/recordings\/stream\/[^/]+\/[^/]+/).reply(config => {
+    const matches = config.url.match(/\/api\/recordings\/stream\/([^/]+)\/([^/]+)/)
+    const recordingId = matches[1]
+    const format = matches[2]
+    
+    console.log('🎯 录像流Mock拦截器被调用:', { recordingId, format })
+    
+    const recording = recordingMockData.getRecordingById(recordingId)
+    
+    if (!recording) {
+      return [404, {
+        error: 6001,
+        body: {},
+        message: '录像文件不存在',
+        success: false
+      }]
+    }
+
+    // 根据格式返回相应的mock数据
+    if (format === 'mp4') {
+      // 返回模拟的MP4视频流
+      const mockVideoData = new ArrayBuffer(1024 * 1024) // 1MB的mock数据
+      return [200, mockVideoData, {
+        'Content-Type': 'video/mp4',
+        'Content-Length': mockVideoData.byteLength.toString(),
+        'Accept-Ranges': 'bytes'
+      }]
+    } else if (format === 'hls') {
+      // 返回HLS播放列表
+      const hlsPlaylist = `#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-TARGETDURATION:10
+#EXT-X-MEDIA-SEQUENCE:0
+#EXTINF:9.009,
+segment0.ts
+#EXTINF:9.009,
+segment1.ts
+#EXTINF:9.009,
+segment2.ts
+#EXT-X-ENDLIST`
+      
+      return [200, hlsPlaylist, {
+        'Content-Type': 'application/vnd.apple.mpegurl'
+      }]
+    }
+
+    return [400, {
+      error: 6002,
+      body: {},
+      message: '不支持的流格式',
+      success: false
     }]
   })
 }

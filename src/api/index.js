@@ -54,14 +54,18 @@ request.interceptors.response.use(
       return response // 直接返回原始响应，保留blob数据
     }
     
-    // 根据后端响应格式处理 {code: 200, message: "success", data: {...}, total?, page?, size?}
-    if (res.code === 200) {
+    // 根据后端响应格式处理，支持两种格式：
+    // 1. {code: 200, message: "success", data: {...}, total?, page?, size?}
+    // 2. {error: 0, body: {...}, message: "...", success: true} (Mock格式)
+    if (res.code === 200 || res.error === 0) {
       // 成功响应，保留完整的响应信息包括分页数据
       return {
-        code: res.code,
+        code: res.code || 200,
         success: true,
         message: res.message,
         data: res.data || {},
+        // 处理Mock格式的body字段
+        body: res.body || res.data || {},
         // 保留分页信息
         total: res.total,
         page: res.page,
@@ -72,8 +76,13 @@ request.interceptors.response.use(
         pageSize: res.pageSize
       }
     } else {
-      // 显示错误消息
-      ElMessage.error(res.message || '请求失败')
+      // 检查消息内容，如果包含"成功"字样，使用成功提示，否则使用错误提示
+      const message = res.message || '请求失败'
+      if (message.includes('成功')) {
+        ElMessage.success(message)
+      } else {
+        ElMessage.error(message)
+      }
       
       // 处理特定错误码
       switch (res.code) {
@@ -235,6 +244,12 @@ export const updateBaseURL = (newPort) => {
 // 获取当前baseURL的方法
 export const getAxiosBaseURL = () => {
   return request.defaults.baseURL
+}
+
+// Mock拦截器配置
+if (process.env.NODE_ENV === 'development') {
+  const { setupMock } = require('../mock')
+  setupMock(request)
 }
 
 // 默认导出request实例，以便其他地方使用

@@ -1,6 +1,7 @@
 // Mock拦截器测试文件
 import { deviceApi } from './api/device'
 import { algorithmApi } from './api/algorithm'
+import { recordingApi } from './api/recording'
 
 // 测试函数
 export async function testMockInterceptors() {
@@ -25,11 +26,18 @@ export async function testMockInterceptors() {
     console.log('✓ 分析板卡API响应:', cardsResponse)
     console.log(`✓ 分析板卡数量: ${cardsResponse.body?.analysis_cards?.length || 0}`)
     
+    // 测试录像API
+    console.log('测试录像API...')
+    const recordingResponse = await recordingApi.getRecordingList({ page: 1, page_size: 5 })
+    console.log('✓ 录像API响应:', recordingResponse)
+    console.log(`✓ 录像数据数量: ${recordingResponse.data?.recordings?.length || 0}`)
+    
     console.log('🎉 所有Mock拦截器测试通过！')
     console.log('📊 数据统计:')
     console.log(`  - 设备数据: ${deviceResponse.body?.total || 0} 台`)
     console.log(`  - 算法数据: ${algorithmResponse.body?.total || 0} 个`)
     console.log(`  - 分析板卡: ${cardsResponse.body?.analysis_cards?.length || 0} 个`)
+    console.log(`  - 录像数据: ${recordingResponse.data?.pagination?.total || 0} 条`)
     console.log('💡 注意: 登录、用户管理、角色管理已使用真实后端接口')
     
     return true

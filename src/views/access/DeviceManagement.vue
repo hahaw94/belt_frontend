@@ -765,7 +765,6 @@ const getBoardList = async () => {
       boardPagination.total = response.data?.total || response.total || rawData.length
       boardPagination.totalPages = response.data?.totalPages || response.totalPages || Math.ceil(boardPagination.total / boardPagination.pageSize)
       console.log('处理后的板卡列表数据:', boardList.value)
-      ElMessage.success(`成功获取 ${boardList.value.length} 条板卡数据`)
     } else {
       const errorMsg = response?.message || '获取板卡列表失败'
       console.error('板卡API错误响应:', response)

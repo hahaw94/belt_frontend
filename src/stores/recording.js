@@ -113,16 +113,17 @@ export const useRecordingStore = defineStore('recording', () => {
       
       if (response.success) {
         console.log('=== Store: 解析响应数据 ===', {
-          data: response.body.data,
-          total: response.body.total,
-          page: response.body.page,
-          page_size: response.body.page_size
+          data: response.data,
+          recordings: response.data?.recordings,
+          pagination: response.data?.pagination
         })
         
-        recordings.value = response.body.data || []
-        pagination.value.total = response.body.total || 0
-        pagination.value.page = response.body.page || 1
-        pagination.value.page_size = response.body.page_size || 10
+        // 根据新的API响应格式调整（使用data字段）
+        recordings.value = response.data?.recordings || []
+        const paginationData = response.data?.pagination || {}
+        pagination.value.total = paginationData.total || 0
+        pagination.value.page = paginationData.page || 1
+        pagination.value.page_size = paginationData.page_size || 10
         
         console.log('=== Store: 更新后的状态 ===', {
           recordingsCount: recordings.value.length,
@@ -284,7 +285,8 @@ export const useRecordingStore = defineStore('recording', () => {
     try {
       const response = await recordingApi.getStatistics()
       if (response.success) {
-        statistics.value = response.body
+        // 根据新的API响应格式调整（使用data字段）
+        statistics.value = response.data?.statistics || response.data || {}
         return response
       }
       throw new Error(response.message)
