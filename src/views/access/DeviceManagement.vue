@@ -139,16 +139,33 @@
               </div>
               <div class="body-cell action-cell">
                 <button class="action-btn view-btn" @click="viewBoardDetail(row)">
-                  <i class="btn-icon">👁</i>详情
+                  详情
                 </button>
                 <button class="action-btn edit-btn" @click="editBoard(row)">
-                  <i class="btn-icon">✏</i>编辑
+                  编辑
+                </button>
+                <!-- 推流控制按钮 -->
+                <button 
+                  v-if="(row.StreamStatus || row.stream_status) === 'streaming'"
+                  class="action-btn pause-btn" 
+                  @click="stopBoardStreaming(row)"
+                  :disabled="streamOperationLoading"
+                >
+                  暂停推流
+                </button>
+                <button 
+                  v-else
+                  class="action-btn start-btn" 
+                  @click="startBoardStreaming(row)"
+                  :disabled="streamOperationLoading"
+                >
+                  开始推流
                 </button>
                 <button class="action-btn stream-btn" @click="showStreamInfo(row)">
-                  <i class="btn-icon">📺</i>流信息
+                  流信息
                 </button>
                 <button class="action-btn delete-btn" @click="deleteBoard(row)">
-                  <i class="btn-icon">🗑</i>删除
+                  删除
                 </button>
               </div>
             </div>
@@ -532,6 +549,7 @@ import { deviceApi } from '@/api/device'
 // 响应式数据
 const boardLoading = ref(false)
 const boardStatsLoading = ref(false)
+const streamOperationLoading = ref(false)
 
 
 // 板卡对话框状态
@@ -1226,6 +1244,94 @@ const getStreamStatusClass = (status) => {
   return classMap[status] || 'offline'
 }
 
+// ==================== 推流控制方法 ====================
+
+// 开始板卡推流
+const startBoardStreaming = async (board) => {
+  try {
+    const boardId = board.ID || board.id
+    const boardName = board.DeviceName || board.device_name || '未知板卡'
+    
+    if (!boardId) {
+      ElMessage.error('板卡ID不存在，无法开始推流')
+      return
+    }
+    
+    streamOperationLoading.value = true
+    console.log('正在开始板卡推流...', boardId)
+    
+    const response = await deviceApi.startBoardStream(boardId)
+    
+    if (response && response.code === 200) {
+      ElMessage.success(`板卡 ${boardName} 推流启动成功`)
+      // 刷新列表以更新推流状态
+      getBoardList()
+    } else {
+      const errorMsg = response?.message || '启动推流失败'
+      ElMessage.error(`板卡 ${boardName} 启动推流失败：${errorMsg}`)
+    }
+  } catch (error) {
+    console.error('启动推流错误:', error)
+    
+    if (error.response?.status === 401) {
+      ElMessage.error('认证失败，请重新登录')
+    } else if (error.response?.status === 403) {
+      ElMessage.error('权限不足，无法控制推流')
+    } else if (error.response?.status === 404) {
+      ElMessage.error('板卡不存在或推流接口不可用')
+    } else if (error.response?.status >= 500) {
+      ElMessage.error('服务器错误，请联系管理员')
+    } else {
+      ElMessage.error(`启动推流失败：${error.message}`)
+    }
+  } finally {
+    streamOperationLoading.value = false
+  }
+}
+
+// 停止板卡推流
+const stopBoardStreaming = async (board) => {
+  try {
+    const boardId = board.ID || board.id
+    const boardName = board.DeviceName || board.device_name || '未知板卡'
+    
+    if (!boardId) {
+      ElMessage.error('板卡ID不存在，无法停止推流')
+      return
+    }
+    
+    streamOperationLoading.value = true
+    console.log('正在停止板卡推流...', boardId)
+    
+    const response = await deviceApi.stopBoardStream(boardId)
+    
+    if (response && response.code === 200) {
+      ElMessage.success(`板卡 ${boardName} 推流已停止`)
+      // 刷新列表以更新推流状态
+      getBoardList()
+    } else {
+      const errorMsg = response?.message || '停止推流失败'
+      ElMessage.error(`板卡 ${boardName} 停止推流失败：${errorMsg}`)
+    }
+  } catch (error) {
+    console.error('停止推流错误:', error)
+    
+    if (error.response?.status === 401) {
+      ElMessage.error('认证失败，请重新登录')
+    } else if (error.response?.status === 403) {
+      ElMessage.error('权限不足，无法控制推流')
+    } else if (error.response?.status === 404) {
+      ElMessage.error('板卡不存在或推流接口不可用')
+    } else if (error.response?.status >= 500) {
+      ElMessage.error('服务器错误，请联系管理员')
+    } else {
+      ElMessage.error(`停止推流失败：${error.message}`)
+    }
+  } finally {
+    streamOperationLoading.value = false
+  }
+}
+
 </script>
 
 <style scoped>
@@ -1618,7 +1724,7 @@ const getStreamStatusClass = (status) => {
 /* 表格头部 */
 .table-header {
   display: grid;
-  grid-template-columns: 80px 1fr 150px 150px 100px 120px 150px 280px;
+  grid-template-columns: 80px 1fr 150px 150px 100px 120px 150px 350px;
   background: rgba(20, 30, 50, 0.8);
   border-bottom: 1px solid rgba(0, 255, 255, 0.2);
 }
@@ -1652,7 +1758,7 @@ const getStreamStatusClass = (status) => {
 
 .table-row {
   display: grid;
-  grid-template-columns: 80px 1fr 150px 150px 100px 120px 150px 280px;
+  grid-template-columns: 80px 1fr 150px 150px 100px 120px 150px 350px;
   transition: all 0.3s ease;
   background: rgba(15, 25, 45, 0.95);
 }
@@ -1774,13 +1880,8 @@ const getStreamStatusClass = (status) => {
   font-size: 11px;
   display: flex;
   align-items: center;
-  gap: 3px;
   min-width: 50px;
   justify-content: center;
-}
-
-.btn-icon {
-  font-size: 10px;
 }
 
 .view-btn {
@@ -1821,6 +1922,38 @@ const getStreamStatusClass = (status) => {
 .delete-btn:hover {
   background: rgba(255, 107, 107, 0.1);
   border-color: rgba(255, 107, 107, 0.6);
+}
+
+.start-btn {
+  color: #00ff00;
+  border-color: rgba(0, 255, 0, 0.4);
+}
+
+.start-btn:hover {
+  background: rgba(0, 255, 0, 0.1);
+  border-color: rgba(0, 255, 0, 0.6);
+}
+
+.start-btn:disabled {
+  color: rgba(0, 255, 0, 0.5);
+  border-color: rgba(0, 255, 0, 0.2);
+  cursor: not-allowed;
+}
+
+.pause-btn {
+  color: #ffa500;
+  border-color: rgba(255, 165, 0, 0.4);
+}
+
+.pause-btn:hover {
+  background: rgba(255, 165, 0, 0.1);
+  border-color: rgba(255, 165, 0, 0.6);
+}
+
+.pause-btn:disabled {
+  color: rgba(255, 165, 0, 0.5);
+  border-color: rgba(255, 165, 0, 0.2);
+  cursor: not-allowed;
 }
 
 

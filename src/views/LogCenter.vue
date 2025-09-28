@@ -33,26 +33,130 @@
             />
           </el-form-item>
           <el-form-item label="日志级别">
-            <el-select v-model="searchForm.log_level" placeholder="请选择日志级别" clearable>
-              <el-option label="全部" value="" />
-              <el-option label="INFO" value="INFO" />
-              <el-option label="WARN" value="WARN" />
-              <el-option label="ERROR" value="ERROR" />
-              <el-option label="DEBUG" value="DEBUG" />
-            </el-select>
+            <div class="custom-select" :class="{ 'is-open': isLogLevelDropdownOpen }" @click="toggleLogLevelDropdown">
+              <div class="select-input">
+                <span class="selected-text">{{ getSelectedLogLevelName() || '请选择日志级别' }}</span>
+                <div class="select-arrow">
+                  <svg viewBox="0 0 1024 1024" width="14" height="14">
+                    <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="dropdown-menu" v-show="isLogLevelDropdownOpen">
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': !searchForm.log_level }"
+                  @click.stop="selectLogLevel('')"
+                >
+                  全部
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.log_level === 'INFO' }"
+                  @click.stop="selectLogLevel('INFO')"
+                >
+                  INFO
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.log_level === 'WARN' }"
+                  @click.stop="selectLogLevel('WARN')"
+                >
+                  WARN
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.log_level === 'ERROR' }"
+                  @click.stop="selectLogLevel('ERROR')"
+                >
+                  ERROR
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.log_level === 'DEBUG' }"
+                  @click.stop="selectLogLevel('DEBUG')"
+                >
+                  DEBUG
+                </div>
+              </div>
+            </div>
           </el-form-item>
           <el-form-item label="功能模块">
-            <el-select v-model="searchForm.module" placeholder="请选择功能模块" clearable>
-              <el-option label="全部" value="" />
-              <el-option label="用户管理" value="UserManagement" />
-              <el-option label="设备管理" value="DeviceManagement" />
-              <el-option label="算法配置" value="AlgorithmConfig" />
-              <el-option label="实时检测" value="Detection" />
-              <el-option label="事件中心" value="EventCenter" />
-              <el-option label="系统配置" value="SystemConfig" />
-              <el-option label="录像管理" value="RecordingManagement" />
-              <el-option label="统计分析" value="StatisticsAnalysis" />
-            </el-select>
+            <div class="custom-select" :class="{ 'is-open': isModuleDropdownOpen }" @click="toggleModuleDropdown">
+              <div class="select-input">
+                <span class="selected-text">{{ getSelectedModuleName() || '请选择功能模块' }}</span>
+                <div class="select-arrow">
+                  <svg viewBox="0 0 1024 1024" width="14" height="14">
+                    <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="dropdown-menu" v-show="isModuleDropdownOpen">
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': !searchForm.module }"
+                  @click.stop="selectModule('')"
+                >
+                  全部
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.module === 'UserManagement' }"
+                  @click.stop="selectModule('UserManagement')"
+                >
+                  用户管理
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.module === 'DeviceManagement' }"
+                  @click.stop="selectModule('DeviceManagement')"
+                >
+                  设备管理
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.module === 'AlgorithmConfig' }"
+                  @click.stop="selectModule('AlgorithmConfig')"
+                >
+                  算法配置
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.module === 'Detection' }"
+                  @click.stop="selectModule('Detection')"
+                >
+                  实时检测
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.module === 'EventCenter' }"
+                  @click.stop="selectModule('EventCenter')"
+                >
+                  事件中心
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.module === 'SystemConfig' }"
+                  @click.stop="selectModule('SystemConfig')"
+                >
+                  系统配置
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.module === 'RecordingManagement' }"
+                  @click.stop="selectModule('RecordingManagement')"
+                >
+                  录像管理
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.module === 'StatisticsAnalysis' }"
+                  @click.stop="selectModule('StatisticsAnalysis')"
+                >
+                  统计分析
+                </div>
+              </div>
+            </div>
           </el-form-item>
           <el-form-item label="用户名">
             <el-input 
@@ -63,11 +167,39 @@
             />
           </el-form-item>
           <el-form-item label="操作结果">
-            <el-select v-model="searchForm.result" placeholder="请选择操作结果" clearable>
-              <el-option label="全部" value="" />
-              <el-option label="成功" value="成功" />
-              <el-option label="失败" value="失败" />
-            </el-select>
+            <div class="custom-select" :class="{ 'is-open': isResultDropdownOpen }" @click="toggleResultDropdown">
+              <div class="select-input">
+                <span class="selected-text">{{ getSelectedResultName() || '请选择操作结果' }}</span>
+                <div class="select-arrow">
+                  <svg viewBox="0 0 1024 1024" width="14" height="14">
+                    <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="dropdown-menu" v-show="isResultDropdownOpen">
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': !searchForm.result }"
+                  @click.stop="selectResult('')"
+                >
+                  全部
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.result === '成功' }"
+                  @click.stop="selectResult('成功')"
+                >
+                  成功
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.result === '失败' }"
+                  @click.stop="selectResult('失败')"
+                >
+                  失败
+                </div>
+              </div>
+            </div>
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
@@ -142,15 +274,15 @@
       </div>
 
       <!-- 日志列表 -->
-      <div class="tech-table">
+      <div class="tech-table" style="border: none !important; outline: none !important; box-shadow: none !important;">
       <el-table 
         v-loading="loading" 
         :data="logList" 
-        style="width: 100%"
+        style="width: 100%; border: none !important; outline: none !important; box-shadow: none !important;"
         :row-class-name="getRowClassName"
         @row-click="viewLogDetail"
-          stripe
-          border
+        :border="false"
+        :show-overflow-tooltip="false"
       >
         <el-table-column type="expand">
           <template #default="props">
@@ -283,7 +415,7 @@
 </template>
 
 <script setup name="LogCenter">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { logApi } from '@/api/log'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Refresh } from '@element-plus/icons-vue'
@@ -294,6 +426,11 @@ const exportDialogVisible = ref(false)
 const exportProgress = ref(0)
 const exportCompleted = ref(false)
 const quickFilter = ref('all')
+
+// 下拉菜单控制
+const isLogLevelDropdownOpen = ref(false)
+const isModuleDropdownOpen = ref(false)
+const isResultDropdownOpen = ref(false)
 
 // 搜索表单
 const searchForm = reactive({
@@ -528,8 +665,93 @@ const downloadExportedFile = () => {
   exportDialogVisible.value = false
 }
 
+// 下拉菜单相关方法
+const toggleLogLevelDropdown = () => {
+  isLogLevelDropdownOpen.value = !isLogLevelDropdownOpen.value
+  isModuleDropdownOpen.value = false
+  isResultDropdownOpen.value = false
+}
+
+const toggleModuleDropdown = () => {
+  isModuleDropdownOpen.value = !isModuleDropdownOpen.value
+  isLogLevelDropdownOpen.value = false
+  isResultDropdownOpen.value = false
+}
+
+const toggleResultDropdown = () => {
+  isResultDropdownOpen.value = !isResultDropdownOpen.value
+  isLogLevelDropdownOpen.value = false
+  isModuleDropdownOpen.value = false
+}
+
+const selectLogLevel = (level) => {
+  searchForm.log_level = level
+  isLogLevelDropdownOpen.value = false
+}
+
+const selectModule = (module) => {
+  searchForm.module = module
+  isModuleDropdownOpen.value = false
+}
+
+const selectResult = (result) => {
+  searchForm.result = result
+  isResultDropdownOpen.value = false
+}
+
+const getSelectedLogLevelName = () => {
+  const levelMap = {
+    '': '全部',
+    'INFO': 'INFO',
+    'WARN': 'WARN',
+    'ERROR': 'ERROR',
+    'DEBUG': 'DEBUG'
+  }
+  return levelMap[searchForm.log_level] || '请选择日志级别'
+}
+
+const getSelectedModuleName = () => {
+  const moduleMap = {
+    '': '全部',
+    'UserManagement': '用户管理',
+    'DeviceManagement': '设备管理',
+    'AlgorithmConfig': '算法配置',
+    'Detection': '实时检测',
+    'EventCenter': '事件中心',
+    'SystemConfig': '系统配置',
+    'RecordingManagement': '录像管理',
+    'StatisticsAnalysis': '统计分析'
+  }
+  return moduleMap[searchForm.module] || '请选择功能模块'
+}
+
+const getSelectedResultName = () => {
+  const resultMap = {
+    '': '全部',
+    '成功': '成功',
+    '失败': '失败'
+  }
+  return resultMap[searchForm.result] || '请选择操作结果'
+}
+
+// 点击外部关闭下拉菜单
+const handleClickOutside = (event) => {
+  const customSelects = event.target.closest('.custom-select')
+  if (!customSelects) {
+    isLogLevelDropdownOpen.value = false
+    isModuleDropdownOpen.value = false
+    isResultDropdownOpen.value = false
+  }
+}
+
 onMounted(() => {
+  // 添加点击外部关闭下拉菜单的事件监听
+  document.addEventListener('click', handleClickOutside)
   loadLogList()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -878,6 +1100,265 @@ onMounted(() => {
   border-right: none !important;
 }
 
+/* 强制移除表格所有边框 - 最强力的边框移除 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__body-wrapper),
+.tech-table :deep(.el-table__footer-wrapper),
+.tech-table :deep(.el-table__header),
+.tech-table :deep(.el-table__body),
+.tech-table :deep(.el-table__footer) {
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  outline: none !important;
+}
+
+/* 移除表格底部可能的分隔线 */
+.tech-table :deep(.el-table__inner-wrapper::after),
+.tech-table :deep(.el-table__body-wrapper::after),
+.tech-table :deep(.el-table::after) {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+}
+
+/* 彻底移除表格的所有可能边框线 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+}
+
+.tech-table :deep(.el-table--border::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table--border::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__cell) {
+  border: none !important;
+  border-bottom: none !important;
+  border-right: none !important;
+}
+
+.tech-table :deep(.el-table .cell) {
+  border: none !important;
+}
+
+/* 强制移除最后一行的底边框 */
+.tech-table :deep(.el-table__body tr:last-child td) {
+  border-bottom: none !important;
+}
+
+/* 移除可能的表格外边框 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+}
+
+/* 移除固定列可能的边框 */
+.tech-table :deep(.el-table__fixed) {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 最强力的边框移除 - 覆盖所有Element Plus内部样式 */
+.tech-table :deep(.el-table) * {
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  box-shadow: none !important;
+}
+
+/* 移除所有可能的分隔线和边框 */
+.tech-table :deep(.el-table__row) {
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__row:last-child) {
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table tbody tr:last-child td) {
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table thead tr th) {
+  border-bottom: none !important;
+}
+
+/* 移除表格容器的所有边框属性 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table-wrapper),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+/* 强制重置所有边框相关的CSS属性 */
+.tech-table :deep(.el-table) {
+  border-top-width: 0 !important;
+  border-bottom-width: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+  border-style: none !important;
+  outline: none !important;
+}
+
+/* 移除可能存在的底部分隔符 */
+.tech-table :deep(.el-table__append-wrapper) {
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__placeholder) {
+  border: none !important;
+}
+
+/* 终极白线移除方案 - 针对所有可能的边框来源 */
+.tech-table :deep(.el-table) {
+  box-shadow: none !important;
+  border-collapse: collapse !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper) {
+  box-shadow: none !important;
+  border-collapse: collapse !important;
+}
+
+/* 移除表格周围可能的容器边框 */
+.tech-table {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* 强制移除所有可能的底部边框线 */
+.tech-table :deep(.el-table__footer),
+.tech-table :deep(.el-table__footer-wrapper),
+.tech-table :deep(.el-table__footer *) {
+  border: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+/* 移除表格最后一行可能的边框 */
+.tech-table :deep(.el-table tbody),
+.tech-table :deep(.el-table tbody tr:last-of-type),
+.tech-table :deep(.el-table tbody tr:last-of-type td),
+.tech-table :deep(.el-table__body tr:last-of-type),
+.tech-table :deep(.el-table__body tr:last-of-type td) {
+  border-bottom: none !important;
+  border: none !important;
+}
+
+/* 移除可能的表格外包装边框 */
+.tech-table :deep(.el-table-wrapper),
+.tech-table :deep(.el-table__wrapper) {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* 强制移除Element Plus可能添加的任何边框 */
+.tech-table :deep(*[class*="el-table"]) {
+  border: none !important;
+  border-bottom: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  outline: none !important;
+}
+
+/* 移除可能的分隔符和装饰性边框 */
+.tech-table :deep(.el-table)::before,
+.tech-table :deep(.el-table)::after,
+.tech-table :deep(.el-table__inner-wrapper)::before,
+.tech-table :deep(.el-table__inner-wrapper)::after,
+.tech-table :deep(.el-table__body-wrapper)::before,
+.tech-table :deep(.el-table__body-wrapper)::after {
+  display: none !important;
+  content: none !important;
+  border: none !important;
+  background: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 最强力的通用边框移除 */
+.tech-table * {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table *::before,
+.tech-table *::after {
+  border: none !important;
+  background: none !important;
+}
+
+/* 终极底部白线清除方案 */
+.tech-table {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.tech-table::after {
+  content: '' !important;
+  position: absolute !important;
+  bottom: -5px !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 10px !important;
+  background: rgba(15, 25, 45, 0.95) !important;
+  z-index: 10 !important;
+}
+
+/* 强制移除Element Plus表格的所有可能底部线条 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__body-wrapper),
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__footer-wrapper) {
+  border-bottom: none !important;
+  box-shadow: none !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__body),
+.tech-table :deep(.el-table__header),
+.tech-table :deep(.el-table__footer) {
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* 移除loading遮罩可能的边框 */
+.tech-table :deep(.el-loading-mask) {
+  border: none !important;
+  border-bottom: none !important;
+}
+
+/* 彻底移除任何可能的底部装饰线 */
+.tech-table :deep([class*="border"]),
+.tech-table :deep([class*="line"]),
+.tech-table :deep([style*="border"]) {
+  border: none !important;
+  border-bottom: none !important;
+}
+
 /* Element Plus 组件深色主题 */
 /* 表单标签 */
 :deep(.el-form-item__label) {
@@ -1034,6 +1515,14 @@ onMounted(() => {
   --el-pagination-text-color: #ffffff !important;
   --el-pagination-border-color: rgba(0, 255, 255, 0.2) !important;
   --el-pagination-hover-color: #00ffff !important;
+  background: rgba(15, 25, 45, 0.8) !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(0, 255, 255, 0.1) !important;
 }
 
 :deep(.el-pagination .el-pager li) {
@@ -1167,6 +1656,228 @@ onMounted(() => {
   
   .quick-filters {
     flex-wrap: wrap;
+  }
+}
+
+/* 自建下拉菜单样式 */
+.custom-select {
+  position: relative;
+  min-width: 200px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 100;
+}
+
+.select-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  background: rgba(20, 30, 50, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  height: 32px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.selected-text {
+  flex: 1;
+  padding: 8px 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+  transition: color 0.3s ease;
+}
+
+.select-arrow {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0088aa 0%, #005577 50%, #003344 100%);
+  border-left: 1px solid rgba(0, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.select-arrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.select-arrow svg {
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.3));
+}
+
+/* 悬停状态 */
+.custom-select:hover .select-input {
+  background: rgba(25, 35, 55, 0.9);
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2);
+}
+
+.custom-select:hover .select-arrow {
+  background: linear-gradient(135deg, #00ccff 0%, #0077aa 50%, #004466 100%);
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.6),
+    0 0 40px rgba(0, 255, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+}
+
+.custom-select:hover .select-arrow::before {
+  opacity: 1;
+}
+
+/* 展开状态 */
+.custom-select.is-open .select-input {
+  border-color: #00ffff;
+  background: rgba(25, 35, 55, 0.95);
+  box-shadow: 
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.custom-select.is-open .select-arrow {
+  background: linear-gradient(135deg, #00ddff 0%, #0088bb 50%, #005577 100%);
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.custom-select.is-open .select-arrow svg {
+  transform: rotate(180deg);
+}
+
+/* 下拉菜单 */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(15, 25, 45, 0.98);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(15px);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1);
+  z-index: 9999;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+  margin: 2px 4px;
+  position: relative;
+  overflow: hidden;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.dropdown-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 255, 255, 0.15);
+  color: #00ffff;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2);
+}
+
+.dropdown-item:hover::before {
+  left: 100%;
+}
+
+.dropdown-item.is-selected {
+  background: rgba(0, 255, 255, 0.25);
+  color: #00ffff;
+  font-weight: 600;
+  box-shadow: 
+    0 2px 8px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.dropdown-item.is-selected::after {
+  content: '✓';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+/* 滚动条样式 */
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: rgba(20, 30, 50, 0.5);
+  border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #00ffff, #0099cc);
+  border-radius: 3px;
+  box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #00ccff, #0077aa);
+}
+
+/* 下拉菜单动画 */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 </style>

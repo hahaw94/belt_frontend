@@ -146,71 +146,20 @@
         </el-row>
       </div>
 
-      <!-- 设备录像统计 -->
-      <div class="device-statistics">
-        <el-card class="tech-card" shadow="never">
-          <template #header>
-            <span>各设备录像统计</span>
-          </template>
-          <el-table :data="deviceStats" style="width: 100%">
-            <el-table-column prop="device_name" label="设备名称" />
-            <el-table-column prop="recording_count" label="录像数量" width="120" />
-            <el-table-column prop="total_size" label="总大小" width="120" />
-            <el-table-column prop="average_duration" label="平均时长" width="120" />
-            <el-table-column prop="last_recording" label="最新录像" width="180" />
-            <el-table-column label="操作" width="120">
-              <template #default="scope">
-                <el-button type="primary" size="small" @click="viewDeviceDetails(scope.row)">
-                  查看详情
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </div>
 
-      <!-- 清理历史 -->
-      <div class="cleanup-history">
-        <el-card class="tech-card" shadow="never">
-          <template #header>
-            <div class="card-header">
-              <span>清理历史</span>
-              <el-button type="danger" size="small" @click="executeCleanup">
-                <el-icon><Delete /></el-icon>
-                立即清理
-              </el-button>
-            </div>
-          </template>
-          <el-table :data="cleanupHistory" style="width: 100%">
-            <el-table-column prop="cleanup_time" label="清理时间" width="180" />
-            <el-table-column prop="files_deleted" label="删除文件数" width="120" />
-            <el-table-column prop="space_freed" label="释放空间" width="120" />
-            <el-table-column prop="status" label="状态" width="100">
-              <template #default="scope">
-                <el-tag :type="scope.row.status === '成功' ? 'success' : 'danger'" size="small">
-                  {{ scope.row.status }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="operator" label="操作员" width="120" />
-            <el-table-column prop="remarks" label="备注" />
-          </el-table>
-        </el-card>
-      </div>
     </el-card>
   </div>
 </template>
 
 <script setup name="RecordingStatistics">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { 
   VideoCamera, 
   FolderOpened, 
   Coin, 
   TrendCharts, 
-  PieChart, 
-  Delete 
+  PieChart
 } from '@element-plus/icons-vue'
 import { useRecordingStore } from '@/stores/recording'
 
@@ -233,78 +182,7 @@ const statisticsData = computed(() => {
   }
 })
 
-// 设备统计
-const deviceStats = computed(() => {
-  const deviceMap = recordingStore.recordingsByDevice
-  const stats = []
-  
-  Object.keys(deviceMap).forEach(deviceId => {
-    const recordings = deviceMap[deviceId]
-    const totalSize = recordings.reduce((sum, recording) => {
-      // 安全处理文件大小
-      let sizeInMB = 0
-      if (recording.file_size !== null && recording.file_size !== undefined) {
-        if (typeof recording.file_size === 'string') {
-          sizeInMB = parseFloat(recording.file_size.replace(' MB', '') || '0')
-        } else if (typeof recording.file_size === 'number') {
-          sizeInMB = recording.file_size
-        }
-      }
-      return sum + sizeInMB
-    }, 0)
-    
-    const averageDuration = recordings.length > 0 
-      ? (recordings.reduce((sum, recording) => {
-          const duration = typeof recording.duration === 'number' ? recording.duration : parseFloat(recording.duration) || 0
-          return sum + duration
-        }, 0) / recordings.length).toFixed(1)
-      : 0
-    
-    const lastRecording = recordings.length > 0 
-      ? recordings[0].create_time 
-      : '无录像'
-    
-    const deviceName = recordings[0]?.device_name || `设备${deviceId}`
-    
-    stats.push({
-      device_name: deviceName,
-      recording_count: recordings.length,
-      total_size: `${(totalSize / 1024).toFixed(2)} GB`,
-      average_duration: `${averageDuration}s`,
-      last_recording: lastRecording
-    })
-  })
-  
-  return stats
-})
 
-// 清理历史（这里可以考虑添加到store或者单独的API）
-const cleanupHistory = ref([
-  {
-    cleanup_time: '2024-01-15 02:00:00',
-    files_deleted: 156,
-    space_freed: '3.2 GB',
-    status: '成功',
-    operator: '系统自动',
-    remarks: '定时清理180天前的录像'
-  },
-  {
-    cleanup_time: '2024-01-10 14:30:00',
-    files_deleted: 89,
-    space_freed: '1.8 GB',
-    status: '成功',
-    operator: 'admin',
-    remarks: '手动清理指定设备录像'
-  },
-  {
-    cleanup_time: '2024-01-08 02:00:00',
-    files_deleted: 0,
-    space_freed: '0 MB',
-    status: '失败',
-    operator: '系统自动',
-    remarks: '磁盘空间不足，清理失败'
-  }
-])
 
 // 计算存储使用率
 const storageUsagePercentage = computed(() => {
@@ -340,46 +218,7 @@ const getStorageColor = () => {
   return '#F56C6C'
 }
 
-// 查看设备详情
-const viewDeviceDetails = (device) => {
-  // TODO: 实现设备录像详情查看
-  ElMessage.info(`查看 ${device.device_name} 的录像详情`)
-}
 
-// 执行清理
-const executeCleanup = async () => {
-  try {
-    await ElMessageBox.confirm(
-      '确定要立即执行录像清理操作吗？这将删除超过保留期的所有录像文件。',
-      '清理确认',
-      {
-        confirmButtonText: '确定清理',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-
-    // TODO: 调用实际的API
-    // await recordingApi.executeCleanup()
-
-    ElMessage.success('清理操作已启动，将在后台执行')
-    
-    // 模拟添加清理记录
-    const newCleanupRecord = {
-      cleanup_time: new Date().toLocaleString('zh-CN'),
-      files_deleted: Math.floor(Math.random() * 100) + 50,
-      space_freed: (Math.random() * 3 + 1).toFixed(1) + ' GB',
-      status: '成功',
-      operator: 'admin',
-      remarks: '手动执行清理操作'
-    }
-    cleanupHistory.value.unshift(newCleanupRecord)
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('清理操作失败')
-    }
-  }
-}
 
 // 加载统计数据
 const loadStatistics = async () => {

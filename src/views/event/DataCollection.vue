@@ -27,11 +27,13 @@
         </el-button>
       </div>
 
-      <el-table
-        :data="sampleList"
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-      >
+      <div class="tech-table">
+        <el-table
+          :data="sampleList"
+          style="width: 100%"
+          @selection-change="handleSelectionChange"
+          :border="false"
+        >
         <el-table-column type="selection" width="55" />
         <el-table-column type="index" width="50" />
         <el-table-column prop="time" label="时间" width="180" />
@@ -53,6 +55,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <el-pagination
         v-model:current-page="currentPage"
@@ -465,49 +468,300 @@ export default {
     inset 0 0 10px rgba(0, 255, 255, 0.1) !important;
 }
 
-:deep(.el-table) {
+/* 科技感表格 - 彻底解决白线问题 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+}
+
+/* 表格整体容器 - 彻底移除所有边框 */
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+  border-collapse: separate !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table::after) {
+  display: none !important;
+}
+
+/* 移除所有可能的白色边框和分隔线 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::before) {
+  display: none !important;
+}
+
+/* 移除表格外层的所有边框元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+}
+
+/* 强制移除Element Plus的默认边框样式 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table--border::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table--border::after) {
+  display: none !important;
+}
+
+/* 表格头部样式 - 参考联动规则管理的头部设计 */
+.tech-table :deep(.el-table__header-wrapper) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px 12px !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+/* 表格头部发光效果 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.6) 50%, 
+    transparent 100%);
+  opacity: 0.8;
+}
+
+/* 表格主体样式 - 参考联动规则管理的行设计 */
+.tech-table :deep(.el-table__body-wrapper) {
   background: transparent !important;
-  color: rgba(255, 255, 255, 0.9) !important;
 }
 
-:deep(.el-table th) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  color: #00ffff !important;
-  border-color: rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-table td) {
-  background: rgba(15, 25, 45, 0.6) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  border-color: rgba(0, 255, 255, 0.1) !important;
-}
-
-:deep(.el-table tr) {
+.tech-table :deep(.el-table__body) {
   background: transparent !important;
 }
 
-:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
-  background: rgba(20, 30, 50, 0.4) !important;
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
 }
 
-:deep(.el-table__body tr:hover td) {
-  background: rgba(0, 255, 255, 0.1) !important;
+/* 交替行颜色 - 创建微妙的斑马纹效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
 }
 
-:deep(.el-table__header-wrapper) {
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
+  background: rgba(25, 35, 55, 0.6) !important;
+}
+
+/* 悬停效果 - 参考联动规则管理的交互效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
   background: transparent !important;
+  color: rgba(255, 255, 255, 1) !important;
 }
 
-:deep(.el-table__body-wrapper) {
+/* 单元格样式 - 参考联动规则管理的单元格设计 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
   background: transparent !important;
+  padding: 14px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  position: relative !important;
 }
 
-:deep(.el-table__empty-block) {
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 彻底移除所有表格边框 - 最终解决方案 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
+  display: none !important;
+  content: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::before) {
+  display: none !important;
+  content: none !important;
+}
+
+/* 单元格边框控制 */
+.tech-table :deep(.el-table--border td) {
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border th) {
+  border: none !important;
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+/* 移除表格外围的所有可能边框 */
+.tech-table :deep(.el-table__body-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 最强力的边框移除 - 覆盖所有可能的边框样式 */
+.tech-table :deep(*) {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+}
+
+.tech-table :deep(th) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-table :deep(td:last-child),
+.tech-table :deep(th:last-child) {
+  border-right: none !important;
+}
+
+/* 移除表格容器本身的边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 空状态样式 */
+.tech-table :deep(.el-table__empty-block) {
   background: transparent !important;
+  border: none !important;
 }
 
-:deep(.el-table__empty-text) {
+.tech-table :deep(.el-table__empty-text) {
   color: rgba(255, 255, 255, 0.6) !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
 }
 
 :deep(.el-checkbox) {
@@ -565,7 +819,14 @@ export default {
 }
 
 :deep(.el-pagination) {
-  background: transparent !important;
+  background: rgba(15, 25, 45, 0.8) !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(0, 255, 255, 0.1) !important;
 }
 
 :deep(.el-pagination .btn-prev),

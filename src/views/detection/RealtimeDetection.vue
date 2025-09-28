@@ -78,11 +78,11 @@ export default {
 
 <style scoped>
 .realtime-detection {
-  padding: 16px;
-  height: calc(100vh - 100px);
+  padding: 8px;
+  height: calc(100vh - 80px);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
   overflow: hidden;
 }
 
@@ -98,7 +98,7 @@ export default {
 }
 
 .control-panel {
-  padding: 12px 16px;
+  padding: 8px 12px;
   flex-shrink: 0;
 }
 
@@ -110,28 +110,30 @@ export default {
     rgba(15, 25, 45, 0.4) 0%, 
     rgba(20, 30, 50, 0.3) 50%, 
     rgba(15, 25, 45, 0.4) 100%);
-  padding: 8px;
-  border-radius: 16px;
-  border: 2px solid rgba(0, 255, 255, 0.15);
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
   backdrop-filter: blur(8px);
   box-shadow: 
-    inset 0 0 30px rgba(0, 255, 255, 0.05),
-    0 8px 25px rgba(0, 0, 0, 0.3);
+    inset 0 0 20px rgba(0, 255, 255, 0.03),
+    0 6px 20px rgba(0, 0, 0, 0.25);
   min-height: 0;
   overflow: hidden;
+  width: 100%;
+  height: 100%;
 }
 
-/* 单屏模式 - 居中大画面 */
+/* 单屏模式 - 充满整个区域 */
 .grid-1 {
   grid-template-columns: 1fr;
-  place-items: center;
-  padding: 20px;
+  grid-template-rows: 1fr;
+  padding: 0;
 }
 
 .grid-1 .video-cell {
-  width: min(800px, 90%);
-  height: min(450px, 60vh);
-  aspect-ratio: 16/9;
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 120px);
 }
 
 /* 4分屏模式 - 2x2网格 */
@@ -141,10 +143,9 @@ export default {
 }
 
 .grid-4 .video-cell {
-  aspect-ratio: 16/9;
-  min-height: 200px;
-  max-height: min(280px, calc((100vh - 240px) / 2));
-  border-radius: 2px;
+  width: 100%;
+  height: 100%;
+  min-height: calc((100vh - 120px) / 2 - 1px);
 }
 
 /* 9分屏模式 - 3x3网格 */
@@ -154,10 +155,9 @@ export default {
 }
 
 .grid-9 .video-cell {
-  aspect-ratio: 16/9;
-  min-height: 140px;
-  max-height: min(180px, calc((100vh - 280px) / 3));
-  border-radius: 1px;
+  width: 100%;
+  height: 100%;
+  min-height: calc((100vh - 120px) / 3 - 1px);
 }
 
 /* 16分屏模式 - 4x4网格 */
@@ -167,24 +167,23 @@ export default {
 }
 
 .grid-16 .video-cell {
-  aspect-ratio: 16/9;
-  min-height: 100px;
-  max-height: min(130px, calc((100vh - 320px) / 4));
-  border-radius: 1px;
+  width: 100%;
+  height: 100%;
+  min-height: calc((100vh - 120px) / 4 - 1px);
 }
 
 .video-cell {
   background: linear-gradient(135deg, 
     rgba(0, 0, 0, 0.9) 0%, 
     rgba(10, 15, 25, 0.95) 100%);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.25);
+  border-radius: 2px;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   box-shadow: 
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    inset 0 0 15px rgba(0, 255, 255, 0.05);
+    0 1px 4px rgba(0, 0, 0, 0.2),
+    inset 0 0 8px rgba(0, 255, 255, 0.03);
 }
 
 .video-cell::before {
@@ -350,125 +349,80 @@ export default {
 
 @media (max-width: 1200px) {
   .realtime-detection {
-    padding: 12px;
-    gap: 12px;
+    padding: 6px;
+    gap: 6px;
+  }
+  
+  .control-panel {
+    padding: 6px 10px;
   }
   
   .video-grid {
-    padding: 6px;
+    padding: 1px;
     gap: 1px;
-  }
-  
-  .grid-1 .video-cell {
-    width: min(600px, 95%);
-    height: min(350px, 50vh);
-  }
-  
-  .grid-4 .video-cell {
-    max-height: min(200px, calc((100vh - 200px) / 2));
-    min-height: 150px;
-  }
-  
-  .grid-9 .video-cell {
-    max-height: min(140px, calc((100vh - 240px) / 3));
-    min-height: 100px;
-  }
-  
-  .grid-16 .video-cell {
-    max-height: min(90px, calc((100vh - 280px) / 4));
-    min-height: 80px;
   }
 }
 
 @media (max-width: 768px) {
   .realtime-detection {
-    padding: 8px;
-    height: calc(100vh - 80px);
+    padding: 4px;
+    height: calc(100vh - 70px);
+    gap: 4px;
   }
   
   .control-panel {
-    padding: 8px 12px;
+    padding: 4px 8px;
   }
   
   .video-grid {
-    padding: 4px;
+    padding: 1px;
     gap: 1px;
-  }
-  
-  /* 移动端优化分屏布局 */
-  .grid-1 .video-cell {
-    width: 100%;
-    height: min(300px, 45vh);
-  }
-  
-  .grid-4 .video-cell {
-    max-height: min(160px, calc((100vh - 160px) / 2));
-    min-height: 120px;
-  }
-  
-  .grid-9 .video-cell {
-    max-height: min(100px, calc((100vh - 200px) / 3));
-    min-height: 80px;
-  }
-  
-  .grid-16 .video-cell {
-    max-height: min(70px, calc((100vh - 240px) / 4));
-    min-height: 60px;
   }
   
   /* 移动端按钮组优化 */
   :deep(.el-button-group) {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 2px;
   }
   
   :deep(.el-button-group .el-button) {
-    font-size: 12px;
-    padding: 6px 12px;
+    font-size: 11px;
+    padding: 4px 8px;
     min-width: auto;
   }
 }
 
 @media (max-width: 480px) {
   .realtime-detection {
-    padding: 6px;
+    padding: 2px;
+    gap: 2px;
+  }
+  
+  .control-panel {
+    padding: 4px 6px;
   }
   
   .video-grid {
-    padding: 4px;
+    padding: 0;
     gap: 1px;
-  }
-  
-  .grid-1 .video-cell {
-    height: min(250px, 40vh);
-  }
-  
-  .grid-4 .video-cell {
-    max-height: min(120px, calc((100vh - 140px) / 2));
-    min-height: 90px;
-  }
-  
-  .grid-9 .video-cell {
-    max-height: min(80px, calc((100vh - 180px) / 3));
-    min-height: 60px;
-  }
-  
-  .grid-16 .video-cell {
-    max-height: min(60px, calc((100vh - 220px) / 4));
-    min-height: 50px;
   }
   
   /* 超小屏幕下的字体调整 */
   .grid-9 .video-placeholder,
   .grid-16 .video-placeholder {
-    font-size: 10px;
+    font-size: 9px;
   }
   
   .grid-9 .video-placeholder::before,
   .grid-16 .video-placeholder::before {
-    font-size: 1.2em;
-    margin-bottom: 4px;
+    font-size: 1em;
+    margin-bottom: 2px;
+  }
+  
+  :deep(.el-button-group .el-button) {
+    font-size: 10px;
+    padding: 3px 6px;
   }
 }
 </style>

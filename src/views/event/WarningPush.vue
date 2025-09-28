@@ -10,7 +10,7 @@
       </div>
       
       <div class="tech-table">
-        <el-table :data="pushRules" style="width: 100%" @row-click="handleRowClick" stripe border>
+        <el-table :data="pushRules" style="width: 100%" @row-click="handleRowClick" :border="false">
           <el-table-column type="index" width="80" label="序号" />
           <el-table-column prop="name" label="规则名称" min-width="160" show-overflow-tooltip />
           <el-table-column prop="type" label="预警类型" width="120" />
@@ -35,16 +35,6 @@
             </template>
           </el-table-column>
           <el-table-column prop="receivers" label="接收对象" min-width="140" show-overflow-tooltip />
-          <el-table-column prop="status" label="状态" width="80" align="center">
-            <template #default="{ row }">
-              <el-switch
-                v-model="row.status"
-                :active-value="true"
-                :inactive-value="false"
-                @change="handleStatusChange(row)"
-              />
-            </template>
-          </el-table-column>
           <el-table-column fixed="right" label="操作" width="140" align="center">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">
@@ -755,6 +745,57 @@ border-right: none !important;
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 终极白线移除方案 - 针对所有可能的边框来源 */
+.tech-table :deep(.el-table) {
+  box-shadow: none !important;
+  border-collapse: collapse !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper) {
+  box-shadow: none !important;
+  border-collapse: collapse !important;
+}
+
+/* 强制移除Element Plus的所有内部边框和伪元素 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__inner-wrapper *) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  outline: 0 !important;
+  outline-width: 0 !important;
+  outline-style: none !important;
+  outline-color: transparent !important;
+}
+
+/* 覆盖所有伪元素的边框 */
+.tech-table :deep(.el-table::before),
+.tech-table :deep(.el-table::after),
+.tech-table :deep(.el-table *::before),
+.tech-table :deep(.el-table *::after) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  content: none !important;
+  display: none !important;
+}
+
+/* 重新应用表格内部的细分隔线，但不显示外边框 */
+.tech-table :deep(.el-table th),
+.tech-table :deep(.el-table td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+}
+
+.tech-table :deep(.el-table th:last-child),
+.tech-table :deep(.el-table td:last-child) {
+  border-right: none !important;
 }
 
 /* 分页组件 */

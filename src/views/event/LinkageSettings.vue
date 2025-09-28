@@ -10,23 +10,13 @@
     </div>
 
       <div class="tech-table">
-        <el-table :data="ruleList" style="width: 100%" @row-click="handleRowClick" stripe border>
+        <el-table :data="ruleList" style="width: 100%" @row-click="handleRowClick" :border="false">
         <el-table-column type="index" width="80" label="序号" />
         <el-table-column prop="name" label="规则名称" min-width="160" show-overflow-tooltip />
         <el-table-column prop="type" label="告警类型" width="120" />
         <el-table-column prop="condition" label="触发条件" min-width="180" show-overflow-tooltip />
         <el-table-column prop="action" label="联动动作" width="140" />
         <el-table-column prop="target" label="执行对象" min-width="140" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="80" align="center">
-          <template #default="{ row }">
-            <el-switch
-              v-model="row.status"
-              :active-value="true"
-              :inactive-value="false"
-              @change="handleStatusChange(row)"
-            />
-          </template>
-        </el-table-column>
         <el-table-column fixed="right" label="操作" width="140" align="center">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleEdit(row)">
@@ -558,14 +548,17 @@ border-right: none !important;
   color: rgba(255, 255, 255, 1) !important;
 }
 
-/* 单元格样式 - 参考图片的单元格设计 */
+/* 单元格样式 - 高级科技感设计 */
 .tech-table :deep(.el-table__body-wrapper .el-table__body td) {
   border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
   background: transparent !important;
-  padding: 14px 12px !important;
+  padding: 16px 14px !important;
   font-size: 13px !important;
-  line-height: 1.5 !important;
+  line-height: 1.6 !important;
   position: relative !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.3px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
@@ -666,16 +659,48 @@ border-right: none !important;
   border-right: none !important;
   border-top: none !important;
   border-bottom: none !important;
+  box-shadow: none !important;
 }
 
 .tech-table :deep(td) {
   border: none !important;
   border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  box-shadow: none !important;
 }
 
 .tech-table :deep(th) {
   border: none !important;
   border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  box-shadow: none !important;
+}
+
+/* 强制重置所有可能的背景和边框 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *) {
+  background-color: transparent !important;
+  background-image: none !important;
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 重新定义表格头部背景 - 只应用到正确的元素 */
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__header-wrapper .el-table__header),
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+}
+
+/* 重新定义表格行背景 - 只应用到数据行 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
+  background: rgba(25, 35, 55, 0.6) !important;
 }
 
 .tech-table :deep(td:last-child),
@@ -689,6 +714,9 @@ border-right: none !important;
 .tech-table :deep(.el-table__inner-wrapper) {
   border: none !important;
   outline: none !important;
+}
+
+.tech-table {
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 255, 255, 0.2) !important;
@@ -707,7 +735,7 @@ border-right: none !important;
   content: none !important;
 }
 
-/* 分页组件 */
+/* 高级科技感分页组件 */
 :deep(.el-pagination) {
   --el-pagination-bg-color: transparent !important;
   --el-pagination-text-color: #ffffff !important;
@@ -716,51 +744,179 @@ border-right: none !important;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
+  padding: 20px 0 !important;
 }
 
 :deep(.el-pagination .el-pager li) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  color: #ffffff !important;
+  background: linear-gradient(135deg, 
+    rgba(20, 30, 50, 0.8) 0%,
+    rgba(25, 35, 55, 0.6) 100%) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
   border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  margin: 0 2px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(5px) !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 :deep(.el-pagination .el-pager li:hover) {
-  background: rgba(0, 255, 255, 0.2) !important;
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 255, 0.2) 0%,
+    rgba(0, 200, 255, 0.3) 100%) !important;
   color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 15px rgba(0, 255, 255, 0.2),
+    0 0 20px rgba(0, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6) !important;
 }
 
 :deep(.el-pagination .el-pager li.is-active) {
-  background: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 200, 255, 0.3)) !important;
-  color: #00ffff !important;
-  border-color: #00ffff !important;
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 255, 0.4) 0%,
+    rgba(0, 200, 255, 0.5) 50%,
+    rgba(0, 255, 255, 0.4) 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(0, 255, 255, 0.8) !important;
+  font-weight: 600 !important;
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.4),
+    0 4px 15px rgba(0, 255, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.8) !important;
 }
 
 :deep(.el-pagination .btn-prev),
 :deep(.el-pagination .btn-next) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  color: #ffffff !important;
+  background: linear-gradient(135deg, 
+    rgba(20, 30, 50, 0.8) 0%,
+    rgba(25, 35, 55, 0.6) 100%) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
   border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(5px) !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 :deep(.el-pagination .btn-prev:hover),
 :deep(.el-pagination .btn-next:hover) {
-  background: rgba(0, 255, 255, 0.2) !important;
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 255, 0.2) 0%,
+    rgba(0, 200, 255, 0.3) 100%) !important;
   color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 15px rgba(0, 255, 255, 0.2),
+    0 0 20px rgba(0, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6) !important;
 }
 
 :deep(.el-pagination .el-select .el-input__wrapper) {
-  background: rgba(20, 30, 50, 0.6) !important;
+  background: linear-gradient(135deg, 
+    rgba(20, 30, 50, 0.8) 0%,
+    rgba(25, 35, 55, 0.6) 100%) !important;
   border: 1px solid rgba(0, 255, 255, 0.2) !important;
   color: #ffffff !important;
+  border-radius: 6px !important;
+  backdrop-filter: blur(5px) !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
-/* 开关组件 */
+:deep(.el-pagination .el-select .el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 
+    0 4px 15px rgba(0, 255, 255, 0.15),
+    0 0 15px rgba(0, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+:deep(.el-pagination .el-pagination__total),
+:deep(.el-pagination .el-pagination__jump) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 500 !important;
+}
+
+/* 高级科技感开关组件 */
 :deep(.el-switch) {
   --el-switch-on-color: #00ffff !important;
-  --el-switch-off-color: rgba(100, 100, 100, 0.6) !important;
+  --el-switch-off-color: rgba(60, 70, 80, 0.8) !important;
+  --el-switch-border-color: rgba(0, 255, 255, 0.3) !important;
+  position: relative !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* 按钮组件 */
+:deep(.el-switch__core) {
+  background: linear-gradient(135deg, 
+    rgba(60, 70, 80, 0.8) 0%,
+    rgba(80, 90, 100, 0.6) 100%) !important;
+  border: 2px solid rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 
+    inset 0 2px 8px rgba(0, 0, 0, 0.3),
+    0 0 16px rgba(0, 255, 255, 0.1) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+:deep(.el-switch.is-checked .el-switch__core) {
+  background: linear-gradient(135deg, 
+    rgba(0, 200, 255, 0.8) 0%,
+    rgba(0, 255, 255, 0.9) 50%,
+    rgba(0, 220, 255, 0.8) 100%) !important;
+  border-color: rgba(0, 255, 255, 0.8) !important;
+  box-shadow: 
+    inset 0 2px 8px rgba(0, 255, 255, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.4),
+    0 0 40px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-switch__action) {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.95) 0%,
+    rgba(240, 248, 255, 0.9) 100%) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 0 12px rgba(255, 255, 255, 0.3) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+:deep(.el-switch.is-checked .el-switch__action) {
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 1) 0%,
+    rgba(240, 255, 255, 0.95) 100%) !important;
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 3px 12px rgba(0, 255, 255, 0.3),
+    0 0 16px rgba(255, 255, 255, 0.8),
+    inset 0 1px 3px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-switch:hover .el-switch__core) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 2px 8px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-switch:hover.is-checked .el-switch__core) {
+  box-shadow: 
+    inset 0 2px 8px rgba(0, 255, 255, 0.4),
+    0 0 24px rgba(0, 255, 255, 0.5),
+    0 0 48px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 科技感按钮组件 */
 :deep(.el-button) {
   --el-button-bg-color: rgba(20, 30, 50, 0.8) !important;
   --el-button-border-color: rgba(0, 255, 255, 0.3) !important;
@@ -768,20 +924,99 @@ border-right: none !important;
   --el-button-hover-bg-color: rgba(0, 255, 255, 0.2) !important;
   --el-button-hover-border-color: #00ffff !important;
   --el-button-hover-text-color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+:deep(.el-button:hover) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 15px rgba(0, 255, 255, 0.3) !important;
 }
 
 :deep(.el-button--primary) {
-  --el-button-bg-color: linear-gradient(135deg, rgba(0, 255, 255, 0.3), rgba(0, 200, 255, 0.3)) !important;
-  --el-button-border-color: #00ffff !important;
-  --el-button-text-color: #00ffff !important;
-  --el-button-hover-bg-color: linear-gradient(135deg, rgba(0, 255, 255, 0.5), rgba(0, 200, 255, 0.5)) !important;
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 255, 0.3) 0%,
+    rgba(0, 200, 255, 0.4) 50%,
+    rgba(0, 255, 255, 0.3) 100%) !important;
+  border: 1px solid rgba(0, 255, 255, 0.5) !important;
+  color: #00ffff !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+:deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, 
+    rgba(0, 255, 255, 0.5) 0%,
+    rgba(0, 200, 255, 0.6) 50%,
+    rgba(0, 255, 255, 0.5) 100%) !important;
+  border-color: rgba(0, 255, 255, 0.8) !important;
+  box-shadow: 
+    0 0 30px rgba(0, 255, 255, 0.4),
+    0 4px 20px rgba(0, 255, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.8) !important;
 }
 
 :deep(.el-button--danger) {
-  --el-button-bg-color: rgba(220, 20, 60, 0.3) !important;
-  --el-button-border-color: rgba(220, 20, 60, 0.6) !important;
-  --el-button-text-color: #ff6b6b !important;
-  --el-button-hover-bg-color: rgba(220, 20, 60, 0.5) !important;
+  background: linear-gradient(135deg, 
+    rgba(220, 20, 60, 0.3) 0%,
+    rgba(255, 60, 100, 0.4) 50%,
+    rgba(220, 20, 60, 0.3) 100%) !important;
+  border: 1px solid rgba(220, 20, 60, 0.6) !important;
+  color: #ff6b6b !important;
+  text-shadow: 0 0 8px rgba(255, 107, 107, 0.6) !important;
+  box-shadow: 
+    0 0 20px rgba(220, 20, 60, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+:deep(.el-button--danger:hover) {
+  background: linear-gradient(135deg, 
+    rgba(220, 20, 60, 0.5) 0%,
+    rgba(255, 60, 100, 0.6) 50%,
+    rgba(220, 20, 60, 0.5) 100%) !important;
+  border-color: rgba(220, 20, 60, 0.8) !important;
+  box-shadow: 
+    0 0 30px rgba(220, 20, 60, 0.4),
+    0 4px 20px rgba(220, 20, 60, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  text-shadow: 0 0 12px rgba(255, 107, 107, 0.8) !important;
+}
+
+/* 表格内的链接按钮样式 */
+:deep(.el-button.is-link) {
+  background: transparent !important;
+  border: none !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-button.is-link.el-button--primary) {
+  color: #00d4ff !important;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.6) !important;
+}
+
+:deep(.el-button.is-link.el-button--primary:hover) {
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 12px rgba(0, 255, 255, 0.8) !important;
+  transform: scale(1.05) !important;
+}
+
+:deep(.el-button.is-link.el-button--danger) {
+  color: #ff6b6b !important;
+  text-shadow: 0 0 8px rgba(255, 107, 107, 0.6) !important;
+}
+
+:deep(.el-button.is-link.el-button--danger:hover) {
+  background: rgba(220, 20, 60, 0.15) !important;
+  color: #ffffff !important;
+  text-shadow: 0 0 12px rgba(255, 107, 107, 0.8) !important;
+  transform: scale(1.05) !important;
 }
 
 /* 对话框 */
@@ -1017,8 +1252,21 @@ border-right: none !important;
 .table-header {
   position: relative !important;
   background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
   border: none !important;
   box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 确保分页区域也没有背景重叠 */
+.content-area .el-pagination {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
 /* 确保没有任何元素有重叠的视觉效果 */
@@ -1028,9 +1276,112 @@ border-right: none !important;
   display: none !important;
 }
 
+/* 最终的背景重叠修复 - 针对所有可能的元素 */
+.linkage-settings * {
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* 只保留我们需要的样式 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
 /* 只保留表格内部的伪元素 */
 .tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
   display: block !important;
   content: '' !important;
+}
+
+/* 表格序号列特殊样式 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:first-child) {
+  color: rgba(0, 255, 255, 0.8) !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  font-family: 'Courier New', monospace !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+
+/* 操作列按钮容器 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  text-align: center !important;
+  padding: 12px 8px !important;
+}
+
+/* 表格加载时的入场动画 */
+.tech-table {
+  animation: tableSlideIn 0.6s ease-out !important;
+}
+
+@keyframes tableSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 表格行的微妙动画效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
+  animation: rowFadeIn 0.4s ease-out both !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(1)) {
+  animation-delay: 0.1s !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(2)) {
+  animation-delay: 0.15s !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(3)) {
+  animation-delay: 0.2s !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(4)) {
+  animation-delay: 0.25s !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(5)) {
+  animation-delay: 0.3s !important;
+}
+
+@keyframes rowFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 表格头部标题的呼吸效果 */
+.table-header h3 {
+  animation: titleGlow 3s ease-in-out infinite alternate !important;
+}
+
+@keyframes titleGlow {
+  from {
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  }
+  to {
+    text-shadow: 
+      0 0 15px rgba(0, 255, 255, 0.8),
+      0 0 25px rgba(0, 255, 255, 0.4),
+      0 0 35px rgba(0, 255, 255, 0.2);
+  }
 }
 </style>

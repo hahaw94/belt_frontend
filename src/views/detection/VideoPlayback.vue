@@ -3,14 +3,27 @@
     <div class="control-panel tech-card">
       <el-form :inline="true">
         <el-form-item label="选择设备">
-          <el-select v-model="selectedDevice" placeholder="请选择设备">
-            <el-option
+          <div class="custom-select" :class="{ 'is-open': isDropdownOpen }" @click="toggleDropdown">
+            <div class="select-input">
+              <span class="selected-text">{{ selectedDeviceName || '请选择设备' }}</span>
+              <div class="select-arrow">
+                <svg viewBox="0 0 1024 1024" width="14" height="14">
+                  <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="dropdown-menu" v-show="isDropdownOpen">
+              <div 
+                class="dropdown-item" 
               v-for="device in devices"
               :key="device.id"
-              :label="device.name"
-              :value="device.id"
-            />
-          </el-select>
+                :class="{ 'is-selected': selectedDevice === device.id }"
+                @click.stop="selectDevice(device)"
+              >
+                {{ device.name }}
+              </div>
+            </div>
+          </div>
         </el-form-item>
         <el-form-item label="选择时间">
           <el-date-picker
@@ -47,9 +60,6 @@
                 <el-button type="primary" @click="pause">
                   <el-icon><VideoPause /></el-icon>
                 </el-button>
-                <el-button type="primary" @click="stop">
-                  <el-icon><VideoStop /></el-icon>
-                </el-button>
               </el-button-group>
               <el-slider v-model="progress" :show-tooltip="true" />
               <span class="time-display">{{ formatTime(currentTime) }} / {{ formatTime(totalTime) }}</span>
@@ -80,14 +90,12 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import {
   ElButton,
   ElButtonGroup,
   ElForm,
   ElFormItem,
-  ElSelect,
-  ElOption,
   ElDatePicker,
   ElSpace,
   ElSlider,
@@ -97,8 +105,7 @@ import {
 import {
   Search,
   VideoPlay,
-  VideoPause,
-  VideoStop
+  VideoPause
 } from '@element-plus/icons-vue'
 
 export default {
@@ -108,8 +115,6 @@ export default {
     ElButtonGroup,
     ElForm,
     ElFormItem,
-    ElSelect,
-    ElOption,
     ElDatePicker,
     ElSpace,
     ElSlider,
@@ -117,11 +122,12 @@ export default {
     ElTableColumn,
     Search,
     VideoPlay,
-    VideoPause,
-    VideoStop
+    VideoPause
   },
   setup() {
     const selectedDevice = ref('')
+    const selectedDeviceName = ref('')
+    const isDropdownOpen = ref(false)
     const dateTimeRange = ref([])
     const progress = ref(0)
     const currentTime = ref(0)
@@ -187,10 +193,6 @@ export default {
       console.log('暂停视频')
     }
 
-    const stop = () => {
-      console.log('停止视频')
-    }
-
     const playRecord = (record) => {
       console.log('播放录像', record)
     }
@@ -199,8 +201,38 @@ export default {
       console.log('下载录像', record)
     }
 
+    const toggleDropdown = () => {
+      isDropdownOpen.value = !isDropdownOpen.value
+    }
+
+    const selectDevice = (device) => {
+      selectedDevice.value = device.id
+      selectedDeviceName.value = device.name
+      isDropdownOpen.value = false
+    }
+
+    // 点击外部关闭下拉菜单
+    const handleClickOutside = (event) => {
+      const customSelect = event.target.closest('.custom-select')
+      if (!customSelect) {
+        isDropdownOpen.value = false
+      }
+    }
+
+    // 组件挂载时添加事件监听
+    onMounted(() => {
+      document.addEventListener('click', handleClickOutside)
+    })
+
+    // 组件卸载时移除事件监听
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside)
+    })
+
     return {
       selectedDevice,
+      selectedDeviceName,
+      isDropdownOpen,
       dateTimeRange,
       devices,
       shortcuts,
@@ -212,9 +244,10 @@ export default {
       searchRecords,
       play,
       pause,
-      stop,
       playRecord,
-      downloadRecord
+      downloadRecord,
+      toggleDropdown,
+      selectDevice
     }
   }
 }
@@ -227,6 +260,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  overflow: visible;
 }
 
 /* 科技感卡片样式 */
@@ -242,6 +276,9 @@ export default {
 
 .control-panel {
   padding: 16px;
+  overflow: visible;
+  position: relative;
+  z-index: 50;
 }
 
 .content-area {
@@ -295,9 +332,242 @@ export default {
   padding: 16px;
 }
 
+/* 自定义下拉选择器样式 */
+.custom-select {
+  position: relative;
+  min-width: 200px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 100;
+}
+
+.select-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  background: rgba(20, 30, 50, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  height: 32px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.selected-text {
+  flex: 1;
+  padding: 0 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.select-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 100%;
+  background: linear-gradient(135deg, #00ffff 0%, #0099cc 50%, #006699 100%);
+  color: #ffffff;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 3px 12px rgba(0, 255, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.select-arrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.select-arrow svg {
+  transition: transform 0.3s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* 悬停效果 */
+.custom-select:hover .select-input {
+  background: rgba(25, 35, 55, 0.9);
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2);
+}
+
+.custom-select:hover .select-arrow {
+  background: linear-gradient(135deg, #00ccff 0%, #0077aa 50%, #004466 100%);
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.6),
+    0 0 40px rgba(0, 255, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+}
+
+.custom-select:hover .select-arrow::before {
+  opacity: 1;
+}
+
+/* 展开状态 */
+.custom-select.is-open .select-input {
+  border-color: #00ffff;
+  background: rgba(25, 35, 55, 0.95);
+  box-shadow: 
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.custom-select.is-open .select-arrow {
+  background: linear-gradient(135deg, #00ddff 0%, #0088bb 50%, #005577 100%);
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.custom-select.is-open .select-arrow svg {
+  transform: rotate(180deg);
+}
+
+/* 下拉菜单 */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(15, 25, 45, 0.98);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(15px);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1);
+  z-index: 9999;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.2s ease-out;
+  min-height: 120px; /* 确保有足够高度显示所有选项 */
+  width: 100%; /* 确保宽度正确 */
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+  margin: 2px 4px;
+  position: relative;
+  overflow: hidden;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.dropdown-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 255, 255, 0.15);
+  color: #00ffff;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2);
+}
+
+.dropdown-item:hover::before {
+  left: 100%;
+}
+
+.dropdown-item.is-selected {
+  background: rgba(0, 255, 255, 0.25);
+  color: #00ffff;
+  font-weight: 600;
+  box-shadow: 
+    0 2px 8px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.dropdown-item.is-selected::after {
+  content: '✓';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+/* 滚动条样式 */
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: rgba(20, 30, 50, 0.5);
+  border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #00ffff, #0099cc);
+  border-radius: 3px;
+  box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #00ccff, #0077aa);
+}
+
 /* Element Plus 组件深色主题样式 */
 :deep(.el-form-item__label) {
   color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-form--inline) {
+  overflow: visible !important;
+}
+
+:deep(.el-form-item) {
+  overflow: visible !important;
+  position: relative !important;
 }
 
 /* 通用输入框深色主题 */
@@ -337,115 +607,9 @@ export default {
   color: rgba(255, 255, 255, 0.4) !important;
 }
 
-:deep(.el-select .el-input__wrapper) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.05) !important;
-}
+/* Element UI选择器样式已移除，使用自定义组件 */
 
-:deep(.el-select .el-input__wrapper:hover) {
-  background: rgba(25, 35, 55, 0.9) !important;
-  border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 
-    inset 0 0 15px rgba(0, 255, 255, 0.08),
-    0 0 8px rgba(0, 255, 255, 0.2) !important;
-}
-
-/* 下拉菜单深色主题 */
-:deep(.el-select-dropdown) {
-  background: rgba(15, 25, 45, 0.98) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  backdrop-filter: blur(15px) !important;
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
-  border-radius: 8px !important;
-}
-
-:deep(.el-popper.is-light .el-select-dropdown) {
-  background: rgba(15, 25, 45, 0.98) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-}
-
-:deep(.el-select-dropdown .el-select-dropdown__item) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.85) !important;
-  padding: 8px 16px !important;
-  transition: all 0.3s ease !important;
-  border-radius: 4px !important;
-  margin: 2px 4px !important;
-}
-
-:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
-  background: rgba(0, 255, 255, 0.15) !important;
-  color: #00ffff !important;
-  transform: translateX(2px) !important;
-  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
-  background: rgba(0, 255, 255, 0.25) !important;
-  color: #00ffff !important;
-  font-weight: 600 !important;
-  box-shadow: 
-    0 2px 8px rgba(0, 255, 255, 0.3),
-    inset 0 0 10px rgba(0, 255, 255, 0.1) !important;
-}
-
-:deep(.el-select-dropdown .el-select-dropdown__item.is-disabled) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.3) !important;
-  cursor: not-allowed !important;
-}
-
-/* 选择器内部样式强化 */
-:deep(.el-select .el-input__inner) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  font-weight: 500 !important;
-  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-select .el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.5) !important;
-  font-style: italic !important;
-}
-
-/* 下拉箭头图标 */
-:deep(.el-select .el-input__suffix) {
-  color: rgba(0, 255, 255, 0.8) !important;
-}
-
-:deep(.el-select .el-input__suffix:hover) {
-  color: #00ffff !important;
-  filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.5)) !important;
-}
-
-:deep(.el-select .el-select__caret) {
-  color: rgba(0, 255, 255, 0.8) !important;
-  transition: all 0.3s ease !important;
-}
-
-:deep(.el-select .el-select__caret:hover) {
-  color: #00ffff !important;
-  transform: scale(1.1) !important;
-}
-
-/* 选择器展开状态 */
-:deep(.el-select.is-focused .el-input__wrapper) {
-  border-color: #00ffff !important;
-  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2) !important;
-}
-
-/* 选择器清除按钮 */
-:deep(.el-select .el-input__suffix .el-icon) {
-  color: rgba(0, 255, 255, 0.6) !important;
-  transition: color 0.3s ease !important;
-}
-
-:deep(.el-select .el-input__suffix .el-icon:hover) {
-  color: #00ffff !important;
-}
+/* Element UI选择器相关样式已完全移除，使用自定义下拉组件 */
 
 /* 日期选择器输入框强化 */
 :deep(.el-date-editor) {

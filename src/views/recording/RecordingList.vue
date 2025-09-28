@@ -25,14 +25,34 @@
       <div class="search-bar">
         <el-form :inline="true" :model="searchForm" label-width="80px">
           <el-form-item label="设备名称">
-            <el-select v-model="searchForm.device_id" placeholder="请选择设备" clearable>
-              <el-option
-                v-for="device in deviceOptions"
-                :key="device.id"
-                :label="device.name"
-                :value="device.id"
-              />
-            </el-select>
+            <div class="custom-select" :class="{ 'is-open': isDeviceDropdownOpen }" @click="toggleDeviceDropdown">
+              <div class="select-input">
+                <span class="selected-text">{{ getSelectedDeviceName() || '请选择设备' }}</span>
+                <div class="select-arrow">
+                  <svg viewBox="0 0 1024 1024" width="14" height="14">
+                    <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="dropdown-menu" v-show="isDeviceDropdownOpen">
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': !searchForm.device_id }"
+                  @click.stop="selectDevice(null)"
+                >
+                  全部设备
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  v-for="device in deviceOptions" 
+                  :key="device.id"
+                  :class="{ 'is-selected': searchForm.device_id === device.id }"
+                  @click.stop="selectDevice(device)"
+                >
+                  {{ device.name }}
+                </div>
+              </div>
+            </div>
           </el-form-item>
           <el-form-item label="时间范围">
             <el-date-picker
@@ -46,12 +66,53 @@
             />
           </el-form-item>
           <el-form-item label="告警类型">
-            <el-select v-model="searchForm.alarm_type" placeholder="请选择告警类型" clearable>
-              <el-option label="异常行为" value="异常行为" />
-              <el-option label="车辆违规" value="车辆违规" />
-              <el-option label="人员闯入" value="人员闯入" />
-              <el-option label="区域入侵" value="区域入侵" />
-            </el-select>
+            <div class="custom-select" :class="{ 'is-open': isAlarmDropdownOpen }" @click="toggleAlarmDropdown">
+              <div class="select-input">
+                <span class="selected-text">{{ searchForm.alarm_type || '请选择告警类型' }}</span>
+                <div class="select-arrow">
+                  <svg viewBox="0 0 1024 1024" width="14" height="14">
+                    <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
+                  </svg>
+                </div>
+              </div>
+              <div class="dropdown-menu" v-show="isAlarmDropdownOpen">
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': !searchForm.alarm_type }"
+                  @click.stop="selectAlarmType(null)"
+                >
+                  全部类型
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.alarm_type === '异常行为' }"
+                  @click.stop="selectAlarmType('异常行为')"
+                >
+                  异常行为
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.alarm_type === '车辆违规' }"
+                  @click.stop="selectAlarmType('车辆违规')"
+                >
+                  车辆违规
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.alarm_type === '人员闯入' }"
+                  @click.stop="selectAlarmType('人员闯入')"
+                >
+                  人员闯入
+                </div>
+                <div 
+                  class="dropdown-item" 
+                  :class="{ 'is-selected': searchForm.alarm_type === '区域入侵' }"
+                  @click.stop="selectAlarmType('区域入侵')"
+                >
+                  区域入侵
+                </div>
+              </div>
+            </div>
           </el-form-item>
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
@@ -61,29 +122,29 @@
       </div>
 
       <!-- 录像列表 -->
-      <el-table v-loading="loading" :data="recordingList" style="width: 100%">
-        <el-table-column prop="id" label="录像ID" width="80" />
-        <el-table-column prop="device_name" label="设备名称" width="150" />
-        <el-table-column prop="alarm_type" label="告警类型" width="120">
+      <el-table v-loading="loading" :data="recordingList" class="tech-table" style="width: 100%">
+        <el-table-column prop="id" label="录像ID" width="120" align="center" header-align="center" />
+        <el-table-column prop="device_name" label="设备名称" min-width="140" header-align="center" />
+        <el-table-column prop="alarm_type" label="告警类型" width="130" header-align="center">
           <template #default="scope">
             <el-tag :type="getAlarmTypeColor(scope.row.alarm_type)" size="small">
               {{ scope.row.alarm_type }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="start_time" label="开始时间" width="180" />
-        <el-table-column prop="end_time" label="结束时间" width="180" />
-        <el-table-column prop="duration" label="时长(秒)" width="100" />
-        <el-table-column prop="file_size" label="文件大小" width="120" />
-        <el-table-column prop="has_tracking_box" label="跟踪框" width="100">
+        <el-table-column prop="start_time" label="开始时间" min-width="160" header-align="center" />
+        <el-table-column prop="end_time" label="结束时间" min-width="160" header-align="center" />
+        <el-table-column prop="duration" label="时长" width="90" align="center" header-align="center" />
+        <el-table-column prop="file_size" label="文件大小" width="110" align="center" header-align="center" />
+        <el-table-column prop="has_tracking_box" label="跟踪框" width="120" align="center" header-align="center">
           <template #default="scope">
             <el-tag :type="scope.row.has_tracking_box ? 'success' : 'info'" size="small">
               {{ scope.row.has_tracking_box ? '有' : '无' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="180" />
-        <el-table-column label="操作" width="250" fixed="right">
+        <el-table-column prop="create_time" label="创建时间" min-width="160" header-align="center" />
+        <el-table-column label="操作" width="220" align="center" header-align="center" fixed="right">
           <template #default="scope">
             <el-button type="primary" size="small" @click="playRecording(scope.row)">
               <el-icon><VideoPlay /></el-icon>
@@ -217,7 +278,7 @@
 </template>
 
 <script setup name="RecordingList">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete, Download, VideoPlay, Loading, Upload, Refresh } from '@element-plus/icons-vue'
 import { recordingApi } from '@/api/recording'
@@ -238,6 +299,10 @@ const uploadProgress = ref(0)
 const uploadStatus = ref('')
 const uploadMessage = ref('')
 const fileInput = ref()
+
+// 自定义下拉菜单状态
+const isDeviceDropdownOpen = ref(false)
+const isAlarmDropdownOpen = ref(false)
 
 // 使用录像store
 const recordingStore = useRecordingStore()
@@ -352,6 +417,50 @@ const resetSearch = () => {
   searchForm.alarm_type = ''
   pagination.page = 1
   loadRecordingList()
+}
+
+// 自定义下拉菜单操作函数
+const toggleDeviceDropdown = () => {
+  isDeviceDropdownOpen.value = !isDeviceDropdownOpen.value
+  // 关闭其他下拉菜单
+  if (isDeviceDropdownOpen.value) {
+    isAlarmDropdownOpen.value = false
+  }
+}
+
+const toggleAlarmDropdown = () => {
+  isAlarmDropdownOpen.value = !isAlarmDropdownOpen.value
+  // 关闭其他下拉菜单
+  if (isAlarmDropdownOpen.value) {
+    isDeviceDropdownOpen.value = false
+  }
+}
+
+const selectDevice = (device) => {
+  searchForm.device_id = device ? device.id : ''
+  isDeviceDropdownOpen.value = false
+  handleSearch()
+}
+
+const selectAlarmType = (type) => {
+  searchForm.alarm_type = type || ''
+  isAlarmDropdownOpen.value = false
+  handleSearch()
+}
+
+const getSelectedDeviceName = () => {
+  if (!searchForm.device_id) return ''
+  const device = deviceOptions.value.find(d => d.id === searchForm.device_id)
+  return device ? device.name : ''
+}
+
+// 点击外部关闭下拉菜单
+const handleClickOutside = (event) => {
+  const customSelects = event.target.closest('.custom-select')
+  if (!customSelects) {
+    isDeviceDropdownOpen.value = false
+    isAlarmDropdownOpen.value = false
+  }
 }
 
 // 分页大小改变
@@ -808,6 +917,8 @@ const cleanupOldRecordings = async () => {
 }
 
 onMounted(async () => {
+  // 添加外部点击事件监听
+  document.addEventListener('click', handleClickOutside)
   
   try {
     await loadRecordingList()
@@ -815,6 +926,11 @@ onMounted(async () => {
   } catch (error) {
     // 初始化失败，静默处理
   }
+})
+
+// 组件卸载时移除事件监听
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
@@ -1396,5 +1512,780 @@ onMounted(async () => {
   background: rgba(15, 25, 45, 0.4) !important;
   color: rgba(255, 255, 255, 0.8) !important;
   border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 自定义下拉选择器样式 */
+.custom-select {
+  position: relative;
+  min-width: 200px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 100;
+}
+
+.select-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  background: rgba(20, 30, 50, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  height: 32px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.selected-text {
+  flex: 1;
+  padding: 0 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.select-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 100%;
+  background: linear-gradient(135deg, #00ffff 0%, #0099cc 50%, #006699 100%);
+  color: #ffffff;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 3px 12px rgba(0, 255, 255, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+
+.select-arrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.select-arrow svg {
+  transition: transform 0.3s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* 悬停效果 */
+.custom-select:hover .select-input {
+  background: rgba(25, 35, 55, 0.9);
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2);
+}
+
+.custom-select:hover .select-arrow {
+  background: linear-gradient(135deg, #00ccff 0%, #0077aa 50%, #004466 100%);
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.6),
+    0 0 40px rgba(0, 255, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+}
+
+.custom-select:hover .select-arrow::before {
+  opacity: 1;
+}
+
+/* 展开状态 */
+.custom-select.is-open .select-input {
+  border-color: #00ffff;
+  background: rgba(25, 35, 55, 0.95);
+  box-shadow: 
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.custom-select.is-open .select-arrow {
+  background: linear-gradient(135deg, #00ddff 0%, #0088bb 50%, #005577 100%);
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.custom-select.is-open .select-arrow svg {
+  transform: rotate(180deg);
+}
+
+/* 下拉菜单 */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(15, 25, 45, 0.98);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(15px);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1);
+  z-index: 9999;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.2s ease-out;
+  min-height: 120px;
+  width: 100%;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+  margin: 2px 4px;
+  position: relative;
+  overflow: hidden;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.dropdown-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 255, 255, 0.15);
+  color: #00ffff;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2);
+}
+
+.dropdown-item:hover::before {
+  left: 100%;
+}
+
+.dropdown-item.is-selected {
+  background: rgba(0, 255, 255, 0.25);
+  color: #00ffff;
+  font-weight: 600;
+  box-shadow: 
+    0 2px 8px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.dropdown-item.is-selected::after {
+  content: '✓';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+/* 滚动条样式 */
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: rgba(20, 30, 50, 0.5);
+  border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #00ffff, #0099cc);
+  border-radius: 3px;
+  box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #00ccff, #0077aa);
+}
+
+/* 确保表单项允许下拉菜单溢出 */
+:deep(.el-form--inline) {
+  overflow: visible !important;
+}
+
+:deep(.el-form-item) {
+  overflow: visible !important;
+  position: relative !important;
+}
+
+/* 科技感表格 - 彻底解决白线问题 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+}
+
+/* 表格整体容器 - 彻底移除所有边框 */
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+  border-collapse: separate !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table::after) {
+  display: none !important;
+}
+
+/* 移除所有可能的白色边框和分隔线 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::before) {
+  display: none !important;
+}
+
+/* 移除表格外层的所有边框元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+}
+
+/* 强制移除Element Plus的默认边框样式 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table--border::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table--border::after) {
+  display: none !important;
+}
+
+/* 表格头部样式 - 参考用户列表的头部设计 */
+.tech-table :deep(.el-table__header-wrapper) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px 12px !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+/* 表格头部发光效果 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.6) 50%, 
+    transparent 100%);
+  opacity: 0.8;
+}
+
+/* 表格主体样式 - 参考用户列表的行设计 */
+.tech-table :deep(.el-table__body-wrapper) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__body) {
+  background: transparent !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+}
+
+/* 交替行颜色 - 创建微妙的斑马纹效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
+  background: rgba(25, 35, 55, 0.6) !important;
+}
+
+/* 悬停效果 - 参考用户列表的交互效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+
+/* 单元格样式 - 参考用户列表的单元格设计 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  background: transparent !important;
+  padding: 14px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  position: relative !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 彻底移除所有表格边框 - 最终解决方案 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
+  display: none !important;
+  content: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::before) {
+  display: none !important;
+  content: none !important;
+}
+
+/* 移除所有边框补丁元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 单元格边框控制 */
+.tech-table :deep(.el-table--border td) {
+  border: none !important;
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border th) {
+  border: none !important;
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+/* 移除表格外围的所有可能边框 */
+.tech-table :deep(.el-table__body-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 移除表格容器本身的边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 加载状态样式 */
+.tech-table :deep(.el-loading-mask) {
+  background: rgba(15, 25, 45, 0.8) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.tech-table :deep(.el-loading-spinner) {
+  color: #00ffff !important;
+}
+
+.tech-table :deep(.el-loading-text) {
+  color: rgba(0, 255, 255, 0.8) !important;
+}
+
+/* 终极白线白底移除方案 */
+.tech-table :deep(*) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  outline: none !important;
+}
+
+/* 强制覆盖Element Plus的所有边框样式 */
+.tech-table :deep(.el-table) *,
+.tech-table :deep(.el-table__inner-wrapper) *,
+.tech-table :deep(.el-table__header-wrapper) *,
+.tech-table :deep(.el-table__body-wrapper) *,
+.tech-table :deep(.el-table__footer-wrapper) * {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 重新设置表格和行的背景，其他元素保持透明 */
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
+  background: rgba(25, 35, 55, 0.6) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+}
+
+/* 移除所有可能的白色背景和边框 */
+.tech-table :deep(.el-table--border),
+.tech-table :deep(.el-table--group),
+.tech-table :deep(.el-table--striped) {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* 强制移除单元格的所有边框和背景 */
+.tech-table :deep(td),
+.tech-table :deep(th) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+  outline: none !important;
+}
+
+/* 表格容器最终清理 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__body-wrapper),
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* 重新设置表格的圆角和阴影 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* 彻底移除表格外部容器的所有可能的白底和边距 */
+.tech-table,
+.tech-table * {
+  box-sizing: border-box !important;
+}
+
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__body-wrapper),
+.tech-table :deep(.el-table__footer-wrapper) {
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  outline: none !important;
+}
+
+/* 移除表格左右两边的任何可能的白底和间距 */
+.tech-table :deep(.el-table--border)::before,
+.tech-table :deep(.el-table--border)::after,
+.tech-table :deep(.el-table)::before,
+.tech-table :deep(.el-table)::after {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  border: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 最强力的边框移除 - 覆盖所有可能的边框样式 */
+.tech-table :deep(*) {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+}
+
+.tech-table :deep(th) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-table :deep(td:last-child),
+.tech-table :deep(th:last-child) {
+  border-right: none !important;
+}
+
+/* 移除表格容器本身的边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 专门针对左右边框的强力移除 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__header),
+.tech-table :deep(.el-table__body) {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* 彻底移除表格的所有边框元素和伪元素 */
+.tech-table :deep(.el-table)::before,
+.tech-table :deep(.el-table)::after,
+.tech-table :deep(.el-table__inner-wrapper)::before,
+.tech-table :deep(.el-table__inner-wrapper)::after,
+.tech-table :deep(.el-table--border)::before,
+.tech-table :deep(.el-table--border)::after {
+  display: none !important;
+  content: none !important;
+  background: transparent !important;
+  border: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+/* 强制移除任何可能的白色背景和边框 */
+.tech-table :deep(.el-table--enable-row-hover .el-table__body tr:hover > td),
+.tech-table :deep(.el-table--enable-row-transition .el-table__body tr),
+.tech-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped td),
+.tech-table :deep(.el-table--striped .el-table__body tr.el-table__row--striped:hover td) {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* 移除任何可能的表格外部包装器边框 */
+.tech-table :deep(.el-table .el-table__cell),
+.tech-table :deep(.el-table .el-table__header .el-table__cell),
+.tech-table :deep(.el-table .el-table__body .el-table__cell) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+/* 终极方案：移除所有可能的Element Plus内部元素边框 */
+.tech-table :deep(.el-table__fixed),
+.tech-table :deep(.el-table__fixed-left),
+.tech-table :deep(.el-table__fixed-right),
+.tech-table :deep(.el-table__fixed-left-patch),
+.tech-table :deep(.el-table__fixed-right-patch) {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 确保表格容器没有任何白色边框或背景 */
+.tech-table {
+  position: relative !important;
+  isolation: isolate !important;
+}
+
+.tech-table::before,
+.tech-table::after {
+  display: none !important;
 }
 </style> 

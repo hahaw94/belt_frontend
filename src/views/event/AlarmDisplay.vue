@@ -13,23 +13,76 @@
           />
         </el-form-item>
         <el-form-item label="告警类型">
-          <el-select v-model="searchForm.alarmType" placeholder="请选择告警类型">
-            <el-option label="全部" value="" />
-            <el-option label="异常行为" value="behavior" />
-            <el-option label="可疑物品" value="object" />
-            <el-option label="区域入侵" value="intrusion" />
-          </el-select>
+          <div class="custom-select" :class="{ 'is-open': isAlarmDropdownOpen }" @click="toggleAlarmDropdown">
+            <div class="select-input">
+              <span class="selected-text">{{ getSelectedAlarmTypeName() || '请选择告警类型' }}</span>
+              <div class="select-arrow">
+                <svg viewBox="0 0 1024 1024" width="14" height="14">
+                  <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="dropdown-menu" v-show="isAlarmDropdownOpen">
+              <div 
+                class="dropdown-item" 
+                :class="{ 'is-selected': !searchForm.alarmType }"
+                @click.stop="selectAlarmType('')"
+              >
+                全部
+              </div>
+              <div 
+                class="dropdown-item" 
+                :class="{ 'is-selected': searchForm.alarmType === 'behavior' }"
+                @click.stop="selectAlarmType('behavior')"
+              >
+                异常行为
+              </div>
+              <div 
+                class="dropdown-item" 
+                :class="{ 'is-selected': searchForm.alarmType === 'object' }"
+                @click.stop="selectAlarmType('object')"
+              >
+                可疑物品
+              </div>
+              <div 
+                class="dropdown-item" 
+                :class="{ 'is-selected': searchForm.alarmType === 'intrusion' }"
+                @click.stop="selectAlarmType('intrusion')"
+              >
+                区域入侵
+              </div>
+            </div>
+          </div>
         </el-form-item>
         <el-form-item label="点位">
-          <el-select v-model="searchForm.location" placeholder="请选择点位">
-            <el-option label="全部" value="" />
-            <el-option
-              v-for="location in locations"
-              :key="location.id"
-              :label="location.name"
-              :value="location.id"
-            />
-          </el-select>
+          <div class="custom-select" :class="{ 'is-open': isLocationDropdownOpen }" @click="toggleLocationDropdown">
+            <div class="select-input">
+              <span class="selected-text">{{ getSelectedLocationName() || '请选择点位' }}</span>
+              <div class="select-arrow">
+                <svg viewBox="0 0 1024 1024" width="14" height="14">
+                  <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
+                </svg>
+              </div>
+            </div>
+            <div class="dropdown-menu" v-show="isLocationDropdownOpen">
+              <div 
+                class="dropdown-item" 
+                :class="{ 'is-selected': !searchForm.location }"
+                @click.stop="selectLocation('')"
+              >
+                全部
+              </div>
+              <div 
+                class="dropdown-item" 
+                v-for="location in locations" 
+                :key="location.id"
+                :class="{ 'is-selected': searchForm.location === location.id }"
+                @click.stop="selectLocation(location.id)"
+              >
+                {{ location.name }}
+              </div>
+            </div>
+          </div>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleSearch">
@@ -45,11 +98,13 @@
     </div>
 
     <div class="content-area tech-card">
-      <el-table
-        :data="alarmList"
-        style="width: 100%"
-        @row-click="handleRowClick"
-      >
+      <div class="tech-table">
+        <el-table
+          :data="alarmList"
+          style="width: 100%"
+          @row-click="handleRowClick"
+          :border="false"
+        >
         <el-table-column type="index" width="50" />
         <el-table-column prop="time" label="时间" width="180" />
         <el-table-column prop="type" label="告警类型" width="120" />
@@ -73,6 +128,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
 
       <el-pagination
         v-model:current-page="currentPage"
@@ -138,7 +194,7 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
 
@@ -155,6 +211,10 @@ export default {
       alarmType: '',
       location: ''
     })
+
+    // 下拉菜单控制
+    const isAlarmDropdownOpen = ref(false)
+    const isLocationDropdownOpen = ref(false)
 
     // 分页相关
     const currentPage = ref(1)
@@ -294,6 +354,61 @@ export default {
       handleView(row)
     }
 
+    // 下拉菜单相关方法
+    const toggleAlarmDropdown = () => {
+      isAlarmDropdownOpen.value = !isAlarmDropdownOpen.value
+      isLocationDropdownOpen.value = false
+    }
+
+    const toggleLocationDropdown = () => {
+      isLocationDropdownOpen.value = !isLocationDropdownOpen.value
+      isAlarmDropdownOpen.value = false
+    }
+
+    const selectAlarmType = (type) => {
+      searchForm.alarmType = type
+      isAlarmDropdownOpen.value = false
+    }
+
+    const selectLocation = (locationId) => {
+      searchForm.location = locationId
+      isLocationDropdownOpen.value = false
+    }
+
+    const getSelectedAlarmTypeName = () => {
+      const typeMap = {
+        '': '全部',
+        'behavior': '异常行为',
+        'object': '可疑物品',
+        'intrusion': '区域入侵'
+      }
+      return typeMap[searchForm.alarmType] || '请选择告警类型'
+    }
+
+    const getSelectedLocationName = () => {
+      if (!searchForm.location) return '全部'
+      const location = locations.value.find(loc => loc.id === searchForm.location)
+      return location ? location.name : '请选择点位'
+    }
+
+    // 点击外部关闭下拉菜单
+    const handleClickOutside = (event) => {
+      const customSelects = event.target.closest('.custom-select')
+      if (!customSelects) {
+        isAlarmDropdownOpen.value = false
+        isLocationDropdownOpen.value = false
+      }
+    }
+
+    // 生命周期
+    onMounted(() => {
+      document.addEventListener('click', handleClickOutside)
+    })
+
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside)
+    })
+
     return {
       searchForm,
       locations,
@@ -304,6 +419,8 @@ export default {
       dateShortcuts,
       dialogVisible,
       selectedAlarm,
+      isAlarmDropdownOpen,
+      isLocationDropdownOpen,
       handleSearch,
       handleReset,
       getStatusType,
@@ -312,7 +429,13 @@ export default {
       handleConfirm,
       handleSizeChange,
       handleCurrentChange,
-      handleRowClick
+      handleRowClick,
+      toggleAlarmDropdown,
+      toggleLocationDropdown,
+      selectAlarmType,
+      selectLocation,
+      getSelectedAlarmTypeName,
+      getSelectedLocationName
     }
   }
 }
@@ -538,49 +661,399 @@ export default {
   color: #00ffff !important;
 }
 
-:deep(.el-table) {
+/* 科技感表格 - 彻底解决白线问题 */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+}
+
+/* 表格整体容器 - 彻底移除所有边框 */
+.tech-table :deep(.el-table) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+  border-collapse: separate !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table::after) {
+  display: none !important;
+}
+
+/* 移除所有可能的白色边框和分隔线 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::before) {
+  display: none !important;
+}
+
+/* 移除表格外层的所有边框元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+}
+
+/* 强制移除Element Plus的默认边框样式 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table--border::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table--border::after) {
+  display: none !important;
+}
+
+/* 表格头部样式 */
+.tech-table :deep(.el-table__header-wrapper) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header) {
   background: transparent !important;
-  color: rgba(255, 255, 255, 0.9) !important;
+  border: none !important;
 }
 
-:deep(.el-table th) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  color: #00ffff !important;
-  border-color: rgba(0, 255, 255, 0.2) !important;
+.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  color: #00d4ff !important;
+  font-weight: 600 !important;
+  font-size: 14px !important;
+  padding: 16px 12px !important;
+  border: none !important;
+  border-bottom: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
 }
 
-:deep(.el-table td) {
-  background: rgba(15, 25, 45, 0.6) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  border-color: rgba(0, 255, 255, 0.1) !important;
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
 }
 
-:deep(.el-table tr) {
+/* 表格头部发光效果 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.6) 50%, 
+    transparent 100%);
+  opacity: 0.8;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:hover::before) {
+  opacity: 1;
+}
+
+/* 表格体样式 */
+.tech-table :deep(.el-table__body-wrapper) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body) {
   background: transparent !important;
+  border: none !important;
 }
 
-:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
-  background: rgba(20, 30, 50, 0.4) !important;
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
 }
 
-:deep(.el-table__body tr:hover td) {
-  background: rgba(0, 255, 255, 0.1) !important;
+/* 交替行颜色 - 创建微妙的斑马纹效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
+  background: rgba(20, 30, 50, 0.7) !important;
 }
 
-:deep(.el-table__header-wrapper) {
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
+  background: rgba(25, 35, 55, 0.6) !important;
+}
+
+/* 悬停效果 - 参考联动规则管理的交互效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
   background: transparent !important;
+  color: rgba(255, 255, 255, 1) !important;
 }
 
-:deep(.el-table__body-wrapper) {
+/* 单元格样式 - 参考联动规则管理的单元格设计 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
   background: transparent !important;
+  padding: 14px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  position: relative !important;
 }
 
-:deep(.el-table__empty-block) {
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 移除所有可能的边框和分隔线 */
+.tech-table :deep(.el-table th.el-table__cell) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table td.el-table__cell) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+/* 终极解决方案 - 强制覆盖所有可能的白边 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__inner-wrapper *) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  outline: 0 !important;
+  outline-width: 0 !important;
+  outline-style: none !important;
+  outline-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 强制移除 Element Plus 的所有默认样式 */
+.tech-table :deep(.el-table--border),
+.tech-table :deep(.el-table--group),
+.tech-table :deep(.el-table--striped) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+}
+
+/* 覆盖所有伪元素的边框 */
+.tech-table :deep(.el-table::before),
+.tech-table :deep(.el-table::after),
+.tech-table :deep(.el-table *::before),
+.tech-table :deep(.el-table *::after) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  content: none !important;
+  display: none !important;
+}
+
+/* 强制设置表格内所有元素的背景色 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  background-color: rgba(15, 25, 45, 0.95) !important;
+  background: rgba(15, 25, 45, 0.95) !important;
+}
+
+/* 移除表格的默认边距和内边距 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *) {
+  margin: 0 !important;
+}
+
+/* 重新设置单元格的内边距 */
+.tech-table :deep(.el-table th),
+.tech-table :deep(.el-table td) {
+  padding: 14px 12px !important;
+}
+
+/* 确保表格宽度100%且没有额外空白 */
+.tech-table :deep(.el-table) {
+  width: 100% !important;
+  margin: 0 !important;
+  border-spacing: 0 !important;
+}
+
+/* 彻底移除所有表格边框 - 最终解决方案 */
+.tech-table :deep(.el-table--border) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
+  display: none !important;
+  content: none !important;
+}
+
+.tech-table :deep(.el-table--border .el-table__inner-wrapper::before) {
+  display: none !important;
+  content: none !important;
+}
+
+/* 单元格边框控制 */
+.tech-table :deep(.el-table--border td) {
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table--border th) {
+  border: none !important;
+  border-left: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  outline: none !important;
+}
+
+/* 移除表格外围的所有可能边框 */
+.tech-table :deep(.el-table__body-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  outline: none !important;
+}
+
+/* 最强力的边框移除 - 覆盖所有可能的边框样式 */
+.tech-table :deep(*) {
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(td) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
+}
+
+.tech-table :deep(th) {
+  border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-table :deep(td:last-child),
+.tech-table :deep(th:last-child) {
+  border-right: none !important;
+}
+
+/* 移除表格容器本身的边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+}
+
+/* 空状态样式 */
+.tech-table :deep(.el-table__empty-block) {
   background: transparent !important;
+  border: none !important;
 }
 
-:deep(.el-table__empty-text) {
+.tech-table :deep(.el-table__empty-text) {
   color: rgba(255, 255, 255, 0.6) !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
 }
 
 :deep(.el-tag) {
@@ -620,7 +1093,14 @@ export default {
 }
 
 :deep(.el-pagination) {
-  background: transparent !important;
+  background: rgba(15, 25, 45, 0.8) !important;
+  padding: 12px 16px !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.3),
+    0 0 10px rgba(0, 255, 255, 0.1) !important;
 }
 
 :deep(.el-pagination .btn-prev),
@@ -674,5 +1154,227 @@ export default {
 :deep(.el-dialog__body) {
   background: rgba(15, 25, 45, 0.95) !important;
   color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 自建下拉菜单样式 */
+.custom-select {
+  position: relative;
+  min-width: 200px;
+  cursor: pointer;
+  user-select: none;
+  z-index: 100;
+}
+
+.select-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  background: rgba(20, 30, 50, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  height: 32px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.selected-text {
+  flex: 1;
+  padding: 8px 12px;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+  transition: color 0.3s ease;
+}
+
+.select-arrow {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0088aa 0%, #005577 50%, #003344 100%);
+  border-left: 1px solid rgba(0, 255, 255, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.select-arrow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.select-arrow svg {
+  color: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.3));
+}
+
+/* 悬停状态 */
+.custom-select:hover .select-input {
+  background: rgba(25, 35, 55, 0.9);
+  border-color: rgba(0, 255, 255, 0.5);
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2);
+}
+
+.custom-select:hover .select-arrow {
+  background: linear-gradient(135deg, #00ccff 0%, #0077aa 50%, #004466 100%);
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.6),
+    0 0 40px rgba(0, 255, 255, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  transform: scale(1.02);
+}
+
+.custom-select:hover .select-arrow::before {
+  opacity: 1;
+}
+
+/* 展开状态 */
+.custom-select.is-open .select-input {
+  border-color: #00ffff;
+  background: rgba(25, 35, 55, 0.95);
+  box-shadow: 
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 15px rgba(0, 255, 255, 0.2);
+}
+
+.custom-select.is-open .select-arrow {
+  background: linear-gradient(135deg, #00ddff 0%, #0088bb 50%, #005577 100%);
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+}
+
+.custom-select.is-open .select-arrow svg {
+  transform: rotate(180deg);
+}
+
+/* 下拉菜单 */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: rgba(15, 25, 45, 0.98);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(15px);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1);
+  z-index: 9999;
+  max-height: 200px;
+  overflow-y: auto;
+  animation: dropdownFadeIn 0.2s ease-out;
+}
+
+.dropdown-item {
+  padding: 10px 16px;
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+  margin: 2px 4px;
+  position: relative;
+  overflow: hidden;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.dropdown-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 255, 255, 0.15);
+  color: #00ffff;
+  transform: translateX(2px);
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2);
+}
+
+.dropdown-item:hover::before {
+  left: 100%;
+}
+
+.dropdown-item.is-selected {
+  background: rgba(0, 255, 255, 0.25);
+  color: #00ffff;
+  font-weight: 600;
+  box-shadow: 
+    0 2px 8px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1);
+}
+
+.dropdown-item.is-selected::after {
+  content: '✓';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+/* 滚动条样式 */
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: rgba(20, 30, 50, 0.5);
+  border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #00ffff, #0099cc);
+  border-radius: 3px;
+  box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.2);
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #00ccff, #0077aa);
+}
+
+/* 下拉菜单动画 */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 </style>
