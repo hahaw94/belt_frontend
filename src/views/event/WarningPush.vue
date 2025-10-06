@@ -1,9 +1,13 @@
 <template>
-  <div class="warning-push">
+  <div class="warning-push tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background"></div>
+    
+    <h2>预警推送管理</h2>
+    
     <div class="content-area tech-card">
       <div class="table-header">
-        <h3>预警推送管理</h3>
-        <el-button type="primary" @click="handleAddRule">
+        <el-button type="primary" @click="handleAddRule" class="tech-button-sm">
           <el-icon><Plus /></el-icon>
           新增推送规则
         </el-button>
@@ -48,15 +52,69 @@
         </el-table>
       </div>
 
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+      <!-- 增强型分页组件 -->
+      <div class="pagination-container tech-pagination">
+        <div class="pagination-info">
+          <span>共 <span class="total-count">{{ total }}</span> 条记录，每页显示 
+            <el-select 
+              v-model="pageSize" 
+              @change="handleSizeChange"
+              class="page-size-select"
+              size="small"
+            >
+              <el-option label="10" :value="10" />
+              <el-option label="20" :value="20" />
+              <el-option label="50" :value="50" />
+              <el-option label="100" :value="100" />
+            </el-select> 条
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(1)"
+          >
+            首页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+          >
+            上一页
+          </el-button>
+          <div class="pagination-pages">
+            <button 
+              v-for="page in visiblePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: page === currentPage }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >
+            下一页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(totalPages)"
+          >
+            末页
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 规则编辑对话框 -->
@@ -159,7 +217,7 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 
@@ -173,6 +231,32 @@ export default {
     const currentPage = ref(1)
     const pageSize = ref(10)
     const total = ref(100)
+
+    // 计算总页数
+    const totalPages = computed(() => {
+      return Math.ceil(total.value / pageSize.value) || 1
+    })
+
+    // 计算可见页码
+    const visiblePages = computed(() => {
+      const maxVisiblePages = 5
+      const totalPagesValue = totalPages.value
+      const currentPageValue = currentPage.value
+      
+      let startPage = Math.max(1, currentPageValue - Math.floor(maxVisiblePages / 2))
+      let endPage = Math.min(totalPagesValue, startPage + maxVisiblePages - 1)
+      
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1)
+      }
+      
+      const pages = []
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i)
+      }
+      
+      return pages
+    })
 
     // 表单引用
     const ruleFormRef = ref(null)
@@ -346,6 +430,15 @@ export default {
       // 重新加载数据
     }
 
+    // 跳转到指定页面
+    const goToPage = (page) => {
+      if (page < 1 || page > totalPages.value || page === currentPage.value) {
+        return
+      }
+      currentPage.value = page
+      // 重新加载数据
+    }
+
     const handleRowClick = (row) => {
       console.log('点击行：', row)
       handleEdit(row)
@@ -355,6 +448,8 @@ export default {
       currentPage,
       pageSize,
       total,
+      totalPages,
+      visiblePages,
       ruleFormRef,
       pushRules,
       receiverGroups,
@@ -371,6 +466,7 @@ export default {
       handleSubmit,
       handleSizeChange,
       handleCurrentChange,
+      goToPage,
       handleRowClick
     }
   }
@@ -378,6 +474,85 @@ export default {
 </script>
 
 <style scoped>
+/* ==================== 科技感主题样式 ==================== */
+
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 20px;
+  padding-bottom: 40px;
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 标题样式 */
+.warning-push h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .warning-push {
   padding: 20px;
   height: calc(100vh - 120px);
@@ -385,15 +560,29 @@ export default {
   flex-direction: column;
 }
 
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
 /* 科技感卡片样式 */
 .tech-card {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
 }
 
 .content-area {
@@ -1056,5 +1245,121 @@ border-right: none !important;
   background: rgba(108, 117, 125, 0.15) !important;
   border-color: rgba(108, 117, 125, 0.3) !important;
   color: #6c757d !important;
+}
+
+/* 增强型分页样式 */
+.tech-pagination {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.pagination-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.pagination-info .total-count {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.page-size-select {
+  margin: 0 5px;
+  width: 80px;
+}
+
+.page-size-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  height: 28px !important;
+}
+
+.page-size-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 12px !important;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.pagination-btn:disabled {
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
+}
+
+.page-btn {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.page-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  color: white;
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.page-btn:disabled {
+  background: rgba(0, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.1);
+  cursor: not-allowed;
 }
 </style>

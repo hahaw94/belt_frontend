@@ -2,7 +2,7 @@
   <div class="video-playback">
     <div class="control-panel tech-card">
       <el-form :inline="true">
-        <el-form-item label="选择设备">
+        <el-form-item>
           <div class="custom-select" :class="{ 'is-open': isDropdownOpen }" @click="toggleDropdown">
             <div class="select-input">
               <span class="selected-text">{{ selectedDeviceName || '请选择设备' }}</span>
@@ -25,7 +25,7 @@
             </div>
           </div>
         </el-form-item>
-        <el-form-item label="选择时间">
+        <el-form-item>
           <el-date-picker
             v-model="dateTimeRange"
             type="datetimerange"
@@ -276,9 +276,14 @@ export default {
 
 .control-panel {
   padding: 16px;
+  margin-top: 20px;
   overflow: visible;
   position: relative;
   z-index: 50;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
 }
 
 .content-area {

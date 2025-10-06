@@ -1,5 +1,9 @@
 <template>
-  <div class="algorithm-warehouse-container sub-page-content">
+  <div class="algorithm-warehouse-container tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background">
+    </div>
+    
     <h2>算法仓</h2>
 
     <!-- 算法上传 -->
@@ -519,13 +523,63 @@ const getStatusType = (status) => {
 </script>
 
 <style scoped>
+/* 确保页面可以滚动 */
+html, body {
+  overflow: visible !important;
+  height: auto !important;
+}
+
 .sub-page-content {
-  min-height: calc(100vh - 140px);
-  padding-bottom: 40px;
+  overflow: visible !important;
+  height: auto !important;
 }
 
 .algorithm-warehouse-container {
-  padding: 20px;
+  padding: 20px 20px 40px 20px;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-sizing: border-box;
+  /* Firefox 滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 255, 0.3) rgba(0, 255, 255, 0.1);
+  /* 确保滚动条始终可见 */
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(0, 255, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0, 255, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(0, 255, 255, 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tech-page-container {
+  position: relative;
+  z-index: 10;
+}
+
+/* 标题样式 */
+.algorithm-warehouse-container h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 /* 科技感卡片样式 */
@@ -537,6 +591,7 @@ const getStatusType = (status) => {
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 0 20px rgba(0, 255, 255, 0.1) !important;
+  flex-shrink: 0;
 }
 
 .tech-card :deep(.el-card__header) {
@@ -805,6 +860,48 @@ const getStatusType = (status) => {
 
 .custom-select-option.is-selected:hover {
   background: rgba(0, 255, 255, 0.25) !important;
+}
+
+/* 主容器科技感滚动条样式 - 与左侧菜单栏一致 */
+.algorithm-warehouse-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.algorithm-warehouse-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.algorithm-warehouse-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: inset 0 0 6px rgba(0, 255, 255, 0.1);
+}
+
+.algorithm-warehouse-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 
+    inset 0 0 6px rgba(0, 255, 255, 0.2),
+    0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.algorithm-warehouse-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 
+    inset 0 0 6px rgba(0, 255, 255, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.6);
 }
 
 /* 下拉框滚动条样式 */

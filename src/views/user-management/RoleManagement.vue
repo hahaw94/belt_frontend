@@ -4,7 +4,7 @@
     <div class="tech-background">
     </div>
     
-
+    <h2>角色管理</h2>
 
     <el-card class="role-list-card tech-card mb-20" shadow="hover">
       <template #header>
@@ -622,6 +622,20 @@ onMounted(() => {
   overflow-y: auto; /* 垂直滚动 */
   overflow-x: hidden; /* 隐藏水平滚动 */
   box-sizing: border-box; /* 包含padding在内的盒子模型 */
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 标题样式 */
+.role-management-integrated-container h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
 }
 
 /* 自定义滚动条样式 - 科技感 */

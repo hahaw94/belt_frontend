@@ -313,13 +313,13 @@ export default {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .map-management-container {
-    padding: 15px;
+    padding: 10px;
     height: calc(100vh - 100px);
   }
   
   .map-management-container h2 {
     font-size: 20px;
-    margin-bottom: 15px;
+    margin: 16px 0;
   }
   
   .management-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item) {

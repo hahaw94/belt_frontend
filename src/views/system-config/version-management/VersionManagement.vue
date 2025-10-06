@@ -2084,7 +2084,7 @@ onMounted(async () => {
 }
 
 .version-management-container {
-  padding: 24px;
+  padding: 20px;
 }
 
 .config-card {
@@ -2101,7 +2101,10 @@ onMounted(async () => {
 }
 
 .version-management-container h2 {
+  margin: 24px 0 20px 0;
   color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
   text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
   position: relative;
   z-index: 10;
@@ -2156,15 +2159,15 @@ onMounted(async () => {
 }
 
 /* 响应式布局 */
-@media (max-width: 1200px) {
-  .version-management-container {
-    padding: 16px;
-  }
-}
 
 @media (max-width: 768px) {
   .version-management-container {
-    padding: 12px;
+    padding: 10px;
+  }
+  
+  .version-management-container h2 {
+    font-size: 20px;
+    margin: 16px 0;
   }
   
   .card-header {

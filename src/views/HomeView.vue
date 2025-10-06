@@ -2344,7 +2344,7 @@ onUnmounted(() => {
   flex-direction: column;
   height: 100%;
   justify-content: space-between;
-  padding: 0.5% 0; /* 减少内边距，为内容留更多空间 */
+  padding: 3.5% 0 0.5% 0; /* 增加顶部内边距从0.5%到8%，将内容整体向下移动 */
 }
 
 .main-alarm-display {

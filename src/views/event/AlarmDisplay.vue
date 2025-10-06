@@ -1,144 +1,170 @@
 <template>
-  <div class="alarm-display">
-    <div class="search-panel tech-card">
-      <el-form :inline="true" :model="searchForm">
-        <el-form-item label="时间范围">
-          <el-date-picker
-            v-model="searchForm.timeRange"
-            type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            :shortcuts="dateShortcuts"
-          />
-        </el-form-item>
-        <el-form-item label="告警类型">
-          <div class="custom-select" :class="{ 'is-open': isAlarmDropdownOpen }" @click="toggleAlarmDropdown">
-            <div class="select-input">
-              <span class="selected-text">{{ getSelectedAlarmTypeName() || '请选择告警类型' }}</span>
-              <div class="select-arrow">
-                <svg viewBox="0 0 1024 1024" width="14" height="14">
-                  <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="dropdown-menu" v-show="isAlarmDropdownOpen">
-              <div 
-                class="dropdown-item" 
-                :class="{ 'is-selected': !searchForm.alarmType }"
-                @click.stop="selectAlarmType('')"
-              >
-                全部
-              </div>
-              <div 
-                class="dropdown-item" 
-                :class="{ 'is-selected': searchForm.alarmType === 'behavior' }"
-                @click.stop="selectAlarmType('behavior')"
-              >
-                异常行为
-              </div>
-              <div 
-                class="dropdown-item" 
-                :class="{ 'is-selected': searchForm.alarmType === 'object' }"
-                @click.stop="selectAlarmType('object')"
-              >
-                可疑物品
-              </div>
-              <div 
-                class="dropdown-item" 
-                :class="{ 'is-selected': searchForm.alarmType === 'intrusion' }"
-                @click.stop="selectAlarmType('intrusion')"
-              >
-                区域入侵
-              </div>
-            </div>
+  <div class="alarm-display tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background"></div>
+    
+    <h2>告警信息展示</h2>
+    
+    <!-- 搜索筛选卡片 -->
+    <div class="search-filters-card tech-card mb-20">
+      <div class="search-filters-header">
+        <span class="filter-title">搜索筛选</span>
+      </div>
+      <div class="search-filters-content">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label for="timeRange">时间范围</label>
+            <el-date-picker
+              v-model="searchForm.timeRange"
+              id="timeRange"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              :shortcuts="dateShortcuts"
+              class="tech-input"
+            />
           </div>
-        </el-form-item>
-        <el-form-item label="点位">
-          <div class="custom-select" :class="{ 'is-open': isLocationDropdownOpen }" @click="toggleLocationDropdown">
-            <div class="select-input">
-              <span class="selected-text">{{ getSelectedLocationName() || '请选择点位' }}</span>
-              <div class="select-arrow">
-                <svg viewBox="0 0 1024 1024" width="14" height="14">
-                  <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="dropdown-menu" v-show="isLocationDropdownOpen">
-              <div 
-                class="dropdown-item" 
-                :class="{ 'is-selected': !searchForm.location }"
-                @click.stop="selectLocation('')"
-              >
-                全部
-              </div>
-              <div 
-                class="dropdown-item" 
-                v-for="location in locations" 
+          <div class="filter-item">
+            <label for="alarmType">告警类型</label>
+            <el-select
+              v-model="searchForm.alarmType"
+              id="alarmType"
+              placeholder="全部"
+              class="tech-select"
+              clearable
+              @change="handleSearch"
+            >
+              <el-option label="全部" value="" />
+              <el-option label="异常行为" value="behavior" />
+              <el-option label="可疑物品" value="object" />
+              <el-option label="区域入侵" value="intrusion" />
+            </el-select>
+          </div>
+          <div class="filter-item">
+            <label for="location">点位</label>
+            <el-select
+              v-model="searchForm.location"
+              id="location"
+              placeholder="全部"
+              class="tech-select"
+              clearable
+              @change="handleSearch"
+            >
+              <el-option label="全部" value="" />
+              <el-option
+                v-for="location in locations"
                 :key="location.id"
-                :class="{ 'is-selected': searchForm.location === location.id }"
-                @click.stop="selectLocation(location.id)"
-              >
-                {{ location.name }}
-              </div>
-            </div>
+                :label="location.name"
+                :value="location.id"
+              />
+            </el-select>
           </div>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>
-            查询
-          </el-button>
-          <el-button @click="handleReset">
-            <el-icon><Refresh /></el-icon>
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
+          <div class="filter-actions">
+            <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">搜索</el-button>
+            <el-button :icon="Refresh" class="tech-button-sm" @click="handleReset">重置</el-button>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- 表格和分页 -->
     <div class="content-area tech-card">
-      <div class="tech-table">
-        <el-table
-          :data="alarmList"
-          style="width: 100%"
-          @row-click="handleRowClick"
-          :border="false"
-        >
-        <el-table-column type="index" width="50" />
-        <el-table-column prop="time" label="时间" width="180" />
-        <el-table-column prop="type" label="告警类型" width="120" />
-        <el-table-column prop="location" label="点位" width="150" />
-        <el-table-column prop="description" label="描述" />
-        <el-table-column prop="status" label="状态" width="100">
+      <el-table
+        :data="alarmList"
+        border
+        stripe
+        class="tech-table"
+        style="width: 100%"
+        @row-click="handleRowClick"
+      >
+        <el-table-column type="index" label="序号" width="80" align="center" header-align="center" />
+        <el-table-column prop="time" label="时间" width="180" header-align="center" />
+        <el-table-column prop="type" label="告警类型" width="120" header-align="center" />
+        <el-table-column prop="location" label="点位" width="150" header-align="center" />
+        <el-table-column prop="description" label="描述" min-width="200" header-align="center" />
+        <el-table-column prop="status" label="状态" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
               {{ row.status }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column fixed="right" label="操作" width="150">
+        <el-table-column fixed="right" label="操作" width="180" align="center" header-align="center">
           <template #default="{ row }">
-            <el-button link type="primary" @click.stop="handleView(row)">
+            <el-button type="primary" size="small" class="tech-button-xs" @click.stop="handleView(row)">
               查看
             </el-button>
-            <el-button link type="primary" @click.stop="handleProcess(row)">
+            <el-button type="warning" size="small" class="tech-button-xs" @click.stop="handleProcess(row)">
               处理
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      </div>
 
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+      <!-- 增强型分页组件 -->
+      <div class="pagination-container tech-pagination">
+        <div class="pagination-info">
+          <span>共 <span class="total-count">{{ total }}</span> 条记录，每页显示 
+            <el-select 
+              v-model="pageSize" 
+              @change="handleSizeChange"
+              class="page-size-select"
+              size="small"
+            >
+              <el-option label="10" :value="10" />
+              <el-option label="20" :value="20" />
+              <el-option label="50" :value="50" />
+              <el-option label="100" :value="100" />
+            </el-select> 条
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(1)"
+          >
+            首页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+          >
+            上一页
+          </el-button>
+          <div class="pagination-pages">
+            <button 
+              v-for="page in visiblePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: page === currentPage }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >
+            下一页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(totalPages)"
+          >
+            末页
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 告警详情对话框 -->
@@ -146,6 +172,9 @@
       v-model="dialogVisible"
       title="告警详情"
       width="60%"
+      class="tech-dialog"
+      :close-on-click-modal="false"
+      destroy-on-close
     >
       <div v-if="selectedAlarm" class="alarm-detail">
         <div class="detail-item">
@@ -194,16 +223,12 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
 
 export default {
   name: 'AlarmDisplay',
-  components: {
-    Search,
-    Refresh
-  },
   setup() {
     // 搜索表单
     const searchForm = reactive({
@@ -211,10 +236,6 @@ export default {
       alarmType: '',
       location: ''
     })
-
-    // 下拉菜单控制
-    const isAlarmDropdownOpen = ref(false)
-    const isLocationDropdownOpen = ref(false)
 
     // 分页相关
     const currentPage = ref(1)
@@ -280,9 +301,36 @@ export default {
     const dialogVisible = ref(false)
     const selectedAlarm = ref(null)
 
+    // 计算总页数
+    const totalPages = computed(() => {
+      return Math.ceil(total.value / pageSize.value) || 1
+    })
+
+    // 计算可见页码
+    const visiblePages = computed(() => {
+      const maxVisiblePages = 5
+      const totalPagesValue = totalPages.value
+      const currentPageValue = currentPage.value
+      
+      let startPage = Math.max(1, currentPageValue - Math.floor(maxVisiblePages / 2))
+      let endPage = Math.min(totalPagesValue, startPage + maxVisiblePages - 1)
+      
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1)
+      }
+      
+      const pages = []
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i)
+      }
+      
+      return pages
+    })
+
     // 处理搜索
     const handleSearch = () => {
       console.log('搜索条件：', searchForm)
+      currentPage.value = 1
       // 实现搜索逻辑
     }
 
@@ -291,6 +339,8 @@ export default {
       searchForm.timeRange = []
       searchForm.alarmType = ''
       searchForm.location = ''
+      currentPage.value = 1
+      // 重新加载数据
     }
 
     // 获取状态标签类型
@@ -340,6 +390,7 @@ export default {
     const handleSizeChange = (val) => {
       console.log('每页显示条数：', val)
       pageSize.value = val
+      currentPage.value = 1
       // 重新加载数据
     }
 
@@ -349,65 +400,19 @@ export default {
       // 重新加载数据
     }
 
+    // 跳转到指定页面
+    const goToPage = (page) => {
+      if (page < 1 || page > totalPages.value || page === currentPage.value) {
+        return
+      }
+      currentPage.value = page
+      // 重新加载数据
+    }
+
     const handleRowClick = (row) => {
       console.log('点击行：', row)
       handleView(row)
     }
-
-    // 下拉菜单相关方法
-    const toggleAlarmDropdown = () => {
-      isAlarmDropdownOpen.value = !isAlarmDropdownOpen.value
-      isLocationDropdownOpen.value = false
-    }
-
-    const toggleLocationDropdown = () => {
-      isLocationDropdownOpen.value = !isLocationDropdownOpen.value
-      isAlarmDropdownOpen.value = false
-    }
-
-    const selectAlarmType = (type) => {
-      searchForm.alarmType = type
-      isAlarmDropdownOpen.value = false
-    }
-
-    const selectLocation = (locationId) => {
-      searchForm.location = locationId
-      isLocationDropdownOpen.value = false
-    }
-
-    const getSelectedAlarmTypeName = () => {
-      const typeMap = {
-        '': '全部',
-        'behavior': '异常行为',
-        'object': '可疑物品',
-        'intrusion': '区域入侵'
-      }
-      return typeMap[searchForm.alarmType] || '请选择告警类型'
-    }
-
-    const getSelectedLocationName = () => {
-      if (!searchForm.location) return '全部'
-      const location = locations.value.find(loc => loc.id === searchForm.location)
-      return location ? location.name : '请选择点位'
-    }
-
-    // 点击外部关闭下拉菜单
-    const handleClickOutside = (event) => {
-      const customSelects = event.target.closest('.custom-select')
-      if (!customSelects) {
-        isAlarmDropdownOpen.value = false
-        isLocationDropdownOpen.value = false
-      }
-    }
-
-    // 生命周期
-    onMounted(() => {
-      document.addEventListener('click', handleClickOutside)
-    })
-
-    onUnmounted(() => {
-      document.removeEventListener('click', handleClickOutside)
-    })
 
     return {
       searchForm,
@@ -416,11 +421,11 @@ export default {
       currentPage,
       pageSize,
       total,
+      totalPages,
+      visiblePages,
       dateShortcuts,
       dialogVisible,
       selectedAlarm,
-      isAlarmDropdownOpen,
-      isLocationDropdownOpen,
       handleSearch,
       handleReset,
       getStatusType,
@@ -430,18 +435,94 @@ export default {
       handleSizeChange,
       handleCurrentChange,
       handleRowClick,
-      toggleAlarmDropdown,
-      toggleLocationDropdown,
-      selectAlarmType,
-      selectLocation,
-      getSelectedAlarmTypeName,
-      getSelectedLocationName
+      goToPage,
+      Search,
+      Refresh
     }
   }
 }
 </script>
 
 <style scoped>
+/* ==================== 科技感主题样式 ==================== */
+
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 20px;
+  padding-bottom: 40px;
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 标题样式 */
+.alarm-display h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .alarm-display {
   padding: 20px;
   height: calc(100vh - 120px);
@@ -452,32 +533,124 @@ export default {
 
 /* 科技感卡片样式 */
 .tech-card {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 20px;
 }
 
-.search-panel {
-  padding: 16px;
+.mb-20 {
+  margin-bottom: 20px;
 }
 
 .content-area {
   flex: 1;
-  padding: 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
+  background: transparent !important;
+  border: none !important;
 }
 
-.content-area .el-table {
-  flex: 1;
+/* 搜索筛选样式 */
+.search-filters-card {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
 }
 
-.content-area .el-pagination {
-  margin-top: 16px;
+.search-filters-header {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.filter-title {
+  color: #00ffff;
+  font-weight: bold;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.search-filters-content {
+  padding: 0;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-item label {
+  color: #00ffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.tech-input :deep(.el-input__wrapper),
+.tech-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-input :deep(.el-input__inner),
+.tech-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.tech-button-xs {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.08) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  margin: 0 2px !important;
+}
+
+.tech-button-xs:hover {
+  background: rgba(0, 255, 255, 0.15) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
 }
 
 .alarm-detail {
@@ -1134,35 +1307,183 @@ export default {
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
 }
 
+/* 科技感对话框 - 完整样式 */
 :deep(.el-dialog) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 15px !important;
+  box-shadow: 
+    0 0 50px rgba(0, 255, 255, 0.3),
+    inset 0 0 50px rgba(0, 255, 255, 0.08) !important;
 }
 
 :deep(.el-dialog__header) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px 12px 0 0 !important;
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 15px 15px 0 0 !important;
 }
 
 :deep(.el-dialog__title) {
   color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+  font-weight: bold !important;
 }
 
 :deep(.el-dialog__body) {
-  background: rgba(15, 25, 45, 0.95) !important;
+  background: rgba(45, 55, 75, 0.92) !important;
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
-/* 自建下拉菜单样式 */
-.custom-select {
+/* 对话框内的标签 */
+.detail-item .label {
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 对话框按钮 */
+:deep(.el-dialog .el-button) {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-dialog .el-button:hover) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+:deep(.el-dialog .el-button--primary) {
+  background: rgba(0, 255, 255, 0.3) !important;
+  border-color: #00ffff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-dialog .el-button--primary:hover) {
+  background: rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.5) !important;
+}
+
+/* 增强型分页样式 */
+.tech-pagination {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
   position: relative;
-  min-width: 200px;
+  z-index: 1;
+}
+
+.pagination-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.pagination-info .total-count {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.page-size-select {
+  margin: 0 5px;
+  width: 80px;
+}
+
+.page-size-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  height: 28px !important;
+}
+
+.page-size-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 12px !important;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.pagination-btn:disabled {
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
+}
+
+.page-btn {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-radius: 4px;
   cursor: pointer;
-  user-select: none;
-  z-index: 100;
+  transition: all 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.page-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  color: white;
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.page-btn:disabled {
+  background: rgba(0, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.1);
+  cursor: not-allowed;
 }
 
 .select-input {
@@ -1376,5 +1697,77 @@ export default {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* ==================== 超强力移除表格左右白线 ==================== */
+/* 这是最终的强制覆盖，确保表格左右没有任何边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__body-wrapper),
+.tech-table :deep(.el-table__footer-wrapper) {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+  border-left-style: none !important;
+  border-right-style: none !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+}
+
+/* 移除所有可能的左右边框伪元素 */
+.tech-table::before,
+.tech-table::after,
+.tech-table :deep(.el-table)::before,
+.tech-table :deep(.el-table)::after,
+.tech-table :deep(.el-table__inner-wrapper)::before,
+.tech-table :deep(.el-table__inner-wrapper)::after,
+.tech-table :deep(.el-table__header-wrapper)::before,
+.tech-table :deep(.el-table__header-wrapper)::after,
+.tech-table :deep(.el-table__body-wrapper)::before,
+.tech-table :deep(.el-table__body-wrapper)::after {
+  display: none !important;
+  content: none !important;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 强制表格容器没有左右边框 */
+.tech-table {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* 确保表格的第一列和最后一列没有额外边框 */
+.tech-table :deep(.el-table th:first-child),
+.tech-table :deep(.el-table td:first-child) {
+  border-left: 0 !important;
+}
+
+.tech-table :deep(.el-table th:last-child),
+.tech-table :deep(.el-table td:last-child) {
+  border-right: 0 !important;
+}
+
+/* 移除所有 border-patch 元素（Element Plus 添加的边框修复元素） */
+.tech-table :deep([class*="border-left"]),
+.tech-table :deep([class*="border-right"]) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: 0 !important;
+}
+
+/* 最终的全局覆盖 */
+.tech-table :deep(*[class*="el-table"]) {
+  border-left: 0 !important;
+  border-right: 0 !important;
 }
 </style>

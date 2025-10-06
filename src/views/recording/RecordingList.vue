@@ -1,22 +1,25 @@
 <template>
-  <div class="recording-list">
-    <el-card class="tech-card">
+  <div class="recording-list-integrated-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background">
+    </div>
+    
+    <h2>录像管理</h2>
+
+    <el-card class="recording-list-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>录像管理</span>
-                           <div class="header-actions">
-                   <el-button type="info" @click="testMockData" size="small">
-                     🧪 测试Mock
-                   </el-button>
-                   <el-button type="success" @click="manualRefresh" :loading="loading">
+          <span>录像列表</span>
+          <div>
+            <el-button type="success" @click="manualRefresh" :loading="loading" size="small" class="tech-button-sm">
                      <el-icon><Refresh /></el-icon>
                      手动刷新
                    </el-button>
-                   <el-button type="primary" @click="showUploadDialog">
+            <el-button type="primary" @click="showUploadDialog" size="small" class="tech-button-sm">
                      <el-icon><Upload /></el-icon>
                      上传录像
                    </el-button>
-                   <el-button type="danger" @click="cleanupOldRecordings">
+            <el-button type="danger" @click="cleanupOldRecordings" size="small" class="tech-button-sm">
                      <el-icon><Delete /></el-icon>
                      清理过期录像
                    </el-button>
@@ -24,10 +27,15 @@
         </div>
       </template>
 
-      <!-- 搜索筛选栏 -->
-      <div class="search-bar">
-        <el-form :inline="true" :model="searchForm" label-width="80px">
-          <el-form-item label="设备名称">
+      <!-- 录像搜索和筛选 -->
+      <div class="search-filters-card tech-card mb-20">
+        <div class="search-filters-header">
+          <span class="filter-title">搜索筛选</span>
+        </div>
+        <div class="search-filters-content">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label for="deviceFilter">设备名称</label>
             <div class="custom-select" :class="{ 'is-open': isDeviceDropdownOpen }" @click="toggleDeviceDropdown">
               <div class="select-input">
                 <span class="selected-text">{{ getSelectedDeviceName() || '请选择设备' }}</span>
@@ -56,19 +64,23 @@
                 </div>
               </div>
             </div>
-          </el-form-item>
-          <el-form-item label="时间范围">
+            </div>
+            <div class="filter-item">
+              <label for="timeRangeFilter">时间范围</label>
             <el-date-picker
               v-model="searchForm.timeRange"
+                id="timeRangeFilter"
               type="datetimerange"
               range-separator="至"
               start-placeholder="开始时间"
               end-placeholder="结束时间"
               format="YYYY-MM-DD HH:mm:ss"
               value-format="YYYY-MM-DD HH:mm:ss"
+                class="tech-input"
             />
-          </el-form-item>
-          <el-form-item label="告警类型">
+            </div>
+            <div class="filter-item">
+              <label for="alarmTypeFilter">告警类型</label>
             <div class="custom-select" :class="{ 'is-open': isAlarmDropdownOpen }" @click="toggleAlarmDropdown">
               <div class="select-input">
                 <span class="selected-text">{{ searchForm.alarm_type || '请选择告警类型' }}</span>
@@ -116,12 +128,13 @@
                 </div>
               </div>
             </div>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="handleSearch">搜索</el-button>
-            <el-button @click="resetSearch">重置</el-button>
-          </el-form-item>
-        </el-form>
+            </div>
+            <div class="filter-actions">
+              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">搜索</el-button>
+              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetSearch">重置</el-button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 录像列表 -->
@@ -165,17 +178,69 @@
         </el-table-column>
       </el-table>
 
-      <!-- 分页 -->
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+      <!-- 增强型分页组件 -->
+      <div class="pagination-container tech-pagination">
+        <div class="pagination-info">
+          <span>共 <span class="total-count">{{ pagination.total }}</span> 条记录，每页显示 
+            <el-select 
+              v-model="pagination.pageSize" 
+              @change="handleSizeChange"
+              class="page-size-select"
+              size="small"
+            >
+              <el-option label="10" :value="10" />
+              <el-option label="20" :value="20" />
+              <el-option label="50" :value="50" />
+              <el-option label="100" :value="100" />
+            </el-select> 条
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === 1 || loading"
+            @click="goToPage(1)"
+          >
+            首页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === 1 || loading"
+            @click="goToPage(pagination.page - 1)"
+          >
+            上一页
+          </el-button>
+          <div class="pagination-pages">
+            <button 
+              v-for="page in visiblePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: page === pagination.page }"
+              @click="goToPage(page)"
+              :disabled="loading"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === totalPages || loading"
+            @click="goToPage(pagination.page + 1)"
+          >
+            下一页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === totalPages || loading"
+            @click="goToPage(totalPages)"
+          >
+            末页
+          </el-button>
+        </div>
       </div>
     </el-card>
 
@@ -281,9 +346,9 @@
 </template>
 
 <script setup name="RecordingList">
-import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Delete, Download, VideoPlay, Loading, Upload, Refresh } from '@element-plus/icons-vue'
+import { Delete, Download, VideoPlay, Loading, Upload, Refresh, Search, RefreshRight } from '@element-plus/icons-vue'
 import { recordingApi } from '@/api/recording'
 import { useRecordingStore } from '@/stores/recording'
 
@@ -326,6 +391,33 @@ const pagination = reactive({
 
 // 录像列表
 const recordingList = ref([])
+
+// 计算属性 - 总页数
+const totalPages = computed(() => {
+  return Math.ceil(pagination.total / pagination.pageSize) || 1
+})
+
+// 计算属性 - 可见页码
+const visiblePages = computed(() => {
+  const maxVisiblePages = 5
+  const totalPagesValue = totalPages.value
+  const currentPage = pagination.page
+  
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2))
+  let endPage = Math.min(totalPagesValue, startPage + maxVisiblePages - 1)
+  
+  // 调整起始页
+  if (endPage - startPage + 1 < maxVisiblePages) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1)
+  }
+  
+  const pages = []
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i)
+  }
+  
+  return pages
+})
 
 // 监听store中录像数据的变化，实现实时同步
 watch(() => recordingStore.recordings, (newRecordings) => {
@@ -480,9 +572,14 @@ const handleSizeChange = (val) => {
   loadRecordingList()
 }
 
-// 当前页改变
-const handleCurrentChange = (val) => {
-  pagination.page = val
+// 跳转到指定页面
+const goToPage = (page) => {
+  // 页码验证
+  if (page < 1 || page > totalPages.value || page === pagination.page || loading.value) {
+    return
+  }
+  
+  pagination.page = page
   loadRecordingList()
 }
 
@@ -926,26 +1023,6 @@ const cleanupOldRecordings = async () => {
   }
 }
 
-// 测试Mock数据
-const testMockData = async () => {
-  console.log('🧪 开始测试录像Mock数据...')
-  ElMessage.info('正在测试Mock数据，请查看控制台输出')
-  
-  try {
-    // 导入测试函数
-    const { testRecordingMock } = await import('@/test-recording-mock')
-    const result = await testRecordingMock()
-    
-    if (result) {
-      ElMessage.success('Mock数据测试成功！请查看控制台详细输出')
-    } else {
-      ElMessage.error('Mock数据测试失败！请查看控制台错误信息')
-    }
-  } catch (error) {
-    console.error('测试失败:', error)
-    ElMessage.error('测试执行失败：' + error.message)
-  }
-}
 
 onMounted(async () => {
   // 添加外部点击事件监听
@@ -966,55 +1043,338 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.recording-list {
-  padding: 20px;
+/* ==================== 科技感主题样式 ==================== */
+
+/* 确保页面可以滚动 - 参考算法仓设计 */
+html, body {
+  overflow: visible !important;
+  height: auto !important;
 }
 
-/* 科技感卡片样式 */
+.sub-page-content {
+  overflow: visible !important;
+  height: auto !important;
+}
+
+
+/* 页面容器 - 参考录像统计页面的设计 */
+.recording-list-integrated-container {
+  padding: 20px;
+  height: calc(100vh - 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* 滚动条样式 - 与录像统计页面一致 */
+.recording-list-integrated-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.recording-list-integrated-container::-webkit-scrollbar-track {
+  background: rgba(20, 30, 50, 0.3);
+  border-radius: 4px;
+}
+
+.recording-list-integrated-container::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.recording-list-integrated-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
+}
+
+/* 标题样式 */
+.recording-list-integrated-container h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 科技感卡片 */
 .tech-card {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 20px;
 }
 
 .tech-card :deep(.el-card__header) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px 12px 0 0 !important;
-  color: #00ffff !important;
-  padding: 16px 20px !important;
+  background: transparent;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 0;
 }
 
 .tech-card :deep(.el-card__body) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  padding: 20px !important;
-  border-radius: 0 0 12px 12px !important;
-  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent;
+  padding: 0;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-weight: bold;
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
 
-.header-actions {
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 搜索筛选样式 */
+.search-filters-card {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+}
+
+.search-filters-header {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.filter-title {
+  color: #00ffff;
+  font-weight: bold;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.search-filters-content {
+  padding: 0;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.filter-item {
   display: flex;
-  gap: 12px;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-item label {
+  color: #00ffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.tech-input :deep(.el-input__wrapper),
+.tech-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-input :deep(.el-input__inner),
+.tech-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
   align-items: center;
 }
 
-.search-bar {
-  margin-bottom: 20px;
+/* 增强型分页样式 */
+.tech-pagination {
+  margin-top: 20px;
+  margin-bottom: 20px; /* 确保底部有足够空间 */
 }
 
 .pagination-container {
-  margin-top: 20px;
-  text-align: right;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  position: relative; /* 确保分页组件在正确的层级 */
+  z-index: 1; /* 确保分页组件不被其他元素遮挡 */
+}
+
+.pagination-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.pagination-info .total-count {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.page-size-select {
+  margin: 0 5px;
+  width: 80px;
+}
+
+.page-size-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  height: 28px !important;
+}
+
+.page-size-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 12px !important;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.pagination-btn:disabled {
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
+}
+
+.page-btn {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.page-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  color: white;
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.page-btn:disabled {
+  background: rgba(0, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.1);
+  cursor: not-allowed;
 }
 
 .video-player-container {
@@ -2319,4 +2679,269 @@ onUnmounted(() => {
 .tech-table::after {
   display: none !important;
 }
-</style> 
+
+/* Element Plus 组件深色主题样式 */
+:deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  background: rgba(25, 35, 55, 0.95) !important;
+  border-color: #00ffff !important;
+  box-shadow: 
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    0 0 15px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-input__inner) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-weight: 500 !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-style: italic !important;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.05) !important;
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown) {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  border-radius: 8px !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  padding: 8px 16px !important;
+  transition: all 0.3s ease !important;
+  border-radius: 4px !important;
+  margin: 2px 4px !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+  transform: translateX(2px) !important;
+  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.25) !important;
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  box-shadow: 
+    0 2px 8px rgba(0, 255, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-date-editor) {
+  background: rgba(20, 30, 50, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 255, 255, 0.05),
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(5px) !important;
+}
+
+:deep(.el-date-editor:hover) {
+  background: rgba(25, 35, 55, 0.9) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 
+    inset 0 0 15px rgba(0, 255, 255, 0.08),
+    0 0 8px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-date-editor.is-active) {
+  background: rgba(25, 35, 55, 0.95) !important;
+  border-color: #00ffff !important;
+  box-shadow: 
+    inset 0 0 20px rgba(0, 255, 255, 0.1),
+    0 0 0 2px rgba(0, 255, 255, 0.3),
+    0 0 15px rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-picker-panel) {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(15px) !important;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-picker-panel__body) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-date-table) {
+  background: transparent !important;
+}
+
+:deep(.el-date-table td) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-date-table td:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-date-table td.current) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-tag) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.el-tag--primary) {
+  background: rgba(0, 150, 200, 0.6) !important;
+  border-color: rgba(0, 200, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--success) {
+  background: rgba(103, 194, 58, 0.6) !important;
+  border-color: rgba(103, 194, 58, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--warning) {
+  background: rgba(230, 162, 60, 0.6) !important;
+  border-color: rgba(230, 162, 60, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--danger) {
+  background: rgba(245, 108, 108, 0.6) !important;
+  border-color: rgba(245, 108, 108, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-tag--info) {
+  background: rgba(144, 147, 153, 0.6) !important;
+  border-color: rgba(144, 147, 153, 0.5) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-dialog) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-dialog__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+}
+
+:deep(.el-dialog__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .tech-page-container {
+    padding: 10px;
+  }
+  
+  .filter-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  
+  .filter-actions {
+    grid-column: span 2;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  
+  .pagination-container {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .pagination-controls {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .recording-list-integrated-container h2 {
+    font-size: 20px;
+  }
+  
+  /* 小屏幕表格适配 */
+  .tech-table {
+    min-width: 800px; /* 确保表格有最小宽度，触发水平滚动 */
+  }
+  
+  /* 表格容器添加水平滚动 */
+  .tech-card :deep(.el-card__body) {
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  .filter-actions {
+    grid-column: span 1;
+  }
+}
+</style>

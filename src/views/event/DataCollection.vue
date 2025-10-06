@@ -1,28 +1,16 @@
 <template>
-  <div class="data-collection">
-    <div class="control-panel tech-card">
-      <el-form :inline="true" :model="searchForm">
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>
-            查询
-          </el-button>
-          <el-button @click="handleReset">
-            <el-icon><Refresh /></el-icon>
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
-    </div>
-
+  <div class="data-collection tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background"></div>
+    
+    <h2>数据样本采集</h2>
+    
     <div class="content-area tech-card">
       <div class="button-group">
-        <el-button type="primary" @click="handleExport">
-          <el-icon><Download /></el-icon>
+        <el-button type="primary" :icon="Download" size="small" class="tech-button-sm" @click="handleExport">
           导出选中样本
         </el-button>
-        <el-button type="success" @click="handleUpload">
-          <el-icon><Upload /></el-icon>
+        <el-button type="success" :icon="Upload" size="small" class="tech-button-sm" @click="handleUpload">
           上传至训练平台
         </el-button>
       </div>
@@ -57,15 +45,69 @@
       </el-table>
       </div>
 
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+      <!-- 增强型分页组件 -->
+      <div class="pagination-container tech-pagination">
+        <div class="pagination-info">
+          <span>共 <span class="total-count">{{ total }}</span> 条记录，每页显示 
+            <el-select 
+              v-model="pageSize" 
+              @change="handleSizeChange"
+              class="page-size-select"
+              size="small"
+            >
+              <el-option label="10" :value="10" />
+              <el-option label="20" :value="20" />
+              <el-option label="50" :value="50" />
+              <el-option label="100" :value="100" />
+            </el-select> 条
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(1)"
+          >
+            首页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+          >
+            上一页
+          </el-button>
+          <div class="pagination-pages">
+            <button 
+              v-for="page in visiblePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: page === currentPage }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >
+            下一页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(totalPages)"
+          >
+            末页
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 预览对话框 -->
@@ -137,34 +179,47 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  Search,
-  Refresh,
   Download,
   Upload
 } from '@element-plus/icons-vue'
 
 export default {
   name: 'DataCollection',
-  components: {
-    Search,
-    Refresh,
-    Download,
-    Upload
-  },
   setup() {
-    // 搜索表单
-    const searchForm = reactive({
-      timeRange: [],
-      sampleType: ''
-    })
 
     // 分页相关
     const currentPage = ref(1)
     const pageSize = ref(10)
     const total = ref(100)
+
+    // 计算总页数
+    const totalPages = computed(() => {
+      return Math.ceil(total.value / pageSize.value) || 1
+    })
+
+    // 计算可见页码
+    const visiblePages = computed(() => {
+      const maxVisiblePages = 5
+      const totalPagesValue = totalPages.value
+      const currentPageValue = currentPage.value
+      
+      let startPage = Math.max(1, currentPageValue - Math.floor(maxVisiblePages / 2))
+      let endPage = Math.min(totalPagesValue, startPage + maxVisiblePages - 1)
+      
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1)
+      }
+      
+      const pages = []
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i)
+      }
+      
+      return pages
+    })
 
     // 表格数据
     const sampleList = ref([
@@ -201,18 +256,6 @@ export default {
     const uploadDialogVisible = ref(false)
     const selectedSample = ref(null)
     const uploadProgress = ref(0)
-
-    // 处理搜索
-    const handleSearch = () => {
-      console.log('搜索条件：', searchForm)
-      // 实现搜索逻辑
-    }
-
-    // 重置搜索
-    const handleReset = () => {
-      searchForm.timeRange = []
-      searchForm.sampleType = ''
-    }
 
     // 获取状态标签类型
     const getStatusType = (status) => {
@@ -275,32 +318,122 @@ export default {
       // 重新加载数据
     }
 
+    // 跳转到指定页面
+    const goToPage = (page) => {
+      if (page < 1 || page > totalPages.value || page === currentPage.value) {
+        return
+      }
+      currentPage.value = page
+      // 重新加载数据
+    }
+
     return {
-      searchForm,
       sampleList,
       currentPage,
       pageSize,
       total,
+      totalPages,
+      visiblePages,
       selectedSamples,
       previewDialogVisible,
       uploadDialogVisible,
       selectedSample,
       uploadProgress,
-      handleSearch,
-      handleReset,
       getStatusType,
       handleSelectionChange,
       handlePreview,
       handleExport,
       handleUpload,
       handleSizeChange,
-      handleCurrentChange
+      handleCurrentChange,
+      goToPage,
+      Download,
+      Upload
     }
   }
 }
 </script>
 
 <style scoped>
+/* ==================== 科技感主题样式 ==================== */
+
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 20px;
+  padding-bottom: 40px;
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 标题样式 */
+.data-collection h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .data-collection {
   padding: 20px;
   height: calc(100vh - 120px);
@@ -311,30 +444,44 @@ export default {
 
 /* 科技感卡片样式 */
 .tech-card {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
-}
-
-.control-panel {
-  padding: 16px;
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 20px;
 }
 
 .content-area {
   flex: 1;
-  padding: 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  background: transparent !important;
+  border: none !important;
 }
 
 .button-group {
   display: flex;
   gap: 10px;
+  margin-bottom: 16px;
+  justify-content: flex-end;
+}
+
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
 }
 
 .sample-preview {
@@ -860,6 +1007,122 @@ export default {
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
 }
 
+/* 增强型分页样式 */
+.tech-pagination {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.pagination-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.pagination-info .total-count {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.page-size-select {
+  margin: 0 5px;
+  width: 80px;
+}
+
+.page-size-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  height: 28px !important;
+}
+
+.page-size-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 12px !important;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.pagination-btn:disabled {
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
+}
+
+.page-btn {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.page-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  color: white;
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.page-btn:disabled {
+  background: rgba(0, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.1);
+  cursor: not-allowed;
+}
+
 :deep(.el-dialog) {
   background: rgba(15, 25, 45, 0.95) !important;
   border: 1px solid rgba(0, 255, 255, 0.2) !important;
@@ -911,5 +1174,77 @@ export default {
 :deep(.el-image:hover) {
   border-color: rgba(0, 255, 255, 0.5) !important;
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* ==================== 超强力移除表格左右白线 ==================== */
+/* 这是最终的强制覆盖，确保表格左右没有任何边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__body-wrapper),
+.tech-table :deep(.el-table__footer-wrapper) {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+  border-left-style: none !important;
+  border-right-style: none !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+}
+
+/* 移除所有可能的左右边框伪元素 */
+.tech-table::before,
+.tech-table::after,
+.tech-table :deep(.el-table)::before,
+.tech-table :deep(.el-table)::after,
+.tech-table :deep(.el-table__inner-wrapper)::before,
+.tech-table :deep(.el-table__inner-wrapper)::after,
+.tech-table :deep(.el-table__header-wrapper)::before,
+.tech-table :deep(.el-table__header-wrapper)::after,
+.tech-table :deep(.el-table__body-wrapper)::before,
+.tech-table :deep(.el-table__body-wrapper)::after {
+  display: none !important;
+  content: none !important;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 强制表格容器没有左右边框 */
+.tech-table {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* 确保表格的第一列和最后一列没有额外边框 */
+.tech-table :deep(.el-table th:first-child),
+.tech-table :deep(.el-table td:first-child) {
+  border-left: 0 !important;
+}
+
+.tech-table :deep(.el-table th:last-child),
+.tech-table :deep(.el-table td:last-child) {
+  border-right: 0 !important;
+}
+
+/* 移除所有 border-patch 元素（Element Plus 添加的边框修复元素） */
+.tech-table :deep([class*="border-left"]),
+.tech-table :deep([class*="border-right"]) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: 0 !important;
+}
+
+/* 最终的全局覆盖 */
+.tech-table :deep(*[class*="el-table"]) {
+  border-left: 0 !important;
+  border-right: 0 !important;
 }
 </style>

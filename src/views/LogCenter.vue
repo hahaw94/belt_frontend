@@ -1,9 +1,13 @@
 <template>
-  <div class="log-center">
+  <div class="log-center tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background"></div>
+    
+    <h2>系统操作日志</h2>
+    
     <el-card class="tech-card">
       <template #header>
         <div class="card-header">
-          <span class="card-title">系统操作日志</span>
           <div class="header-actions">
             <el-button type="primary" @click="exportLogs">
               <el-icon><Download /></el-icon>
@@ -18,194 +22,81 @@
       </template>
 
       <!-- 搜索筛选栏 -->
-      <div class="search-bar">
-        <el-form :inline="true" :model="searchForm" label-width="80px">
-          <el-form-item label="时间范围">
+      <div class="search-filters-card">
+        <div class="search-filters-header">
+          <span class="filter-title">搜索筛选</span>
+        </div>
+        <div class="search-filters-content">
+          <div class="filter-row">
+            <div class="filter-item">
+              <label for="timeRange">时间范围</label>
             <el-date-picker
               v-model="searchForm.timeRange"
+                id="timeRange"
               type="datetimerange"
               range-separator="至"
               start-placeholder="开始时间"
               end-placeholder="结束时间"
               format="YYYY-MM-DD HH:mm:ss"
               value-format="YYYY-MM-DD HH:mm:ss"
-              style="width: 380px;"
-            />
-          </el-form-item>
-          <el-form-item label="日志级别">
-            <div class="custom-select" :class="{ 'is-open': isLogLevelDropdownOpen }" @click="toggleLogLevelDropdown">
-              <div class="select-input">
-                <span class="selected-text">{{ getSelectedLogLevelName() || '请选择日志级别' }}</span>
-                <div class="select-arrow">
-                  <svg viewBox="0 0 1024 1024" width="14" height="14">
-                    <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
-                  </svg>
+                class="tech-input"
+                style="width: 100%;"
+              />
                 </div>
-              </div>
-              <div class="dropdown-menu" v-show="isLogLevelDropdownOpen">
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': !searchForm.log_level }"
-                  @click.stop="selectLogLevel('')"
-                >
-                  全部
+            <div class="filter-item">
+              <label for="logLevel">日志级别</label>
+              <el-select
+                v-model="searchForm.log_level"
+                id="logLevel"
+                placeholder="全部"
+                class="tech-select"
+                clearable
+                @change="handleSearch"
+              >
+                <el-option label="全部" value="" />
+                <el-option label="INFO" value="INFO" />
+                <el-option label="WARN" value="WARN" />
+                <el-option label="ERROR" value="ERROR" />
+                <el-option label="DEBUG" value="DEBUG" />
+              </el-select>
                 </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.log_level === 'INFO' }"
-                  @click.stop="selectLogLevel('INFO')"
-                >
-                  INFO
+            <div class="filter-item">
+              <label for="module">功能模块</label>
+              <el-select
+                v-model="searchForm.module"
+                id="module"
+                placeholder="全部"
+                class="tech-select"
+                clearable
+                @change="handleSearch"
+              >
+                <el-option label="全部" value="" />
+                <el-option label="用户管理" value="UserManagement" />
+                <el-option label="设备管理" value="DeviceManagement" />
+                <el-option label="算法配置" value="AlgorithmConfig" />
+                <el-option label="实时检测" value="Detection" />
+                <el-option label="事件中心" value="EventCenter" />
+                <el-option label="系统配置" value="SystemConfig" />
+                <el-option label="录像管理" value="RecordingManagement" />
+                <el-option label="统计分析" value="StatisticsAnalysis" />
+              </el-select>
                 </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.log_level === 'WARN' }"
-                  @click.stop="selectLogLevel('WARN')"
-                >
-                  WARN
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.log_level === 'ERROR' }"
-                  @click.stop="selectLogLevel('ERROR')"
-                >
-                  ERROR
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.log_level === 'DEBUG' }"
-                  @click.stop="selectLogLevel('DEBUG')"
-                >
-                  DEBUG
-                </div>
-              </div>
-            </div>
-          </el-form-item>
-          <el-form-item label="功能模块">
-            <div class="custom-select" :class="{ 'is-open': isModuleDropdownOpen }" @click="toggleModuleDropdown">
-              <div class="select-input">
-                <span class="selected-text">{{ getSelectedModuleName() || '请选择功能模块' }}</span>
-                <div class="select-arrow">
-                  <svg viewBox="0 0 1024 1024" width="14" height="14">
-                    <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
-                  </svg>
-                </div>
-              </div>
-              <div class="dropdown-menu" v-show="isModuleDropdownOpen">
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': !searchForm.module }"
-                  @click.stop="selectModule('')"
-                >
-                  全部
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.module === 'UserManagement' }"
-                  @click.stop="selectModule('UserManagement')"
-                >
-                  用户管理
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.module === 'DeviceManagement' }"
-                  @click.stop="selectModule('DeviceManagement')"
-                >
-                  设备管理
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.module === 'AlgorithmConfig' }"
-                  @click.stop="selectModule('AlgorithmConfig')"
-                >
-                  算法配置
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.module === 'Detection' }"
-                  @click.stop="selectModule('Detection')"
-                >
-                  实时检测
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.module === 'EventCenter' }"
-                  @click.stop="selectModule('EventCenter')"
-                >
-                  事件中心
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.module === 'SystemConfig' }"
-                  @click.stop="selectModule('SystemConfig')"
-                >
-                  系统配置
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.module === 'RecordingManagement' }"
-                  @click.stop="selectModule('RecordingManagement')"
-                >
-                  录像管理
-                </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.module === 'StatisticsAnalysis' }"
-                  @click.stop="selectModule('StatisticsAnalysis')"
-                >
-                  统计分析
-                </div>
-              </div>
-            </div>
-          </el-form-item>
-          <el-form-item label="用户名">
+            <div class="filter-item">
+              <label for="username">用户名</label>
             <el-input 
               v-model="searchForm.username" 
+                id="username"
               placeholder="请输入用户名" 
               clearable 
-              style="width: 150px;"
-            />
-          </el-form-item>
-          <el-form-item label="操作结果">
-            <div class="custom-select" :class="{ 'is-open': isResultDropdownOpen }" @click="toggleResultDropdown">
-              <div class="select-input">
-                <span class="selected-text">{{ getSelectedResultName() || '请选择操作结果' }}</span>
-                <div class="select-arrow">
-                  <svg viewBox="0 0 1024 1024" width="14" height="14">
-                    <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
-                  </svg>
+                class="tech-input"
+              />
                 </div>
+            <div class="filter-actions">
+              <el-button type="primary" @click="handleSearch" class="tech-button-sm">搜索</el-button>
+              <el-button @click="resetSearch" class="tech-button-sm">重置</el-button>
               </div>
-              <div class="dropdown-menu" v-show="isResultDropdownOpen">
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': !searchForm.result }"
-                  @click.stop="selectResult('')"
-                >
-                  全部
                 </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.result === '成功' }"
-                  @click.stop="selectResult('成功')"
-                >
-                  成功
                 </div>
-                <div 
-                  class="dropdown-item" 
-                  :class="{ 'is-selected': searchForm.result === '失败' }"
-                  @click.stop="selectResult('失败')"
-                >
-                  失败
-                </div>
-              </div>
-            </div>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="handleSearch">搜索</el-button>
-            <el-button @click="resetSearch">重置</el-button>
-          </el-form-item>
-        </el-form>
       </div>
 
       <!-- 快速筛选 -->
@@ -280,7 +171,6 @@
         :data="logList" 
         style="width: 100%; border: none !important; outline: none !important; box-shadow: none !important;"
         :row-class-name="getRowClassName"
-        @row-click="viewLogDetail"
         :border="false"
         :show-overflow-tooltip="false"
       >
@@ -329,54 +219,71 @@
       </el-table>
       </div>
 
-      <!-- 分页 -->
-      <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.page"
-          v-model:page-size="pagination.pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+      <!-- 增强型分页组件 -->
+      <div class="pagination-container tech-pagination">
+        <div class="pagination-info">
+          <span>共 <span class="total-count">{{ pagination.total }}</span> 条记录，每页显示 
+            <el-select 
+              v-model="pagination.pageSize" 
+              @change="handleSizeChange"
+              class="page-size-select"
+              size="small"
+            >
+              <el-option label="10" :value="10" />
+              <el-option label="20" :value="20" />
+              <el-option label="50" :value="50" />
+              <el-option label="100" :value="100" />
+            </el-select> 条
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === 1"
+            @click="goToPage(1)"
+          >
+            首页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === 1"
+            @click="goToPage(pagination.page - 1)"
+          >
+            上一页
+          </el-button>
+          <div class="pagination-pages">
+            <button 
+              v-for="page in visiblePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: page === pagination.page }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === totalPages"
+            @click="goToPage(pagination.page + 1)"
+          >
+            下一页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="pagination.page === totalPages"
+            @click="goToPage(totalPages)"
+          >
+            末页
+          </el-button>
+        </div>
       </div>
     </el-card>
 
-    <!-- 日志详情弹窗 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="日志详情"
-      width="700px"
-    >
-      <div class="log-detail-dialog">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="日志ID">{{ selectedLog.id }}</el-descriptions-item>
-          <el-descriptions-item label="时间">{{ selectedLog.timestamp }}</el-descriptions-item>
-          <el-descriptions-item label="日志级别">
-            <el-tag :type="getLevelType(selectedLog.level)" size="small">
-              {{ selectedLog.level }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="功能模块">{{ selectedLog.module }}</el-descriptions-item>
-          <el-descriptions-item label="操作类型">{{ selectedLog.operation }}</el-descriptions-item>
-          <el-descriptions-item label="操作用户">{{ selectedLog.username }}</el-descriptions-item>
-          <el-descriptions-item label="用户ID">{{ selectedLog.user_id }}</el-descriptions-item>
-          <el-descriptions-item label="IP地址">{{ selectedLog.ip_address }}</el-descriptions-item>
-          <el-descriptions-item label="操作结果">
-            <el-tag :type="selectedLog.result === '成功' ? 'success' : 'danger'" size="small">
-              {{ selectedLog.result }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="浏览器">{{ selectedLog.user_agent || '未知' }}</el-descriptions-item>
-          <el-descriptions-item label="详细描述" :span="2">
-            <div class="log-details-content">
-              {{ selectedLog.details }}
-            </div>
-          </el-descriptions-item>
-        </el-descriptions>
-      </div>
-    </el-dialog>
 
     <!-- 导出进度弹窗 -->
     <el-dialog
@@ -415,22 +322,17 @@
 </template>
 
 <script setup name="LogCenter">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { logApi } from '@/api/log'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Download, Refresh } from '@element-plus/icons-vue'
 
 const loading = ref(false)
-const detailDialogVisible = ref(false)
 const exportDialogVisible = ref(false)
 const exportProgress = ref(0)
 const exportCompleted = ref(false)
 const quickFilter = ref('all')
 
-// 下拉菜单控制
-const isLogLevelDropdownOpen = ref(false)
-const isModuleDropdownOpen = ref(false)
-const isResultDropdownOpen = ref(false)
 
 // 搜索表单
 const searchForm = reactive({
@@ -458,9 +360,6 @@ const logStats = reactive({
 
 // 日志列表
 const logList = ref([])
-
-// 选中的日志
-const selectedLog = ref({})
 
 // 获取日志级别类型
 const getLevelType = (level) => {
@@ -582,6 +481,32 @@ const setQuickFilter = (filter) => {
   loadLogList()
 }
 
+// 计算总页数
+const totalPages = computed(() => {
+  return Math.ceil(pagination.total / pagination.pageSize) || 1
+})
+
+// 计算可见页码
+const visiblePages = computed(() => {
+  const maxVisiblePages = 5
+  const totalPagesValue = totalPages.value
+  const currentPageValue = pagination.page
+  
+  let startPage = Math.max(1, currentPageValue - Math.floor(maxVisiblePages / 2))
+  let endPage = Math.min(totalPagesValue, startPage + maxVisiblePages - 1)
+  
+  if (endPage - startPage + 1 < maxVisiblePages) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1)
+  }
+  
+  const pages = []
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i)
+  }
+  
+  return pages
+})
+
 // 分页大小改变
 const handleSizeChange = (val) => {
   pagination.pageSize = val
@@ -589,16 +514,18 @@ const handleSizeChange = (val) => {
   loadLogList()
 }
 
-// 当前页改变
-const handleCurrentChange = (val) => {
-  pagination.page = val
+// 跳转到指定页面
+const goToPage = (page) => {
+  if (page < 1 || page > totalPages.value || page === pagination.page) {
+    return
+  }
+  pagination.page = page
   loadLogList()
 }
 
 // 查看日志详情
-const viewLogDetail = (log) => {
-  selectedLog.value = log
-  detailDialogVisible.value = true
+const viewLogDetail = () => {
+  ElMessage.info('查看日志中')
 }
 
 // 刷新日志
@@ -665,124 +592,140 @@ const downloadExportedFile = () => {
   exportDialogVisible.value = false
 }
 
-// 下拉菜单相关方法
-const toggleLogLevelDropdown = () => {
-  isLogLevelDropdownOpen.value = !isLogLevelDropdownOpen.value
-  isModuleDropdownOpen.value = false
-  isResultDropdownOpen.value = false
-}
-
-const toggleModuleDropdown = () => {
-  isModuleDropdownOpen.value = !isModuleDropdownOpen.value
-  isLogLevelDropdownOpen.value = false
-  isResultDropdownOpen.value = false
-}
-
-const toggleResultDropdown = () => {
-  isResultDropdownOpen.value = !isResultDropdownOpen.value
-  isLogLevelDropdownOpen.value = false
-  isModuleDropdownOpen.value = false
-}
-
-const selectLogLevel = (level) => {
-  searchForm.log_level = level
-  isLogLevelDropdownOpen.value = false
-}
-
-const selectModule = (module) => {
-  searchForm.module = module
-  isModuleDropdownOpen.value = false
-}
-
-const selectResult = (result) => {
-  searchForm.result = result
-  isResultDropdownOpen.value = false
-}
-
-const getSelectedLogLevelName = () => {
-  const levelMap = {
-    '': '全部',
-    'INFO': 'INFO',
-    'WARN': 'WARN',
-    'ERROR': 'ERROR',
-    'DEBUG': 'DEBUG'
-  }
-  return levelMap[searchForm.log_level] || '请选择日志级别'
-}
-
-const getSelectedModuleName = () => {
-  const moduleMap = {
-    '': '全部',
-    'UserManagement': '用户管理',
-    'DeviceManagement': '设备管理',
-    'AlgorithmConfig': '算法配置',
-    'Detection': '实时检测',
-    'EventCenter': '事件中心',
-    'SystemConfig': '系统配置',
-    'RecordingManagement': '录像管理',
-    'StatisticsAnalysis': '统计分析'
-  }
-  return moduleMap[searchForm.module] || '请选择功能模块'
-}
-
-const getSelectedResultName = () => {
-  const resultMap = {
-    '': '全部',
-    '成功': '成功',
-    '失败': '失败'
-  }
-  return resultMap[searchForm.result] || '请选择操作结果'
-}
-
-// 点击外部关闭下拉菜单
-const handleClickOutside = (event) => {
-  const customSelects = event.target.closest('.custom-select')
-  if (!customSelects) {
-    isLogLevelDropdownOpen.value = false
-    isModuleDropdownOpen.value = false
-    isResultDropdownOpen.value = false
-  }
-}
 
 onMounted(() => {
-  // 添加点击外部关闭下拉菜单的事件监听
-  document.addEventListener('click', handleClickOutside)
   loadLogList()
-})
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside)
 })
 </script>
 
 <style scoped>
+/* 确保页面可以滚动 */
+html, body {
+  overflow: visible !important;
+  height: auto !important;
+}
+
+.sub-page-content {
+  overflow: visible !important;
+  height: auto !important;
+}
+
+/* ==================== 科技感主题样式 ==================== */
+
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  padding: 20px 20px 40px 20px;
+  max-width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  background: transparent;
+  /* Firefox 滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 255, 0.3) rgba(0, 255, 255, 0.1);
+  /* 确保滚动条始终可见 */
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+
+/* 标题样式 */
+.log-center h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+/* 自定义滚动条样式 - 科技感（与算法管理页面一致） */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: inset 0 0 6px rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 
+    inset 0 0 6px rgba(0, 255, 255, 0.2),
+    0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 
+    inset 0 0 6px rgba(0, 255, 255, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .log-center {
-  padding: 20px;
+  position: relative;
+  z-index: 10;
 }
 
 /* 科技感卡片样式 */
 .tech-card {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  flex-shrink: 0;
 }
 
 .tech-card :deep(.el-card__header) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px 12px 0 0 !important;
+  background: transparent !important;
+  border-bottom: none !important;
+  border-radius: 0 !important;
   color: #00ffff !important;
   padding: 16px 20px !important;
 }
 
 .tech-card :deep(.el-card__body) {
-  background: rgba(15, 25, 45, 0.95) !important;
+  background: transparent !important;
   padding: 20px !important;
-  border-radius: 0 0 12px 12px !important;
+  border-radius: 0 !important;
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
@@ -803,6 +746,85 @@ onUnmounted(() => {
   gap: 8px;
 }
 
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+/* 搜索筛选样式 */
+.search-filters-card {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+.search-filters-header {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.filter-title {
+  color: #00ffff;
+  font-weight: bold;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.search-filters-content {
+  padding: 0;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-item label {
+  color: #00ffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.tech-input :deep(.el-input__wrapper),
+.tech-select :deep(.el-select__wrapper),
+.tech-input :deep(.el-range-editor) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-input :deep(.el-input__inner),
+.tech-select :deep(.el-select__input),
+.tech-input :deep(.el-range-input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.tech-input :deep(.el-range-separator) {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .search-bar {
   margin-bottom: 20px;
   padding: 20px;
@@ -812,11 +834,28 @@ onUnmounted(() => {
   backdrop-filter: blur(5px) !important;
 }
 
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
 .quick-filters {
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
 .filter-label {
@@ -835,6 +874,7 @@ onUnmounted(() => {
   border-radius: 12px;
   color: white;
   backdrop-filter: blur(10px) !important;
+  flex-shrink: 0;
 }
 
 .stat-item {
@@ -864,9 +904,122 @@ onUnmounted(() => {
   opacity: 0.9;
 }
 
-.pagination-container {
+/* 增强型分页样式 */
+.tech-pagination {
   margin-top: 20px;
-  text-align: right;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.pagination-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.pagination-info .total-count {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.page-size-select {
+  margin: 0 5px;
+  width: 80px;
+}
+
+.page-size-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  height: 28px !important;
+}
+
+.page-size-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 12px !important;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.pagination-btn:disabled {
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
+}
+
+.page-btn {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.page-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  color: white;
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.page-btn:disabled {
+  background: rgba(0, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.1);
+  cursor: not-allowed;
 }
 
 .log-detail-expand {
@@ -1659,225 +1812,4 @@ onUnmounted(() => {
   }
 }
 
-/* 自建下拉菜单样式 */
-.custom-select {
-  position: relative;
-  min-width: 200px;
-  cursor: pointer;
-  user-select: none;
-  z-index: 100;
-}
-
-.select-input {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0;
-  background: rgba(20, 30, 50, 0.85);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 6px;
-  height: 32px;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
-    inset 0 0 10px rgba(0, 255, 255, 0.05),
-    0 2px 4px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(5px);
-}
-
-.selected-text {
-  flex: 1;
-  padding: 8px 12px;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  background: transparent;
-  transition: color 0.3s ease;
-}
-
-.select-arrow {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #0088aa 0%, #005577 50%, #003344 100%);
-  border-left: 1px solid rgba(0, 255, 255, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.select-arrow::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.1), transparent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.select-arrow svg {
-  color: rgba(255, 255, 255, 0.8);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: drop-shadow(0 0 2px rgba(0, 255, 255, 0.3));
-}
-
-/* 悬停状态 */
-.custom-select:hover .select-input {
-  background: rgba(25, 35, 55, 0.9);
-  border-color: rgba(0, 255, 255, 0.5);
-  box-shadow: 
-    inset 0 0 15px rgba(0, 255, 255, 0.08),
-    0 0 8px rgba(0, 255, 255, 0.2);
-}
-
-.custom-select:hover .select-arrow {
-  background: linear-gradient(135deg, #00ccff 0%, #0077aa 50%, #004466 100%);
-  box-shadow: 
-    0 0 20px rgba(0, 255, 255, 0.6),
-    0 0 40px rgba(0, 255, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-  transform: scale(1.02);
-}
-
-.custom-select:hover .select-arrow::before {
-  opacity: 1;
-}
-
-/* 展开状态 */
-.custom-select.is-open .select-input {
-  border-color: #00ffff;
-  background: rgba(25, 35, 55, 0.95);
-  box-shadow: 
-    0 0 0 2px rgba(0, 255, 255, 0.3),
-    inset 0 0 20px rgba(0, 255, 255, 0.1),
-    0 0 15px rgba(0, 255, 255, 0.2);
-}
-
-.custom-select.is-open .select-arrow {
-  background: linear-gradient(135deg, #00ddff 0%, #0088bb 50%, #005577 100%);
-  box-shadow: 
-    0 0 25px rgba(0, 255, 255, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-}
-
-.custom-select.is-open .select-arrow svg {
-  transform: rotate(180deg);
-}
-
-/* 下拉菜单 */
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: rgba(15, 25, 45, 0.98);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 8px;
-  backdrop-filter: blur(15px);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 255, 255, 0.1);
-  z-index: 9999;
-  max-height: 200px;
-  overflow-y: auto;
-  animation: dropdownFadeIn 0.2s ease-out;
-}
-
-.dropdown-item {
-  padding: 10px 16px;
-  color: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 4px;
-  margin: 2px 4px;
-  position: relative;
-  overflow: hidden;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.dropdown-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
-  transition: left 0.5s ease;
-}
-
-.dropdown-item:hover {
-  background: rgba(0, 255, 255, 0.15);
-  color: #00ffff;
-  transform: translateX(2px);
-  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2);
-}
-
-.dropdown-item:hover::before {
-  left: 100%;
-}
-
-.dropdown-item.is-selected {
-  background: rgba(0, 255, 255, 0.25);
-  color: #00ffff;
-  font-weight: 600;
-  box-shadow: 
-    0 2px 8px rgba(0, 255, 255, 0.3),
-    inset 0 0 10px rgba(0, 255, 255, 0.1);
-}
-
-.dropdown-item.is-selected::after {
-  content: '✓';
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #00ffff;
-  font-weight: bold;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-}
-
-/* 滚动条样式 */
-.dropdown-menu::-webkit-scrollbar {
-  width: 6px;
-}
-
-.dropdown-menu::-webkit-scrollbar-track {
-  background: rgba(20, 30, 50, 0.5);
-  border-radius: 3px;
-}
-
-.dropdown-menu::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #00ffff, #0099cc);
-  border-radius: 3px;
-  box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.2);
-}
-
-.dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #00ccff, #0077aa);
-}
-
-/* 下拉菜单动画 */
-@keyframes dropdownFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 </style>

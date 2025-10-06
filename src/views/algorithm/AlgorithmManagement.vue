@@ -1,5 +1,9 @@
 <template>
-  <div class="algorithm-management-container sub-page-content">
+  <div class="algorithm-management-container tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background">
+    </div>
+    
     <h2>算法配置</h2>
 
     <!-- 算法下发 -->
@@ -64,7 +68,6 @@
               下发算法
             </el-button>
             <el-button :icon="Refresh" @click="resetDispatchForm">重置</el-button>
-            <el-button type="info" :icon="Document" @click="showDispatchLogs">查看日志</el-button>
         </el-form-item>
       </el-form>
       </div>
@@ -344,26 +347,6 @@
       </template>
     </el-dialog>
 
-    <!-- 下发日志对话框 -->
-    <el-dialog v-model="logsVisible" title="算法下发日志" width="80%">
-      <el-table :data="dispatchLogs" v-loading="logsLoading" stripe>
-        <el-table-column prop="id" label="ID" width="80"></el-table-column>
-        <el-table-column prop="algorithm_name" label="算法名称" min-width="150"></el-table-column>
-        <el-table-column prop="target_card" label="目标板卡" width="150"></el-table-column>
-        <el-table-column prop="dispatch_time" label="下发时间" width="160"></el-table-column>
-        <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-            <el-tag :type="row.status === '成功' ? 'success' : 'danger'">{{ row.status }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="message" label="结果信息" min-width="200"></el-table-column>
-      </el-table>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="logsVisible = false">关闭</el-button>
-        </span>
-      </template>
-    </el-dialog>
   </div>
 
   <!-- 状态下拉框 - 使用Teleport渲染到body -->
@@ -535,7 +518,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
-  Promotion, Refresh, Document, Setting, Plus, Edit, Delete, Check,
+  Promotion, Refresh, Setting, Plus, Edit, Delete, Check,
   Search, RefreshRight, View, Download, Upload, ArrowDown
 } from '@element-plus/icons-vue'
 import { algorithmApi } from '@/api/algorithm'
@@ -545,12 +528,10 @@ const dispatchLoading = ref(false)
 const configLoading = ref(false)
 const syncLoading = ref(false)
 const batchLoading = ref(false)
-const logsLoading = ref(false)
 const loading = ref(false)
 
 const batchDispatchVisible = ref(false)
 const ruleConfigVisible = ref(false)
-const logsVisible = ref(false)
 const statusDropdownVisible = ref(false)
 const statusSelectRef = ref()
 
@@ -605,7 +586,6 @@ const ruleForm = reactive({
 // 数据
 const algorithmList = ref([])
 const analysisCards = ref([])
-const dispatchLogs = ref([])
 const editingRuleIndex = ref(-1)
 
 // 算法列表相关数据
@@ -838,21 +818,6 @@ const executeBatchDispatch = async () => {
     ElMessage.error('批量下发失败：' + error.message)
   } finally {
     batchLoading.value = false
-  }
-}
-
-const showDispatchLogs = async () => {
-  try {
-    logsLoading.value = true
-    logsVisible.value = true
-    const response = await algorithmApi.getDispatchLogs()
-    if (response.data.success) {
-      dispatchLogs.value = response.data.body.logs || []
-    }
-  } catch (error) {
-    ElMessage.error('获取下发日志失败：' + error.message)
-  } finally {
-    logsLoading.value = false
   }
 }
 
@@ -1143,10 +1108,64 @@ const getRuleTypeText = (ruleType) => {
 </script>
 
 <style scoped>
+/* 确保页面可以滚动 */
+html, body {
+  overflow: visible !important;
+  height: auto !important;
+}
+
+.sub-page-content {
+  overflow: visible !important;
+  height: auto !important;
+}
 /* 算法管理页面样式 */
 .algorithm-management-container {
-  padding: 20px;
+  padding: 20px 20px 40px 20px;
   max-width: 100%;
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-sizing: border-box;
+  /* Firefox 滚动条样式 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 255, 255, 0.3) rgba(0, 255, 255, 0.1);
+  /* 确保滚动条始终可见 */
+  scrollbar-gutter: stable;
+  scroll-behavior: smooth;
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(0, 255, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(0, 255, 255, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(0, 255, 255, 0.02) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tech-page-container {
+  position: relative;
+  z-index: 10;
+}
+
+/* 标题样式 */
+.algorithm-management-container h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
 }
 
 .card-header {
@@ -1192,6 +1211,7 @@ const getRuleTypeText = (ruleType) => {
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 0 20px rgba(0, 255, 255, 0.1) !important;
+  flex-shrink: 0;
 }
 
 .tech-card :deep(.el-card__header) {
@@ -1754,6 +1774,48 @@ const getRuleTypeText = (ruleType) => {
 
 .custom-select-option.is-selected:hover {
   background: rgba(0, 255, 255, 0.25) !important;
+}
+
+/* 主容器科技感滚动条样式 - 与左侧菜单栏一致 */
+.algorithm-management-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.algorithm-management-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.algorithm-management-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: inset 0 0 6px rgba(0, 255, 255, 0.1);
+}
+
+.algorithm-management-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 
+    inset 0 0 6px rgba(0, 255, 255, 0.2),
+    0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.algorithm-management-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 
+    inset 0 0 6px rgba(0, 255, 255, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.6);
 }
 
 /* 下拉框滚动条样式 */

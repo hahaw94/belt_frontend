@@ -1,44 +1,107 @@
 <template>
-  <div class="linkage-settings">
-    <div class="content-area">
+  <div class="linkage-settings tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background"></div>
+    
+    <h2>联动规则管理</h2>
+    
+    <div class="content-area tech-card">
       <div class="table-header">
-        <h3>联动规则管理</h3>
-      <el-button type="primary" @click="handleAddRule">
-        <el-icon><Plus /></el-icon>
-        新增规则
-      </el-button>
-    </div>
+        <el-button type="primary" @click="handleAddRule" class="tech-button-sm">
+          <el-icon><Plus /></el-icon>
+          新增规则
+        </el-button>
+      </div>
 
-      <div class="tech-table">
-        <el-table :data="ruleList" style="width: 100%" @row-click="handleRowClick" :border="false">
-        <el-table-column type="index" width="80" label="序号" />
-        <el-table-column prop="name" label="规则名称" min-width="160" show-overflow-tooltip />
-        <el-table-column prop="type" label="告警类型" width="120" />
-        <el-table-column prop="condition" label="触发条件" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="action" label="联动动作" width="140" />
-        <el-table-column prop="target" label="执行对象" min-width="140" show-overflow-tooltip />
-        <el-table-column fixed="right" label="操作" width="140" align="center">
+      <el-table
+        :data="ruleList"
+        border
+        stripe
+        class="tech-table"
+        style="width: 100%"
+        @row-click="handleRowClick"
+      >
+        <el-table-column type="index" label="序号" width="80" align="center" header-align="center" />
+        <el-table-column prop="name" label="规则名称" min-width="160" header-align="center" show-overflow-tooltip />
+        <el-table-column prop="type" label="告警类型" width="120" header-align="center" />
+        <el-table-column prop="condition" label="触发条件" min-width="180" header-align="center" show-overflow-tooltip />
+        <el-table-column prop="action" label="联动动作" width="140" header-align="center" />
+        <el-table-column prop="target" label="执行对象" min-width="140" header-align="center" show-overflow-tooltip />
+        <el-table-column fixed="right" label="操作" width="180" align="center" header-align="center">
           <template #default="{ row }">
-            <el-button link type="primary" @click="handleEdit(row)">
+            <el-button type="primary" size="small" class="tech-button-xs" @click.stop="handleEdit(row)">
               编辑
             </el-button>
-            <el-button link type="danger" @click="handleDelete(row)">
+            <el-button type="danger" size="small" class="tech-button-xs" @click.stop="handleDelete(row)">
               删除
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      </div>
 
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+      <!-- 增强型分页组件 -->
+      <div class="pagination-container tech-pagination">
+        <div class="pagination-info">
+          <span>共 <span class="total-count">{{ total }}</span> 条记录，每页显示 
+            <el-select 
+              v-model="pageSize" 
+              @change="handleSizeChange"
+              class="page-size-select"
+              size="small"
+            >
+              <el-option label="10" :value="10" />
+              <el-option label="20" :value="20" />
+              <el-option label="50" :value="50" />
+              <el-option label="100" :value="100" />
+            </el-select> 条
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(1)"
+          >
+            首页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+          >
+            上一页
+          </el-button>
+          <div class="pagination-pages">
+            <button 
+              v-for="page in visiblePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: page === currentPage }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
+          </div>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >
+            下一页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(totalPages)"
+          >
+            末页
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 规则编辑对话框 -->
@@ -139,7 +202,7 @@
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 
@@ -153,6 +216,32 @@ export default {
     const currentPage = ref(1)
     const pageSize = ref(10)
     const total = ref(100)
+
+    // 计算总页数
+    const totalPages = computed(() => {
+      return Math.ceil(total.value / pageSize.value) || 1
+    })
+
+    // 计算可见页码
+    const visiblePages = computed(() => {
+      const maxVisiblePages = 5
+      const totalPagesValue = totalPages.value
+      const currentPageValue = currentPage.value
+      
+      let startPage = Math.max(1, currentPageValue - Math.floor(maxVisiblePages / 2))
+      let endPage = Math.min(totalPagesValue, startPage + maxVisiblePages - 1)
+      
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1)
+      }
+      
+      const pages = []
+      for (let i = startPage; i <= endPage; i++) {
+        pages.push(i)
+      }
+      
+      return pages
+    })
 
     // 表单引用
     const ruleFormRef = ref(null)
@@ -293,6 +382,15 @@ export default {
       // 重新加载数据
     }
 
+    // 跳转到指定页面
+    const goToPage = (page) => {
+      if (page < 1 || page > totalPages.value || page === currentPage.value) {
+        return
+      }
+      currentPage.value = page
+      // 重新加载数据
+    }
+
     const handleRowClick = (row) => {
       console.log('点击行：', row)
       handleEdit(row)
@@ -302,6 +400,8 @@ export default {
       currentPage,
       pageSize,
       total,
+      totalPages,
+      visiblePages,
       ruleFormRef,
       ruleList,
       deviceList,
@@ -316,6 +416,7 @@ export default {
       handleSubmit,
       handleSizeChange,
       handleCurrentChange,
+      goToPage,
       handleRowClick
     }
   }
@@ -323,11 +424,167 @@ export default {
 </script>
 
 <style scoped>
+/* ==================== 科技感主题样式 ==================== */
+
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 20px;
+  padding-bottom: 40px;
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 标题样式 */
+.linkage-settings h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+/* 科技感卡片样式 */
+.tech-card {
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 20px;
+}
+
+.content-area {
+  flex: 1;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* 科技感按钮 - 强制覆盖 */
+.tech-button-sm,
+.table-header .tech-button-sm,
+.table-header .el-button.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover,
+.table-header .tech-button-sm:hover,
+.table-header .el-button.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border: 1px solid rgba(0, 255, 255, 0.6) !important;
+}
+
+.tech-button-xs {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.08) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  margin: 0 2px !important;
+}
+
+.tech-button-xs:hover {
+  background: rgba(0, 255, 255, 0.15) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .linkage-settings {
   padding: 20px;
   height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
+}
+
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
 }
 
 .content-area {
@@ -1198,190 +1455,119 @@ border-right: none !important;
   color: #ff6b6b !important;
 }
 
-/* 移除所有可能的容器边框和背景 */
-.linkage-settings * {
-  box-sizing: border-box;
+/* 增强型分页样式 */
+.tech-pagination {
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
-/* 确保分页区域完全透明 */
-:deep(.el-pagination__total),
-:deep(.el-pagination__sizes),
-:deep(.el-pagination__jump) {
-  background: transparent !important;
-  border: none !important;
-  color: #ffffff !important;
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  position: relative;
+  z-index: 1;
 }
 
-/* 移除可能的重叠元素 */
-:deep(.el-pagination::before),
-:deep(.el-pagination::after) {
-  display: none !important;
+.pagination-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
 }
 
-/* 确保内容区域没有额外的装饰 */
-.content-area::before,
-.content-area::after {
-  display: none !important;
+.pagination-info .total-count {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
 }
 
-/* 彻底移除分页组件的所有装饰 */
-:deep(.el-pagination) {
-  position: relative !important;
-  z-index: 1 !important;
+.page-size-select {
+  margin: 0 5px;
+  width: 80px;
 }
 
-:deep(.el-pagination *)::before,
-:deep(.el-pagination *)::after {
-  display: none !important;
+.page-size-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  height: 28px !important;
 }
 
-/* 移除分页组件可能的边框重叠 */
-:deep(.el-pagination .el-pagination__total)::before,
-:deep(.el-pagination .el-pagination__total)::after,
-:deep(.el-pagination .el-pagination__sizes)::before,
-:deep(.el-pagination .el-pagination__sizes)::after,
-:deep(.el-pagination .el-pagination__jump)::before,
-:deep(.el-pagination .el-pagination__jump)::after {
-  display: none !important;
-  content: none !important;
+.page-size-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 12px !important;
 }
 
-/* 强制移除所有可能的背景和边框 */
-.linkage-settings,
-.content-area,
-.table-header {
-  position: relative !important;
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: none !important;
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.pagination-btn:disabled {
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
   box-shadow: none !important;
-  backdrop-filter: none !important;
 }
 
-/* 确保分页区域也没有背景重叠 */
-.content-area .el-pagination {
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
 }
 
-/* 确保没有任何元素有重叠的视觉效果 */
-.linkage-settings *::before,
-.linkage-settings *::after {
-  content: none !important;
-  display: none !important;
+.page-btn {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
 }
 
-/* 最终的背景重叠修复 - 针对所有可能的元素 */
-.linkage-settings * {
-  background-color: transparent !important;
-  background-image: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+.page-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
 }
 
-/* 只保留我们需要的样式 */
-.tech-table {
-  background: rgba(15, 25, 45, 0.95) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
+.page-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  color: white;
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
 }
 
-/* 只保留表格内部的伪元素 */
-.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
-  display: block !important;
-  content: '' !important;
-}
-
-/* 表格序号列特殊样式 */
-.tech-table :deep(.el-table__body-wrapper .el-table__body td:first-child) {
-  color: rgba(0, 255, 255, 0.8) !important;
-  font-weight: 600 !important;
-  text-align: center !important;
-  font-family: 'Courier New', monospace !important;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
-}
-
-
-/* 操作列按钮容器 */
-.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
-  text-align: center !important;
-  padding: 12px 8px !important;
-}
-
-/* 表格加载时的入场动画 */
-.tech-table {
-  animation: tableSlideIn 0.6s ease-out !important;
-}
-
-@keyframes tableSlideIn {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 表格行的微妙动画效果 */
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
-  animation: rowFadeIn 0.4s ease-out both !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(1)) {
-  animation-delay: 0.1s !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(2)) {
-  animation-delay: 0.15s !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(3)) {
-  animation-delay: 0.2s !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(4)) {
-  animation-delay: 0.25s !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(5)) {
-  animation-delay: 0.3s !important;
-}
-
-@keyframes rowFadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* 表格头部标题的呼吸效果 */
-.table-header h3 {
-  animation: titleGlow 3s ease-in-out infinite alternate !important;
-}
-
-@keyframes titleGlow {
-  from {
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-  }
-  to {
-    text-shadow: 
-      0 0 15px rgba(0, 255, 255, 0.8),
-      0 0 25px rgba(0, 255, 255, 0.4),
-      0 0 35px rgba(0, 255, 255, 0.2);
-  }
+.page-btn:disabled {
+  background: rgba(0, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.1);
+  cursor: not-allowed;
 }
 </style>

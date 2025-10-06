@@ -1,145 +1,167 @@
 <template>
-  <div class="immediate-command">
-    <div class="control-panel tech-card">
-      <el-form :inline="true" :model="searchForm">
-        <el-form-item label="时间范围">
-          <el-date-picker
-            v-model="searchForm.timeRange"
-            type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-          />
-        </el-form-item>
-        <el-form-item label="处理状态">
-          <div class="custom-select" :class="{ 'is-open': isStatusDropdownOpen }" @click="toggleStatusDropdown">
-            <div class="select-input">
-              <span class="selected-text">{{ getSelectedStatusName() || '请选择处理状态' }}</span>
-              <div class="select-arrow">
-                <svg viewBox="0 0 1024 1024" width="14" height="14">
-                  <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="dropdown-menu" v-show="isStatusDropdownOpen">
-              <div 
-                class="dropdown-item" 
-                :class="{ 'is-selected': !searchForm.status }"
-                @click.stop="selectStatus('')"
-              >
-                全部
-              </div>
-              <div 
-                class="dropdown-item" 
-                :class="{ 'is-selected': searchForm.status === 'pending' }"
-                @click.stop="selectStatus('pending')"
-              >
-                待处理
-              </div>
-              <div 
-                class="dropdown-item" 
-                :class="{ 'is-selected': searchForm.status === 'processed' }"
-                @click.stop="selectStatus('processed')"
-              >
-                已处理
-              </div>
-              <div 
-                class="dropdown-item" 
-                :class="{ 'is-selected': searchForm.status === 'ignored' }"
-                @click.stop="selectStatus('ignored')"
-              >
-                已忽略
-              </div>
-            </div>
+  <div class="immediate-command tech-page-container">
+    <!-- 科技感背景 -->
+    <div class="tech-background"></div>
+
+    <h2>即时告警批示</h2>
+
+    <!-- 搜索筛选卡片 -->
+    <div class="search-filters-card tech-card mb-20">
+      <div class="search-filters-header">
+        <span class="filter-title">搜索筛选</span>
+      </div>
+      <div class="search-filters-content">
+        <div class="filter-row">
+          <div class="filter-item">
+            <label for="timeRange">时间范围</label>
+            <el-date-picker
+              v-model="searchForm.timeRange"
+              id="timeRange"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              :shortcuts="dateShortcuts"
+              class="tech-input"
+            />
           </div>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">
-            <el-icon><Search /></el-icon>
-            查询
-          </el-button>
-          <el-button @click="handleReset">
-            <el-icon><Refresh /></el-icon>
-            重置
-          </el-button>
-        </el-form-item>
-      </el-form>
+          <div class="filter-item">
+            <label for="alarmType">告警类型</label>
+            <el-select
+              v-model="searchForm.alarmType"
+              id="alarmType"
+              placeholder="全部"
+              class="tech-select"
+              clearable
+              @change="handleSearch"
+            >
+              <el-option label="全部" value="" />
+              <el-option label="异常行为" value="behavior" />
+              <el-option label="可疑物品" value="object" />
+              <el-option label="区域入侵" value="intrusion" />
+            </el-select>
+          </div>
+          <div class="filter-item">
+            <label for="location">点位</label>
+            <el-select
+              v-model="searchForm.location"
+              id="location"
+              placeholder="全部"
+              class="tech-select"
+              clearable
+              @change="handleSearch"
+            >
+              <el-option label="全部" value="" />
+              <el-option label="前门" value="front" />
+              <el-option label="后门" value="back" />
+              <el-option label="停车场" value="parking" />
+            </el-select>
+          </div>
+          <div class="filter-actions">
+            <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">搜索</el-button>
+            <el-button :icon="Refresh" class="tech-button-sm" @click="handleReset">重置</el-button>
+          </div>
+        </div>
+      </div>
     </div>
 
+    <!-- 内容区域 -->
     <div class="content-area tech-card">
-      <el-tabs v-model="activeTab" class="command-tabs" @tab-change="handleTabChange">
-        <el-tab-pane label="待处理告警" name="pending">
-          <div class="tech-table">
-            <el-table :key="'pending-table'" :data="pendingAlarms" style="width: 100%" :border="false">
-            <el-table-column type="selection" width="55" />
-            <el-table-column type="index" width="50" />
-            <el-table-column prop="time" label="时间" width="180" />
-            <el-table-column prop="type" label="告警类型" width="120" />
-            <el-table-column prop="location" label="位置" width="150" />
-            <el-table-column prop="description" label="描述" />
-            <el-table-column prop="level" label="级别" width="100">
-              <template #default="{ row }">
-                <el-tag :type="getAlarmLevelType(row.level)">
-                  {{ row.level }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column fixed="right" label="操作" width="200">
-              <template #default="{ row }">
-                <el-button-group>
-                  <el-button
-                    link
-                    type="primary"
-                    @click="handleNotify(row)"
-                  >
-                    通知
-                  </el-button>
-                  <el-button
-                    link
-                    type="success"
-                    @click="handleProcess(row)"
-                  >
-                    处理
-                  </el-button>
-                  <el-button
-                    link
-                    type="info"
-                    @click="handleIgnore(row)"
-                  >
-                    忽略
-                  </el-button>
-                </el-button-group>
-              </template>
-            </el-table-column>
-          </el-table>
-          </div>
-        </el-tab-pane>
+      <el-table
+        :data="alarmList"
+        border
+        stripe
+        class="tech-table"
+        style="width: 100%"
+        @row-click="handleRowClick"
+      >
+        <el-table-column type="index" label="序号" width="80" align="center" header-align="center" />
+        <el-table-column prop="time" label="时间" width="180" header-align="center" />
+        <el-table-column prop="type" label="告警类型" width="120" header-align="center" />
+        <el-table-column prop="location" label="点位" width="150" header-align="center" />
+        <el-table-column prop="description" label="描述" min-width="200" header-align="center" />
+        <el-table-column prop="status" label="状态" width="100" align="center" header-align="center">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.status)">
+              {{ row.status }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column fixed="right" label="操作" width="180" align="center" header-align="center">
+          <template #default="{ row }">
+            <el-button type="primary" size="small" class="tech-button-xs" @click.stop="handleView(row)">
+              查看
+            </el-button>
+            <el-button type="warning" size="small" class="tech-button-xs" @click.stop="handleProcess(row)">
+              处理
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
 
-        <el-tab-pane label="已处理告警" name="processed">
-          <div class="tech-table">
-            <el-table :key="'processed-table'" :data="processedAlarms" style="width: 100%" :border="false">
-            <el-table-column type="index" width="50" />
-            <el-table-column prop="time" label="时间" width="180" />
-            <el-table-column prop="type" label="告警类型" width="120" />
-            <el-table-column prop="location" label="位置" width="150" />
-            <el-table-column prop="description" label="描述" />
-            <el-table-column prop="processor" label="处理人" width="120" />
-            <el-table-column prop="processTime" label="处理时间" width="180" />
-            <el-table-column prop="processMethod" label="处理方式" width="120" />
-          </el-table>
+      <!-- 增强型分页组件 -->
+      <div class="pagination-container tech-pagination">
+        <div class="pagination-info">
+          <span>共 <span class="total-count">{{ total }}</span> 条记录，每页显示 
+            <el-select 
+              v-model="pageSize" 
+              @change="handleSizeChange"
+              class="page-size-select"
+              size="small"
+            >
+              <el-option label="10" :value="10" />
+              <el-option label="20" :value="20" />
+              <el-option label="50" :value="50" />
+              <el-option label="100" :value="100" />
+            </el-select> 条
+          </span>
+        </div>
+        <div class="pagination-controls">
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(1)"
+          >
+            首页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+          >
+            上一页
+          </el-button>
+          <div class="pagination-pages">
+            <button 
+              v-for="page in visiblePages" 
+              :key="page"
+              class="page-btn"
+              :class="{ active: page === currentPage }"
+              @click="goToPage(page)"
+            >
+              {{ page }}
+            </button>
           </div>
-        </el-tab-pane>
-      </el-tabs>
-
-      <el-pagination
-        v-model:current-page="currentPage"
-        v-model:page-size="pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="total"
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-      />
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >
+            下一页
+          </el-button>
+          <el-button 
+            class="pagination-btn"
+            size="small" 
+            :disabled="currentPage === totalPages"
+            @click="goToPage(totalPages)"
+          >
+            末页
+          </el-button>
+        </div>
+      </div>
     </div>
 
     <!-- 通知方式对话框 -->
@@ -250,55 +272,54 @@
 </template>
 
 <script>
-import { ref, reactive, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
 
-// 处理 ResizeObserver 错误
-const handleResizeObserverError = () => {
-  const resizeObserverErrDiv = document.getElementById('webpack-dev-server-client-overlay-div')
-  const resizeObserverErr = document.getElementById('webpack-dev-server-client-overlay')
-  if (resizeObserverErr) {
-    resizeObserverErr.setAttribute('style', 'display: none')
-  }
-  if (resizeObserverErrDiv) {
-    resizeObserverErrDiv.setAttribute('style', 'display: none')
-  }
-}
-
 export default {
   name: 'ImmediateCommand',
-  components: {
-    Search,
-    Refresh
-  },
   setup() {
     // 搜索表单
     const searchForm = reactive({
       timeRange: [],
-      status: ''
+      alarmType: '',
+      location: ''
     })
-
-    // 下拉菜单控制
-    const isStatusDropdownOpen = ref(false)
 
     // 分页相关
     const currentPage = ref(1)
     const pageSize = ref(10)
     const total = ref(100)
 
-    // 标签页
-    const activeTab = ref('pending')
+    // 计算总页数
+    const totalPages = computed(() => Math.ceil(total.value / pageSize.value))
 
-    // 模拟数据
-    const pendingAlarms = ref([
+    // 计算可见的页码
+    const visiblePages = computed(() => {
+      const pages = []
+      const maxVisible = 5
+      let start = Math.max(1, currentPage.value - Math.floor(maxVisible / 2))
+      let end = Math.min(totalPages.value, start + maxVisible - 1)
+      
+      if (end - start < maxVisible - 1) {
+        start = Math.max(1, end - maxVisible + 1)
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i)
+      }
+      return pages
+    })
+
+    // 告警列表数据
+    const alarmList = ref([
       {
         id: 1,
         time: '2024-01-20 10:30:00',
         type: '异常行为',
         location: '前门',
         description: '检测到可疑人员逗留',
-        level: '高危'
+        status: '未处理'
       },
       {
         id: 2,
@@ -306,20 +327,7 @@ export default {
         type: '可疑物品',
         location: '停车场',
         description: '检测到可疑包裹',
-        level: '中危'
-      }
-    ])
-
-    const processedAlarms = ref([
-      {
-        id: 3,
-        time: '2024-01-20 09:30:00',
-        type: '异常行为',
-        location: '后门',
-        description: '检测到翻越行为',
-        processor: '张三',
-        processTime: '2024-01-20 09:35:00',
-        processMethod: '现场处理'
+        status: '已处理'
       }
     ])
 
@@ -349,6 +357,28 @@ export default {
       description: ''
     })
 
+    // 日期快捷选项
+    const dateShortcuts = [
+      {
+        text: '最近一小时',
+        value: () => {
+          const end = new Date()
+          const start = new Date()
+          start.setTime(start.getTime() - 3600 * 1000)
+          return [start, end]
+        }
+      },
+      {
+        text: '今天',
+        value: () => {
+          const end = new Date()
+          const start = new Date()
+          start.setHours(0, 0, 0, 0)
+          return [start, end]
+        }
+      }
+    ]
+
     // 处理搜索
     const handleSearch = () => {
       console.log('搜索条件：', searchForm)
@@ -358,17 +388,24 @@ export default {
     // 重置搜索
     const handleReset = () => {
       searchForm.timeRange = []
-      searchForm.status = ''
+      searchForm.alarmType = ''
+      searchForm.location = ''
     }
 
-    // 获取告警级别标签类型
-    const getAlarmLevelType = (level) => {
-      const levelMap = {
-        '高危': 'danger',
-        '中危': 'warning',
-        '低危': 'info'
+    // 获取状态标签类型
+    const getStatusType = (status) => {
+      const statusMap = {
+        '未处理': 'danger',
+        '已处理': 'success',
+        '处理中': 'warning'
       }
-      return levelMap[level] || 'info'
+      return statusMap[status] || 'info'
+    }
+
+    // 查看告警详情
+    const handleView = (row) => {
+      console.log('查看告警详情：', row)
+      ElMessage.info('查看告警详情')
     }
 
     // 通知告警
@@ -432,6 +469,7 @@ export default {
     const handleSizeChange = (val) => {
       console.log('每页显示条数：', val)
       pageSize.value = val
+      currentPage.value = 1
       // 重新加载数据
     }
 
@@ -441,99 +479,38 @@ export default {
       // 重新加载数据
     }
 
+    // 跳转到指定页
+    const goToPage = (page) => {
+      if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page
+        handleCurrentChange(page)
+      }
+    }
+
     const handleRowClick = (row) => {
       console.log('点击行：', row)
-      handleProcess(row)
+      // 可以在这里添加行点击的逻辑
     }
 
-    // 标签页切换处理
-    const handleTabChange = async (tabName) => {
-      try {
-        console.log('Tab changed to:', tabName)
-        // 使用 nextTick 确保 DOM 更新完成
-        await nextTick()
-        
-        // 延迟处理以避免 ResizeObserver 错误
-        setTimeout(() => {
-          handleResizeObserverError()
-        }, 100)
-      } catch (error) {
-        console.warn('Tab change error:', error)
-      }
-    }
-
-    // 下拉菜单相关方法
-    const toggleStatusDropdown = () => {
-      isStatusDropdownOpen.value = !isStatusDropdownOpen.value
-    }
-
-    const selectStatus = (status) => {
-      searchForm.status = status
-      isStatusDropdownOpen.value = false
-    }
-
-    const getSelectedStatusName = () => {
-      const statusMap = {
-        '': '全部',
-        'pending': '待处理',
-        'processed': '已处理',
-        'ignored': '已忽略'
-      }
-      return statusMap[searchForm.status] || '请选择处理状态'
-    }
-
-    // 点击外部关闭下拉菜单
-    const handleClickOutside = (event) => {
-      const customSelects = event.target.closest('.custom-select')
-      if (!customSelects) {
-        isStatusDropdownOpen.value = false
-      }
-    }
-
-    // 组件挂载时处理 ResizeObserver 错误
-    onMounted(() => {
-      // 添加点击外部关闭下拉菜单的事件监听
-      document.addEventListener('click', handleClickOutside)
-
-      // 全局错误处理
-      window.addEventListener('error', (e) => {
-        if (e.message && e.message.includes('ResizeObserver loop completed')) {
-          e.stopImmediatePropagation()
-          handleResizeObserverError()
-        }
-      })
-
-      // 处理未捕获的 Promise 错误
-      window.addEventListener('unhandledrejection', (e) => {
-        if (e.reason && e.reason.message && e.reason.message.includes('ResizeObserver')) {
-          e.preventDefault()
-          handleResizeObserverError()
-        }
-      })
-    })
-
-    // 组件卸载时移除事件监听
-    onUnmounted(() => {
-      document.removeEventListener('click', handleClickOutside)
-    })
 
     return {
       searchForm,
       currentPage,
       pageSize,
       total,
-      activeTab,
-      pendingAlarms,
-      processedAlarms,
+      totalPages,
+      visiblePages,
+      dateShortcuts,
+      alarmList,
       userList,
       notifyDialogVisible,
       processDialogVisible,
       notifyForm,
       processForm,
-      isStatusDropdownOpen,
       handleSearch,
       handleReset,
-      getAlarmLevelType,
+      getStatusType,
+      handleView,
       handleNotify,
       handleNotifySubmit,
       handleProcess,
@@ -541,17 +518,84 @@ export default {
       handleIgnore,
       handleSizeChange,
       handleCurrentChange,
+      goToPage,
       handleRowClick,
-      handleTabChange,
-      toggleStatusDropdown,
-      selectStatus,
-      getSelectedStatusName
+      Search,
+      Refresh
     }
   }
 }
 </script>
 
 <style scoped>
+/* ==================== 科技感主题样式 ==================== */
+
+/* 页面容器 */
+.tech-page-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  max-height: 100vh;
+  padding: 20px;
+  padding-bottom: 40px;
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+}
+
+/* 自定义滚动条样式 - 科技感 */
+.tech-page-container::-webkit-scrollbar {
+  width: 8px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+.tech-page-container::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.7) 0%, 
+    rgba(0, 200, 255, 0.9) 50%, 
+    rgba(0, 255, 255, 0.7) 100%);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+}
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
 .immediate-command {
   padding: 20px;
   height: calc(100vh - 120px);
@@ -560,26 +604,137 @@ export default {
   gap: 20px;
 }
 
-/* 科技感卡片样式 */
-.tech-card {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
+/* 标题样式 */
+.immediate-command h2 {
+  margin: 24px 0 20px 0;
+  color: #00ffff;
+  font-size: 24px;
+  font-weight: 600;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
 }
 
-.control-panel {
-  padding: 16px;
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+/* 科技感卡片样式 */
+.tech-card {
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 20px;
 }
 
 .content-area {
   flex: 1;
-  padding: 16px;
+  padding: 0;
   display: flex;
   flex-direction: column;
+  background: transparent !important;
+  border: none !important;
+}
+
+/* 搜索筛选样式 */
+.search-filters-card {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+}
+
+.search-filters-header {
+  margin-bottom: 15px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+  padding-bottom: 8px;
+}
+
+.filter-title {
+  color: #00ffff;
+  font-weight: bold;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.search-filters-content {
+  padding: 0;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-item label {
+  color: #00ffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.tech-input :deep(.el-input__wrapper),
+.tech-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-input :deep(.el-input__inner),
+.tech-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.tech-button-xs {
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.08) !important;
+  color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  margin: 0 2px !important;
+}
+
+.tech-button-xs:hover {
+  background: rgba(0, 255, 255, 0.15) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
 }
 
 .command-tabs {
@@ -882,7 +1037,7 @@ export default {
   display: none !important;
 }
 
-/* 表格头部样式 - 参考联动规则管理的头部设计 */
+/* 表格头部样式 */
 .tech-table :deep(.el-table__header-wrapper) {
   background: linear-gradient(135deg, 
     rgba(20, 35, 60, 1) 0%, 
@@ -892,9 +1047,7 @@ export default {
 }
 
 .tech-table :deep(.el-table__header-wrapper .el-table__header) {
-  background: linear-gradient(135deg, 
-    rgba(20, 35, 60, 1) 0%, 
-    rgba(25, 40, 65, 1) 100%) !important;
+  background: transparent !important;
   border: none !important;
 }
 
@@ -933,13 +1086,32 @@ export default {
   opacity: 0.8;
 }
 
-/* 表格主体样式 - 参考联动规则管理的行设计 */
-.tech-table :deep(.el-table__body-wrapper) {
-  background: transparent !important;
+.tech-table :deep(.el-table__header-wrapper .el-table__header th::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(0, 255, 255, 0.05), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
-.tech-table :deep(.el-table__body) {
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:hover::before) {
+  opacity: 1;
+}
+
+/* 表格体样式 */
+.tech-table :deep(.el-table__body-wrapper) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body) {
   background: transparent !important;
+  border: none !important;
 }
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
@@ -988,6 +1160,88 @@ export default {
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
   border-right: none !important;
+}
+
+/* 移除所有可能的边框和分隔线 */
+.tech-table :deep(.el-table th.el-table__cell) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table td.el-table__cell) {
+  border: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+}
+
+/* 终极解决方案 - 强制覆盖所有可能的白边 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__inner-wrapper *) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  outline: 0 !important;
+  outline-width: 0 !important;
+  outline-style: none !important;
+  outline-color: transparent !important;
+  box-shadow: none !important;
+}
+
+/* 强制移除 Element Plus 的所有默认样式 */
+.tech-table :deep(.el-table--border),
+.tech-table :deep(.el-table--group),
+.tech-table :deep(.el-table--striped) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+}
+
+/* 覆盖所有伪元素的边框 */
+.tech-table :deep(.el-table::before),
+.tech-table :deep(.el-table::after),
+.tech-table :deep(.el-table *::before),
+.tech-table :deep(.el-table *::after) {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  content: none !important;
+  display: none !important;
+}
+
+/* 强制设置表格内所有元素的背景色 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper) {
+  background-color: rgba(15, 25, 45, 0.95) !important;
+  background: rgba(15, 25, 45, 0.95) !important;
+}
+
+/* 移除表格的默认边距和内边距 */
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table *) {
+  margin: 0 !important;
+}
+
+/* 重新设置单元格的内边距 */
+.tech-table :deep(.el-table th),
+.tech-table :deep(.el-table td) {
+  padding: 14px 12px !important;
+}
+
+/* 确保表格宽度100%且没有额外空白 */
+.tech-table :deep(.el-table) {
+  width: 100% !important;
+  margin: 0 !important;
+  border-spacing: 0 !important;
 }
 
 /* 彻底移除所有表格边框 - 最终解决方案 */
@@ -1098,6 +1352,78 @@ export default {
   text-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
 }
 
+/* ==================== 超强力移除表格左右白线 ==================== */
+/* 这是最终的强制覆盖，确保表格左右没有任何边框 */
+.tech-table,
+.tech-table :deep(.el-table),
+.tech-table :deep(.el-table__inner-wrapper),
+.tech-table :deep(.el-table__header-wrapper),
+.tech-table :deep(.el-table__body-wrapper),
+.tech-table :deep(.el-table__footer-wrapper) {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-left-width: 0 !important;
+  border-right-width: 0 !important;
+  border-left-style: none !important;
+  border-right-style: none !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+}
+
+/* 移除所有可能的左右边框伪元素 */
+.tech-table::before,
+.tech-table::after,
+.tech-table :deep(.el-table)::before,
+.tech-table :deep(.el-table)::after,
+.tech-table :deep(.el-table__inner-wrapper)::before,
+.tech-table :deep(.el-table__inner-wrapper)::after,
+.tech-table :deep(.el-table__header-wrapper)::before,
+.tech-table :deep(.el-table__header-wrapper)::after,
+.tech-table :deep(.el-table__body-wrapper)::before,
+.tech-table :deep(.el-table__body-wrapper)::after {
+  display: none !important;
+  content: none !important;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* 强制表格容器没有左右边框 */
+.tech-table {
+  border-left: 0 !important;
+  border-right: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* 确保表格的第一列和最后一列没有额外边框 */
+.tech-table :deep(.el-table th:first-child),
+.tech-table :deep(.el-table td:first-child) {
+  border-left: 0 !important;
+}
+
+.tech-table :deep(.el-table th:last-child),
+.tech-table :deep(.el-table td:last-child) {
+  border-right: 0 !important;
+}
+
+/* 移除所有 border-patch 元素（Element Plus 添加的边框修复元素） */
+.tech-table :deep([class*="border-left"]),
+.tech-table :deep([class*="border-right"]) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  border: 0 !important;
+}
+
+/* 最终的全局覆盖 */
+.tech-table :deep(*[class*="el-table"]) {
+  border-left: 0 !important;
+  border-right: 0 !important;
+}
+
 :deep(.el-checkbox) {
   color: rgba(255, 255, 255, 0.8) !important;
 }
@@ -1168,46 +1494,120 @@ export default {
   color: #00ffff !important;
 }
 
-:deep(.el-pagination) {
-  background: rgba(15, 25, 45, 0.8) !important;
-  padding: 12px 16px !important;
-  border-radius: 8px !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    0 0 10px rgba(0, 255, 255, 0.1) !important;
+/* 增强型分页样式 */
+.tech-pagination {
+  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
-:deep(.el-pagination .btn-prev),
-:deep(.el-pagination .btn-next),
-:deep(.el-pagination .el-pager li) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  position: relative;
+  z-index: 1;
 }
 
-:deep(.el-pagination .btn-prev:hover),
-:deep(.el-pagination .btn-next:hover),
-:deep(.el-pagination .el-pager li:hover) {
+.pagination-info {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.pagination-info .total-count {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+.page-size-select {
+  margin: 0 5px;
+  width: 80px;
+}
+
+.page-size-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  height: 28px !important;
+}
+
+.page-size-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  font-size: 12px !important;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
   background: rgba(0, 255, 255, 0.1) !important;
   color: #00ffff !important;
+  border-radius: 4px !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  padding: 6px 12px !important;
 }
 
-:deep(.el-pagination .el-pager li.is-active) {
+.pagination-btn:hover:not(:disabled) {
   background: rgba(0, 255, 255, 0.2) !important;
-  color: #00ffff !important;
-  border-color: #00ffff !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
 }
 
-:deep(.el-pagination .el-pagination__sizes .el-select .el-input__wrapper) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+.pagination-btn:disabled {
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
-:deep(.el-pagination .el-pagination__jump .el-input__wrapper) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 10px;
+}
+
+.page-btn {
+  padding: 6px 10px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  min-width: 32px;
+  text-align: center;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.page-btn.active {
+  background: rgba(0, 255, 255, 0.3);
+  color: white;
+  border-color: #00ffff;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+}
+
+.page-btn:disabled {
+  background: rgba(0, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.3);
+  border-color: rgba(0, 255, 255, 0.1);
+  cursor: not-allowed;
 }
 
 :deep(.el-dialog) {

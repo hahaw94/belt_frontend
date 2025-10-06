@@ -4,14 +4,20 @@
     <div class="tech-background">
     </div>
     
-    <h2>智能板卡设备管理</h2>
+    <h2>设备管理</h2>
 
-    <!-- 页面操作区 -->
-    <div class="page-operations">
-      <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="showAddBoard">添加设备</el-button>
-      <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="getBoardStats" :loading="boardStatsLoading">获取统计</el-button>
-      <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getBoardList" :loading="boardLoading">刷新列表</el-button>
-    </div>
+    <!-- 板卡列表卡片 -->
+    <el-card class="board-list-card tech-card mb-20" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <span>设备列表</span>
+          <div>
+            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="showAddBoard">添加设备</el-button>
+            <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="getBoardStats" :loading="boardStatsLoading">获取统计</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getBoardList" :loading="boardLoading">刷新列表</el-button>
+          </div>
+        </div>
+      </template>
 
       <!-- 设备搜索和筛选 -->
       <div class="search-filters-card tech-card mb-20">
@@ -94,97 +100,98 @@
         </div>
       </div>
 
-      <!-- 自定义表格 -->
-      <div class="custom-table" v-loading="boardLoading">
-        <!-- 表格头部 -->
-        <div class="table-header">
-          <div class="header-cell id-cell">设备ID</div>
-          <div class="header-cell name-cell">设备名称</div>
-          <div class="header-cell number-cell">设备编号</div>
-          <div class="header-cell ip-cell">设备IP</div>
-          <div class="header-cell status-cell">设备状态</div>
-          <div class="header-cell stream-status-cell">推流状态</div>
-          <div class="header-cell camera-cell">绑定摄像机</div>
-          <div class="header-cell action-cell">操作</div>
-        </div>
+        <!-- 自定义表格 -->
+        <div class="custom-table" v-loading="boardLoading">
+          <!-- 表格头部 -->
+          <div class="table-header">
+            <div class="header-cell id-cell">设备ID</div>
+            <div class="header-cell name-cell">设备名称</div>
+            <div class="header-cell number-cell">设备编号</div>
+            <div class="header-cell ip-cell">设备IP</div>
+            <div class="header-cell status-cell">设备状态</div>
+            <div class="header-cell stream-status-cell">推流状态</div>
+            <div class="header-cell camera-cell">绑定摄像机</div>
+            <div class="header-cell action-cell">操作</div>
+          </div>
 
-        <!-- 表格内容 -->
-        <div class="table-body">
-          <div
-            v-for="(row, index) in paginatedBoards"
-            :key="row.ID || row.id || index"
-            class="table-row-wrapper"
-          >
-            <!-- 主行 -->
-            <div class="table-row">
-              <div class="body-cell id-cell">{{ row.ID || row.id || 'N/A' }}</div>
-              <div class="body-cell name-cell">{{ row.DeviceName || row.device_name || 'N/A' }}</div>
-              <div class="body-cell number-cell">{{ row.DeviceNumber || row.device_number || 'N/A' }}</div>
-              <div class="body-cell ip-cell">{{ row.DeviceIP || row.device_ip || 'N/A' }}</div>
-              <div class="body-cell status-cell">
-                <span class="status-tag" :class="getStatusClass(row.DeviceStatus || row.device_status)">
-                  {{ getStatusText(row.DeviceStatus || row.device_status) }}
-                </span>
-              </div>
-              <div class="body-cell stream-status-cell">
-                <span class="status-tag" :class="getStreamStatusClass(row.StreamStatus || row.stream_status)">
-                  {{ getStreamStatusText(row.StreamStatus || row.stream_status) }}
-                </span>
-              </div>
-              <div class="body-cell camera-cell">
-                <span v-if="row.BoundCameraName || row.bound_camera_name" class="camera-tag bound">
-                  {{ row.BoundCameraName || row.bound_camera_name }}
-                </span>
-                <span v-else class="camera-tag unbound">未绑定</span>
-              </div>
-              <div class="body-cell action-cell">
-                <button class="action-btn view-btn" @click="viewBoardDetail(row)">
-                  详情
-                </button>
-                <button class="action-btn edit-btn" @click="editBoard(row)">
-                  编辑
-                </button>
-                <!-- 推流控制按钮 -->
-                <button 
-                  v-if="(row.StreamStatus || row.stream_status) === 'streaming'"
-                  class="action-btn pause-btn" 
-                  @click="stopBoardStreaming(row)"
-                  :disabled="streamOperationLoading"
-                >
-                  暂停推流
-                </button>
-                <button 
-                  v-else
-                  class="action-btn start-btn" 
-                  @click="startBoardStreaming(row)"
-                  :disabled="streamOperationLoading"
-                >
-                  开始推流
-                </button>
-                <button class="action-btn stream-btn" @click="showStreamInfo(row)">
-                  流信息
-                </button>
-                <button class="action-btn delete-btn" @click="deleteBoard(row)">
-                  删除
-                </button>
+          <!-- 表格内容 -->
+          <div class="table-body">
+            <div
+              v-for="(row, index) in paginatedBoards"
+              :key="row.ID || row.id || index"
+              class="table-row-wrapper"
+            >
+              <!-- 主行 -->
+              <div class="table-row">
+                <div class="body-cell id-cell">{{ row.ID || row.id || 'N/A' }}</div>
+                <div class="body-cell name-cell">{{ row.DeviceName || row.device_name || 'N/A' }}</div>
+                <div class="body-cell number-cell">{{ row.DeviceNumber || row.device_number || 'N/A' }}</div>
+                <div class="body-cell ip-cell">{{ row.DeviceIP || row.device_ip || 'N/A' }}</div>
+                <div class="body-cell status-cell">
+                  <span class="status-tag" :class="getStatusClass(row.DeviceStatus || row.device_status)">
+                    {{ getStatusText(row.DeviceStatus || row.device_status) }}
+                  </span>
+                </div>
+                <div class="body-cell stream-status-cell">
+                  <span class="status-tag" :class="getStreamStatusClass(row.StreamStatus || row.stream_status)">
+                    {{ getStreamStatusText(row.StreamStatus || row.stream_status) }}
+                  </span>
+                </div>
+                <div class="body-cell camera-cell">
+                  <span v-if="row.BoundCameraName || row.bound_camera_name" class="camera-tag bound">
+                    {{ row.BoundCameraName || row.bound_camera_name }}
+                  </span>
+                  <span v-else class="camera-tag unbound">未绑定</span>
+                </div>
+                <div class="body-cell action-cell">
+                  <button class="action-btn view-btn" @click="viewBoardDetail(row)">
+                    详情
+                  </button>
+                  <button class="action-btn edit-btn" @click="editBoard(row)">
+                    编辑
+                  </button>
+                  <!-- 推流控制按钮 -->
+                  <button 
+                    v-if="(row.StreamStatus || row.stream_status) === 'streaming'"
+                    class="action-btn pause-btn" 
+                    @click="stopBoardStreaming(row)"
+                    :disabled="streamOperationLoading"
+                  >
+                    暂停推流
+                  </button>
+                  <button 
+                    v-else
+                    class="action-btn start-btn" 
+                    @click="startBoardStreaming(row)"
+                    :disabled="streamOperationLoading"
+                  >
+                    开始推流
+                  </button>
+                  <button class="action-btn stream-btn" @click="showStreamInfo(row)">
+                    流信息
+                  </button>
+                  <button class="action-btn delete-btn" @click="deleteBoard(row)">
+                    删除
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 分页组件 -->
-      <div class="flex-center">
-        <el-pagination
-          v-model:current-page="boardPagination.pageNum"
-          v-model:page-size="boardPagination.pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="boardPagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleBoardSizeChange"
-          @current-change="handleBoardCurrentChange"
-        />
-      </div>
+        <!-- 分页组件 -->
+        <div class="flex-center">
+          <el-pagination
+            v-model:current-page="boardPagination.pageNum"
+            v-model:page-size="boardPagination.pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="boardPagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleBoardSizeChange"
+            @current-change="handleBoardCurrentChange"
+          />
+        </div>
+    </el-card>
 
     <!-- 设备配置对话框 -->
     <el-dialog 
@@ -554,7 +561,7 @@ const streamOperationLoading = ref(false)
 
 // 板卡对话框状态
 const boardDialogVisible = ref(false)
-const boardDialogTitle = ref('添加智能板卡')
+const boardDialogTitle = ref('添加设备')
 const editingBoardId = ref(null)
 const boardSaving = ref(false)
 
@@ -831,7 +838,7 @@ const resetBoardSearch = () => {
 // 显示添加板卡对话框
 const showAddBoard = () => {
   boardDialogVisible.value = true
-  boardDialogTitle.value = '添加智能板卡'
+  boardDialogTitle.value = '添加设备'
   editingBoardId.value = null
   Object.assign(boardForm, {
     deviceName: '',
@@ -966,7 +973,7 @@ const copyToClipboard = async (text) => {
 // 显示编辑板卡对话框
 const editBoard = (board) => {
   boardDialogVisible.value = true
-  boardDialogTitle.value = '编辑智能板卡'
+  boardDialogTitle.value = '编辑设备'
   editingBoardId.value = board.ID || board.id
   Object.assign(boardForm, {
     deviceName: board.DeviceName || board.device_name || '',
@@ -1386,16 +1393,14 @@ const stopBoardStreaming = async (board) => {
 
 
 /* ==================== 页面标题 ==================== */
-.tech-page-container h2 {
-  position: relative;
-  z-index: 10;
+.user-management-integrated-container h2 {
+  margin: 24px 0 20px 0;
   color: #00ffff;
   font-size: 24px;
   font-weight: 600;
-  margin: 20px 0 30px 0;
-  padding-left: 0;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-  letter-spacing: 1px;
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  position: relative;
+  z-index: 10;
 }
 
 /* ==================== 科技感卡片 ==================== */
@@ -1413,19 +1418,6 @@ const stopBoardStreaming = async (board) => {
   transition: all 0.3s ease;
 }
 
-/* ==================== 页面标题 ==================== */
-.tech-page-container h2 {
-  position: relative;
-  z-index: 10;
-  color: #00ffff;
-  font-size: 24px;
-  font-weight: 600;
-  margin: 20px 0 30px 0;
-  padding-left: 0;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-  letter-spacing: 1px;
-}
-
 /* ==================== 页面操作区 ==================== */
 .page-operations {
   display: flex;
@@ -1439,7 +1431,6 @@ const stopBoardStreaming = async (board) => {
   box-shadow: 
     0 12px 40px rgba(0, 0, 0, 0.4),
     0 0 30px rgba(0, 255, 255, 0.2) !important;
-  transform: translateY(-2px);
 }
 
 .tech-card :deep(.el-card__header) {
@@ -1462,17 +1453,80 @@ const stopBoardStreaming = async (board) => {
   justify-content: space-between !important;
   align-items: center !important;
   font-weight: bold;
-  color: #00ffff;
+  color: #00ffff !important;
   width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .card-header span {
-  color: #00ffff;
-  font-weight: 600;
-  font-size: 16px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-  letter-spacing: 1px;
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+  letter-spacing: 1px !important;
+  display: block !important;
+  visibility: visible !important;
 }
+
+/* 板卡列表卡片样式 - 完全按照用户列表样式 */
+.board-list-card.tech-card {
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 20px;
+}
+
+.board-list-card.tech-card :deep(.el-card__header) {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 0 !important;
+  padding: 16px 20px !important;
+}
+
+.board-list-card.tech-card :deep(.el-card__body) {
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.board-list-card .card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  font-weight: bold !important;
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+  width: 100% !important;
+}
+
+.board-list-card .card-header span {
+  color: #00ffff !important;
+  font-weight: bold !important;
+  font-size: 16px !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+.board-list-card .card-header > div {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* 确保卡片头部可见性 */
+.board-list-card :deep(.el-card__header) {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  min-height: 60px !important;
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 0 !important;
+  padding: 16px 20px !important;
+}
+
 
 
 .stat-tag {
