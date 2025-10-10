@@ -448,7 +448,7 @@
       </div>
     </el-dialog>
 
-    <!-- 自定义摄像头弹窗 - 实时视频播放 -->
+    <!-- 自定义摄像头弹窗 - 手动输入流地址播放 -->
     <teleport to="body">
       <div 
         v-if="cameraPopupVisible" 
@@ -459,8 +459,8 @@
           <!-- 弹窗头部 -->
           <div class="custom-modal-header">
             <h3 class="custom-modal-title">
-              {{ currentCameraPopup.device_name }} - 实时直播
-              <span class="live-badge">
+              流媒体播放器
+              <span v-if="currentStreamUrl && isPlaying" class="live-badge">
                 <span class="live-dot-small"></span>
                 LIVE
               </span>
@@ -470,38 +470,101 @@
           
           <!-- 弹窗内容 -->
           <div class="custom-modal-body">
-            <!-- 实时视频播放区域 -->
-            <div class="video-display-area">
-              <div class="video-player-container">
-                <!-- HLS视频播放器组件 -->
-                <HLSVideoPlayer 
-                  :src="getStreamUrl(currentCameraPopup.stream_name)"
-                  :poster="getStreamSnapshot(currentCameraPopup.stream_name)"
-                  :autoplay="true"
+            <!-- 流地址输入区域 -->
+            <div class="stream-input-area">
+              <div class="input-row">
+                <label class="input-label">流地址：</label>
+                <input 
+                  v-model="inputStreamUrl" 
+                  type="text" 
+                  class="stream-input"
+                  placeholder="请输入流地址，例如：http://localhost/live/camera1.live.flv"
+                  @keyup.enter="playStream"
                 />
+              </div>
+              <div class="input-row">
+                <label class="input-label">协议类型：</label>
+                <select v-model="selectedProtocol" class="protocol-select">
+                  <option value="auto">自动检测</option>
+                  <option value="flv">HTTP-FLV (推荐，低延迟)</option>
+                  <option value="hls">HLS (兼容性好)</option>
+                  <option value="rtmp">RTMP</option>
+                </select>
+                <button @click="playStream" class="play-btn">
+                  <span>▶</span> 播放
+                </button>
+                <button @click="stopStream" class="stop-btn">
+                  <span>■</span> 停止
+                </button>
+              </div>
+              <div class="quick-links">
+                <span class="quick-label">快捷操作：</span>
+                <button @click="setQuickUrl('flv')" class="quick-btn">FLV示例</button>
+                <button @click="setQuickUrl('hls')" class="quick-btn">HLS示例</button>
+                <button @click="getAvailableStreams" class="quick-btn check-btn">🔍 查看可用流</button>
+              </div>
+              
+              <!-- 可用流列表 -->
+              <div v-if="availableStreams.length > 0" class="streams-list">
+                <div class="streams-title">📡 当前可用的流：</div>
+                <div class="stream-item" v-for="(stream, index) in availableStreams" :key="index">
+                  <div class="stream-info">
+                    <span class="stream-name">{{ stream.app }}/{{ stream.stream }}</span>
+                    <span class="stream-schema">{{ stream.schema }}</span>
+                  </div>
+                  <button @click="selectStream(stream)" class="use-btn">使用此流</button>
+                </div>
+              </div>
+              <div v-else-if="checkingStreams" class="streams-loading">
+                正在获取流列表...
+              </div>
+              <div v-else-if="noStreamsFound" class="streams-empty">
+                ⚠️ 未发现活动的流，请先推流到ZLMediaKit服务器
               </div>
             </div>
             
-            <!-- 信息区域 -->
+            <!-- 实时视频播放区域 -->
+            <div class="video-display-area">
+              <div class="video-player-container">
+                <!-- 通用流媒体播放器组件 - 支持FLV/HLS/RTMP等多种格式 -->
+                <SimpleStreamPlayer 
+                  v-if="currentStreamUrl"
+                  :key="playerKey"
+                  :src="currentStreamUrl"
+                  :autoplay="false"
+                  :type="selectedProtocol"
+                />
+                <div v-else class="no-stream-hint">
+                  <div class="hint-icon">📺</div>
+                  <div class="hint-text">请在上方输入流地址后点击播放</div>
+                  <div class="hint-example">
+                    <p>示例地址：</p>
+                    <p>• http://localhost/live/camera1.live.flv</p>
+                    <p>• http://localhost/live/camera1/hls.m3u8</p>
+                    <p>• rtmp://localhost:1935/live/camera1</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 提示信息区域 -->
             <div class="info-display-area">
-              <div class="camera-details">
-                <div class="detail-row">
-                  <span class="detail-label">设备名称：</span>
-                  <span class="detail-value">{{ currentCameraPopup.device_name }}</span>
+              <div class="stream-tips">
+                <div class="tip-title">💡 使用说明：</div>
+                <div class="tip-item">
+                  <strong>1. 推流：</strong>使用OBS或FFmpeg推流到ZLMediaKit服务器
                 </div>
-                <div class="detail-row">
-                  <span class="detail-label">推流状态：</span>
-                  <span class="detail-value" :class="isStreamOnline(currentCameraPopup.stream_name) ? 'status-online' : 'status-offline'">
-                    {{ isStreamOnline(currentCameraPopup.stream_name) ? '在线直播' : '离线' }}
-                  </span>
+                <div class="tip-item">
+                  <strong>2. 推流地址：</strong>rtmp://服务器IP:1935/live/流名称
                 </div>
-                <div class="detail-row">
-                  <span class="detail-label">推流地址：</span>
-                  <span class="detail-value stream-url">rtmp://localhost:1935/live/{{ currentCameraPopup.stream_name }}</span>
+                <div class="tip-item">
+                  <strong>3. 播放地址：</strong>根据协议选择对应的播放地址格式
                 </div>
-                <div class="detail-row">
-                  <span class="detail-label">播放协议：</span>
-                  <span class="detail-value">HLS (HTTP Live Streaming)</span>
+                <div class="tip-item">
+                  <strong>• FLV格式：</strong>http://服务器IP/live/流名称.live.flv (低延迟)
+                </div>
+                <div class="tip-item">
+                  <strong>• HLS格式：</strong>http://服务器IP/live/流名称/hls.m3u8 (兼容性好)
                 </div>
               </div>
             </div>
@@ -617,7 +680,7 @@ import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { dashboardApi } from '@/api/dashboard'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
-import HLSVideoPlayer from '@/components/HLSVideoPlayer.vue'
+import SimpleStreamPlayer from '@/components/SimpleStreamPlayer.vue'
 // import { useAuthStore } from '@/stores/auth'
 // const authStore = useAuthStore() // 暂时注释，如果需要可以取消注释
 const loading = ref(false)
@@ -641,6 +704,18 @@ const currentAlert = ref({})
 // 摄像头弹窗状态
 const cameraPopupVisible = ref(false)
 const currentCameraPopup = ref({})
+
+// 流媒体播放状态
+const inputStreamUrl = ref('')
+const currentStreamUrl = ref('')
+const selectedProtocol = ref('auto')
+const isPlaying = ref(false)
+const playerKey = ref(0)
+
+// 流列表状态
+const availableStreams = ref([])
+const checkingStreams = ref(false)
+const noStreamsFound = ref(false)
 
 // Tooltip状态
 const tooltipVisible = ref(false)
@@ -1060,9 +1135,12 @@ const streamStatus = ref({
 
 // 流媒体服务器配置
 const streamConfig = {
-  baseUrl: 'http://localhost:8000',
-  hlsPath: '/hls',
-  snapshotPath: '/snapshots'
+  baseUrl: 'http://localhost',  // ZLMediaKit服务器地址
+  httpPort: 18080,               // HTTP端口（根据你的ZLMediaKit实际端口修改）
+  app: 'live',                   // 应用名，默认live
+  protocol: 'flv',               // 播放协议: 'flv' | 'hls' | 'rtmp'
+  snapshotPath: '/snapshots',
+  secret: 'siPkSq8Wq07uQTIOOJagCwolXp2ErmcH'  // API密钥（从config.ini中的api.secret获取）
 }
 
 // 这些函数暂时注释，如果需要可以取消注释
@@ -1128,12 +1206,137 @@ const showCameraPopup = (camera) => {
 const closeCameraPopup = () => {
   cameraPopupVisible.value = false
   currentCameraPopup.value = {}
+  stopStream() // 关闭弹窗时停止播放
 }
 
-// 获取HLS流地址
+// 播放流
+const playStream = () => {
+  if (!inputStreamUrl.value.trim()) {
+    ElMessage.warning('请输入流地址')
+    return
+  }
+  
+  currentStreamUrl.value = inputStreamUrl.value.trim()
+  isPlaying.value = true
+  playerKey.value++ // 强制重新渲染播放器
+  
+  ElMessage.success('开始播放...')
+}
+
+// 停止播放
+const stopStream = () => {
+  currentStreamUrl.value = ''
+  isPlaying.value = false
+  playerKey.value++
+}
+
+// 设置快捷示例地址
+const setQuickUrl = (type) => {
+  const { baseUrl, httpPort, app } = streamConfig
+  const port = httpPort === 80 ? '' : `:${httpPort}`
+  const streamName = 'camera1' // 默认流名称
+  
+  if (type === 'flv') {
+    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}.live.flv`
+    selectedProtocol.value = 'flv'
+    ElMessage.info('已填入FLV格式示例地址')
+  } else if (type === 'hls') {
+    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}/hls.m3u8`
+    selectedProtocol.value = 'hls'
+    ElMessage.info('已填入HLS格式示例地址')
+  }
+}
+
+// 获取可用的流列表
+const getAvailableStreams = async () => {
+  checkingStreams.value = true
+  noStreamsFound.value = false
+  availableStreams.value = []
+  
+  try {
+    const { baseUrl, httpPort, secret } = streamConfig
+    const port = httpPort === 80 ? '' : `:${httpPort}`
+    // 添加secret参数
+    const apiUrl = `${baseUrl}${port}/index/api/getMediaList?secret=${secret}`
+    
+    console.log('正在获取流列表:', apiUrl)
+    
+    const response = await fetch(apiUrl)
+    const data = await response.json()
+    
+    console.log('流列表响应:', data)
+    
+    if (data.code === 0 && data.data && data.data.length > 0) {
+      availableStreams.value = data.data
+      ElMessage.success(`找到 ${data.data.length} 个活动的流`)
+    } else if (data.code === -300) {
+      // secret错误
+      ElMessage.error('API密钥错误，请在config.ini中查找正确的secret值')
+      noStreamsFound.value = true
+    } else {
+      noStreamsFound.value = true
+      ElMessage.warning('未发现活动的流，请先推流到ZLMediaKit')
+    }
+  } catch (error) {
+    console.error('获取流列表失败:', error)
+    ElMessage.error('获取流列表失败，请检查ZLMediaKit是否运行在正确的端口')
+    noStreamsFound.value = true
+  } finally {
+    checkingStreams.value = false
+  }
+}
+
+// 选择并使用某个流
+const selectStream = (stream) => {
+  const { baseUrl, httpPort } = streamConfig
+  const port = httpPort === 80 ? '' : `:${httpPort}`
+  const app = stream.app
+  const streamName = stream.stream
+  const schema = stream.schema // 使用流对象自身的协议类型
+  
+  // 根据流自身的协议类型生成URL
+  if (schema === 'rtsp') {
+    // RTSP流使用FLV播放
+    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}.live.flv`
+    selectedProtocol.value = 'flv'
+  } else if (schema === 'rtmp') {
+    // RTMP流也使用FLV播放
+    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}.live.flv`
+    selectedProtocol.value = 'flv'
+  } else if (schema === 'hls') {
+    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}/hls.m3u8`
+    selectedProtocol.value = 'hls'
+  } else {
+    // 默认使用FLV
+    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}.live.flv`
+    selectedProtocol.value = 'flv'
+  }
+  
+  ElMessage.success(`已选择流: ${app}/${streamName} (${schema})`)
+}
+
+// 获取流地址 - 支持FLV、HLS、RTMP等多种格式
 const getStreamUrl = (streamName) => {
   if (!streamName) return ''
-  return `${streamConfig.baseUrl}${streamConfig.hlsPath}/${streamName}/index.m3u8`
+  
+  const { baseUrl, httpPort, app, protocol } = streamConfig
+  const port = httpPort === 80 ? '' : `:${httpPort}`
+  
+  // 根据协议生成对应的流地址
+  switch (protocol) {
+    case 'flv':
+      // FLV格式: http://ip:port/app/stream.live.flv
+      return `${baseUrl}${port}/${app}/${streamName}.live.flv`
+    case 'hls':
+      // HLS格式: http://ip:port/app/stream/hls.m3u8
+      return `${baseUrl}${port}/${app}/${streamName}/hls.m3u8`
+    case 'rtmp':
+      // RTMP格式: rtmp://ip:1935/app/stream
+      return `rtmp://${baseUrl.replace('http://', '')}:1935/${app}/${streamName}`
+    default:
+      // 默认使用FLV格式（低延迟）
+      return `${baseUrl}${port}/${app}/${streamName}.live.flv`
+  }
 }
 
 // 获取实时截图地址
@@ -3829,6 +4032,318 @@ onUnmounted(() => {
   margin-top: 10px;
   font-size: 12px;
   opacity: 0.8;
+}
+
+/* 流地址输入区域样式 */
+.stream-input-area {
+  padding: 15px 20px;
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.input-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 10px;
+}
+
+.input-row:last-child {
+  margin-bottom: 0;
+}
+
+.input-label {
+  color: #00d4ff;
+  font-weight: bold;
+  min-width: 80px;
+  font-size: 14px;
+}
+
+.stream-input {
+  flex: 1;
+  padding: 10px 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.stream-input:focus {
+  border-color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+.stream-input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.protocol-select {
+  padding: 10px 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.protocol-select:hover {
+  border-color: #00d4ff;
+}
+
+.play-btn,
+.stop-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.play-btn {
+  background: linear-gradient(135deg, #00d4ff, #00b8e6);
+  color: #fff;
+}
+
+.play-btn:hover {
+  background: linear-gradient(135deg, #00b8e6, #0096c7);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+}
+
+.stop-btn {
+  background: linear-gradient(135deg, #ff6b6b, #ff5252);
+  color: #fff;
+}
+
+.stop-btn:hover {
+  background: linear-gradient(135deg, #ff5252, #ff3838);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+}
+
+.quick-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(0, 212, 255, 0.1);
+  margin-top: 8px;
+}
+
+.quick-label {
+  color: #88ccff;
+  font-size: 13px;
+}
+
+.quick-btn {
+  padding: 5px 12px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+  color: #00d4ff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.quick-btn:hover {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: #00d4ff;
+  transform: translateY(-1px);
+}
+
+/* 无流提示样式 */
+.no-stream-hint {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  text-align: center;
+  padding: 40px;
+}
+
+.hint-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0.6;
+}
+
+.hint-text {
+  font-size: 18px;
+  color: #00d4ff;
+  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.hint-example {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  text-align: left;
+}
+
+.hint-example p {
+  margin: 5px 0;
+  font-size: 13px;
+  color: #88ccff;
+  font-family: monospace;
+}
+
+.hint-example p:first-child {
+  color: #00d4ff;
+  font-weight: bold;
+  margin-bottom: 10px;
+  font-family: inherit;
+}
+
+/* 提示信息区域样式 */
+.stream-tips {
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 8px;
+  padding: 15px 20px;
+}
+
+.tip-title {
+  font-size: 16px;
+  color: #00d4ff;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.tip-item {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #ffffff;
+  line-height: 1.6;
+}
+
+.tip-item:last-child {
+  margin-bottom: 0;
+}
+
+.tip-item strong {
+  color: #00d4ff;
+}
+
+/* 流列表样式 */
+.streams-list {
+  margin-top: 15px;
+  padding: 12px;
+  background: rgba(0, 212, 255, 0.05);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.streams-title {
+  font-size: 14px;
+  color: #00d4ff;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.stream-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.stream-item:hover {
+  background: rgba(0, 212, 255, 0.1);
+  border-color: #00d4ff;
+}
+
+.stream-item:last-child {
+  margin-bottom: 0;
+}
+
+.stream-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.stream-name {
+  color: #ffffff;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.stream-schema {
+  padding: 2px 8px;
+  background: rgba(0, 212, 255, 0.2);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  border-radius: 3px;
+  color: #00d4ff;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.use-btn {
+  padding: 5px 12px;
+  background: linear-gradient(135deg, #00d4ff, #00b8e6);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.use-btn:hover {
+  background: linear-gradient(135deg, #00b8e6, #0096c7);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.4);
+}
+
+.streams-loading,
+.streams-empty {
+  margin-top: 15px;
+  padding: 15px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 6px;
+  color: #88ccff;
+  font-size: 13px;
+}
+
+.check-btn {
+  background: rgba(0, 212, 255, 0.15) !important;
+  border-color: rgba(0, 212, 255, 0.4) !important;
+  font-weight: bold;
+}
+
+.check-btn:hover {
+  background: rgba(0, 212, 255, 0.25) !important;
 }
 
 
