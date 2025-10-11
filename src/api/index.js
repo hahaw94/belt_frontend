@@ -54,13 +54,14 @@ request.interceptors.response.use(
       return response // 直接返回原始响应，保留blob数据
     }
     
-    // 根据后端响应格式处理，支持两种格式：
-    // 1. {code: 200, message: "success", data: {...}, total?, page?, size?}
-    // 2. {error: 0, body: {...}, message: "...", success: true} (Mock格式)
-    if (res.code === 200 || res.error === 0) {
+    // 根据后端响应格式处理，支持多种格式：
+    // 1. {code: 0, message: "success", data: {...}} (标准格式，code=0表示成功)
+    // 2. {code: 200, message: "success", data: {...}, total?, page?, size?}
+    // 3. {error: 0, body: {...}, message: "...", success: true} (Mock格式)
+    if (res.code === 0 || res.code === 200 || res.error === 0) {
       // 成功响应，保留完整的响应信息包括分页数据
       return {
-        code: res.code || 200,
+        code: res.code === 0 ? 0 : (res.code || 200),
         success: true,
         message: res.message,
         data: res.data || {},

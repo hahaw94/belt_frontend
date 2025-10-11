@@ -29,6 +29,7 @@ class RecordingMockData {
 
     const resolutions = ['1920x1080', '1280x720', '3840x2160', '2560x1440']
     const frameRates = [25, 30, 50, 60]
+    const formats = ['mp4', 'avi', 'mkv', 'mov']
     
     // 生成100条录像记录
     for (let i = 1; i <= 100; i++) {
@@ -38,30 +39,45 @@ class RecordingMockData {
       const duration = Math.floor(Math.random() * 300) + 30 // 30-330秒随机时长
       const endTime = new Date(startTime.getTime() + duration * 1000)
       const fileSize = Math.floor(Math.random() * 500) + 50 // 50-550MB随机文件大小
+      const fileSizeBytes = fileSize * 1024 * 1024
       const resolution = resolutions[Math.floor(Math.random() * resolutions.length)]
       const fps = frameRates[Math.floor(Math.random() * frameRates.length)]
+      const format = formats[Math.floor(Math.random() * formats.length)]
+      const fileName = `${deviceName.replace(/摄像头$/, '')}_${alarmType}_${startTime.getTime()}.${format}`
 
       recordings.push({
-        id: `recording_${String(i).padStart(3, '0')}_${Date.now().toString(36)}`, // 生成MongoDB风格的ObjectID
+        // 符合后端 VideoResponse 结构
+        id: i,  // 使用数字ID，符合后端int64类型
+        title: `${deviceName} - ${alarmType}`,  // 视频标题
+        description: `录制于${deviceName}的${alarmType}事件`,  // 视频描述
+        file_name: fileName,  // 文件名
+        file_size: fileSizeBytes,  // 文件大小（字节）
+        file_size_str: this.formatFileSize(fileSizeBytes),  // 格式化的文件大小
+        duration: duration,  // 时长（秒）
+        duration_str: `${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, '0')}`,  // 格式化的时长
+        format: format,  // 视频格式
+        resolution: resolution,  // 分辨率
+        bitrate: Math.floor(Math.random() * 5000) + 2000,  // 码率
+        file_url: `http://localhost:8080/recordings/${startTime.getFullYear()}/${String(startTime.getMonth() + 1).padStart(2, '0')}/${fileName}`,  // 访问URL
+        status: Math.random() > 0.95 ? 0 : 1,  // 状态(1-正常,0-已删除)
+        upload_time: startTime.toISOString().replace('T', ' ').slice(0, 19),  // 上传时间
+        uploader_id: Math.floor(Math.random() * 5) + 1,  // 上传者ID
+        create_time: new Date(startTime.getTime() - Math.random() * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19),  // 创建时间
+        
+        // 保留原有字段用于兼容性
         device_id: Math.floor(Math.random() * 12) + 1,
         device_name: deviceName,
         alarm_type: alarmType,
         start_time: startTime.toISOString().replace('T', ' ').slice(0, 19),
         end_time: endTime.toISOString().replace('T', ' ').slice(0, 19),
-        duration: `${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, '0')}`, // 格式化为MM:SS
-        file_size: this.formatFileSize(fileSize * 1024 * 1024), // 转换为字节然后格式化
-        file_path: `/recordings/${startTime.getFullYear()}/${String(startTime.getMonth() + 1).padStart(2, '0')}/${deviceName.replace(/摄像头$/, '')}_${alarmType}_${startTime.getTime()}.mp4`,
-        has_tracking_box: Math.random() > 0.3, // 70%的录像有跟踪框
-        resolution: resolution,
+        file_path: `/recordings/${startTime.getFullYear()}/${String(startTime.getMonth() + 1).padStart(2, '0')}/${fileName}`,
+        has_tracking_box: Math.random() > 0.3,
         fps: fps,
         codec: 'H.264',
-        bitrate: Math.floor(Math.random() * 5000) + 2000, // 2000-7000 kbps
-        create_time: new Date(startTime.getTime() - Math.random() * 60 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19), // 创建时间稍早于开始时间
-        status: Math.random() > 0.95 ? '处理中' : '正常', // 5%的录像处理中
         thumbnail_path: `/thumbnails/${deviceName.replace(/摄像头$/, '')}_${alarmType}_${startTime.getTime()}.jpg`,
         metadata: {
           weather: ['晴天', '多云', '阴天', '小雨'][Math.floor(Math.random() * 4)],
-          temperature: Math.floor(Math.random() * 20) + 15, // 15-35度
+          temperature: Math.floor(Math.random() * 20) + 15,
           lighting: ['正常', '昏暗', '强光'][Math.floor(Math.random() * 3)],
           scene: ['室内', '室外', '半室外'][Math.floor(Math.random() * 3)]
         }
@@ -186,7 +202,9 @@ class RecordingMockData {
    * 根据ID获取录像记录
    */
   getRecordingById(recordingId) {
-    return this.recordings.find(recording => recording.id === recordingId)
+    // 支持字符串和数字ID
+    const id = typeof recordingId === 'string' ? parseInt(recordingId) : recordingId
+    return this.recordings.find(recording => recording.id === id)
   }
 
   /**
@@ -227,7 +245,9 @@ class RecordingMockData {
    * 删除录像记录
    */
   deleteRecording(recordingId) {
-    const index = this.recordings.findIndex(recording => recording.id === recordingId)
+    // 支持字符串和数字ID
+    const id = typeof recordingId === 'string' ? parseInt(recordingId) : recordingId
+    const index = this.recordings.findIndex(recording => recording.id === id)
     if (index !== -1) {
       this.recordings.splice(index, 1)
       return true

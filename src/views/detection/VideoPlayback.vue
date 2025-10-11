@@ -1,253 +1,572 @@
 <template>
   <div class="video-playback">
-    <div class="control-panel tech-card">
-      <el-form :inline="true">
-        <el-form-item>
-          <div class="custom-select" :class="{ 'is-open': isDropdownOpen }" @click="toggleDropdown">
-            <div class="select-input">
-              <span class="selected-text">{{ selectedDeviceName || '请选择设备' }}</span>
-              <div class="select-arrow">
-                <svg viewBox="0 0 1024 1024" width="14" height="14">
-                  <path d="M884 256h-75c-5.1 0-9.9 2.5-12.9 6.6L512 654.2 227.9 262.6c-3-4.1-7.8-6.6-12.9-6.6h-75c-6.5 0-10.3 7.4-6.5 12.7l352.6 486.1c12.8 17.6 39 17.6 51.7 0l352.6-486.1c3.9-5.3 0.1-12.7-6.4-12.7z" fill="currentColor"></path>
-                </svg>
-              </div>
-            </div>
-            <div class="dropdown-menu" v-show="isDropdownOpen">
-              <div 
-                class="dropdown-item" 
-              v-for="device in devices"
-              :key="device.id"
-                :class="{ 'is-selected': selectedDevice === device.id }"
-                @click.stop="selectDevice(device)"
-              >
-                {{ device.name }}
-              </div>
-            </div>
-          </div>
-        </el-form-item>
-        <el-form-item>
-          <el-date-picker
-            v-model="dateTimeRange"
-            type="datetimerange"
-            range-separator="至"
-            start-placeholder="开始时间"
-            end-placeholder="结束时间"
-            :shortcuts="shortcuts"
+    <!-- 上传录像区域 -->
+    <div class="upload-section tech-card">
+      <h3 class="section-title">
+        <el-icon><Upload /></el-icon>
+        上传录像
+      </h3>
+      <el-form :inline="true" :model="uploadForm">
+        <el-form-item label="视频标题">
+          <el-input 
+            v-model="uploadForm.title" 
+            placeholder="请输入视频标题" 
+            style="width: 200px"
           />
         </el-form-item>
+        <el-form-item label="视频描述">
+          <el-input 
+            v-model="uploadForm.description" 
+            placeholder="请输入视频描述（可选）" 
+            style="width: 250px"
+          />
+        </el-form-item>
+        <el-form-item label="选择文件">
+          <el-upload
+            ref="uploadRef"
+            :auto-upload="false"
+            :on-change="handleFileChange"
+            :show-file-list="false"
+            accept="video/*"
+          >
+            <el-button type="primary">
+              <el-icon><Folder /></el-icon>
+              选择视频
+            </el-button>
+          </el-upload>
+          <span v-if="uploadForm.file" class="file-info">
+            {{ uploadForm.file.name }} ({{ formatFileSize(uploadForm.file.size) }})
+          </span>
+        </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="searchRecords">
-            <el-icon><Search /></el-icon>
-            查询
+          <el-button 
+            type="success" 
+            @click="uploadVideo" 
+            :loading="uploading"
+            :disabled="!uploadForm.title || !uploadForm.file"
+          >
+            <el-icon><Upload /></el-icon>
+            {{ uploading ? `上传中 ${uploadProgress}%` : '开始上传' }}
           </el-button>
         </el-form-item>
       </el-form>
+      <el-progress 
+        v-if="uploading" 
+        :percentage="uploadProgress" 
+        :stroke-width="8"
+        :color="progressColor"
+      />
     </div>
 
+
     <div class="content-area">
+      <!-- 视频播放区域 -->
       <div class="video-area tech-card">
         <div class="video-container">
-          <div class="video-placeholder">
-            <!-- 这里将来会放置真实的视频播放器 -->
-            视频播放区域
+          <div class="video-wrapper">
+            <video 
+              ref="videoPlayer"
+              class="video-player"
+              :src="currentVideoUrl"
+              controls
+              @loadedmetadata="onVideoLoaded"
+              @timeupdate="onTimeUpdate"
+              @ended="onVideoEnded"
+            >
+              您的浏览器不支持视频播放。
+            </video>
+            <div v-if="!currentVideoUrl" class="video-placeholder">
+              <el-icon :size="60"><VideoCamera /></el-icon>
+              <p>请从右侧列表选择要播放的录像</p>
+            </div>
           </div>
-          <div class="video-controls">
-            <el-space>
-              <el-button-group>
-                <el-button type="primary" @click="play">
-                  <el-icon><VideoPlay /></el-icon>
-                </el-button>
-                <el-button type="primary" @click="pause">
-                  <el-icon><VideoPause /></el-icon>
-                </el-button>
-              </el-button-group>
-              <el-slider v-model="progress" :show-tooltip="true" />
-              <span class="time-display">{{ formatTime(currentTime) }} / {{ formatTime(totalTime) }}</span>
-            </el-space>
+          <div v-if="currentVideo" class="video-info-bar">
+            <div class="info-item">
+              <span class="label">标题:</span>
+              <span class="value">{{ currentVideo.title }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">格式:</span>
+              <span class="value">{{ currentVideo.format?.toUpperCase() }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">大小:</span>
+              <span class="value">{{ currentVideo.file_size_str }}</span>
+            </div>
+            <div class="info-item" v-if="currentVideo.duration_str">
+              <span class="label">时长:</span>
+              <span class="value">{{ currentVideo.duration_str }}</span>
+            </div>
           </div>
         </div>
       </div>
 
+      <!-- 录像列表区域 -->
       <div class="record-list tech-card">
-        <el-table :data="recordList" height="100%" style="width: 100%">
-          <el-table-column prop="time" label="时间" width="180" />
-          <el-table-column prop="type" label="类型" width="100" />
-          <el-table-column prop="description" label="描述" />
-          <el-table-column fixed="right" label="操作" width="120">
+        <div class="list-header">
+          <h3 class="section-title">
+            <el-icon><List /></el-icon>
+            录像列表
+          </h3>
+          <el-tag type="info">共 {{ pagination.total }} 条</el-tag>
+        </div>
+        
+        <el-table 
+          :data="recordList" 
+          height="calc(100% - 100px)" 
+          style="width: 100%"
+          v-loading="loading"
+          :row-class-name="getRowClassName"
+          @row-click="handleRowClick"
+        >
+          <el-table-column prop="title" label="标题" min-width="150" show-overflow-tooltip />
+          <el-table-column prop="format" label="格式" width="80" align="center">
+            <template #default="{ row }">
+              <el-tag size="small" type="success">{{ row.format?.toUpperCase() }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="file_size_str" label="大小" width="100" />
+          <el-table-column prop="duration_str" label="时长" width="100" />
+          <el-table-column prop="upload_time" label="上传时间" width="160" />
+          <el-table-column fixed="right" label="操作" width="150">
             <template #default="scope">
-              <el-button link type="primary" @click="playRecord(scope.row)">
+              <el-button 
+                link 
+                type="primary" 
+                @click.stop="playRecord(scope.row)"
+                :loading="playingId === scope.row.id"
+              >
+                <el-icon><VideoPlay /></el-icon>
                 播放
               </el-button>
-              <el-button link type="primary" @click="downloadRecord(scope.row)">
+              <el-button 
+                link 
+                type="warning" 
+                @click.stop="downloadRecord(scope.row)"
+              >
+                <el-icon><Download /></el-icon>
                 下载
+              </el-button>
+              <el-button 
+                link 
+                type="danger" 
+                @click.stop="deleteRecord(scope.row)"
+              >
+                <el-icon><Delete /></el-icon>
+                删除
               </el-button>
             </template>
           </el-table-column>
         </el-table>
+
+        <!-- 分页 -->
+        <div class="pagination-wrapper">
+          <el-pagination
+            v-model:current-page="pagination.page"
+            v-model:page-size="pagination.pageSize"
+            :page-sizes="[10, 20, 50, 100]"
+            :total="pagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
+          />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  ElButton,
-  ElButtonGroup,
-  ElForm,
-  ElFormItem,
-  ElDatePicker,
-  ElSpace,
-  ElSlider,
-  ElTable,
-  ElTableColumn
-} from 'element-plus'
-import {
-  Search,
   VideoPlay,
-  VideoPause
+  Upload,
+  Folder,
+  Download,
+  Delete,
+  VideoCamera,
+  List
 } from '@element-plus/icons-vue'
+import { detectionApi } from '@/api/detection'
 
 export default {
   name: 'VideoPlayback',
   components: {
-    ElButton,
-    ElButtonGroup,
-    ElForm,
-    ElFormItem,
-    ElDatePicker,
-    ElSpace,
-    ElSlider,
-    ElTable,
-    ElTableColumn,
-    Search,
     VideoPlay,
-    VideoPause
+    Upload,
+    Folder,
+    Download,
+    Delete,
+    VideoCamera,
+    List
   },
   setup() {
-    const selectedDevice = ref('')
-    const selectedDeviceName = ref('')
-    const isDropdownOpen = ref(false)
-    const dateTimeRange = ref([])
-    const progress = ref(0)
-    const currentTime = ref(0)
-    const totalTime = ref(600) // 示例：10分钟
+    // 上传表单
+    const uploadForm = reactive({
+      title: '',
+      description: '',
+      file: null
+    })
+    const uploading = ref(false)
+    const uploadProgress = ref(0)
+    const uploadRef = ref(null)
 
-    // 模拟数据
-    const devices = ref([
-      { id: 1, name: '摄像头 1' },
-      { id: 2, name: '摄像头 2' },
-      { id: 3, name: '摄像头 3' }
-    ])
-
-    const recordList = ref([
-      {
-        time: '2024-01-20 10:30:00',
-        type: '预警',
-        description: '检测到异常行为'
-      },
-      {
-        time: '2024-01-20 10:35:00',
-        type: '预警',
-        description: '检测到可疑物品'
-      }
-    ])
-
-    const shortcuts = [
-      {
-        text: '最近一小时',
-        value: () => {
-          const end = new Date()
-          const start = new Date()
-          start.setTime(start.getTime() - 3600 * 1000)
-          return [start, end]
-        }
-      },
-      {
-        text: '最近一天',
-        value: () => {
-          const end = new Date()
-          const start = new Date()
-          start.setTime(start.getTime() - 3600 * 1000 * 24)
-          return [start, end]
-        }
-      }
-    ]
-
-    const formatTime = (seconds) => {
-      const minutes = Math.floor(seconds / 60)
-      const remainingSeconds = Math.floor(seconds % 60)
-      return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
-    }
-
-    const searchRecords = () => {
-      // 实现查询录像记录的逻辑
-      console.log('查询录像记录', selectedDevice.value, dateTimeRange.value)
-    }
-
-    const play = () => {
-      console.log('播放视频')
-    }
-
-    const pause = () => {
-      console.log('暂停视频')
-    }
-
-    const playRecord = (record) => {
-      console.log('播放录像', record)
-    }
-
-    const downloadRecord = (record) => {
-      console.log('下载录像', record)
-    }
-
-    const toggleDropdown = () => {
-      isDropdownOpen.value = !isDropdownOpen.value
-    }
-
-    const selectDevice = (device) => {
-      selectedDevice.value = device.id
-      selectedDeviceName.value = device.name
-      isDropdownOpen.value = false
-    }
-
-    // 点击外部关闭下拉菜单
-    const handleClickOutside = (event) => {
-      const customSelect = event.target.closest('.custom-select')
-      if (!customSelect) {
-        isDropdownOpen.value = false
-      }
-    }
-
-    // 组件挂载时添加事件监听
-    onMounted(() => {
-      document.addEventListener('click', handleClickOutside)
+    // 分页
+    const pagination = reactive({
+      page: 1,
+      pageSize: 10,
+      total: 0
     })
 
-    // 组件卸载时移除事件监听
-    onUnmounted(() => {
-      document.removeEventListener('click', handleClickOutside)
+    // 录像列表
+    const recordList = ref([])
+    const loading = ref(false)
+
+    // 视频播放
+    const videoPlayer = ref(null)
+    const currentVideo = ref(null)
+    const currentVideoUrl = ref('')
+    const playingId = ref(null)
+
+    // 进度条颜色
+    const progressColor = computed(() => {
+      return [
+        { color: '#f56c6c', percentage: 20 },
+        { color: '#e6a23c', percentage: 40 },
+        { color: '#5cb87a', percentage: 60 },
+        { color: '#1989fa', percentage: 80 },
+        { color: '#6f7ad3', percentage: 100 }
+      ]
+    })
+
+    // 格式化文件大小
+    const formatFileSize = (bytes) => {
+      if (!bytes || bytes === 0) return '0 B'
+      const k = 1024
+      const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    }
+
+    // 文件选择处理
+    const handleFileChange = (file) => {
+      uploadForm.file = file.raw
+    }
+
+    // 上传视频
+    const uploadVideo = async () => {
+      if (!uploadForm.title) {
+        ElMessage.warning('请输入视频标题')
+        return
+      }
+      if (!uploadForm.file) {
+        ElMessage.warning('请选择视频文件')
+        return
+      }
+
+      // 检查文件大小（2GB限制）
+      const maxSize = 2 * 1024 * 1024 * 1024
+      if (uploadForm.file.size > maxSize) {
+        ElMessage.error('文件大小超过限制，最大支持2GB')
+        return
+      }
+
+      uploading.value = true
+      uploadProgress.value = 0
+
+      try {
+        // 使用XMLHttpRequest实现上传进度
+        await new Promise((resolve, reject) => {
+          const formData = new FormData()
+          formData.append('title', uploadForm.title)
+          if (uploadForm.description) {
+            formData.append('description', uploadForm.description)
+          }
+          formData.append('file', uploadForm.file)
+
+          const xhr = new XMLHttpRequest()
+
+          // 上传进度
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              uploadProgress.value = Math.round((e.loaded / e.total) * 100)
+            }
+          }
+
+          // 上传完成
+          xhr.onload = () => {
+            if (xhr.status === 200) {
+              const response = JSON.parse(xhr.responseText)
+              // 后端返回格式: { code: 200, message: "success", data: { id, title, file_name, file_size, file_url, message } }
+              if (response.code === 200) {
+                resolve(response)
+              } else {
+                reject(new Error(response.message || '上传失败'))
+              }
+            } else {
+              reject(new Error('上传失败'))
+            }
+          }
+
+          xhr.onerror = () => reject(new Error('网络错误'))
+
+          // 获取token
+          const token = localStorage.getItem('token')
+          xhr.open('POST', '/api/v1/recordings/upload')
+          if (token) {
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+          }
+          xhr.send(formData)
+        })
+
+        ElMessage({
+          message: '上传成功',
+          type: 'success',
+          customClass: 'upload-success-message'
+        })
+        
+        // 重置表单
+        uploadForm.title = ''
+        uploadForm.description = ''
+        uploadForm.file = null
+        uploadProgress.value = 0
+        if (uploadRef.value) {
+          uploadRef.value.clearFiles()
+        }
+
+        // 刷新列表
+        await loadRecordingList()
+      } catch (error) {
+        console.error('上传失败:', error)
+        ElMessage.error(error.message || '上传失败')
+      } finally {
+        uploading.value = false
+      }
+    }
+
+    // 加载录像列表
+    const loadRecordingList = async () => {
+      loading.value = true
+      try {
+        const params = {
+          page: pagination.page,
+          page_size: pagination.pageSize
+        }
+
+        console.log('=== 请求录像列表 ===', params)
+        const response = await detectionApi.getRecordingList(params)
+        console.log('=== 录像列表响应 ===', response)
+        
+        // 后端返回格式: { code: 200, message: "success", data: { total, list, page, page_size } }
+        if (response && response.code === 200 && response.data) {
+          const dataObj = response.data
+          
+          // 后端data字段包含 list 数组和 total 数量
+          if (dataObj.list && Array.isArray(dataObj.list)) {
+            recordList.value = dataObj.list
+            pagination.total = dataObj.total || 0
+          } else {
+            console.warn('=== 响应数据格式异常，缺少list字段 ===', dataObj)
+            recordList.value = []
+            pagination.total = 0
+          }
+          
+          console.log('=== 解析后的录像数据 ===', {
+            count: recordList.value.length,
+            total: pagination.total,
+            data: recordList.value
+          })
+        } else {
+          console.error('=== 录像列表响应格式异常 ===', response)
+          ElMessage.error(response?.message || '获取录像列表失败')
+          recordList.value = []
+          pagination.total = 0
+        }
+      } catch (error) {
+        console.error('=== 获取录像列表失败 ===', error)
+        ElMessage.error('获取录像列表失败: ' + (error.message || '未知错误'))
+        recordList.value = []
+        pagination.total = 0
+      } finally {
+        loading.value = false
+      }
+    }
+
+    // 播放录像
+    const playRecord = async (record) => {
+      try {
+        playingId.value = record.id
+        
+        console.log('=== 开始播放录像 ===', record)
+        
+        // 获取播放地址
+        const response = await detectionApi.getRecordingPlayUrl(record.id)
+        
+        console.log('=== 播放地址响应 ===', response)
+        
+        // 后端返回格式: { code: 200, message: "success", data: { id, title, file_url, format, ... } }
+        if (response && response.code === 200 && response.data) {
+          const dataObj = response.data
+          
+          // 后端直接在data中返回file_url
+          const playUrl = dataObj.file_url
+          
+          console.log('=== 解析播放URL ===', playUrl)
+          
+          if (playUrl) {
+            currentVideo.value = record
+            currentVideoUrl.value = playUrl
+            
+            // 等待视频元素更新
+            setTimeout(() => {
+              if (videoPlayer.value) {
+                videoPlayer.value.load()
+                videoPlayer.value.play().catch(err => {
+                  console.error('播放失败:', err)
+                  ElMessage.warning('自动播放失败，请手动点击播放')
+                })
+              }
+            }, 100)
+          } else {
+            console.error('=== 未找到播放URL ===', { response, record })
+            ElMessage.error('未找到播放地址')
+          }
+        } else {
+          console.error('=== 播放地址响应格式异常 ===', response)
+          ElMessage.error(response?.message || '获取播放地址失败')
+        }
+      } catch (error) {
+        console.error('=== 播放录像失败 ===', error)
+        ElMessage.error('播放录像失败: ' + (error.message || '未知错误'))
+      } finally {
+        playingId.value = null
+      }
+    }
+
+    // 下载录像（预留功能）
+    // eslint-disable-next-line no-unused-vars
+    const downloadRecord = (record) => {
+      ElMessage.info('下载功能开发中，敬请期待')
+      // TODO: 实现下载功能
+      // window.open(record.file_url, '_blank')
+    }
+
+    // 删除录像
+    const deleteRecord = async (record) => {
+      try {
+        await ElMessageBox.confirm(
+          `确定要删除录像"${record.title}"吗？此操作不可恢复。`,
+          '确认删除',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        )
+
+        loading.value = true
+        const response = await detectionApi.deleteRecording(record.id)
+        
+        // 后端返回格式: { code: 200, message: "视频删除成功", data: null }
+        if (response && response.code === 200) {
+          ElMessage.success(response.message || '录像删除成功')
+          
+          // 如果删除的是当前播放的视频，清空播放器
+          if (currentVideo.value && currentVideo.value.id === record.id) {
+            currentVideo.value = null
+            currentVideoUrl.value = ''
+          }
+          
+          // 刷新列表
+          await loadRecordingList()
+        } else {
+          ElMessage.error(response?.message || '删除失败')
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('删除录像失败:', error)
+          ElMessage.error('删除录像失败')
+        }
+      } finally {
+        loading.value = false
+      }
+    }
+
+    // 分页处理
+    const handlePageChange = (page) => {
+      pagination.page = page
+      loadRecordingList()
+    }
+
+    const handleSizeChange = (size) => {
+      pagination.pageSize = size
+      pagination.page = 1
+      loadRecordingList()
+    }
+
+    // 表格行样式
+    const getRowClassName = ({ row }) => {
+      if (currentVideo.value && row.id === currentVideo.value.id) {
+        return 'playing-row'
+      }
+      return ''
+    }
+
+    // 表格行点击
+    const handleRowClick = (row) => {
+      playRecord(row)
+    }
+
+    // 视频事件处理
+    const onVideoLoaded = () => {
+      console.log('视频加载完成')
+    }
+
+    const onTimeUpdate = () => {
+      // 可以在这里更新播放进度
+    }
+
+    const onVideoEnded = () => {
+      ElMessage.success('播放完成')
+    }
+
+    // 组件挂载时加载数据
+    onMounted(() => {
+      loadRecordingList()
     })
 
     return {
-      selectedDevice,
-      selectedDeviceName,
-      isDropdownOpen,
-      dateTimeRange,
-      devices,
-      shortcuts,
-      progress,
-      currentTime,
-      totalTime,
+      // 上传相关
+      uploadForm,
+      uploading,
+      uploadProgress,
+      uploadRef,
+      progressColor,
+      handleFileChange,
+      uploadVideo,
+      formatFileSize,
+      
+      // 列表相关
       recordList,
-      formatTime,
-      searchRecords,
-      play,
-      pause,
+      loading,
+      pagination,
+      handlePageChange,
+      handleSizeChange,
+      getRowClassName,
+      handleRowClick,
+      
+      // 播放相关
+      videoPlayer,
+      currentVideo,
+      currentVideoUrl,
+      playingId,
       playRecord,
       downloadRecord,
-      toggleDropdown,
-      selectDevice
+      deleteRecord,
+      onVideoLoaded,
+      onTimeUpdate,
+      onVideoEnded
     }
   }
 }
@@ -260,7 +579,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  overflow: visible;
+  overflow-y: auto;
 }
 
 /* 科技感卡片样式 */
@@ -274,16 +593,26 @@ export default {
     0 0 20px rgba(0, 255, 255, 0.1) !important;
 }
 
-.control-panel {
-  padding: 16px;
-  margin-top: 20px;
-  overflow: visible;
-  position: relative;
-  z-index: 50;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+/* 上传区域 */
+.upload-section {
+  padding: 20px;
+}
+
+.section-title {
+  color: rgba(0, 255, 255, 0.9);
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.file-info {
+  margin-left: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
 }
 
 .content-area {
@@ -291,10 +620,14 @@ export default {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: 20px;
+  min-height: 0;
 }
 
+/* 视频播放区域 */
 .video-area {
-  padding: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .video-container {
@@ -304,275 +637,98 @@ export default {
   gap: 16px;
 }
 
-.video-placeholder {
+.video-wrapper {
   flex: 1;
+  position: relative;
   background: #000;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 400px;
 }
 
-.video-controls {
-  padding: 12px;
+.video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.video-placeholder {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.4);
+  gap: 20px;
+}
+
+.video-placeholder p {
+  font-size: 16px;
+  margin: 0;
+}
+
+.video-info-bar {
+  display: flex;
+  gap: 20px;
+  padding: 12px 16px;
   background: rgba(20, 30, 50, 0.6);
   border: 1px solid rgba(0, 255, 255, 0.2);
   border-radius: 8px;
   backdrop-filter: blur(5px);
 }
 
-.video-controls :deep(.el-slider) {
-  width: 300px;
-  margin: 0 16px;
+.info-item {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
 }
 
-.time-display {
-  font-family: monospace;
+.info-item .label {
   color: rgba(0, 255, 255, 0.8);
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
-}
-
-.record-list {
-  padding: 16px;
-}
-
-/* 自定义下拉选择器样式 */
-.custom-select {
-  position: relative;
-  min-width: 200px;
-  cursor: pointer;
-  user-select: none;
-  z-index: 100;
-}
-
-.select-input {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0;
-  background: rgba(20, 30, 50, 0.85);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 6px;
-  height: 32px;
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
-    inset 0 0 10px rgba(0, 255, 255, 0.05),
-    0 2px 4px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(5px);
-}
-
-.selected-text {
-  flex: 1;
-  padding: 0 12px;
-  color: rgba(255, 255, 255, 0.9);
   font-weight: 500;
-  text-shadow: 0 0 3px rgba(0, 255, 255, 0.2);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.select-arrow {
+.info-item .value {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 录像列表区域 */
+.record-list {
+  padding: 20px;
   display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  margin-bottom: 15px;
+}
+
+.pagination-wrapper {
+  margin-top: 15px;
+  display: flex;
   justify-content: center;
-  width: 36px;
-  height: 100%;
-  background: linear-gradient(135deg, #00ffff 0%, #0099cc 50%, #006699 100%);
-  color: #ffffff;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
-    0 3px 12px rgba(0, 255, 255, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-  position: relative;
 }
 
-.select-arrow::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
+/* 表格行高亮样式 */
+:deep(.playing-row) {
+  background: rgba(0, 255, 255, 0.1) !important;
 }
 
-.select-arrow svg {
-  transition: transform 0.3s ease;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
-}
-
-/* 悬停效果 */
-.custom-select:hover .select-input {
-  background: rgba(25, 35, 55, 0.9);
-  border-color: rgba(0, 255, 255, 0.5);
-  box-shadow: 
-    inset 0 0 15px rgba(0, 255, 255, 0.08),
-    0 0 8px rgba(0, 255, 255, 0.2);
-}
-
-.custom-select:hover .select-arrow {
-  background: linear-gradient(135deg, #00ccff 0%, #0077aa 50%, #004466 100%);
-  box-shadow: 
-    0 0 20px rgba(0, 255, 255, 0.6),
-    0 0 40px rgba(0, 255, 255, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-  transform: scale(1.02);
-}
-
-.custom-select:hover .select-arrow::before {
-  opacity: 1;
-}
-
-/* 展开状态 */
-.custom-select.is-open .select-input {
-  border-color: #00ffff;
-  background: rgba(25, 35, 55, 0.95);
-  box-shadow: 
-    0 0 0 2px rgba(0, 255, 255, 0.3),
-    inset 0 0 20px rgba(0, 255, 255, 0.1),
-    0 0 15px rgba(0, 255, 255, 0.2);
-}
-
-.custom-select.is-open .select-arrow {
-  background: linear-gradient(135deg, #00ddff 0%, #0088bb 50%, #005577 100%);
-  box-shadow: 
-    0 0 25px rgba(0, 255, 255, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-}
-
-.custom-select.is-open .select-arrow svg {
-  transform: rotate(180deg);
-}
-
-/* 下拉菜单 */
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: rgba(15, 25, 45, 0.98);
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 8px;
-  backdrop-filter: blur(15px);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 255, 255, 0.1);
-  z-index: 9999;
-  max-height: 200px;
-  overflow-y: auto;
-  animation: dropdownFadeIn 0.2s ease-out;
-  min-height: 120px; /* 确保有足够高度显示所有选项 */
-  width: 100%; /* 确保宽度正确 */
-}
-
-@keyframes dropdownFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.dropdown-item {
-  padding: 10px 16px;
-  color: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 4px;
-  margin: 2px 4px;
-  position: relative;
-  overflow: hidden;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.dropdown-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
-  transition: left 0.5s ease;
-}
-
-.dropdown-item:hover {
-  background: rgba(0, 255, 255, 0.15);
-  color: #00ffff;
-  transform: translateX(2px);
-  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2);
-}
-
-.dropdown-item:hover::before {
-  left: 100%;
-}
-
-.dropdown-item.is-selected {
-  background: rgba(0, 255, 255, 0.25);
-  color: #00ffff;
-  font-weight: 600;
-  box-shadow: 
-    0 2px 8px rgba(0, 255, 255, 0.3),
-    inset 0 0 10px rgba(0, 255, 255, 0.1);
-}
-
-.dropdown-item.is-selected::after {
-  content: '✓';
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #00ffff;
-  font-weight: bold;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-}
-
-/* 滚动条样式 */
-.dropdown-menu::-webkit-scrollbar {
-  width: 6px;
-}
-
-.dropdown-menu::-webkit-scrollbar-track {
-  background: rgba(20, 30, 50, 0.5);
-  border-radius: 3px;
-}
-
-.dropdown-menu::-webkit-scrollbar-thumb {
-  background: linear-gradient(to bottom, #00ffff, #0099cc);
-  border-radius: 3px;
-  box-shadow: inset 0 0 2px rgba(255, 255, 255, 0.2);
-}
-
-.dropdown-menu::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(to bottom, #00ccff, #0077aa);
+:deep(.playing-row:hover td) {
+  background: rgba(0, 255, 255, 0.15) !important;
 }
 
 /* Element Plus 组件深色主题样式 */
 :deep(.el-form-item__label) {
   color: rgba(255, 255, 255, 0.8) !important;
-}
-
-:deep(.el-form--inline) {
-  overflow: visible !important;
-}
-
-:deep(.el-form-item) {
-  overflow: visible !important;
-  position: relative !important;
 }
 
 /* 通用输入框深色主题 */
@@ -589,9 +745,6 @@ export default {
 :deep(.el-input__wrapper:hover) {
   background: rgba(25, 35, 55, 0.9) !important;
   border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 
-    inset 0 0 15px rgba(0, 255, 255, 0.08),
-    0 0 8px rgba(0, 255, 255, 0.2) !important;
 }
 
 :deep(.el-input__wrapper.is-focus) {
@@ -599,8 +752,7 @@ export default {
   border-color: #00ffff !important;
   box-shadow: 
     inset 0 0 20px rgba(0, 255, 255, 0.1),
-    0 0 0 2px rgba(0, 255, 255, 0.3),
-    0 0 15px rgba(0, 255, 255, 0.2) !important;
+    0 0 0 2px rgba(0, 255, 255, 0.3) !important;
 }
 
 :deep(.el-input__inner) {
@@ -612,180 +764,32 @@ export default {
   color: rgba(255, 255, 255, 0.4) !important;
 }
 
-/* Element UI选择器样式已移除，使用自定义组件 */
+/* 选择框样式 */
+:deep(.el-select) {
+  width: 100%;
+}
 
-/* Element UI选择器相关样式已完全移除，使用自定义下拉组件 */
-
-/* 日期选择器输入框强化 */
-:deep(.el-date-editor) {
+:deep(.el-select__wrapper) {
   background: rgba(20, 30, 50, 0.85) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  border-radius: 6px !important;
   box-shadow: 
     inset 0 0 10px rgba(0, 255, 255, 0.05),
     0 2px 4px rgba(0, 0, 0, 0.2) !important;
-  backdrop-filter: blur(5px) !important;
 }
 
-:deep(.el-date-editor:hover) {
+:deep(.el-select__wrapper:hover) {
   background: rgba(25, 35, 55, 0.9) !important;
   border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 
-    inset 0 0 15px rgba(0, 255, 255, 0.08),
-    0 0 8px rgba(0, 255, 255, 0.2) !important;
 }
 
-:deep(.el-date-editor.is-active) {
-  background: rgba(25, 35, 55, 0.95) !important;
+:deep(.el-select__wrapper.is-focused) {
   border-color: #00ffff !important;
-  box-shadow: 
-    inset 0 0 20px rgba(0, 255, 255, 0.1),
-    0 0 0 2px rgba(0, 255, 255, 0.3),
-    0 0 15px rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.3) !important;
 }
 
-:deep(.el-date-editor .el-input__inner) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  font-weight: 500 !important;
-}
-
-:deep(.el-date-editor .el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.5) !important;
-  font-style: italic !important;
-}
-
-:deep(.el-date-editor .el-input__prefix),
-:deep(.el-date-editor .el-input__suffix) {
-  color: rgba(0, 255, 255, 0.8) !important;
-}
-
-/* 日期选择器面板深色主题 */
-:deep(.el-picker-panel) {
-  background: rgba(15, 25, 45, 0.98) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  backdrop-filter: blur(15px) !important;
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
-  border-radius: 8px !important;
-}
-
-:deep(.el-picker-panel__body) {
-  background: transparent !important;
-}
-
-:deep(.el-picker-panel__content) {
-  background: transparent !important;
-}
-
-:deep(.el-date-range-picker__header) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-picker-panel__shortcut) {
-  background: rgba(20, 30, 50, 0.4) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 4px !important;
-  transition: all 0.3s ease !important;
-}
-
-:deep(.el-picker-panel__shortcut:hover) {
-  background: rgba(0, 255, 255, 0.15) !important;
-  color: #00ffff !important;
-  border-color: rgba(0, 255, 255, 0.4) !important;
-}
-
-:deep(.el-date-table) {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-:deep(.el-date-table th) {
-  color: rgba(0, 255, 255, 0.8) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-date-table td) {
-  border-radius: 4px !important;
-  transition: all 0.3s ease !important;
-}
-
-:deep(.el-date-table td.available:hover) {
-  background: rgba(0, 255, 255, 0.15) !important;
-  color: #00ffff !important;
-  transform: scale(1.05) !important;
-}
-
-:deep(.el-date-table td.current) {
-  background: rgba(0, 255, 255, 0.25) !important;
-  color: #00ffff !important;
-  font-weight: 600 !important;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
-}
-
-:deep(.el-date-table td.today) {
-  background: rgba(0, 150, 200, 0.2) !important;
-  color: rgba(0, 255, 255, 0.9) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-}
-
-:deep(.el-date-table td.in-range) {
-  background: rgba(0, 255, 255, 0.1) !important;
-}
-
-:deep(.el-date-table td.start-date),
-:deep(.el-date-table td.end-date) {
-  background: rgba(0, 255, 255, 0.3) !important;
-  color: #ffffff !important;
-}
-
-/* 时间选择器 */
-:deep(.el-time-panel) {
-  background: rgba(15, 25, 45, 0.98) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  backdrop-filter: blur(15px) !important;
-}
-
-:deep(.el-time-spinner__item:hover) {
-  background: rgba(0, 255, 255, 0.1) !important;
-  color: #00ffff !important;
-}
-
-:deep(.el-time-spinner__item.active) {
-  background: rgba(0, 255, 255, 0.2) !important;
-  color: #00ffff !important;
-}
-
-:deep(.el-button-group .el-button) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-:deep(.el-button-group .el-button:hover) {
-  background: rgba(0, 255, 255, 0.1) !important;
-  border-color: rgba(0, 255, 255, 0.4) !important;
-  color: #00ffff !important;
-}
-
-:deep(.el-slider__runway) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-slider__bar) {
-  background: linear-gradient(90deg, rgba(0, 150, 200, 0.8), #00ffff) !important;
-}
-
-:deep(.el-slider__button) {
-  background: #00ffff !important;
-  border: 2px solid rgba(0, 255, 255, 0.6) !important;
-}
-
-:deep(.el-slider__button:hover) {
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+/* 进度条样式 */
+:deep(.el-progress__text) {
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 :deep(.el-table) {
@@ -809,12 +813,9 @@ export default {
   background: transparent !important;
 }
 
-:deep(.el-table--striped .el-table__body tr.el-table__row--striped td) {
-  background: rgba(20, 30, 50, 0.4) !important;
-}
-
 :deep(.el-table__body tr:hover td) {
   background: rgba(0, 255, 255, 0.1) !important;
+  cursor: pointer;
 }
 
 :deep(.el-table__header-wrapper) {
@@ -825,6 +826,7 @@ export default {
   background: transparent !important;
 }
 
+/* 按钮样式 */
 :deep(.el-button--text) {
   color: rgba(0, 255, 255, 0.8) !important;
 }
@@ -832,5 +834,99 @@ export default {
 :deep(.el-button--text:hover) {
   color: #00ffff !important;
   background: rgba(0, 255, 255, 0.1) !important;
+}
+
+/* 分页样式 */
+:deep(.el-pagination) {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+:deep(.el-pagination button) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-pagination button:hover) {
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pager li) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  margin: 0 3px;
+}
+
+:deep(.el-pagination .el-pager li:hover) {
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+}
+
+:deep(.el-pagination .el-pager li.is-active) {
+  background: rgba(0, 255, 255, 0.3) !important;
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-select .el-input.is-focus .el-input__wrapper) {
+  box-shadow: 0 0 0 1px rgba(0, 255, 255, 0.5) inset !important;
+}
+
+/* Tag 样式 */
+:deep(.el-tag) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border-color: rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+:deep(.el-tag.el-tag--success) {
+  background: rgba(0, 150, 136, 0.3) !important;
+  border-color: rgba(0, 255, 200, 0.5) !important;
+  color: rgba(0, 255, 200, 0.9) !important;
+}
+
+/* Upload 组件样式 */
+:deep(.el-upload) {
+  display: inline-block;
+}
+
+/* Loading 样式 */
+:deep(.el-loading-mask) {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+:deep(.el-loading-spinner .path) {
+  stroke: #00ffff !important;
+}
+
+:deep(.el-loading-spinner .el-loading-text) {
+  color: #00ffff !important;
+}
+
+/* 上传成功消息样式 - 绿色背景 */
+:deep(.upload-success-message) {
+  background-color: #67c23a !important;
+  border-color: #67c23a !important;
+}
+
+:deep(.upload-success-message .el-message__content) {
+  color: #ffffff !important;
+  font-weight: 500;
+}
+
+/* 全局 success 消息样式 */
+:deep(.el-message--success) {
+  background-color: #67c23a !important;
+  border-color: #67c23a !important;
+}
+
+:deep(.el-message--success .el-message__content) {
+  color: #ffffff !important;
+}
+
+:deep(.el-message--success .el-message__icon) {
+  color: #ffffff !important;
 }
 </style>
