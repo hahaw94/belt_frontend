@@ -92,15 +92,23 @@ class RecordingMockData {
    * 生成统计数据
    */
   generateStatistics() {
+    const totalSizeGB = Math.floor(Math.random() * 500) + 200 // 200-700GB
+    const availableSpaceGB = Math.floor(Math.random() * 300) + 100 // 100-400GB
+    
     return {
       total_recordings: this.recordings.length,
-      total_size_gb: Math.floor(Math.random() * 500) + 200, // 200-700GB
+      total_size: `${totalSizeGB} GB`, // 格式化为字符串
+      total_size_gb: totalSizeGB, // 保留数字格式用于计算
+      available_space: `${availableSpaceGB} GB`, // 格式化为字符串
+      available_space_gb: availableSpaceGB, // 保留数字格式用于计算
+      daily_average: `${Math.floor(Math.random() * 100) + 50} MB`, // 日均增长
       today_count: Math.floor(Math.random() * 20) + 5,
       week_count: Math.floor(Math.random() * 100) + 50,
       month_count: Math.floor(Math.random() * 300) + 200,
       avg_duration_seconds: Math.floor(Math.random() * 180) + 120,
       storage_usage_percent: Math.floor(Math.random() * 30) + 60, // 60-90%存储使用率
-      retention_days: 90,
+      retention_days: 180, // 保留180天
+      auto_cleanup: true, // 自动清理已启用
       compression_ratio: (Math.random() * 0.3 + 0.4).toFixed(2), // 0.4-0.7压缩比
       alarm_distribution: {
         '异常行为': Math.floor(Math.random() * 30) + 20,

@@ -197,157 +197,102 @@
     <el-dialog 
       v-model="boardDialogVisible" 
       :title="boardDialogTitle" 
-      width="900px"
+      width="700px"
       class="tech-dialog"
       :modal-class="'tech-modal'"
       destroy-on-close>
       <div class="dialog-content">
-        <el-form :model="boardForm" :rules="boardRules" ref="boardFormRef" label-width="120px" class="tech-form">
-          <div class="form-section">
-            <h3 class="section-title">基础信息配置</h3>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="设备名称" prop="deviceName">
-                  <el-input 
-                    v-model="boardForm.deviceName" 
-                    placeholder="请输入设备名称"
-                    class="tech-input">
-                  </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="设备编号" prop="deviceCode">
-                  <el-input 
-                    v-model="boardForm.deviceCode" 
-                    placeholder="请输入设备编号"
-                    class="tech-input">
-                  </el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-          </div>
+        <el-form :model="boardForm" :rules="boardRules" ref="boardFormRef" label-width="120px" class="tech-form simplified-form">
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="设备名称" prop="deviceName">
+                <el-input 
+                  v-model="boardForm.deviceName" 
+                  placeholder="请输入设备名称"
+                  class="tech-input">
+                </el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="设备编号" prop="deviceCode">
+                <el-input 
+                  v-model="boardForm.deviceCode" 
+                  placeholder="请输入设备编号"
+                  class="tech-input">
+                </el-input>
+              </el-form-item>
+            </el-col>
+          </el-row>
           
-          <div class="form-section">
-            <h3 class="section-title">网络连接配置</h3>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="设备IP地址" prop="ipAddress">
-                  <el-input 
-                    v-model="boardForm.ipAddress" 
-                    placeholder="请输入IP地址"
-                    class="tech-input">
-                  </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="通信端口" prop="port">
-                  <el-input-number 
-                    v-model="boardForm.port" 
-                    :min="1" 
-                    :max="65535" 
-                    style="width: 100%"
-                    class="tech-input-number">
-                  </el-input-number>
-            </el-form-item>
-          </el-col>
-        </el-row>
-          </div>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="设备IP地址" prop="ipAddress">
+                <el-input 
+                  v-model="boardForm.ipAddress" 
+                  placeholder="请输入IP地址"
+                  class="tech-input">
+                </el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="RTSP端口" prop="port">
+                <el-input-number 
+                  v-model="boardForm.port" 
+                  :min="1" 
+                  :max="65535" 
+                  style="width: 100%"
+                  class="tech-input-number">
+                </el-input-number>
+              </el-form-item>
+            </el-col>
+          </el-row>
           
-          <div class="form-section">
-            <h3 class="section-title">设备属性配置</h3>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="设备厂商">
-                  <el-select 
-                    v-model="boardForm.manufacturer" 
-                    placeholder="请选择厂商" 
-                    style="width: 100%"
-                    class="tech-select">
-                <el-option label="海康威视" value="海康威视"></el-option>
-                <el-option label="大华" value="大华"></el-option>
-                <el-option label="华为" value="华为"></el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="设备型号">
-                  <el-input 
-                    v-model="boardForm.model" 
-                    placeholder="请输入设备型号"
-                    class="tech-input">
-                  </el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="安装位置">
-                  <el-input 
-                    v-model="boardForm.location" 
-                    placeholder="请输入安装位置"
-                    class="tech-input">
-                  </el-input>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="序列号">
-                  <el-input 
-                    v-model="boardForm.serialNumber" 
-                    placeholder="请输入序列号"
-                    class="tech-input">
-                  </el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="固件版本">
-              <el-input 
-                v-model="boardForm.firmwareVersion" 
-                placeholder="请输入固件版本，如: v2.1.0"
-                class="tech-input">
-              </el-input>
-        </el-form-item>
-          </div>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="RTSP用户名" prop="rtspUsername">
+                <el-input 
+                  v-model="boardForm.rtspUsername" 
+                  placeholder="请输入RTSP用户名"
+                  class="tech-input"
+                  clearable>
+                </el-input>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="RTSP密码" prop="rtspPassword">
+                <el-input 
+                  v-model="boardForm.rtspPassword" 
+                  type="password"
+                  placeholder="请输入RTSP密码"
+                  class="tech-input"
+                  show-password
+                  clearable>
+                </el-input>
+              </el-form-item>
+            </el-col>
+          </el-row>
           
-          <div class="form-section">
-            <h3 class="section-title">摄像机绑定配置</h3>
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="绑定摄像机">
-                  <el-select 
-                    v-model="boardForm.cameraId" 
-                    placeholder="请选择要绑定的摄像机" 
-                    style="width: 100%" 
-                    filterable
-                    clearable
-                    class="tech-select">
-                <el-option
-                  v-for="camera in cameraList"
-                  :key="camera.cameraId"
-                  :label="`${camera.deviceName} (${camera.ipAddress})`"
-                  :value="camera.cameraId">
-                </el-option>
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="摄像机名称">
-                  <el-input 
-                    v-model="boardForm.cameraName" 
-                    placeholder="请输入摄像机显示名称"
-                    class="tech-input">
-                  </el-input>
-            </el-form-item>
-          </el-col>
-        </el-row>
-          </div>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="RTSP路径" prop="rtspPath">
+                <el-input 
+                  v-model="boardForm.rtspPath" 
+                  placeholder="请输入RTSP路径，例如：/stream1"
+                  class="tech-input"
+                  clearable>
+                  <template #prepend>rtsp://</template>
+                </el-input>
+              </el-form-item>
+            </el-col>
+          </el-row>
       </el-form>
       </div>
       <template #footer>
-        <div class="dialog-footer-actions">
-          <el-button class="tech-button cancel" @click="boardDialogVisible = false">
+        <div class="dialog-footer dialog-footer-actions">
+          <el-button @click="boardDialogVisible = false">
             取消操作
           </el-button>
-          <el-button class="tech-button primary" @click="saveBoard" :loading="boardSaving">
+          <el-button type="primary" @click="saveBoard" :loading="boardSaving">
             <span v-if="!boardSaving">确认保存</span>
             <span v-else>正在保存...</span>
           </el-button>
@@ -415,11 +360,11 @@
         </div>
       </div>
       <template #footer>
-        <div class="dialog-footer-actions">
-          <el-button class="tech-button" @click="refreshStreamInfo" :loading="streamInfoLoading">
+        <div class="dialog-footer dialog-footer-actions">
+          <el-button @click="refreshStreamInfo" :loading="streamInfoLoading">
             刷新信息
           </el-button>
-          <el-button class="tech-button cancel" @click="streamInfoDialogVisible = false">
+          <el-button @click="streamInfoDialogVisible = false">
             关闭
           </el-button>
         </div>
@@ -532,11 +477,11 @@
         </div>
       </div>
       <template #footer>
-        <div class="dialog-footer-actions">
-          <el-button class="tech-button" @click="refreshDeviceDetail" :loading="deviceDetailLoading">
+        <div class="dialog-footer dialog-footer-actions">
+          <el-button @click="refreshDeviceDetail" :loading="deviceDetailLoading">
             刷新信息
           </el-button>
-          <el-button class="tech-button cancel" @click="deviceDetailDialogVisible = false">
+          <el-button @click="deviceDetailDialogVisible = false">
             关闭
           </el-button>
         </div>
@@ -629,14 +574,20 @@ const boardForm = reactive({
   deviceName: '',
   deviceCode: '',
   ipAddress: '',
-  port: 8080,
+  port: 554,
+  rtspUsername: '',
+  rtspPassword: '',
+  rtspPath: '',
   manufacturer: '',
   model: '',
   location: '',
   serialNumber: '',
   firmwareVersion: '',
   cameraId: '',
-  cameraName: ''
+  cameraName: '',
+  algorithmModelType: '',
+  algorithmModelVersion: '',
+  description: ''
 })
 
 
@@ -758,8 +709,8 @@ const getBoardList = async () => {
     
     // 检查响应格式
     if (response && response.code === 200) {
-      // 直接从响应中获取数据
-      const rawData = response.data?.list || response.data || []
+      // 直接从响应中获取数据，确保返回数组
+      const rawData = Array.isArray(response.data?.list) ? response.data.list : []
       console.log('原始板卡数据:', rawData)
       
       // 如果有数据，打印第一条数据的字段结构
@@ -769,8 +720,8 @@ const getBoardList = async () => {
       }
       
       boardList.value = rawData
-      boardPagination.total = response.data?.total || response.total || rawData.length
-      boardPagination.totalPages = response.data?.totalPages || response.totalPages || Math.ceil(boardPagination.total / boardPagination.pageSize)
+      boardPagination.total = response.data?.total || 0
+      boardPagination.totalPages = response.data?.totalPages || Math.ceil(boardPagination.total / boardPagination.pageSize)
       console.log('处理后的板卡列表数据:', boardList.value)
     } else {
       const errorMsg = response?.message || '获取板卡列表失败'
@@ -844,14 +795,20 @@ const showAddBoard = () => {
     deviceName: '',
     deviceCode: '',
     ipAddress: '',
-    port: 8080,
+    port: 554,
+    rtspUsername: '',
+    rtspPassword: '',
+    rtspPath: '',
     manufacturer: '',
     model: '',
     location: '',
     serialNumber: '',
     firmwareVersion: '',
     cameraId: '',
-    cameraName: ''
+    cameraName: '',
+    algorithmModelType: '',
+    algorithmModelVersion: '',
+    description: ''
   })
   // 获取摄像机列表
   getCameraList()
@@ -979,14 +936,20 @@ const editBoard = (board) => {
     deviceName: board.DeviceName || board.device_name || '',
     deviceCode: board.DeviceNumber || board.device_number || '',
     ipAddress: board.DeviceIP || board.device_ip || '',
-    port: board.RtspPort || board.rtsp_port || 8080,
+    port: board.RtspPort || board.rtsp_port || 554,
+    rtspUsername: board.RtspUsername || board.rtsp_username || '',
+    rtspPassword: board.RtspPassword || board.rtsp_password || '',
+    rtspPath: board.RtspPath || board.rtsp_path || '',
     manufacturer: board.manufacturer || board.vendor || '',
     model: board.model || board.device_model || '',
     location: board.location || board.install_location || '',
     serialNumber: board.serialNumber || board.serial_number || board.sn || '',
     firmwareVersion: board.FirmwareVersion || board.firmware_version || '',
     cameraId: board.BoundCameraID || board.bound_camera_id || '',
-    cameraName: board.BoundCameraName || board.bound_camera_name || ''
+    cameraName: board.BoundCameraName || board.bound_camera_name || '',
+    algorithmModelType: board.AlgorithmModelType || board.algorithm_model_type || '',
+    algorithmModelVersion: board.AlgorithmModelVersion || board.algorithm_model_version || '',
+    description: board.Description || board.description || ''
   })
   // 获取摄像机列表
   getCameraList()
@@ -1016,10 +979,26 @@ const saveBoard = async () => {
 
     boardSaving.value = true
 
+    // 将前端表单数据映射为后端期望的格式
+    const apiData = {
+      device_name: boardForm.deviceName,
+      device_number: boardForm.deviceCode,
+      device_ip: boardForm.ipAddress,
+      rtsp_port: boardForm.port || 554,
+      rtsp_username: boardForm.rtspUsername || '',
+      rtsp_password: boardForm.rtspPassword || '',
+      rtsp_path: boardForm.rtspPath || '',
+      bound_camera_id: boardForm.cameraId ? parseInt(boardForm.cameraId) : null,
+      bound_camera_name: boardForm.cameraName || '',
+      algorithm_model_type: boardForm.algorithmModelType || '',
+      algorithm_model_version: boardForm.algorithmModelVersion || '',
+      description: boardForm.description || ''
+    }
+
     if (editingBoardId.value) {
       // 更新板卡
-      console.log('正在更新板卡...', editingBoardId.value, boardForm)
-      const response = await deviceApi.updateBoard(editingBoardId.value, boardForm)
+      console.log('正在更新板卡...', editingBoardId.value, apiData)
+      const response = await deviceApi.updateBoard(editingBoardId.value, apiData)
       
       if (response && response.code === 200) {
         ElMessage.success('板卡更新成功')
@@ -1031,8 +1010,8 @@ const saveBoard = async () => {
       }
     } else {
       // 创建板卡
-      console.log('正在创建板卡...', boardForm)
-      const response = await deviceApi.createBoard(boardForm)
+      console.log('正在创建板卡...', apiData)
+      const response = await deviceApi.createBoard(apiData)
       
       if (response && response.code === 200) {
         ElMessage.success('板卡创建成功')
@@ -2129,108 +2108,319 @@ const stopBoardStreaming = async (board) => {
 }
 
 
-/* ==================== 输入框样式 ==================== */
-.tech-input :deep(.el-input__wrapper),
-.tech-select :deep(.el-select__wrapper) {
-  background-color: rgba(65, 75, 95, 0.85) !important;
+/* ==================== 科技感对话框样式 - 完全采用用户管理样式 ==================== */
+.tech-dialog :deep(.el-dialog),
+:deep(.tech-dialog.el-dialog),
+:deep(.el-dialog.tech-dialog) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 15px !important;
+  box-shadow: 
+    0 0 50px rgba(0, 255, 255, 0.3),
+    inset 0 0 50px rgba(0, 255, 255, 0.08) !important;
+}
+
+:deep(.tech-dialog .el-dialog__header) {
+  background: rgba(45, 55, 75, 0.92);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 15px 15px 0 0;
+}
+
+:deep(.tech-dialog .el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  font-weight: bold;
+}
+
+:deep(.tech-dialog .el-dialog__body) {
+  background: rgba(45, 55, 75, 0.92);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* 科技感表单 - 增强权重 */
+.tech-dialog :deep(.el-form-item__label),
+:deep(.tech-dialog .el-form-item__label) {
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+.tech-dialog :deep(.el-input__wrapper),
+:deep(.tech-dialog .el-input__wrapper),
+.tech-dialog :deep(.el-input .el-input__wrapper) {
+  background: rgba(0, 0, 0, 0.4) !important;
   border: 1px solid rgba(0, 255, 255, 0.4) !important;
   border-radius: 6px !important;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+  box-shadow: 
+    0 0 15px rgba(0, 255, 255, 0.15),
+    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
 }
 
-.tech-input :deep(.el-input__wrapper:hover),
-.tech-select :deep(.el-select__wrapper:hover) {
+.tech-dialog :deep(.el-input__wrapper:hover),
+:deep(.tech-dialog .el-input__wrapper:hover) {
   border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.25),
+    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
 }
 
-.tech-input :deep(.el-input__wrapper.is-focus),
-.tech-select :deep(.el-select__wrapper.is-focused) {
-  border-color: rgba(0, 255, 255, 0.8) !important;
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+.tech-dialog :deep(.el-input__wrapper.is-focus),
+:deep(.tech-dialog .el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.4),
+    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
 }
 
-.tech-input :deep(.el-input__inner),
-.tech-select :deep(.el-select__input) {
+.tech-dialog :deep(.el-input__inner),
+:deep(.tech-dialog .el-input__inner) {
   color: rgba(255, 255, 255, 0.95) !important;
   background: transparent !important;
 }
 
-.tech-input.readonly :deep(.el-input__inner) {
-  color: rgba(255, 255, 255, 0.6) !important;
-  background: rgba(128, 128, 128, 0.1) !important;
+.tech-dialog :deep(.el-input__inner::placeholder),
+:deep(.tech-dialog .el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
 }
 
-/* ==================== 对话框样式 ==================== */
-.tech-dialog :deep(.el-dialog) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  border-radius: 12px !important;
+.tech-dialog :deep(.el-textarea__inner),
+:deep(.tech-dialog .el-textarea__inner) {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 6px !important;
   box-shadow: 
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 40px rgba(0, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
+    0 0 15px rgba(0, 255, 255, 0.15),
+    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
 }
 
-.tech-dialog :deep(.el-dialog__header) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px 12px 0 0 !important;
-  padding: 16px 20px !important;
+.tech-dialog :deep(.el-textarea__inner:hover),
+:deep(.tech-dialog .el-textarea__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.25),
+    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
 }
 
-.tech-dialog :deep(.el-dialog__title) {
+.tech-dialog :deep(.el-textarea__inner:focus),
+:deep(.tech-dialog .el-textarea__inner:focus) {
+  border-color: #00ffff !important;
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.4),
+    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
+}
+
+.tech-dialog :deep(.el-select .el-select__wrapper),
+:deep(.tech-dialog .el-select .el-select__wrapper) {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    0 0 15px rgba(0, 255, 255, 0.15),
+    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
+}
+
+.tech-dialog :deep(.el-select .el-select__wrapper:hover),
+:deep(.tech-dialog .el-select .el-select__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.25),
+    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
+}
+
+.tech-dialog :deep(.el-select .el-select__wrapper.is-focused),
+:deep(.tech-dialog .el-select .el-select__wrapper.is-focused) {
+  border-color: #00ffff !important;
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.4),
+    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
+}
+
+/* InputNumber样式 */
+.tech-dialog :deep(.el-input-number .el-input__wrapper) {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 
+    0 0 15px rgba(0, 255, 255, 0.15),
+    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
+}
+
+.tech-dialog :deep(.el-input-number .el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.25),
+    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
+}
+
+.tech-dialog :deep(.el-input-number .el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 
+    0 0 25px rgba(0, 255, 255, 0.4),
+    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
+}
+
+/* 对话框按钮样式 */
+:deep(.tech-dialog .dialog-footer .el-button) {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
   color: #00ffff !important;
-  font-weight: 600 !important;
-  font-size: 18px !important;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
 }
 
-.tech-dialog :deep(.el-dialog__body) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  padding: 20px !important;
+:deep(.tech-dialog .dialog-footer .el-button:hover) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
 }
 
-.tech-dialog :deep(.el-dialog__footer) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border-top: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 0 0 12px 12px !important;
-  padding: 16px 20px !important;
+:deep(.tech-dialog .dialog-footer .el-button--primary) {
+  background: rgba(0, 255, 255, 0.3) !important;
+  border-color: #00ffff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.tech-dialog .dialog-footer .el-button--primary:hover) {
+  background: rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.5) !important;
 }
 
 /* ==================== 表单区域 ==================== */
 .dialog-content {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.95);
 }
 
-.form-section {
-  margin-bottom: 25px;
-  padding: 15px;
-  background: rgba(20, 30, 50, 0.6);
-  border: 1px solid rgba(0, 255, 255, 0.1);
-  border-radius: 8px;
-}
-
-.section-title {
-  color: #00ffff;
-  font-size: 16px;
-  font-weight: 600;
-  margin: 0 0 15px 0;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
-}
-
-.tech-form :deep(.el-form-item__label) {
-  color: rgba(0, 255, 255, 0.9) !important;
-  font-weight: 500;
-  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
-  font-size: 14px;
+.simplified-form {
+  background: transparent;
 }
 
 .dialog-footer-actions {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
+}
+
+/* 强制覆盖 Element Plus 默认样式 */
+.el-dialog.tech-dialog {
+  background: rgba(45, 55, 75, 0.92) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+  border-radius: 12px !important;
+}
+
+.el-dialog.tech-dialog .el-dialog__header {
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+}
+
+.el-dialog.tech-dialog .el-dialog__title {
+  color: #00ffff !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
+}
+
+.el-dialog.tech-dialog .el-dialog__body {
+  background: rgba(45, 55, 75, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.el-dialog.tech-dialog .el-form-item__label {
+  color: #00ffff !important;
+  font-weight: 500 !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-dialog.tech-dialog .el-input__wrapper {
+  background: rgba(45, 55, 75, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.el-dialog.tech-dialog .el-input__wrapper:hover {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.el-dialog.tech-dialog .el-input__wrapper.is-focus {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-dialog.tech-dialog .el-input__inner {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+.el-dialog.tech-dialog .el-input__inner::placeholder {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.el-dialog.tech-dialog .el-textarea__inner {
+  background: rgba(45, 55, 75, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.el-dialog.tech-dialog .el-textarea__inner:hover {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.el-dialog.tech-dialog .el-textarea__inner:focus {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-dialog.tech-dialog .el-select .el-select__wrapper {
+  background: rgba(45, 55, 75, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.el-dialog.tech-dialog .el-select .el-select__wrapper:hover {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.el-dialog.tech-dialog .el-select .el-select__wrapper.is-focused {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-dialog.tech-dialog .el-button {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(45, 55, 75, 0.8) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+}
+
+.el-dialog.tech-dialog .el-button:hover {
+  background: rgba(0, 255, 255, 0.15) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.el-dialog.tech-dialog .el-button--primary {
+  background: rgba(0, 150, 200, 0.8) !important;
+  border-color: rgba(0, 200, 255, 0.6) !important;
+  color: #ffffff !important;
+}
+
+.el-dialog.tech-dialog .el-button--primary:hover {
+  background: rgba(0, 180, 230, 0.9) !important;
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4) !important;
 }
 
 /* ==================== 流信息面板样式 ==================== */

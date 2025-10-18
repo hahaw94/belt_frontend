@@ -43,8 +43,8 @@ export function setupMock(axiosInstance) {
     setupDashboardMock(mock)
     setupDetectionMock(mock)
     setupEventMock(mock)
-    // setupRecordingMock(mock) // 已禁用，直接调用后端API
-    // console.log('✓ 录像管理Mock已注册')
+    setupRecordingMock(mock) // 已启用，使用Mock假数据
+    console.log('✓ 录像管理Mock已注册')
 
     
     console.log('✓ 所有Mock模块已注册')
@@ -80,17 +80,22 @@ export function setupMock(axiosInstance) {
   mock.onPut(/\/api\/v1\/algorithm\/boards.*/).passThrough()
   mock.onDelete(/\/api\/v1\/algorithm\/boards.*/).passThrough()
   
-  // 录像管理相关接口不拦截，直接调用后端API
+  // 录像回放(VideoPlayback.vue)使用新版v1路径，直接调用后端API
   mock.onGet(/\/api\/v1\/recordings.*/).passThrough()
   mock.onPost(/\/api\/v1\/recordings.*/).passThrough()
   mock.onPut(/\/api\/v1\/recordings.*/).passThrough()
   mock.onDelete(/\/api\/v1\/recordings.*/).passThrough()
   
+  // 录像管理(RecordingList/Statistics)使用旧版路径，使用Mock假数据（在setupRecordingMock中配置）
+  // /api/recordings/* 路径由Mock拦截器处理
+  
   // 其他未匹配的请求通过
   mock.onAny().passThrough()
 
   console.log('🎉 Mock 拦截器已启用')
-  console.log('💡 注意: 认证、用户管理、系统配置、板卡管理和录像管理接口已完全移除Mock拦截，直接调用后端API，其他模块使用Mock数据')
+  console.log('💡 注意: 认证、用户管理、系统配置、板卡管理接口直接调用后端API')
+  console.log('   录像管理(RecordingList/Statistics)使用Mock假数据')
+  console.log('   录像回放(VideoPlayback)使用真实后端API')
 }
 
 /**
@@ -889,67 +894,15 @@ function setupEventMock(mock) {
 
 /**
  * 录像管理Mock
- * 已禁用，直接调用后端API
+ * 只拦截旧版路径 /api/recordings/*
+ * 新版v1路径 /api/v1/recordings/* 由VideoPlayback.vue使用，直接调用后端API
  */
 // eslint-disable-next-line no-unused-vars
 function setupRecordingMock(mock) {
-  // 获取录像列表 - 支持新版API路径 GET /api/v1/recordings
-  mock.onGet('/api/v1/recordings').reply(config => {
-    console.log('🎯 录像Mock拦截器被调用: GET /api/v1/recordings')
-    
-    const params = config.params || {}
-    const page = parseInt(params.page) || 1
-    const pageSize = parseInt(params.page_size) || 10
-    
-    console.log('📋 录像列表请求参数:', params)
-    
-    // 构建过滤条件
-    const filters = {}
-    if (params.title) filters.title = params.title
-    if (params.format) filters.format = params.format
-    if (params.uploader_id) filters.uploader_id = params.uploader_id
-    
-    // 获取所有录像数据
-    const allRecordings = recordingMockData.getAllRecordings()
-    
-    // 过滤数据
-    let filteredRecordings = allRecordings
-    if (filters.title) {
-      filteredRecordings = filteredRecordings.filter(r => 
-        r.title?.toLowerCase().includes(filters.title.toLowerCase())
-      )
-    }
-    if (filters.format) {
-      filteredRecordings = filteredRecordings.filter(r => r.format === filters.format)
-    }
-    
-    // 分页
-    const total = filteredRecordings.length
-    const start = (page - 1) * pageSize
-    const end = start + pageSize
-    const paginatedRecordings = filteredRecordings.slice(start, end)
-    
-    console.log('📋 录像Mock返回数据:', {
-      recordingsCount: paginatedRecordings.length,
-      total: total,
-      page: page,
-      pageSize: pageSize
-    })
-    
-    return [200, {
-      code: 200,
-      message: '获取录像列表成功',
-      data: {
-        list: paginatedRecordings,
-        total: total,
-        page: page,
-        page_size: pageSize
-      },
-      success: true
-    }]
-  })
-
-  // 获取录像列表 - 兼容旧版API路径 POST /api/recordings/list
+  // 注意：新版API路径 GET /api/v1/recordings 已在passThrough中配置，不会被拦截
+  // 此Mock只拦截旧版路径，用于 RecordingList.vue 和 RecordingStatistics.vue
+  
+  // 获取录像列表 - 旧版API路径 POST /api/recordings/list
   mock.onPost('/api/recordings/list').reply(config => {
     console.log('🎯 录像Mock拦截器被调用: /api/recordings/list')
     
@@ -992,39 +945,7 @@ function setupRecordingMock(mock) {
     }]
   })
 
-  // 获取录像播放地址 - 新版API路径 /api/v1/recordings/{id}/play
-  mock.onGet(/\/api\/v1\/recordings\/\d+\/play/).reply(config => {
-    const recordingId = parseInt(config.url.match(/\/api\/v1\/recordings\/(\d+)\/play/)[1])
-    console.log('🎯 录像播放Mock拦截器被调用 (v1):', recordingId)
-    
-    const recording = recordingMockData.getRecordingById(recordingId)
-    
-    if (!recording) {
-      return [404, {
-        code: 404,
-        message: '录像文件不存在',
-        success: false
-      }]
-    }
-
-    return [200, {
-      code: 200,
-      message: '获取播放地址成功',
-      data: {
-        file_url: recording.file_url,
-        recording_info: {
-          id: recording.id,
-          title: recording.title,
-          format: recording.format,
-          duration: recording.duration,
-          file_size: recording.file_size
-        }
-      },
-      success: true
-    }]
-  })
-
-  // 获取录像播放地址 - 兼容旧版API路径 /api/recordings/{id}/play
+  // 获取录像播放地址 - 旧版API路径 /api/recordings/{id}/play
   mock.onGet(/\/api\/recordings\/[^/]+\/play/).reply(config => {
     const recordingId = config.url.match(/\/api\/recordings\/([^/]+)\/play/)[1]
     console.log('🎯 录像播放Mock拦截器被调用 (旧版):', recordingId)
@@ -1067,54 +988,7 @@ function setupRecordingMock(mock) {
     }]
   })
 
-  // 上传录像 - 新版API POST /api/v1/recordings/upload
-  mock.onPost('/api/v1/recordings/upload').reply(() => {
-    console.log('🎯 录像上传Mock拦截器被调用 (v1)')
-    
-    const newRecording = recordingMockData.addRecording({
-      device_id: Math.floor(Math.random() * 12) + 1,
-      device_name: '上传设备',
-      alarm_type: '手动上传',
-      filename: 'uploaded_video.mp4'
-    })
-
-    return [200, {
-      code: 200,
-      message: '视频上传成功',
-      data: {
-        id: newRecording.id,
-        title: newRecording.title,
-        file_name: newRecording.file_name,
-        file_size: newRecording.file_size,
-        file_url: newRecording.file_url
-      },
-      success: true
-    }]
-  })
-
-  // 删除录像 - 新版API DELETE /api/v1/recordings/{id}
-  mock.onDelete(/\/api\/v1\/recordings\/\d+/).reply(config => {
-    const recordingId = parseInt(config.url.match(/\/api\/v1\/recordings\/(\d+)/)[1])
-    console.log('🎯 录像删除Mock拦截器被调用 (v1):', recordingId)
-    
-    const success = recordingMockData.deleteRecording(recordingId)
-    
-    if (success) {
-      return [200, {
-        code: 200,
-        message: '录像删除成功',
-        success: true
-      }]
-    } else {
-      return [404, {
-        code: 404,
-        message: '录像不存在',
-        success: false
-      }]
-    }
-  })
-
-  // 上传录像文件 - 兼容旧版API
+  // 上传录像文件 - 旧版API
   mock.onPost('/api/recordings/upload').reply(() => {
     console.log('🎯 录像上传Mock拦截器被调用 (旧版)')
     

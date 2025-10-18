@@ -2,18 +2,42 @@
   <div class="industrial-dashboard">
     <!-- 可拖拽地图叠加层 -->
     <div class="map-container"
-         :class="{ 'dragging': isDragging }">
-      <img ref="mapImage"
-           src="@/assets/images/main/main-map.png"
-           alt="地图"
-           class="draggable-map"
-           :style="{ transform: `translateX(-50%) translate(${mapPosition.x}px, ${mapPosition.y}px)` }"
-           @mousedown="startDrag"
-           @touchstart="startTouchDrag"
-           @dragstart.prevent
-           @selectstart.prevent
-           @contextmenu.prevent>
-      
+         :class="{ 'dragging': isDragging }"
+         @mousedown="startDrag"
+         @touchstart="startTouchDrag">
+      <!-- 地图内容包裹层 - 统一应用 transform -->
+      <div class="map-content-wrapper"
+           :style="{ transform: `translateX(-50%) translate(${mapPosition.x}px, ${mapPosition.y}px)` }">
+        <img ref="mapImage"
+             src="@/assets/images/main/main-map.png"
+             alt="地图"
+             class="draggable-map"
+             @dragstart.prevent
+             @selectstart.prevent
+             @contextmenu.prevent>
+        
+        <!-- 地图上的摄像头图标 - 随地图一起移动 -->
+        <div class="map-cameras">
+          <div
+            class="map-camera-icon camera-1"
+            @click.stop="showCameraPopup(cameraData[0])"
+            @mouseenter="showTooltip($event, cameraData[0])"
+            @mouseleave="hideTooltip"
+            title="点击查看摄像头画面"
+          >
+            <div class="camera-label">摄像机1</div>
+          </div>
+          <div
+            class="map-camera-icon camera-2"
+            @click.stop="showCameraPopup(cameraData[1])"
+            @mouseenter="showTooltip($event, cameraData[1])"
+            @mouseleave="hideTooltip"
+            title="点击查看摄像头画面"
+          >
+            <div class="camera-label">摄像机2</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 左侧渐变过渡效果 -->
@@ -573,29 +597,6 @@
       </div>
     </teleport>
 
-    <!-- 背景摄像头图标 -->
-    <div class="background-cameras">
-      <div
-        class="background-camera-icon camera-1"
-        @click="showCameraPopup(cameraData[0])"
-        @mouseenter="showTooltip($event, cameraData[0])"
-        @mouseleave="hideTooltip"
-        title="点击查看摄像头画面"
-      >
-        <!-- 添加可见的文字标识 -->
-        <div class="camera-label">摄像机1</div>
-      </div>
-      <div
-        class="background-camera-icon camera-2"
-        @click="showCameraPopup(cameraData[1])"
-        @mouseenter="showTooltip($event, cameraData[1])"
-        @mouseleave="hideTooltip"
-        title="点击查看摄像头画面"
-      >
-        <!-- 添加可见的文字标识 -->
-        <div class="camera-label">摄像机2</div>
-      </div>
-    </div>
 
     <!-- 摄像头悬停提示框 - 实时视频预览 -->
     <teleport to="body">
@@ -676,7 +677,7 @@
 </template>
 
 <script setup name="HomeView">
-import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { dashboardApi } from '@/api/dashboard'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
@@ -987,12 +988,7 @@ const handleMouseUp = (event) => {
   document.body.style.userSelect = ''
   document.body.style.overflow = ''
 
-  // 强制重新渲染地图，确保内容正确显示
-  nextTick(() => {
-    if (mapImage.value) {
-      mapImage.value.style.transform = `translateX(-50%) translate(${mapPosition.x}px, ${mapPosition.y}px)`
-    }
-  })
+  // transform 现在由 Vue 的响应式系统自动更新，无需手动设置
 
   // 移除全局事件监听器
   document.removeEventListener('mousemove', handleMouseMove)
@@ -1089,12 +1085,7 @@ const handleTouchEnd = (event) => {
 
   isDragging.value = false
 
-  // 强制重新渲染地图，确保内容正确显示
-  nextTick(() => {
-    if (mapImage.value) {
-      mapImage.value.style.transform = `translateX(-50%) translate(${mapPosition.x}px, ${mapPosition.y}px)`
-    }
-  })
+  // transform 现在由 Vue 的响应式系统自动更新，无需手动设置
   
   handleMouseUp()
 }
@@ -1778,11 +1769,22 @@ onUnmounted(() => {
   cursor: grabbing;
 }
 
+/* 地图内容包裹层 - 统一应用 transform 变换 */
+.map-content-wrapper {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100vw;
+  height: 100%;
+  pointer-events: none; /* 容器本身不拦截事件 */
+  transition: none; /* 移除过渡效果，确保拖拽流畅 */
+}
+
 /* 可拖拽地图图片 */
 .draggable-map {
   position: absolute;
   top: 0; /* 顶部对齐容器 */
-  left: 50%; /* 水平居中 */
+  left: 0; /* 左侧对齐，因为父容器已经居中 */
   width: auto; /* 自动宽度，保持图片比例 */
   height: 100%; /* 高度设置为容器高度 */
   object-fit: contain; /* 使用contain保持完整图片内容 */
@@ -1795,7 +1797,7 @@ onUnmounted(() => {
   -ms-user-select: none;
   cursor: grab; /* 为图片添加抓手光标 */
   /* 确保图片可以接收鼠标事件 */
-  pointer-events: auto;
+  pointer-events: none; /* 图片本身不接收事件，由父容器处理 */
   /* 防止图片被选中 */
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -3370,18 +3372,18 @@ onUnmounted(() => {
   .ranking-item:nth-child(5) { top: 79%; }
 }
 
-/* 背景摄像头图标样式 */
-.background-cameras {
-  position: fixed;
+/* 地图上的摄像头图标样式 - 随地图一起移动 */
+.map-cameras {
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 1100; /* 大幅提高层级，确保在所有内容之上 */
+  z-index: 10; /* 在地图之上 */
 }
 
-.background-camera-icon {
+.map-camera-icon {
   position: absolute;
   width: 50px; /* 增大图标尺寸，提高可见性 */
   height: 50px; /* 增大图标尺寸，提高可见性 */
@@ -3391,7 +3393,7 @@ onUnmounted(() => {
   background-position: center;
   cursor: pointer;
   pointer-events: auto !important; /* 强制启用点击事件 */
-  z-index: 1000; /* 提高层级，确保在所有内容之上 */
+  z-index: 1000; /* 提高层级，确保在地图之上 */
   /* 增强图标的可见性和交互反馈 */
   filter:
     drop-shadow(0 0 8px rgba(0, 212, 255, 0.6))
@@ -3404,14 +3406,14 @@ onUnmounted(() => {
   opacity: 0.95;
 }
 
-.background-camera-icon.camera-1 {
-  top: 40%; /* 调整到更显眼的位置 */
-  left: 40%; /* 调整到更显眼的位置 */
+.map-camera-icon.camera-1 {
+  top: 50%; /* 地图中的相对位置 */
+  left: 45%; /* 地图中的相对位置 */
 }
 
-.background-camera-icon.camera-2 {
-  top: 40%; /* 调整到更显眼的位置 */
-  right: 35%; /* 调整到更显眼的位置 */
+.map-camera-icon.camera-2 {
+  top: 50%; /* 地图中的相对位置 */
+  left: 55%; /* 地图中的相对位置 */
 }
 
 /* 摄像头标签样式 */
@@ -3677,8 +3679,8 @@ onUnmounted(() => {
   word-break: break-all;
 }
 
-/* 背景摄像头图标悬停效果增强 */
-.background-camera-icon:hover {
+/* 地图摄像头图标悬停效果增强 */
+.map-camera-icon:hover {
   transform: scale(1.3); /* 增大悬停缩放效果 */
   filter:
     drop-shadow(0 0 15px rgba(0, 212, 255, 1.0))
@@ -3692,7 +3694,7 @@ onUnmounted(() => {
 }
 
 /* 为摄像头添加脉冲动画，增强可见性 */
-.background-camera-icon::after {
+.map-camera-icon::after {
   content: '';
   position: absolute;
   top: -5px;
