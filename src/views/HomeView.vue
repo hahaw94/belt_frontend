@@ -480,11 +480,11 @@
         class="custom-modal-overlay"
         @click.self="closeCameraPopup"
       >
-        <div class="custom-modal live-video-modal">
+        <div class="custom-modal live-video-modal video-only-modal">
           <!-- 弹窗头部 -->
           <div class="custom-modal-header">
             <h3 class="custom-modal-title">
-              流媒体播放器
+              <!-- 隐藏标题文字，只保留LIVE标识 -->
               <span v-if="currentStreamUrl && isPlaying" class="live-badge">
                 <span class="live-dot-small"></span>
                 LIVE
@@ -495,8 +495,8 @@
           
           <!-- 弹窗内容 -->
           <div class="custom-modal-body">
-            <!-- 流地址输入区域 -->
-            <div class="stream-input-area">
+            <!-- 流地址输入区域 - 隐藏 -->
+            <div class="stream-input-area" style="display: none;">
               <div class="input-row">
                 <label class="input-label">流地址：</label>
                 <input 
@@ -531,11 +531,21 @@
               
               <!-- 可用流列表 -->
               <div v-if="availableStreams.length > 0" class="streams-list">
-                <div class="streams-title">📡 当前可用的流：</div>
+                <div class="streams-title">📡 当前可用的算法流：</div>
                 <div class="stream-item" v-for="(stream, index) in availableStreams" :key="index">
                   <div class="stream-info">
-                    <span class="stream-name">{{ stream.app }}/{{ stream.stream }}</span>
-                    <span class="stream-schema">{{ stream.schema }}</span>
+                    <span class="stream-name">{{ stream.device_name }}</span>
+                    <span class="stream-id">ID: {{ stream.stream_id || 'N/A' }}</span>
+                    <span class="stream-status" :class="stream.status === 'streaming' ? 'status-online' : 'status-offline'">
+                      {{ stream.status === 'streaming' ? '推流中' : stream.status || '未知' }}
+                    </span>
+                  </div>
+                  <div class="stream-protocols">
+                    <span v-if="stream.play_urls?.flv" class="protocol-tag">HTTP-FLV</span>
+                    <span v-if="stream.play_urls?.hls" class="protocol-tag">HLS</span>
+                    <span v-if="stream.play_urls?.rtmp" class="protocol-tag">RTMP</span>
+                    <span v-if="stream.play_urls?.rtsp" class="protocol-tag">RTSP</span>
+                    <span v-if="stream.play_urls?.wsflv || stream.play_urls?.ws_flv || stream.play_urls?.['ws-flv']" class="protocol-tag">WS-FLV</span>
                   </div>
                   <button @click="selectStream(stream)" class="use-btn">使用此流</button>
                 </div>
@@ -544,7 +554,7 @@
                 正在获取流列表...
               </div>
               <div v-else-if="noStreamsFound" class="streams-empty">
-                ⚠️ 未发现活动的流，请先推流到ZLMediaKit服务器
+                ⚠️ 未发现活动的算法流，请先在设备管理中启动设备推流
               </div>
             </div>
             
@@ -572,8 +582,8 @@
               </div>
             </div>
             
-            <!-- 提示信息区域 -->
-            <div class="info-display-area">
+            <!-- 提示信息区域 - 隐藏 -->
+            <div class="info-display-area" style="display: none;">
               <div class="stream-tips">
                 <div class="tip-title">💡 使用说明：</div>
                 <div class="tip-item">
@@ -680,6 +690,7 @@
 <script setup name="HomeView">
 import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import { dashboardApi } from '@/api/dashboard'
+import { deviceApi } from '@/api/device'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import SimpleStreamPlayer from '@/components/SimpleStreamPlayer.vue'
@@ -1216,7 +1227,7 @@ const streamStatus = ref({
 // 流媒体服务器配置
 const streamConfig = {
   baseUrl: 'http://localhost',  // ZLMediaKit服务器地址
-  httpPort: 18080,               // HTTP端口（根据你的ZLMediaKit实际端口修改）
+  httpPort: 18081,               // HTTP端口（根据你的ZLMediaKit实际端口修改）
   app: 'live',                   // 应用名，默认live
   protocol: 'flv',               // 播放协议: 'flv' | 'hls' | 'rtmp'
   snapshotPath: '/snapshots',
@@ -1275,11 +1286,112 @@ const showAlertDetails = () => {
   showAlertPopup.value = false
 }
 
+// 自动播放摄像头流
+const autoPlayCameraStream = async (camera) => {
+  if (!camera) return
+  
+  try {
+    // 显示加载提示
+    ElMessage.info('正在加载视频流...')
+    
+    // 获取所有可用流（静默模式，不显示多余提示）
+    await getAvailableStreams(true)
+    
+    // 等待流列表加载完成
+    if (availableStreams.value.length === 0) {
+      ElMessage.warning('未找到可用的视频流，请先在设备管理中启动推流')
+      return
+    }
+    
+    // 尝试匹配对应的流
+    let matchedStream = null
+    
+    // 方法1: 根据摄像头ID匹配
+    if (camera.id) {
+      matchedStream = availableStreams.value.find(stream => 
+        stream.id === camera.id || 
+        stream.device_name?.includes(camera.device_name) ||
+        stream.device_name?.includes(`摄像机${camera.id}`)
+      )
+    }
+    
+    // 方法2: 根据设备名称模糊匹配
+    if (!matchedStream && camera.device_name) {
+      matchedStream = availableStreams.value.find(stream => 
+        stream.device_name?.includes(camera.device_name) ||
+        camera.device_name?.includes(stream.device_name)
+      )
+    }
+    
+    // 方法3: 根据stream_name匹配
+    if (!matchedStream && camera.stream_name) {
+      matchedStream = availableStreams.value.find(stream => 
+        stream.stream_id?.includes(camera.stream_name)
+      )
+    }
+    
+    // 如果还是没找到，使用第一个可用流
+    if (!matchedStream) {
+      matchedStream = availableStreams.value[0]
+      console.log('未找到完全匹配的流，使用第一个可用流:', matchedStream)
+    } else {
+      console.log('找到匹配的流:', matchedStream)
+    }
+    
+    // 选择流并自动播放
+    if (matchedStream) {
+      // 静默选择流（不显示消息）
+      const playUrls = matchedStream.play_urls
+      
+      // 优先使用FLV流（低延迟）
+      if (playUrls?.flv) {
+        inputStreamUrl.value = fixStreamUrl(playUrls.flv)
+        selectedProtocol.value = 'flv'
+      } else if (playUrls?.wsflv || playUrls?.ws_flv || playUrls?.['ws-flv']) {
+        const wsUrl = playUrls.wsflv || playUrls.ws_flv || playUrls['ws-flv']
+        inputStreamUrl.value = fixStreamUrl(wsUrl)
+        selectedProtocol.value = 'flv'
+      } else if (playUrls?.hls) {
+        inputStreamUrl.value = fixStreamUrl(playUrls.hls)
+        selectedProtocol.value = 'hls'
+      } else if (playUrls?.rtmp) {
+        inputStreamUrl.value = fixStreamUrl(playUrls.rtmp)
+        selectedProtocol.value = 'rtmp'
+      } else if (playUrls?.rtsp) {
+        inputStreamUrl.value = fixStreamUrl(playUrls.rtsp)
+        selectedProtocol.value = 'rtsp'
+      }
+      
+      console.log('自动选择的流URL:', inputStreamUrl.value)
+      
+      // 延迟一小段时间确保URL已设置，然后自动播放
+      setTimeout(() => {
+        if (inputStreamUrl.value) {
+          currentStreamUrl.value = inputStreamUrl.value.trim()
+          isPlaying.value = true
+          playerKey.value++ // 强制重新渲染播放器
+          ElMessage.success(`正在播放 ${matchedStream.device_name} 的视频流`)
+        } else {
+          ElMessage.error('流地址设置失败')
+        }
+      }, 100)
+    } else {
+      ElMessage.error('未找到可播放的视频流')
+    }
+  } catch (error) {
+    console.error('自动播放流失败:', error)
+    ElMessage.error('加载视频流失败')
+  }
+}
+
 // 显示摄像头弹窗
 const showCameraPopup = (camera) => {
   if (!camera) return
   currentCameraPopup.value = camera
   cameraPopupVisible.value = true
+  
+  // 自动播放对应的视频流
+  autoPlayCameraStream(camera)
 }
 
 // 关闭摄像头弹窗
@@ -1328,71 +1440,143 @@ const setQuickUrl = (type) => {
 }
 
 // 获取可用的流列表
-const getAvailableStreams = async () => {
+const getAvailableStreams = async (silent = false) => {
   checkingStreams.value = true
   noStreamsFound.value = false
   availableStreams.value = []
   
   try {
-    const { baseUrl, httpPort, secret } = streamConfig
-    const port = httpPort === 80 ? '' : `:${httpPort}`
-    // 添加secret参数
-    const apiUrl = `${baseUrl}${port}/index/api/getMediaList?secret=${secret}`
+    console.log('正在从后端获取算法流列表...')
     
-    console.log('正在获取流列表:', apiUrl)
+    // 调用后端API获取所有算法流信息
+    const response = await deviceApi.getAlgorithmStreams()
     
-    const response = await fetch(apiUrl)
-    const data = await response.json()
+    console.log('算法流列表响应:', response)
     
-    console.log('流列表响应:', data)
-    
-    if (data.code === 0 && data.data && data.data.length > 0) {
-      availableStreams.value = data.data
-      ElMessage.success(`找到 ${data.data.length} 个活动的流`)
-    } else if (data.code === -300) {
-      // secret错误
-      ElMessage.error('API密钥错误，请在config.ini中查找正确的secret值')
-      noStreamsFound.value = true
+    if (response && response.code === 200) {
+      const streams = response.data || []
+      
+      if (streams.length > 0) {
+        // 转换后端返回的数据格式为前端需要的格式
+        availableStreams.value = streams.map(stream => ({
+          id: stream.board_id || stream.id,
+          device_name: stream.device_name || stream.board_name || '未知设备',
+          stream_id: stream.stream_id,
+          status: stream.status,
+          play_urls: stream.play_urls || {},
+          start_time: stream.start_time,
+          last_active_time: stream.last_active_time
+        }))
+        
+        if (!silent) {
+          ElMessage.success(`找到 ${streams.length} 个活动的算法流`)
+        }
+      } else {
+        noStreamsFound.value = true
+        if (!silent) {
+          ElMessage.warning('未发现活动的算法流，请先启动设备推流')
+        }
+      }
     } else {
+      const errorMsg = response?.message || '获取流列表失败'
+      if (!silent) {
+        ElMessage.error(errorMsg)
+      }
       noStreamsFound.value = true
-      ElMessage.warning('未发现活动的流，请先推流到ZLMediaKit')
     }
   } catch (error) {
     console.error('获取流列表失败:', error)
-    ElMessage.error('获取流列表失败，请检查ZLMediaKit是否运行在正确的端口')
+    
+    if (!silent) {
+      if (error.response?.status === 401) {
+        ElMessage.error('认证失败，请重新登录')
+      } else if (error.response?.status === 403) {
+        ElMessage.error('权限不足，无法访问流信息')
+      } else {
+        ElMessage.error('获取流列表失败：' + (error.message || '未知错误'))
+      }
+    }
     noStreamsFound.value = true
   } finally {
     checkingStreams.value = false
   }
 }
 
+// 修复流URL，确保包含正确的端口号
+const fixStreamUrl = (url) => {
+  if (!url) return url
+  
+  const { httpPort } = streamConfig
+  
+  try {
+    // 解析URL
+    const urlObj = new URL(url)
+    
+    // 如果是localhost且没有端口号（或端口是80），添加配置的端口号
+    if (urlObj.hostname === 'localhost' && (urlObj.port === '' || urlObj.port === '80')) {
+      urlObj.port = httpPort.toString()
+    }
+    
+    return urlObj.toString()
+  } catch (error) {
+    console.error('URL解析失败:', error)
+    
+    // 降级处理：如果URL解析失败，尝试简单的字符串替换
+    if (url.includes('localhost/') && !url.includes('localhost:')) {
+      return url.replace('localhost/', `localhost:${httpPort}/`)
+    } else if (url.includes('localhost:80/')) {
+      return url.replace('localhost:80/', `localhost:${httpPort}/`)
+    }
+    
+    return url
+  }
+}
+
 // 选择并使用某个流
 const selectStream = (stream) => {
-  const { baseUrl, httpPort } = streamConfig
-  const port = httpPort === 80 ? '' : `:${httpPort}`
-  const app = stream.app
-  const streamName = stream.stream
-  const schema = stream.schema // 使用流对象自身的协议类型
-  
-  // 根据流自身的协议类型生成URL
-  if (schema === 'rtsp') {
-    // RTSP流使用FLV播放
-    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}.live.flv`
-    selectedProtocol.value = 'flv'
-  } else if (schema === 'rtmp') {
-    // RTMP流也使用FLV播放
-    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}.live.flv`
-    selectedProtocol.value = 'flv'
-  } else if (schema === 'hls') {
-    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}/hls.m3u8`
-    selectedProtocol.value = 'hls'
-  } else {
-    // 默认使用FLV
-    inputStreamUrl.value = `${baseUrl}${port}/${app}/${streamName}.live.flv`
-    selectedProtocol.value = 'flv'
+  if (!stream || !stream.play_urls) {
+    ElMessage.error('流信息不完整，无法播放')
+    return
   }
   
-  ElMessage.success(`已选择流: ${app}/${streamName} (${schema})`)
+  const playUrls = stream.play_urls
+  const deviceName = stream.device_name || '未知设备'
+  
+  // 优先使用FLV流（低延迟），其次WS-FLV，然后HLS，最后RTMP和RTSP
+  if (playUrls.flv) {
+    inputStreamUrl.value = fixStreamUrl(playUrls.flv)
+    selectedProtocol.value = 'flv'
+    ElMessage.success(`已选择 ${deviceName} 的HTTP-FLV流`)
+  } else if (playUrls.wsflv || playUrls.ws_flv || playUrls['ws-flv']) {
+    const wsUrl = playUrls.wsflv || playUrls.ws_flv || playUrls['ws-flv']
+    inputStreamUrl.value = fixStreamUrl(wsUrl)
+    selectedProtocol.value = 'flv'
+    ElMessage.success(`已选择 ${deviceName} 的WS-FLV流`)
+  } else if (playUrls.hls) {
+    inputStreamUrl.value = fixStreamUrl(playUrls.hls)
+    selectedProtocol.value = 'hls'
+    ElMessage.success(`已选择 ${deviceName} 的HLS流`)
+  } else if (playUrls.rtmp) {
+    inputStreamUrl.value = fixStreamUrl(playUrls.rtmp)
+    selectedProtocol.value = 'rtmp'
+    ElMessage.success(`已选择 ${deviceName} 的RTMP流`)
+  } else if (playUrls.rtsp) {
+    inputStreamUrl.value = fixStreamUrl(playUrls.rtsp)
+    selectedProtocol.value = 'rtsp'
+    ElMessage.success(`已选择 ${deviceName} 的RTSP流`)
+  } else {
+    // 如果有其他协议，使用第一个可用的
+    const firstProtocol = Object.keys(playUrls)[0]
+    if (firstProtocol) {
+      inputStreamUrl.value = fixStreamUrl(playUrls[firstProtocol])
+      selectedProtocol.value = firstProtocol
+      ElMessage.success(`已选择 ${deviceName} 的${firstProtocol.toUpperCase()}流`)
+    } else {
+      ElMessage.error('该设备没有可用的播放地址')
+    }
+  }
+  
+  console.log('修复后的流URL:', inputStreamUrl.value)
 }
 
 // 获取流地址 - 支持FLV、HLS、RTMP等多种格式
@@ -3840,6 +4024,37 @@ onUnmounted(() => {
   height: calc(100% - 80px);
 }
 
+/* 纯视频模式样式 */
+.video-only-modal {
+  width: 90vw !important;
+  max-width: 1600px !important;
+  height: 85vh !important;
+  max-height: 95vh !important;
+}
+
+.video-only-modal .custom-modal-header {
+  padding: 10px 20px;
+  min-height: 50px;
+}
+
+.video-only-modal .custom-modal-body {
+  display: block !important;
+  height: calc(100% - 50px) !important;
+  padding: 0 !important;
+}
+
+.video-only-modal .video-display-area {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+.video-only-modal .video-player-container {
+  width: 100%;
+  height: 100%;
+}
+
 .video-display-area {
   flex: 2;
   background: #000;
@@ -4365,19 +4580,20 @@ onUnmounted(() => {
 
 .stream-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  margin-bottom: 8px;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(0, 212, 255, 0.2);
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.3s ease;
 }
 
 .stream-item:hover {
   background: rgba(0, 212, 255, 0.1);
   border-color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
 .stream-item:last-child {
@@ -4388,13 +4604,56 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 1;
+  flex-wrap: wrap;
 }
 
 .stream-name {
-  color: #ffffff;
+  color: #00d4ff;
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+}
+
+.stream-id {
+  color: rgba(255, 255, 255, 0.7);
   font-family: monospace;
-  font-size: 13px;
+  font-size: 12px;
+}
+
+.stream-status {
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.stream-status.status-online {
+  background: rgba(0, 255, 0, 0.15);
+  border: 1px solid rgba(0, 255, 0, 0.4);
+  color: #00ff00;
+}
+
+.stream-status.status-offline {
+  background: rgba(255, 69, 0, 0.15);
+  border: 1px solid rgba(255, 69, 0, 0.4);
+  color: #ff4500;
+}
+
+.stream-protocols {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.protocol-tag {
+  padding: 3px 8px;
+  background: rgba(0, 212, 255, 0.15);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  border-radius: 3px;
+  color: #00d4ff;
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
 .stream-schema {
@@ -4408,21 +4667,29 @@ onUnmounted(() => {
 }
 
 .use-btn {
-  padding: 5px 12px;
+  align-self: flex-end;
+  padding: 6px 16px;
   background: linear-gradient(135deg, #00d4ff, #00b8e6);
-  border: none;
-  border-radius: 4px;
+  border: 1px solid rgba(0, 212, 255, 0.5);
+  border-radius: 5px;
   color: #fff;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
 }
 
 .use-btn:hover {
-  background: linear-gradient(135deg, #00b8e6, #0096c7);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 212, 255, 0.4);
+  background: linear-gradient(135deg, #00e5ff, #00d4ff);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.5);
+  border-color: #00d4ff;
+}
+
+.use-btn:active {
+  transform: translateY(0);
 }
 
 .streams-loading,
