@@ -4,12 +4,13 @@
     <div class="map-container"
          :class="{ 'dragging': isDragging }"
          @mousedown="startDrag"
-         @touchstart="startTouchDrag">
+         @touchstart="startTouchDrag"
+         @wheel.prevent="handleWheel">
       <!-- 地图内容包裹层 - 统一应用 transform -->
       <div class="map-content-wrapper"
-           :style="{ transform: `translateX(-50%) translate(${mapPosition.x}px, ${mapPosition.y}px)` }">
+           :style="{ transform: `translateX(-50%) translate(${mapPosition.x}px, ${mapPosition.y}px) scale(${mapScale})` }">
         <img ref="mapImage"
-             src="@/assets/images/main/main-map.png"
+             :src="mapImageUrl"
              alt="地图"
              class="draggable-map"
              @dragstart.prevent
@@ -694,9 +695,14 @@ const alarmDetailVisible = ref(false)
 const mapImage = ref(null)
 // 调整初始位置，让地图更好地居中显示，避免图片被切割
 const mapPosition = reactive({ x: 0, y: 0 }) // 初始位置居中，高度匹配容器
+const mapScale = ref(1) // 地图缩放比例
 const isDragging = ref(false)
 const dragStartPos = reactive({ x: 0, y: 0 })
 const dragStartMapPos = reactive({ x: 0, y: 0 })
+
+// 地图图片URL - 支持动态切换
+const defaultMapImageUrl = new URL('@/assets/images/main/main-map.png', import.meta.url).href
+const mapImageUrl = ref(defaultMapImageUrl)
 
 // 新增状态
 const showAlertPopup = ref(false)
@@ -964,11 +970,13 @@ const handleMouseMove = (event) => {
   let newX = dragStartMapPos.x + deltaX
   let newY = dragStartMapPos.y + deltaY
 
-  // 边界限制 - 图片高度100%容器，只允许左右拖拽
-  const maxX = 400  // 向右最大移动距离，允许看到图片右侧内容
-  const minX = -400 // 向左最大移动距离，允许看到图片左侧内容
-  const maxY = 0    // 不允许上下移动，图片高度已匹配容器
-  const minY = 0    // 不允许上下移动，图片高度已匹配容器
+  // 边界限制 - 根据缩放比例动态调整边界
+  const baseLimit = 400
+  const scaledLimit = baseLimit * mapScale.value
+  const maxX = scaledLimit  // 向右最大移动距离
+  const minX = -scaledLimit // 向左最大移动距离
+  const maxY = scaledLimit  // 向上最大移动距离
+  const minY = -scaledLimit // 向下最大移动距离
 
   newX = Math.max(minX, Math.min(maxX, newX))
   newY = Math.max(minY, Math.min(maxY, newY))
@@ -1064,11 +1072,13 @@ const handleTouchMove = (event) => {
   let newX = dragStartMapPos.x + deltaX
   let newY = dragStartMapPos.y + deltaY
 
-  // 边界限制 - 图片高度100%容器，只允许左右拖拽
-  const maxX = 400  // 向右最大移动距离，允许看到图片右侧内容
-  const minX = -400 // 向左最大移动距离，允许看到图片左侧内容
-  const maxY = 0    // 不允许上下移动，图片高度已匹配容器
-  const minY = 0    // 不允许上下移动，图片高度已匹配容器
+  // 边界限制 - 根据缩放比例动态调整边界
+  const baseLimit = 400
+  const scaledLimit = baseLimit * mapScale.value
+  const maxX = scaledLimit  // 向右最大移动距离
+  const minX = -scaledLimit // 向左最大移动距离
+  const maxY = scaledLimit  // 向上最大移动距离
+  const minY = -scaledLimit // 向下最大移动距离
 
   newX = Math.max(minX, Math.min(maxX, newX))
   newY = Math.max(minY, Math.min(maxY, newY))
@@ -1088,6 +1098,85 @@ const handleTouchEnd = (event) => {
   // transform 现在由 Vue 的响应式系统自动更新，无需手动设置
   
   handleMouseUp()
+}
+
+// 地图缩放功能 - 鼠标滚轮
+const handleWheel = (event) => {
+  // 检查是否在弹窗区域内，如果是则不处理缩放
+  if (showAlertPopup.value) {
+    const alertPopup = document.querySelector('.alert-popup')
+    if (alertPopup) {
+      const rect = alertPopup.getBoundingClientRect()
+      const x = event.clientX
+      const y = event.clientY
+      
+      // 如果鼠标位置在弹窗区域内，不处理缩放
+      if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+        return
+      }
+    }
+  }
+
+  event.preventDefault()
+  event.stopPropagation()
+
+  // 计算缩放增量
+  const delta = -event.deltaY * 0.001
+  let newScale = mapScale.value + delta
+
+  // 限制缩放范围：0.5 到 3 倍
+  newScale = Math.max(0.5, Math.min(3, newScale))
+
+  // 如果缩放值没有变化，直接返回
+  if (newScale === mapScale.value) return
+
+  // 更新缩放值
+  mapScale.value = newScale
+
+  // 当缩放变化时，调整边界限制
+  const baseLimit = 400
+  const scaledLimit = baseLimit * mapScale.value
+  const maxX = scaledLimit
+  const minX = -scaledLimit
+  const maxY = scaledLimit
+  const minY = -scaledLimit
+
+  // 确保当前位置在新的边界内
+  mapPosition.x = Math.max(minX, Math.min(maxX, mapPosition.x))
+  mapPosition.y = Math.max(minY, Math.min(maxY, mapPosition.y))
+}
+
+// 从localStorage加载自定义地图图层
+const loadCustomMapLayer = () => {
+  try {
+    const savedMapData = localStorage.getItem('homePageMapLayer')
+    if (savedMapData) {
+      const mapData = JSON.parse(savedMapData)
+      if (mapData.imageUrl) {
+        mapImageUrl.value = mapData.imageUrl
+        console.log('已加载自定义地图图层:', mapData.layerName)
+      }
+    }
+  } catch (error) {
+    console.error('加载自定义地图图层失败:', error)
+    // 如果加载失败，使用默认地图
+    mapImageUrl.value = defaultMapImageUrl
+  }
+}
+
+// 处理地图更新事件
+const handleMapUpdate = (event) => {
+  try {
+    const mapData = event.detail
+    if (mapData && mapData.imageUrl) {
+      mapImageUrl.value = mapData.imageUrl
+      console.log('地图已更新为:', mapData.layerName)
+      ElMessage.success(`地图已切换为: ${mapData.layerName}`)
+    }
+  } catch (error) {
+    console.error('更新地图失败:', error)
+    ElMessage.error('更新地图失败')
+  }
 }
 
 // 当前摄像头
@@ -1531,6 +1620,12 @@ let refreshInterval = null
 onMounted(() => {
   loadDashboardData()
 
+  // 从localStorage加载自定义地图图层
+  loadCustomMapLayer()
+  
+  // 监听地图更新事件
+  window.addEventListener('homePageMapUpdate', handleMapUpdate)
+
   // 每30秒刷新一次数据
   refreshInterval = setInterval(() => {
     loadDashboardData()
@@ -1566,6 +1661,10 @@ onUnmounted(() => {
   if (refreshInterval) {
     clearInterval(refreshInterval)
   }
+  
+  // 移除地图更新事件监听器
+  window.removeEventListener('homePageMapUpdate', handleMapUpdate)
+  
   // 清理地图拖拽事件监听器
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)

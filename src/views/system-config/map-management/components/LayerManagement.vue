@@ -85,11 +85,12 @@
           {{ formatDate(scope.row.create_time) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220">
+      <el-table-column label="操作" width="300">
         <template #default="scope">
           <div class="action-buttons-container">
             <el-button type="text" size="small" class="tech-button-text" @click="viewLayer(scope.row)">查看</el-button>
             <el-button type="text" size="small" class="tech-button-text" @click="editLayer(scope.row)">编辑</el-button>
+            <el-button type="text" size="small" class="tech-button-text tech-button-success" @click="applyToHomePage(scope.row)">应用于首页</el-button>
             <el-button type="text" size="small" class="tech-button-text tech-button-danger" @click="deleteLayer(scope.row)">删除</el-button>
           </div>
         </template>
@@ -354,6 +355,41 @@ export default {
       }
     }
 
+    // 应用图层到首页
+    const applyToHomePage = (layer) => {
+      ElMessageBox.confirm(
+        `确定要将图层"${layer.layer_name}"应用到首页地图吗？`,
+        '应用确认',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'info'
+        }
+      ).then(() => {
+        try {
+          // 将图层信息保存到localStorage
+          const homePageMapData = {
+            imageUrl: layer.image_url,
+            layerId: layer.id,
+            layerName: layer.layer_name,
+            imageWidth: layer.image_width,
+            imageHeight: layer.image_height,
+            appliedAt: new Date().toISOString()
+          }
+          localStorage.setItem('homePageMapLayer', JSON.stringify(homePageMapData))
+          
+          ElMessage.success(`已将图层"${layer.layer_name}"应用到首页`)
+          
+          // 发出自定义事件通知首页更新
+          window.dispatchEvent(new CustomEvent('homePageMapUpdate', { detail: homePageMapData }))
+        } catch (error) {
+          ElMessage.error('应用失败: ' + (error.message || '未知错误'))
+        }
+      }).catch(() => {
+        // 用户取消操作
+      })
+    }
+
 
 
     // 删除图层
@@ -500,6 +536,7 @@ export default {
       showCreateDialog,
       editLayer,
       viewLayer,
+      applyToHomePage,
       deleteLayer,
       beforeUpload,
       handleFileChange,
@@ -1121,5 +1158,16 @@ export default {
   background: rgba(255, 0, 0, 0.1) !important;
   border-color: rgba(255, 0, 0, 0.3) !important;
   color: #ff0000 !important;
+}
+
+/* "应用于首页"按钮样式 */
+:deep(.tech-button-text.tech-button-success) {
+  color: #00ff88 !important;
+  text-shadow: 0 0 5px rgba(0, 255, 136, 0.4) !important;
+}
+
+:deep(.tech-button-text.tech-button-success:hover) {
+  color: #00ffaa !important;
+  text-shadow: 0 0 8px rgba(0, 255, 136, 0.6) !important;
 }
 </style>
