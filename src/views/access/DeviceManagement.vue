@@ -701,7 +701,7 @@ const getBoardList = async () => {
     }
     
     console.log('API请求参数:', apiParams)
-    console.log('请求URL: /api/v1/algorithm/boards')
+    console.log('请求URL: /api/v1/access/boards')
     const response = await deviceApi.getBoardList(apiParams)
     
     console.log('板卡API响应:', response)

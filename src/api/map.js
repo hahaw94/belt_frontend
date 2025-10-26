@@ -373,5 +373,69 @@ export function createSystemBackup(data) {
   })
 }
 
+// ==================== WVP摄像机管理接口 ====================
+
+/**
+ * 同步所有WVP直连设备通道
+ * @returns {Promise}
+ */
+export function syncWVPChannels() {
+  return request({
+    url: '/api/v1/wvp/channels/sync-all-direct',
+    method: 'post'
+  })
+}
+
+/**
+ * 获取WVP统一摄像机列表
+ * @returns {Promise}
+ */
+export function getWVPChannels() {
+  return request({
+    url: '/api/v1/wvp/channels/unified',
+    method: 'get'
+  })
+}
+
+/**
+ * 获取未绑定的WVP通道列表
+ * @returns {Promise}
+ */
+export function getUnboundWVPChannels() {
+  return request({
+    url: '/api/v1/system/map/wvp/unbound',
+    method: 'get'
+  })
+}
+
+/**
+ * 绑定WVP通道到图层
+ * @param {number} layerId - 图层ID
+ * @param {Object} data - 绑定数据
+ * @param {string} data.channel_id - 通道ID
+ * @param {number} data.position_x - X坐标
+ * @param {number} data.position_y - Y坐标
+ * @returns {Promise}
+ */
+export function bindWVPChannelToLayer(layerId, data) {
+  return request({
+    url: `/api/v1/system/map/layers/${layerId}/wvp/bind`,
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 从图层解绑WVP通道
+ * @param {number} layerId - 图层ID
+ * @param {string} channelId - 通道ID
+ * @returns {Promise}
+ */
+export function unbindWVPChannelFromLayer(layerId, channelId) {
+  return request({
+    url: `/api/v1/system/map/layers/${layerId}/wvp/${channelId}`,
+    method: 'delete'
+  })
+}
 
 

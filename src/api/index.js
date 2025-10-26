@@ -58,6 +58,9 @@ request.interceptors.response.use(
     // 1. {code: 0, message: "success", data: {...}} (标准格式，code=0表示成功)
     // 2. {code: 200, message: "success", data: {...}, total?, page?, size?}
     // 3. {error: 0, body: {...}, message: "...", success: true} (Mock格式)
+    // 4. HTTP 200 + 直接返回数据对象（Go后端WVP接口格式）
+    
+    // 如果有code字段，按原有逻辑处理
     if (res.code === 0 || res.code === 200 || res.error === 0) {
       // 成功响应，保留完整的响应信息包括分页数据
       return {
@@ -76,8 +79,19 @@ request.interceptors.response.use(
         totalCount: res.totalCount,
         pageSize: res.pageSize
       }
+    } else if (response.status === 200 && !res.code) {
+      // HTTP 200但没有code字段，说明是直接返回的数据（如WVP接口）
+      // 直接将响应数据包装后返回
+      return {
+        code: 200,
+        success: true,
+        data: res,
+        // 保留分页信息（如果有）
+        total: res.total,
+        list: res.list
+      }
     } else {
-      // 检查消息内容，如果包含"成功"字样，使用成功提示，否则使用错误提示
+      // 有code字段且不是成功状态码，说明是错误响应
       const message = res.message || '请求失败'
       if (message.includes('成功')) {
         ElMessage.success(message)

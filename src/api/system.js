@@ -120,6 +120,37 @@ export const gb28181API = {
   // 获取播放地址
   getPlayUrls(streamId) {
     return request.get(`/api/v1/video/streams/${streamId}/urls`)
+  },
+
+  // ================== WVP平台对接相关接口 ==================
+  // 获取SIP接入信息
+  getSIPAccessInfo() {
+    return request.get('/api/v1/wvp/sip/access-info')
+  },
+
+  // 获取通道统计信息
+  getChannelStats() {
+    return request.get('/api/v1/wvp/channels/stats')
+  },
+
+  // 获取WVP设备列表
+  getWVPDevices(params = {}) {
+    return request.get('/api/v1/wvp/devices', { params })
+  },
+
+  // 获取WVP设备详情
+  getWVPDeviceInfo(deviceId) {
+    return request.get(`/api/v1/wvp/devices/${deviceId}`)
+  },
+
+  // 获取WVP设备通道列表
+  getWVPDeviceChannels(deviceId, params = {}) {
+    return request.get(`/api/v1/wvp/devices/${deviceId}/channels`, { params })
+  },
+
+  // 获取WVP设备通道详情
+  getWVPDeviceChannelInfo(deviceId, channelId) {
+    return request.get(`/api/v1/wvp/devices/${deviceId}/channels/${channelId}`)
   }
 }
 

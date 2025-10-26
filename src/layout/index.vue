@@ -343,6 +343,9 @@ export default {
 
 .layout-container {
   flex: 1; /* 让 ElContainer 占据所有可用空间 */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 科技感头部样式 */
@@ -596,7 +599,9 @@ export default {
 
 .layout-body-container {
   flex: 1;
-  height: calc(100vh - 60px); /* 调整为新的header高度 */
+  min-height: calc(100vh - 60px); /* 调整为新的header高度 */
+  height: 100%;
+  overflow: hidden;
 }
 
 /* 科技感侧边栏样式 */
@@ -848,6 +853,40 @@ export default {
   padding: 0; /* 移除内边距，让子组件自己控制 */
   flex: 1; /* 让 main 区域占据剩余空间 */
   overflow-y: auto; /* 当内容溢出时显示滚动条 */
+  overflow-x: hidden;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+}
+
+/* 主内容区科技感滚动条样式 - Webkit内核 */
+.layout-main::-webkit-scrollbar {
+  width: 10px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.layout-main::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 5px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.layout-main::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.3) 0%, 
+    rgba(0, 200, 255, 0.5) 50%, 
+    rgba(0, 255, 255, 0.3) 100%);
+  border-radius: 5px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+.layout-main::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
 }
 
 /* 科技感菜单折叠/展开按钮样式 */

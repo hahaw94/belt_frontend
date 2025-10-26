@@ -1,51 +1,59 @@
 <template>
   <div class="platform-management">
-    <!-- GB28181视频管理总览 -->
-    <el-card class="config-card tech-card mb-20" shadow="hover">
+    <!-- 国标接入信息（SIP） -->
+    <el-card class="management-section tech-card" shadow="hover">
       <template #header>
-        <div class="card-header">
-          <span>📹 GB28181视频管理平台</span>
-          <div>
-            <el-button type="primary" :icon="Setting" size="small" class="tech-button-sm" @click="showConfigDialog">基础配置</el-button>
-            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="refreshAll" :loading="globalLoading">全局刷新</el-button>
-          </div>
+        <div class="section-header">
+          <span>🌐 国标接入信息（SIP）</span>
+          <el-button type="primary" size="small" :icon="Refresh" @click="loadSIPInfo" :loading="sipLoading">获取接入信息</el-button>
         </div>
       </template>
-      <div class="overview-stats">
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <div class="stat-card">
-              <div class="stat-icon device">📱</div>
-              <div class="stat-content">
-                <div class="stat-number">{{ stats.devices }}</div>
-                <div class="stat-label">设备总数</div>
+      <div class="section-content">
+        <el-row :gutter="15">
+          <el-col :span="8">
+            <div class="info-item">
+              <label>编号</label>
+              <div class="info-value">
+                <span class="pill">{{ sipInfo.id || '-' }}</span>
+                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.id)">复制</el-button>
               </div>
             </div>
           </el-col>
-          <el-col :span="6">
-            <div class="stat-card">
-              <div class="stat-icon channel">📺</div>
-              <div class="stat-content">
-                <div class="stat-number">{{ stats.channels }}</div>
-                <div class="stat-label">通道总数</div>
+          <el-col :span="8">
+            <div class="info-item">
+              <label>域</label>
+              <div class="info-value">
+                <span class="pill">{{ sipInfo.domain || '-' }}</span>
+                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.domain)">复制</el-button>
               </div>
             </div>
           </el-col>
-          <el-col :span="6">
-            <div class="stat-card">
-              <div class="stat-icon stream">🎬</div>
-              <div class="stat-content">
-                <div class="stat-number">{{ stats.streams }}</div>
-                <div class="stat-label">活动流数</div>
+          <el-col :span="8">
+            <div class="info-item">
+              <label>端口</label>
+              <div class="info-value">
+                <span class="pill">{{ sipInfo.port || '-' }}</span>
+                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.port)">复制</el-button>
               </div>
             </div>
           </el-col>
-          <el-col :span="6">
-            <div class="stat-card">
-              <div class="stat-icon record">📼</div>
-              <div class="stat-content">
-                <div class="stat-number">{{ stats.records }}</div>
-                <div class="stat-label">录像文件</div>
+        </el-row>
+        <el-row :gutter="15" style="margin-top: 10px;">
+          <el-col :span="12">
+            <div class="info-item">
+              <label>IP 列表</label>
+              <div class="info-value">
+                <span class="pill">{{ sipInfo.ips || '-' }}</span>
+                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.ips)">复制</el-button>
+              </div>
+            </div>
+          </el-col>
+          <el-col :span="12">
+            <div class="info-item">
+              <label>设备注册密码</label>
+              <div class="info-value">
+                <span class="pill">{{ sipInfo.password || '-' }}</span>
+                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.password)">复制</el-button>
               </div>
             </div>
           </el-col>
@@ -53,1171 +61,367 @@
       </div>
     </el-card>
 
-    <!-- 设备管理区域 -->
+    <!-- 系统配额统计 -->
     <el-card class="management-section tech-card" shadow="hover">
       <template #header>
         <div class="section-header">
-          <span>📱 设备管理</span>
+          <span>📊 系统配额统计</span>
+          <el-button type="primary" size="small" :icon="Refresh" @click="loadChannelStats" :loading="statsLoading">刷新</el-button>
         </div>
       </template>
       <div class="section-content">
-            <!-- 设备操作区 -->
-            <div class="operation-toolbar">
-              <div class="toolbar-left">
-                <el-button type="primary" :icon="Plus" @click="showDeviceDialog('add')">创建设备</el-button>
-                <el-button type="success" :icon="Refresh" @click="loadDevices" :loading="deviceLoading">刷新列表</el-button>
-              </div>
-              <div class="toolbar-right">
-                <el-input
-                  v-model="deviceSearch"
-                  placeholder="搜索设备..."
-                  :prefix-icon="Search"
-                  style="width: 200px"
-                  @input="handleDeviceSearch"
-                  clearable
-                />
-              </div>
+        <el-row :gutter="15">
+          <el-col :span="6">
+            <div class="stat-box" style="border-left: 4px solid #3b82f6;">
+              <div class="stat-label">当前通道总数</div>
+              <div class="stat-value">{{ channelStats.total_channels || 0 }}</div>
             </div>
-
-            <!-- 设备列表表格 -->
-            <el-table
-              :data="filteredDevices"
-              v-loading="deviceLoading"
-              class="tech-table"
-              stripe
-              style="width: 100%"
-            >
-              <el-table-column prop="deviceid" label="设备ID" width="200">
-                <template #default="{ row }">
-                  <code class="device-id">{{ row.deviceid }}</code>
-                </template>
-              </el-table-column>
-              <el-table-column prop="name" label="设备名称" min-width="150"></el-table-column>
-              <el-table-column label="操作" width="200" align="center" fixed="right">
-                <template #default="{ row }">
-                  <el-button type="primary" size="small" :icon="Edit" @click="showDeviceDialog('edit', row)">编辑</el-button>
-                  <el-button type="danger" size="small" :icon="Delete" @click="confirmDeleteDevice(row)">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-        </div>
-    </el-card>
-
-    <!-- 通道管理区域 -->
-    <el-card class="management-section tech-card" shadow="hover">
-      <template #header>
-        <div class="section-header">
-          <span>📺 通道管理</span>
-        </div>
-      </template>
-      <div class="section-content">
-            <!-- 通道操作区 -->
-            <div class="operation-toolbar">
-              <div class="toolbar-left">
-                <el-select v-model="selectedDeviceForChannel" placeholder="选择设备" style="width: 200px" @change="loadChannelsForDevice">
-                  <el-option
-                    v-for="device in devices"
-                    :key="device.deviceid"
-                    :label="device.name || device.deviceid"
-                    :value="device.deviceid"
-                  />
-                </el-select>
-                <el-button type="primary" :icon="Plus" @click="showChannelDialog('add')" :disabled="!selectedDeviceForChannel">创建通道</el-button>
-                <el-button type="success" :icon="Refresh" @click="loadChannelsForDevice" :loading="channelLoading" :disabled="!selectedDeviceForChannel">刷新通道</el-button>
+          </el-col>
+          <el-col :span="6">
+            <div class="stat-box" style="border-left: 4px solid #10b981;">
+              <div class="stat-label">全局上限</div>
+              <div class="stat-value">{{ channelStats.global_limit || 0 }}</div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stat-box" style="border-left: 4px solid #f59e0b;">
+              <div class="stat-label">剩余配额</div>
+              <div class="stat-value">{{ channelStats.remaining_quota || 0 }}</div>
+            </div>
+          </el-col>
+          <el-col :span="6">
+            <div class="stat-box" style="border-left: 4px solid #8b5cf6;">
+              <div class="stat-label">使用率</div>
+              <div class="stat-value">{{ channelStats.usage_rate || '0.00%' }}</div>
+            </div>
+          </el-col>
+        </el-row>
+        <el-row :gutter="15" style="margin-top: 15px;">
+          <el-col :span="12">
+            <div class="stat-box">
+              <div class="stat-label">当前播放流</div>
+              <div class="stat-value" style="font-size: 18px;">
+                {{ channelStats.current_active_plays || 0 }} / {{ channelStats.max_concurrent_plays || 0 }}
               </div>
             </div>
-
-            <!-- 通道列表表格 -->
-            <el-table
-              :data="channels"
-              v-loading="channelLoading"
-              class="tech-table"
-              stripe
-              style="width: 100%"
-            >
-              <el-table-column prop="deviceid" label="设备ID" width="180">
-                <template #default="{ row }">
-                  <code class="device-id">{{ row.deviceid }}</code>
-                </template>
-              </el-table-column>
-              <el-table-column prop="channelid" label="通道ID" width="180">
-                <template #default="{ row }">
-                  <code class="channel-id">{{ row.channelid }}</code>
-                </template>
-              </el-table-column>
-              <el-table-column prop="name" label="通道名称" min-width="150"></el-table-column>
-              <el-table-column prop="manufacturer" label="厂家" width="120"></el-table-column>
-              <el-table-column prop="address" label="地址" min-width="200"></el-table-column>
-              <el-table-column prop="status" label="状态" width="100" align="center">
-                <template #default="{ row }">
-                  <el-tag :type="getStatusType(row.status)" size="small">
-                    {{ getStatusText(row.status) }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="200" align="center" fixed="right">
-                <template #default="{ row }">
-                  <el-button type="primary" size="small" :icon="Edit" @click="showChannelDialog('edit', row)">编辑</el-button>
-                  <el-button type="danger" size="small" :icon="Delete" @click="confirmDeleteChannel(row)">删除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-        </div>
-    </el-card>
-
-    <!-- 流管理区域 -->
-    <el-card class="management-section tech-card" shadow="hover">
-      <template #header>
-        <div class="section-header">
-          <span>🎬 流管理</span>
-        </div>
-      </template>
-      <div class="section-content">
-            <!-- 流操作区 -->
-            <div class="operation-toolbar">
-              <div class="toolbar-left">
-                <el-button type="primary" :icon="VideoPlay" @click="showPlayDialog">开始播放</el-button>
-                <el-button type="success" :icon="Refresh" @click="loadStreams" :loading="streamLoading">刷新流列表</el-button>
-                <el-button type="warning" :icon="Monitor" @click="showUrlsDialog" :disabled="!selectedStream">获取播放地址</el-button>
-              </div>
+          </el-col>
+          <el-col :span="12" v-if="channelStats.warning">
+            <div class="stat-box warning-box">
+              <div class="stat-label" style="color: #d97706; font-weight: bold;">⚠️ 配额告警</div>
+              <div style="font-size: 12px; color: #92400e; margin-top: 5px;">通道数已超过90%，请注意管理</div>
             </div>
-
-            <!-- 流列表表格 -->
-            <el-table
-              :data="streams"
-              v-loading="streamLoading"
-              class="tech-table"
-              stripe
-              style="width: 100%"
-              @selection-change="handleStreamSelection"
-            >
-              <el-table-column type="selection" width="55"></el-table-column>
-              <el-table-column prop="streamid" label="流ID" width="200">
-                <template #default="{ row }">
-                  <code class="stream-id">{{ row.streamid }}</code>
-                </template>
-              </el-table-column>
-              <el-table-column prop="channelid" label="通道ID" width="180">
-                <template #default="{ row }">
-                  <code class="channel-id">{{ row.channelid }}</code>
-                </template>
-              </el-table-column>
-              <el-table-column prop="status" label="状态" width="100" align="center">
-                <template #default="{ row }">
-                  <el-tag :type="getStatusType(row.status)" size="small">
-                    {{ getStatusText(row.status) }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="starttime" label="开始时间" width="160">
-                <template #default="{ row }">
-                  {{ formatTime(row.starttime) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="type" label="类型" width="100">
-                <template #default="{ row }">
-                  <el-tag :type="row.type === 'live' ? 'success' : 'warning'" size="small">
-                    {{ row.type === 'live' ? '实时' : '回放' }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="160" align="center" fixed="right">
-                <template #default="{ row }">
-                  <el-button type="warning" size="small" :icon="Link" @click="getPlayUrls(row)">播放地址</el-button>
-                  <el-button type="danger" size="small" :icon="VideoPause" @click="stopStream(row)">停止</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-        </div>
-    </el-card>
-
-    <!-- 录像管理区域 -->
-    <el-card class="management-section tech-card" shadow="hover">
-      <template #header>
-        <div class="section-header">
-          <span>📼 录像管理</span>
-        </div>
-      </template>
-      <div class="section-content">
-            <!-- 录像查询区 -->
-            <div class="search-toolbar">
-              <el-form :model="recordQuery" inline class="search-form">
-                <el-form-item label="通道ID:">
-                  <el-input v-model="recordQuery.channelId" placeholder="请输入通道ID" style="width: 200px" />
-                </el-form-item>
-                <el-form-item label="开始时间:">
-                  <el-date-picker
-                    v-model="recordQuery.startTime"
-                    type="datetime"
-                    placeholder="选择开始时间"
-                    value-format="YYYY-MM-DD HH:mm:ss"
-                  />
-                </el-form-item>
-                <el-form-item label="结束时间:">
-                  <el-date-picker
-                    v-model="recordQuery.endTime"
-                    type="datetime"
-                    placeholder="选择结束时间"
-                    value-format="YYYY-MM-DD HH:mm:ss"
-                  />
-                </el-form-item>
-                <el-form-item>
-                  <el-button type="primary" :icon="Search" @click="searchRecords" :loading="recordLoading">查询录像</el-button>
-                  <el-button :icon="Refresh" @click="resetRecordQuery">重置</el-button>
-                </el-form-item>
-              </el-form>
-            </div>
-
-            <!-- 录像列表表格 -->
-            <el-table
-              :data="records"
-              v-loading="recordLoading"
-              class="tech-table"
-              stripe
-              style="width: 100%"
-            >
-              <el-table-column prop="recordid" label="录像ID" width="200">
-                <template #default="{ row }">
-                  <code class="record-id">{{ row.recordid }}</code>
-                </template>
-              </el-table-column>
-              <el-table-column prop="channelid" label="通道ID" width="180">
-                <template #default="{ row }">
-                  <code class="channel-id">{{ row.channelid }}</code>
-                </template>
-              </el-table-column>
-              <el-table-column prop="starttime" label="开始时间" width="160">
-                <template #default="{ row }">
-                  {{ formatTime(row.starttime) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="endtime" label="结束时间" width="160">
-                <template #default="{ row }">
-                  {{ formatTime(row.endtime) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="duration" label="时长" width="120">
-                <template #default="{ row }">
-                  {{ formatDuration(row.duration) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="filesize" label="文件大小" width="120">
-                <template #default="{ row }">
-                  {{ formatFileSize(row.filesize) }}
-                </template>
-              </el-table-column>
-              <el-table-column label="操作" width="160" align="center" fixed="right">
-                <template #default="{ row }">
-                  <el-button type="primary" size="small" :icon="VideoPlay" @click="playRecord(row)">回放</el-button>
-                  <el-button type="success" size="small" :icon="Download" @click="downloadRecord(row)">下载</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-        </div>
-    </el-card>
-
-    <!-- 设备添加/编辑对话框 -->
-    <el-dialog
-      :model-value="deviceDialogVisible"
-      @update:model-value="updateDeviceDialogVisible"
-      :title="deviceDialogMode === 'add' ? '创建设备' : '编辑设备'"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form :model="deviceForm" :rules="deviceRules" ref="deviceFormRef" label-width="100px">
-        <el-form-item label="设备密码" prop="pwd">
-          <el-input v-model="deviceForm.pwd" type="password" placeholder="请输入设备密码" show-password />
-        </el-form-item>
-        <el-form-item label="设备名称" prop="name">
-          <el-input v-model="deviceForm.name" placeholder="请输入设备名称" />
-        </el-form-item>
-        <el-form-item v-if="deviceDialogMode === 'edit'" label="设备ID" prop="deviceid">
-          <el-input v-model="deviceForm.deviceid" placeholder="设备ID" readonly />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="updateDeviceDialogVisible(false)">取消</el-button>
-        <el-button type="primary" @click="submitDeviceForm" :loading="deviceLoading">
-          {{ deviceDialogMode === 'add' ? '创建' : '更新' }}
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 通道添加/编辑对话框 -->
-    <el-dialog
-      :model-value="channelDialogVisible"
-      @update:model-value="updateChannelDialogVisible"
-      :title="channelDialogMode === 'add' ? '创建通道' : '编辑通道'"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form :model="channelForm" :rules="channelRules" ref="channelFormRef" label-width="100px">
-        <el-form-item label="设备ID" prop="deviceId">
-          <el-input v-model="channelForm.deviceId" :readonly="true" />
-        </el-form-item>
-        <el-form-item label="通道备注" prop="memo">
-          <el-input v-model="channelForm.memo" placeholder="请输入通道备注" />
-        </el-form-item>
-        <el-form-item label="播放类型" prop="streamtype">
-          <el-select v-model="channelForm.streamtype" style="width: 100%">
-            <el-option label="push (摄像头推流)" value="push" />
-            <el-option label="pull (媒体服务器拉流)" value="pull" />
-          </el-select>
-        </el-form-item>
-        <el-form-item v-if="channelForm.streamtype === 'pull'" label="拉流地址" prop="url">
-          <el-input v-model="channelForm.url" placeholder="rtsp://192.168.1.100:554/stream" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="updateChannelDialogVisible(false)">取消</el-button>
-        <el-button type="primary" @click="submitChannelForm" :loading="channelLoading">
-          {{ channelDialogMode === 'add' ? '创建' : '更新' }}
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 开始播放对话框 -->
-    <el-dialog
-      :model-value="playDialogVisible"
-      @update:model-value="updatePlayDialogVisible"
-      title="开始播放"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form :model="playForm" :rules="playRules" ref="playFormRef" label-width="100px">
-        <el-form-item label="通道ID" prop="channelId">
-          <el-input v-model="playForm.channelId" placeholder="请输入通道ID" />
-        </el-form-item>
-        <el-form-item label="播放类型">
-          <el-radio-group v-model="playForm.type">
-            <el-radio label="live">实时播放</el-radio>
-            <el-radio label="playback">录像回放</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <template v-if="playForm.type === 'playback'">
-          <el-form-item label="开始时间" prop="startTime">
-            <el-date-picker
-              v-model="playForm.startTime"
-              type="datetime"
-              placeholder="选择开始时间"
-              value-format="YYYY-MM-DD HH:mm:ss"
-              style="width: 100%"
-            />
-          </el-form-item>
-          <el-form-item label="结束时间" prop="endTime">
-            <el-date-picker
-              v-model="playForm.endTime"
-              type="datetime"
-              placeholder="选择结束时间"
-              value-format="YYYY-MM-DD HH:mm:ss"
-              style="width: 100%"
-            />
-          </el-form-item>
-        </template>
-      </el-form>
-      <template #footer>
-        <el-button @click="updatePlayDialogVisible(false)">取消</el-button>
-        <el-button type="primary" @click="startPlay" :loading="streamLoading">开始播放</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 播放地址查看对话框 -->
-    <el-dialog
-      :model-value="urlsDialogVisible"
-      @update:model-value="updateUrlsDialogVisible"
-      title="播放地址"
-      width="700px"
-      :close-on-click-modal="false"
-    >
-      <div class="urls-content">
-        <el-descriptions :column="1" border>
-          <el-descriptions-item label="RTMP地址" v-if="playUrls.rtmp">
-            <div class="url-item">
-              <el-input :model-value="playUrls.rtmp" readonly />
-              <el-button :icon="CopyDocument" @click="copyToClipboard(playUrls.rtmp)" style="margin-left: 8px">复制</el-button>
-            </div>
-          </el-descriptions-item>
-          <el-descriptions-item label="RTSP地址" v-if="playUrls.rtsp">
-            <div class="url-item">
-              <el-input :model-value="playUrls.rtsp" readonly />
-              <el-button :icon="CopyDocument" @click="copyToClipboard(playUrls.rtsp)" style="margin-left: 8px">复制</el-button>
-            </div>
-          </el-descriptions-item>
-          <el-descriptions-item label="HTTP-FLV地址" v-if="playUrls.flv">
-            <div class="url-item">
-              <el-input :model-value="playUrls.flv" readonly />
-              <el-button :icon="CopyDocument" @click="copyToClipboard(playUrls.flv)" style="margin-left: 8px">复制</el-button>
-            </div>
-          </el-descriptions-item>
-          <el-descriptions-item label="HLS地址" v-if="playUrls.hls">
-            <div class="url-item">
-              <el-input :model-value="playUrls.hls" readonly />
-              <el-button :icon="CopyDocument" @click="copyToClipboard(playUrls.hls)" style="margin-left: 8px">复制</el-button>
-            </div>
-          </el-descriptions-item>
-        </el-descriptions>
+          </el-col>
+        </el-row>
       </div>
-      <template #footer>
-        <el-button type="primary" @click="updateUrlsDialogVisible(false)">关闭</el-button>
-      </template>
-    </el-dialog>
+    </el-card>
 
-    <!-- GB28181基础配置对话框 (保留原有功能) -->
-    <el-dialog
-      :model-value="configDialogVisible"
-      @update:model-value="updateConfigDialogVisible"
-      title="GB28181基础配置"
-      width="600px"
-      :close-on-click-modal="false"
-    >
-      <el-form :model="configFormData" :rules="configRules" ref="configFormRef" label-width="100px">
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="平台名称" prop="platform_name">
-              <el-input v-model="configFormData.platform_name" placeholder="请输入平台名称" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="SIP服务器IP" prop="sip_server_ip">
-              <el-input v-model="configFormData.sip_server_ip" placeholder="请输入SIP服务器IP" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="SIP端口" prop="sip_port">
-              <el-input-number v-model="configFormData.sip_port" :min="1000" :max="65535" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="平台ID" prop="platform_id">
-              <el-input v-model="configFormData.platform_id" placeholder="请输入平台编码" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="本地IP" prop="local_ip">
-              <el-input v-model="configFormData.local_ip" placeholder="请输入本地IP" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="本地端口" prop="local_port">
-              <el-input-number v-model="configFormData.local_port" :min="1000" :max="65535" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-row>
-          <el-col :span="24">
-            <el-form-item label="启用状态">
-              <el-switch v-model="configFormData.enabled" />
-              <span style="margin-left: 10px; color: #909399;">启用后GB28181服务将开始运行</span>
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </el-form>
-      <template #footer>
-        <el-button @click="updateConfigDialogVisible(false)">取消</el-button>
-        <el-button type="primary" @click="saveGB28181Config" :loading="configLoading">保存配置</el-button>
+    <!-- 直连设备与通道 -->
+    <el-card class="management-section tech-card" shadow="hover">
+      <template #header>
+        <div class="section-header">
+          <span>🔗 直连设备与通道</span>
+        </div>
       </template>
-    </el-dialog>
+      <div class="section-content">
+        <!-- 设备查询区 -->
+        <div class="wvp-query-section">
+          <el-form inline class="wvp-form">
+            <el-form-item label="设备在线">
+              <el-select v-model="wvpDeviceQuery.status" style="width: 120px;">
+                <el-option label="全部" value=""></el-option>
+                <el-option label="在线" value="true"></el-option>
+                <el-option label="离线" value="false"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="关键字">
+              <el-input v-model="wvpDeviceQuery.query" placeholder="设备名/编号" style="width: 200px;" />
+            </el-form-item>
+            <el-form-item label="页码">
+              <el-input-number v-model="wvpDeviceQuery.page" :min="1" style="width: 120px;" />
+            </el-form-item>
+            <el-form-item label="每页">
+              <el-input-number v-model="wvpDeviceQuery.size" :min="1" :max="100" style="width: 120px;" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :icon="Search" @click="loadWVPDevices" :loading="wvpDeviceLoading">刷新设备</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 设备列表 -->
+        <el-table
+          :data="wvpDevices"
+          v-loading="wvpDeviceLoading"
+          class="tech-table"
+          stripe
+          style="width: 100%; margin-top: 15px;"
+          @current-change="handleWVPDeviceSelect"
+          highlight-current-row
+        >
+          <el-table-column type="index" label="序号" width="60"></el-table-column>
+          <el-table-column prop="deviceId" label="设备ID" min-width="180">
+            <template #default="{ row }">
+              <code class="device-id">{{ row.deviceId || row.device_id }}</code>
+            </template>
+          </el-table-column>
+          <el-table-column prop="name" label="名称" min-width="150"></el-table-column>
+          <el-table-column prop="status" label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.status?.toUpperCase() === 'ON' ? 'success' : 'danger'" size="small">
+                {{ row.status?.toUpperCase() || '未知' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+
+        <!-- 通道查询区 -->
+        <div class="wvp-query-section" style="margin-top: 20px;">
+          <el-form inline class="wvp-form">
+            <el-form-item label="通道在线">
+              <el-select v-model="wvpChannelQuery.online" style="width: 120px;">
+                <el-option label="全部" value=""></el-option>
+                <el-option label="在线" value="true"></el-option>
+                <el-option label="离线" value="false"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="关键字">
+              <el-input v-model="wvpChannelQuery.query" placeholder="通道名/编号" style="width: 200px;" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" :icon="Search" @click="loadWVPDeviceChannels" :loading="wvpChannelLoading" :disabled="!selectedWVPDevice">刷新通道</el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 通道列表 -->
+        <el-table
+          :data="wvpChannels"
+          v-loading="wvpChannelLoading"
+          class="tech-table"
+          stripe
+          style="width: 100%; margin-top: 15px;"
+        >
+          <el-table-column type="index" label="序号" width="60"></el-table-column>
+          <el-table-column prop="device_id" label="设备ID" width="180">
+            <template #default="{ row }">
+              <code class="device-id">{{ row.device_id }}</code>
+            </template>
+          </el-table-column>
+          <el-table-column prop="channel_id" label="通道ID" width="180">
+            <template #default="{ row }">
+              <code class="channel-id">{{ row.channel_id }}</code>
+            </template>
+          </el-table-column>
+          <el-table-column prop="channel_name" label="通道名称" min-width="150"></el-table-column>
+          <el-table-column prop="status" label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag :type="row.status?.toUpperCase() === 'ON' ? 'success' : 'danger'" size="small">
+                {{ row.status?.toUpperCase() || '未知' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+    </el-card>
   </div>
 </template>
 
 <script>
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import { systemAPI, gb28181API } from '@/api/system'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { gb28181API } from '@/api/system'
+import { ElMessage } from 'element-plus'
 
 export default {
   name: 'PlatformManagement',
   components: ElementPlusIconsVue,
-  emits: ['show-add-gb28181-dialog', 'load-gb28181-platforms', 'toggle-gb28181-platform', 'test-gb28181-connection', 'edit-gb28181-platform', 'delete-gb28181-platform', 'save-gb28181-platform', 'update-dialog-visible', 'update-platform-name', 'update-platform-ip', 'update-platform-port', 'update-device-id', 'update-username', 'update-password', 'update-enabled'],
-  props: {
-    gb28181Platforms: {
-      type: Array,
-      required: true
-    },
-    gb28181Loading: {
-      type: Boolean,
-      default: false
-    },
-    gb28181DialogVisible: {
-      type: Boolean,
-      default: false
-    },
-    gb28181DialogMode: {
-      type: String,
-      default: 'add'
-    },
-    gb28181FormData: {
-      type: Object,
-      required: true
-    },
-    gb28181Rules: {
-      type: Object,
-      required: true
-    }
-  },
   data() {
     return {
-      globalLoading: false,
+      // SIP接入信息
+      sipInfo: {
+        id: '',
+        domain: '',
+        port: '',
+        ips: '',
+        password: ''
+      },
+      sipLoading: false,
 
-      // 统计数据
-      stats: {
-        devices: 0,
-        channels: 0,
-        streams: 0,
-        records: 0
+      // 系统配额统计
+      channelStats: {
+        total_channels: 0,
+        global_limit: 0,
+        remaining_quota: 0,
+        usage_rate: '0.00%',
+        current_active_plays: 0,
+        max_concurrent_plays: 0,
+        warning: false
       },
+      statsLoading: false,
 
-      // 基础配置
-      configDialogVisible: false,
-      configLoading: false,
-      configFormData: {
-        platform_name: '',
-        sip_server_ip: '',
-        sip_port: 5060,
-        platform_id: '',
-        local_ip: '',
-        local_port: 5061,
-        enabled: false
-      },
-      configRules: {
-        platform_name: [{ required: true, message: '请输入平台名称', trigger: 'blur' }],
-        sip_server_ip: [{ required: true, message: '请输入SIP服务器IP', trigger: 'blur' }],
-        sip_port: [{ required: true, message: '请输入SIP端口', trigger: 'blur' }],
-        platform_id: [{ required: true, message: '请输入平台ID', trigger: 'blur' }],
-        local_ip: [{ required: true, message: '请输入本地IP', trigger: 'blur' }],
-        local_port: [{ required: true, message: '请输入本地端口', trigger: 'blur' }]
-      },
-
-      // 设备管理
-      devices: [],
-      filteredDevices: [],
-      deviceSearch: '',
-      deviceLoading: false,
-      deviceDialogVisible: false,
-      deviceDialogMode: 'add',
-      deviceForm: {
-        pwd: '123456',
-        name: '',
-        deviceid: ''
-      },
-      deviceRules: {
-        pwd: [{ required: true, message: '请输入设备密码', trigger: 'blur' }],
-        name: [{ required: true, message: '请输入设备名称', trigger: 'blur' }]
+      // WVP直连设备
+      wvpDevices: [],
+      wvpDeviceLoading: false,
+      selectedWVPDevice: null,
+      wvpDeviceQuery: {
+        status: '',
+        query: '',
+        page: 1,
+        size: 20
       },
 
-      // 通道管理
-      channels: [],
-      channelLoading: false,
-      selectedDeviceForChannel: '',
-      channelDialogVisible: false,
-      channelDialogMode: 'add',
-      channelForm: {
-        deviceId: '',
-        memo: '通道01',
-        streamtype: 'push',
-        url: ''
-      },
-      channelRules: {
-        deviceId: [{ required: true, message: '请选择设备', trigger: 'blur' }],
-        memo: [{ required: true, message: '请输入通道备注', trigger: 'blur' }]
-      },
-
-      // 流管理
-      streams: [],
-      streamLoading: false,
-      selectedStream: null,
-      playDialogVisible: false,
-      playForm: {
-        channelId: '',
-        type: 'live',
-        startTime: '',
-        endTime: ''
-      },
-      playRules: {
-        channelId: [{ required: true, message: '请输入通道ID', trigger: 'blur' }]
-      },
-      urlsDialogVisible: false,
-      playUrls: {},
-
-      // 录像管理
-      records: [],
-      recordLoading: false,
-      recordQuery: {
-        channelId: '',
-        startTime: '',
-        endTime: ''
+      // WVP通道
+      wvpChannels: [],
+      wvpChannelLoading: false,
+      wvpChannelQuery: {
+        online: '',
+        query: ''
       }
     }
   },
   async mounted() {
-    await this.loadGB28181Config()
-    await this.refreshAll()
+    await this.loadSIPInfo()
+    await this.loadChannelStats()
   },
   methods: {
-    // ==================== 全局方法 ====================
-    async refreshAll() {
-      this.globalLoading = true
+    // ==================== WVP平台对接方法 ====================
+    // 加载SIP接入信息
+    async loadSIPInfo() {
+      this.sipLoading = true
       try {
-        await Promise.all([
-          this.loadDevices(),
-          this.loadStreams(),
-          this.updateStats()
-        ])
-      } catch (error) {
-        console.error('刷新数据失败:', error)
-      } finally {
-        this.globalLoading = false
-      }
-    },
-
-    async updateStats() {
-      try {
-        const [devicesRes, streamsRes] = await Promise.all([
-          gb28181API.getDevices().catch(() => ({ data: [] })),
-          gb28181API.getStreams().catch(() => ({ data: [] }))
-        ])
-
-        const deviceList = devicesRes.data?.data?.List || devicesRes.data?.list || devicesRes.data || []
-        const streamList = streamsRes.data?.data?.List || streamsRes.data?.list || streamsRes.data || []
-
-        this.stats = {
-          devices: Array.isArray(deviceList) ? deviceList.length : 0,
-          channels: Array.isArray(this.channels) ? this.channels.length : 0,
-          streams: Array.isArray(streamList) ? streamList.length : 0,
-          records: Array.isArray(this.records) ? this.records.length : 0
-        }
-      } catch (error) {
-        console.error('更新统计失败:', error)
-      }
-    },
-
-    // ==================== 设备管理 ====================
-    async loadDevices() {
-      this.deviceLoading = true
-      try {
-        const response = await gb28181API.getDevices()
+        const response = await gb28181API.getSIPAccessInfo()
         if (response && response.data) {
-          const deviceList = response.data.data?.List || response.data.list || response.data || []
-          this.devices = Array.isArray(deviceList) ? deviceList : []
-          this.filteredDevices = [...this.devices]
-        } else {
-          this.devices = []
-          this.filteredDevices = []
+          const data = response.data
+          this.sipInfo = {
+            id: data.id || '-',
+            domain: data.domain || '-',
+            port: data.port != null ? String(data.port) : '-',
+            ips: Array.isArray(data.ips) ? data.ips.join(', ') : '-',
+            password: data.password || '-'
+          }
         }
       } catch (error) {
-        console.error('加载设备列表失败:', error)
-        ElMessage.error('加载设备列表失败')
-        this.devices = []
-        this.filteredDevices = []
+        console.error('加载SIP接入信息失败:', error)
+        ElMessage.error('加载SIP接入信息失败')
       } finally {
-        this.deviceLoading = false
+        this.sipLoading = false
       }
     },
 
-    handleDeviceSearch(keyword) {
-      if (!Array.isArray(this.devices)) {
-        this.devices = []
-      }
-
-      if (!keyword) {
-        this.filteredDevices = [...this.devices]
-      } else {
-        this.filteredDevices = this.devices.filter(device =>
-          (device.name && device.name.toLowerCase().includes(keyword.toLowerCase())) ||
-          (device.deviceid && device.deviceid.toLowerCase().includes(keyword.toLowerCase()))
-        )
-      }
-    },
-
-    showDeviceDialog(mode, device = null) {
-      this.deviceDialogMode = mode
-      if (mode === 'add') {
-        this.deviceForm = { pwd: '123456', name: '', deviceid: '' }
-      } else {
-        this.deviceForm = { ...device }
-      }
-      this.deviceDialogVisible = true
-    },
-
-    updateDeviceDialogVisible(value) {
-      this.deviceDialogVisible = value
-    },
-
-    async submitDeviceForm() {
-      if (!this.$refs.deviceFormRef) return
-
+    // 加载通道统计信息
+    async loadChannelStats() {
+      this.statsLoading = true
       try {
-        await this.$refs.deviceFormRef.validate()
-        this.deviceLoading = true
-
-        const data = {
-          pwd: this.deviceForm.pwd,
-          name: this.deviceForm.name
-        }
-
-        let response
-        if (this.deviceDialogMode === 'add') {
-          response = await gb28181API.createDevice(data)
-        } else {
-          response = await gb28181API.updateDevice(this.deviceForm.deviceid, data)
-        }
-
-        if (response) {
-          ElMessage.success(`设备${this.deviceDialogMode === 'add' ? '创建' : '更新'}成功`)
-          this.deviceDialogVisible = false
-          await this.loadDevices()
-          await this.updateStats()
-        }
-      } catch (error) {
-        console.error('提交设备表单失败:', error)
-        ElMessage.error(`设备${this.deviceDialogMode === 'add' ? '创建' : '更新'}失败`)
-      } finally {
-        this.deviceLoading = false
-      }
-    },
-
-    async confirmDeleteDevice(device) {
-      try {
-        await ElMessageBox.confirm(`确定要删除设备 "${device.name || device.deviceid}" 吗？`, '确认删除', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        await this.deleteDevice(device.deviceid)
-      } catch (error) {
-        if (error !== 'cancel') {
-          console.error('删除设备失败:', error)
-        }
-      }
-    },
-
-    async deleteDevice(deviceId) {
-      try {
-        const response = await gb28181API.deleteDevice(deviceId)
-        if (response) {
-          ElMessage.success('设备删除成功')
-          await this.loadDevices()
-          await this.updateStats()
-        }
-      } catch (error) {
-        console.error('删除设备失败:', error)
-        ElMessage.error('删除设备失败')
-      }
-    },
-
-    // ==================== 通道管理 ====================
-    async loadChannelsForDevice() {
-      if (!this.selectedDeviceForChannel) return
-
-      this.channelLoading = true
-      try {
-        const response = await gb28181API.getDeviceChannels(this.selectedDeviceForChannel)
+        const response = await gb28181API.getChannelStats()
         if (response && response.data) {
-          const channelList = response.data.data?.List || response.data.list || response.data || []
-          this.channels = Array.isArray(channelList) ? channelList : []
-          await this.updateStats()
-        } else {
-          this.channels = []
+          this.channelStats = {
+            total_channels: response.data.total_channels || 0,
+            global_limit: response.data.global_limit || 0,
+            remaining_quota: response.data.remaining_quota || 0,
+            usage_rate: response.data.usage_rate || '0.00%',
+            current_active_plays: response.data.current_active_plays || 0,
+            max_concurrent_plays: response.data.max_concurrent_plays || 0,
+            warning: response.data.warning || false
+          }
         }
       } catch (error) {
-        console.error('加载通道列表失败:', error)
-        ElMessage.error('加载通道列表失败')
-        this.channels = []
+        console.error('加载通道统计失败:', error)
+        ElMessage.error('加载通道统计失败')
       } finally {
-        this.channelLoading = false
+        this.statsLoading = false
       }
     },
 
-    showChannelDialog(mode, channel = null) {
-      this.channelDialogMode = mode
-      if (mode === 'add') {
-        this.channelForm = {
-          deviceId: this.selectedDeviceForChannel,
-          memo: '通道01',
-          streamtype: 'push',
-          url: ''
-        }
-      } else {
-        this.channelForm = { ...channel, deviceId: channel.deviceid }
-      }
-      this.channelDialogVisible = true
-    },
-
-    updateChannelDialogVisible(value) {
-      this.channelDialogVisible = value
-    },
-
-    async submitChannelForm() {
-      if (!this.$refs.channelFormRef) return
-
+    // 加载WVP设备列表
+    async loadWVPDevices() {
+      this.wvpDeviceLoading = true
       try {
-        await this.$refs.channelFormRef.validate()
-        this.channelLoading = true
-
-        const data = {
-          memo: this.channelForm.memo,
-          streamtype: this.channelForm.streamtype
+        const params = {
+          page: this.wvpDeviceQuery.page,
+          size: this.wvpDeviceQuery.size
+        }
+        
+        if (this.wvpDeviceQuery.query) {
+          params.query = this.wvpDeviceQuery.query
+        }
+        
+        if (this.wvpDeviceQuery.status) {
+          params.status = this.wvpDeviceQuery.status
         }
 
-        if (this.channelForm.streamtype === 'pull' && this.channelForm.url) {
-          data.url = this.channelForm.url
-        }
-
-        let response
-        if (this.channelDialogMode === 'add') {
-          response = await gb28181API.createChannel(this.channelForm.deviceId, data)
-        } else {
-          response = await gb28181API.updateChannel(this.channelForm.channelid, data)
-        }
-
-        if (response) {
-          ElMessage.success(`通道${this.channelDialogMode === 'add' ? '创建' : '更新'}成功`)
-          this.channelDialogVisible = false
-          await this.loadChannelsForDevice()
-        }
-      } catch (error) {
-        console.error('提交通道表单失败:', error)
-        ElMessage.error(`通道${this.channelDialogMode === 'add' ? '创建' : '更新'}失败`)
-      } finally {
-        this.channelLoading = false
-      }
-    },
-
-    async confirmDeleteChannel(channel) {
-      try {
-        await ElMessageBox.confirm(`确定要删除通道 "${channel.name || channel.channelid}" 吗？`, '确认删除', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        })
-        await this.deleteChannel(channel.channelid)
-      } catch (error) {
-        if (error !== 'cancel') {
-          console.error('删除通道失败:', error)
-        }
-      }
-    },
-
-    async deleteChannel(channelId) {
-      try {
-        const response = await gb28181API.deleteChannel(channelId)
-        if (response) {
-          ElMessage.success('通道删除成功')
-          await this.loadChannelsForDevice()
-        }
-      } catch (error) {
-        console.error('删除通道失败:', error)
-        ElMessage.error('删除通道失败')
-      }
-    },
-
-    // ==================== 流管理 ====================
-    async loadStreams() {
-      this.streamLoading = true
-      try {
-        const response = await gb28181API.getStreams()
+        const response = await gb28181API.getWVPDevices(params)
         if (response && response.data) {
-          const streamList = response.data.data?.List || response.data.list || response.data || []
-          this.streams = Array.isArray(streamList) ? streamList : []
-          await this.updateStats()
-        } else {
-          this.streams = []
+          this.wvpDevices = response.data.list || []
+          
+          // 自动选择第一个设备
+          if (this.wvpDevices.length > 0 && !this.selectedWVPDevice) {
+            this.selectedWVPDevice = this.wvpDevices[0].deviceId || this.wvpDevices[0].device_id
+            await this.loadWVPDeviceChannels()
+          }
         }
       } catch (error) {
-        console.error('加载流列表失败:', error)
-        ElMessage.error('加载流列表失败')
-        this.streams = []
+        console.error('加载WVP设备列表失败:', error)
+        ElMessage.error('加载WVP设备列表失败')
       } finally {
-        this.streamLoading = false
+        this.wvpDeviceLoading = false
       }
     },
 
-    handleStreamSelection(selection) {
-      this.selectedStream = selection.length > 0 ? selection[0] : null
-    },
-
-    showPlayDialog() {
-      this.playForm = {
-        channelId: '',
-        type: 'live',
-        startTime: '',
-        endTime: ''
-      }
-      this.playDialogVisible = true
-    },
-
-    updatePlayDialogVisible(value) {
-      this.playDialogVisible = value
-    },
-
-    async startPlay() {
-      if (!this.$refs.playFormRef) return
-
-      try {
-        await this.$refs.playFormRef.validate()
-        this.streamLoading = true
-
-        const data = {}
-        if (this.playForm.type === 'playback') {
-          if (this.playForm.startTime) data.start_time = this.playForm.startTime
-          if (this.playForm.endTime) data.end_time = this.playForm.endTime
-        }
-
-        const response = await gb28181API.startPlay(this.playForm.channelId, data)
-        if (response) {
-          ElMessage.success('播放开始成功')
-          this.playDialogVisible = false
-          await this.loadStreams()
-        }
-      } catch (error) {
-        console.error('开始播放失败:', error)
-        ElMessage.error('开始播放失败')
-      } finally {
-        this.streamLoading = false
+    // 处理设备选择
+    handleWVPDeviceSelect(row) {
+      if (row) {
+        this.selectedWVPDevice = row.deviceId || row.device_id
+        this.loadWVPDeviceChannels()
       }
     },
 
-    async stopStream(stream) {
-      try {
-        const response = await gb28181API.stopPlay(stream.streamid)
-        if (response) {
-          ElMessage.success('流停止成功')
-          await this.loadStreams()
-        }
-      } catch (error) {
-        console.error('停止流失败:', error)
-        ElMessage.error('停止流失败')
-      }
-    },
-
-    async getPlayUrls(stream) {
-      try {
-        const response = await gb28181API.getPlayUrls(stream.streamid)
-        if (response && response.data) {
-          this.playUrls = response.data
-          this.urlsDialogVisible = true
-        }
-      } catch (error) {
-        console.error('获取播放地址失败:', error)
-        ElMessage.error('获取播放地址失败')
-      }
-    },
-
-    showUrlsDialog() {
-      if (this.selectedStream) {
-        this.getPlayUrls(this.selectedStream)
-      }
-    },
-
-    updateUrlsDialogVisible(value) {
-      this.urlsDialogVisible = value
-    },
-
-    async copyToClipboard(text) {
-      try {
-        await navigator.clipboard.writeText(text)
-        ElMessage.success('地址已复制到剪贴板')
-      } catch (error) {
-        console.error('复制失败:', error)
-        ElMessage.error('复制失败')
-      }
-    },
-
-    // ==================== 录像管理 ====================
-    async searchRecords() {
-      if (!this.recordQuery.channelId) {
-        ElMessage.warning('请输入通道ID')
+    // 加载WVP设备通道列表
+    async loadWVPDeviceChannels() {
+      if (!this.selectedWVPDevice) {
+        ElMessage.warning('请先选择设备')
         return
       }
 
-      this.recordLoading = true
+      this.wvpChannelLoading = true
       try {
-        const params = {}
-        if (this.recordQuery.startTime) params.start_time = this.recordQuery.startTime
-        if (this.recordQuery.endTime) params.end_time = this.recordQuery.endTime
+        const params = {
+          page: 1,
+          size: 50
+        }
+        
+        if (this.wvpChannelQuery.query) {
+          params.query = this.wvpChannelQuery.query
+        }
+        
+        if (this.wvpChannelQuery.online) {
+          params.online = this.wvpChannelQuery.online
+        }
 
-        const response = await gb28181API.getRecords(this.recordQuery.channelId, params)
+        const response = await gb28181API.getWVPDeviceChannels(this.selectedWVPDevice, params)
         if (response && response.data) {
-          const recordList = response.data.data?.List || response.data.list || response.data || []
-          this.records = Array.isArray(recordList) ? recordList : []
-          await this.updateStats()
-        } else {
-          this.records = []
+          this.wvpChannels = response.data.list || []
         }
       } catch (error) {
-        console.error('查询录像失败:', error)
-        ElMessage.error('查询录像失败')
-        this.records = []
+        console.error('加载WVP设备通道失败:', error)
+        ElMessage.error('加载WVP设备通道失败')
       } finally {
-        this.recordLoading = false
-      }
-    },
-
-    resetRecordQuery() {
-      this.recordQuery = {
-        channelId: '',
-        startTime: '',
-        endTime: ''
-      }
-      this.records = []
-      this.updateStats()
-    },
-
-    async playRecord(record) {
-      try {
-        const data = {
-          start_time: record.starttime,
-          end_time: record.endtime
-        }
-
-        const response = await gb28181API.startPlay(record.channelid, data)
-        if (response) {
-          ElMessage.success('录像回放开始')
-          await this.loadStreams()
-        }
-      } catch (error) {
-        console.error('录像回放失败:', error)
-        ElMessage.error('录像回放失败')
-      }
-    },
-
-    async downloadRecord() {
-      ElMessage.info('录像下载功能开发中...')
-    },
-
-    // ==================== 基础配置 (保留原有功能) ====================
-    async loadGB28181Config() {
-      this.configLoading = true
-      try {
-        const response = await systemAPI.getGB28181Config()
-        if (response && response.data) {
-          this.configFormData = { ...this.configFormData, ...response.data }
-        }
-      } catch (error) {
-        console.error('加载GB28181配置失败:', error)
-      } finally {
-        this.configLoading = false
-      }
-    },
-
-    showConfigDialog() {
-      this.configDialogVisible = true
-    },
-
-    updateConfigDialogVisible(value) {
-      this.configDialogVisible = value
-    },
-
-    async saveGB28181Config() {
-      if (!this.$refs.configFormRef) return
-
-      try {
-        await this.$refs.configFormRef.validate()
-        this.configLoading = true
-
-        const response = await systemAPI.setGB28181Config(this.configFormData)
-        if (response) {
-          ElMessage.success('GB28181配置保存成功')
-          this.configDialogVisible = false
-        }
-      } catch (error) {
-        console.error('保存GB28181配置失败:', error)
-        ElMessage.error('保存GB28181配置失败')
-      } finally {
-        this.configLoading = false
+        this.wvpChannelLoading = false
       }
     },
 
     // ==================== 工具方法 ====================
-    getStatusType(status) {
-      if (!status) return 'info'
-      const statusStr = status.toString().toLowerCase()
-      if (statusStr === 'on' || statusStr === 'online' || statusStr === 'active') return 'success'
-      if (statusStr === 'off' || statusStr === 'offline' || statusStr === 'inactive') return 'danger'
-      return 'warning'
-    },
-
-    getStatusText(status) {
-      if (!status) return '未知'
-      const statusStr = status.toString().toLowerCase()
-      if (statusStr === 'on' || statusStr === 'online' || statusStr === 'active') return '在线'
-      if (statusStr === 'off' || statusStr === 'offline' || statusStr === 'inactive') return '离线'
-      return status
-    },
-
-    formatTime(time) {
-      if (!time) return '-'
-      return new Date(time).toLocaleString()
-    },
-
-    formatDuration(seconds) {
-      if (!seconds) return '-'
-      const hours = Math.floor(seconds / 3600)
-      const minutes = Math.floor((seconds % 3600) / 60)
-      const secs = seconds % 60
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-    },
-
-    formatFileSize(bytes) {
-      if (!bytes) return '-'
-      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB']
-      if (bytes === 0) return '0 Bytes'
-      const i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)))
-      return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
-    },
-
-    // ==================== 原有方法保留（兼容性） ====================
-    showAddGB28181Dialog() {
-      this.$emit('show-add-gb28181-dialog')
-    },
-    loadGB28181Platforms() {
-      this.$emit('load-gb28181-platforms')
-    },
-    toggleGB28181Platform(row) {
-      this.$emit('toggle-gb28181-platform', row)
-    },
-    testGB28181Connection(row) {
-      this.$emit('test-gb28181-connection', row)
-    },
-    editGB28181Platform(row) {
-      this.$emit('edit-gb28181-platform', row)
-    },
-    deleteGB28181Platform(row) {
-      this.$emit('delete-gb28181-platform', row)
-    },
-    saveGB28181Platform() {
-      this.$emit('save-gb28181-platform')
-    },
-    getConnectionStatusText(status) {
-      return this.$parent?.getConnectionStatusText?.(status) || status
-    },
-    updateDialogVisible(value) {
-      this.$emit('update-dialog-visible', value)
-    },
-    updatePlatformName(value) {
-      this.$emit('update-platform-name', value)
-    },
-    updatePlatformIp(value) {
-      this.$emit('update-platform-ip', value)
-    },
-    updatePlatformPort(value) {
-      this.$emit('update-platform-port', value)
-    },
-    updateDeviceId(value) {
-      this.$emit('update-device-id', value)
-    },
-    updateUsername(value) {
-      this.$emit('update-username', value)
-    },
-    updatePassword(value) {
-      this.$emit('update-password', value)
-    },
-    updateEnabled(value) {
-      this.$emit('update-enabled', value)
+    async copyToClipboard(text) {
+      if (!text || text === '-') {
+        ElMessage.warning('无可复制内容')
+        return
+      }
+      
+      try {
+        await navigator.clipboard.writeText(text)
+        ElMessage.success('已复制到剪贴板')
+      } catch (error) {
+        console.error('复制失败:', error)
+        ElMessage.error('复制失败')
+      }
     }
   }
 }
@@ -1226,73 +430,53 @@ export default {
 <style scoped>
 .platform-management {
   min-height: 100%;
+  height: auto;
   display: flex;
   flex-direction: column;
+  gap: 20px;
+  padding-bottom: 120px;
+  overflow: visible;
 }
 
-/* 总览统计样式 */
-.overview-stats {
-  padding: 20px 0;
-}
-
-.stat-card {
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  background: rgba(20, 30, 50, 0.6);
-  border-radius: 12px;
+/* 代码样式 */
+code.device-id,
+code.channel-id {
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
   border: 1px solid rgba(0, 255, 255, 0.2);
-  transition: all 0.3s ease;
 }
 
-.stat-card:hover {
-  background: rgba(20, 30, 50, 0.8);
-  border-color: rgba(0, 255, 255, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 255, 255, 0.15);
-}
-
-.stat-icon {
-  font-size: 36px;
-  margin-right: 15px;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
-.stat-icon.device { background: rgba(76, 175, 80, 0.2); }
-.stat-icon.channel { background: rgba(33, 150, 243, 0.2); }
-.stat-icon.stream { background: rgba(255, 152, 0, 0.2); }
-.stat-icon.record { background: rgba(156, 39, 176, 0.2); }
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-number {
-  font-size: 28px;
-  font-weight: 700;
-  color: rgba(0, 255, 255, 0.9);
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
-  margin-bottom: 5px;
-}
-
-.stat-label {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-  font-weight: 500;
-}
-
-/* 管理区域样式 */
-.management-section {
+/* 卡片样式 */
+.management-section.tech-card {
+  position: relative;
+  z-index: 10;
+  background: rgba(15, 25, 45, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(0, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  height: auto;
   margin-bottom: 20px;
 }
 
-.management-section:last-child {
-  margin-bottom: 0;
+.management-section.tech-card :deep(.el-card__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 16px 20px !important;
+  color: #ffffff !important;
+}
+
+.management-section.tech-card :deep(.el-card__body) {
+  background: rgba(15, 25, 45, 0.95) !important;
+  padding: 20px !important;
+  border-radius: 0 0 12px 12px !important;
 }
 
 .section-header {
@@ -1314,164 +498,10 @@ export default {
   min-height: auto;
 }
 
-/* 工具栏样式 */
-.operation-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 15px;
-  background: rgba(20, 30, 50, 0.4);
-  border-radius: 8px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.toolbar-left {
-  display: flex;
-  gap: 10px;
-}
-
-.toolbar-right {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-/* 搜索工具栏 */
-.search-toolbar {
-  margin-bottom: 20px;
-  padding: 20px;
-  background: rgba(20, 30, 50, 0.4);
-  border-radius: 8px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.search-form {
-  margin: 0;
-}
-
-/* 代码样式 */
-code.device-id,
-code.channel-id,
-code.stream-id,
-code.record-id {
-  background: rgba(0, 255, 255, 0.1);
-  color: #00ffff;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-}
-
-/* 播放地址对话框 */
-.urls-content {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.url-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 管理区域卡片样式 */
-.management-section.tech-card {
-  position: relative;
-  z-index: 10;
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
-  backdrop-filter: blur(10px) !important;
-}
-
-.management-section.tech-card :deep(.el-card__header) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px 12px 0 0 !important;
-  padding: 16px 20px !important;
-  color: #ffffff !important;
-}
-
-.management-section.tech-card :deep(.el-card__body) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  padding: 20px !important;
-  border-radius: 0 0 12px 12px !important;
-}
-
-/* 科技感卡片样式继承 */
-.config-card.tech-card {
-  position: relative;
-  z-index: 10;
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
-  backdrop-filter: blur(10px) !important;
-  margin-bottom: 20px;
-  height: auto !important;
-  min-height: auto !important;
-  max-height: none !important;
-}
-
-.config-card.tech-card :deep(.el-card__header) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px 12px 0 0 !important;
-  padding: 16px 20px !important;
-  color: #ffffff !important;
-}
-
-.config-card.tech-card :deep(.el-card__header .card-header) {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin: 0 !important;
-  width: 100% !important;
-}
-
-.config-card.tech-card :deep(.el-card__body) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  padding: 20px !important;
-  border-radius: 0 0 12px 12px !important;
-}
-
-.card-header span {
-  color: #00ffff;
-  font-weight: 600;
-  font-size: 16px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-  letter-spacing: 1px;
-}
-
-/* 按钮样式 */
-.tech-button-sm {
-  text-shadow: 0 0 4px rgba(0, 255, 255, 0.3) !important;
-  font-weight: 500 !important;
-}
-
 /* 表格样式 */
-.tech-table {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
-  border: none !important;
-}
-
 .tech-table :deep(.el-table) {
   background: rgba(15, 25, 45, 0.95) !important;
-  border-radius: 12px !important;
-  border: none !important;
+  border-radius: 8px !important;
 }
 
 .tech-table :deep(.el-table__header-wrapper .el-table__header th) {
@@ -1512,42 +542,124 @@ code.record-id {
   font-size: 13px !important;
 }
 
-/* 响应式处理 */
-@media (max-width: 768px) {
-  .overview-stats {
-    padding: 15px 0;
-  }
+/* SIP接入信息样式 */
+.info-item {
+  margin-bottom: 15px;
+}
 
-  .stat-card {
-    padding: 15px;
-    margin-bottom: 15px;
-  }
+.info-item label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
 
-  .stat-icon {
-    font-size: 24px;
-    width: 40px;
-    height: 40px;
-    margin-right: 10px;
-  }
+.info-value {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
-  .stat-number {
+.pill {
+  display: inline-block;
+  padding: 8px 16px;
+  background: rgba(0, 255, 255, 0.1);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 20px;
+  color: #00ffff;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  flex: 1;
+  text-align: center;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 系统配额统计样式 */
+.stat-box {
+  background: rgba(20, 30, 50, 0.6);
+  padding: 15px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  transition: all 0.3s ease;
+}
+
+.stat-box:hover {
+  background: rgba(20, 30, 50, 0.8);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 255, 255, 0.1);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: rgba(0, 255, 255, 0.9);
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.warning-box {
+  background: rgba(254, 243, 199, 0.1) !important;
+  border: 1px solid rgba(245, 158, 11, 0.5) !important;
+  border-left: 4px solid #f59e0b !important;
+}
+
+/* WVP设备与通道查询样式 */
+.wvp-query-section {
+  padding: 15px;
+  background: rgba(20, 30, 50, 0.4);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.1);
+  margin-bottom: 15px;
+}
+
+.wvp-form {
+  margin: 0;
+}
+
+.wvp-form :deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+.wvp-form :deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+/* 响应式适配 */
+@media (max-width: 1200px) {
+  .stat-value {
     font-size: 20px;
   }
-
-  .operation-toolbar {
-    flex-direction: column;
-    gap: 10px;
-    align-items: stretch;
-  }
-
-  .toolbar-left,
-  .toolbar-right {
-    flex-wrap: wrap;
-    justify-content: center;
+  
+  .pill {
+    font-size: 12px;
+    padding: 6px 12px;
   }
 }
 
-.mb-20 {
-  margin-bottom: 20px;
+@media (max-width: 768px) {
+  .info-value {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .wvp-query-section .el-form {
+    display: block;
+  }
+  
+  .wvp-query-section .el-form-item {
+    display: block;
+    margin-bottom: 10px;
+  }
 }
 </style>

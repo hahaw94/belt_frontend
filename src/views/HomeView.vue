@@ -13,29 +13,45 @@
              :src="mapImageUrl"
              alt="地图"
              class="draggable-map"
+             @load="handleMapImageLoad"
              @dragstart.prevent
              @selectstart.prevent
              @contextmenu.prevent>
         
-        <!-- 地图上的摄像头图标 - 随地图一起移动 -->
+        <!-- 地图上的摄像头图标 - 动态渲染，随地图一起移动，支持聚合 -->
         <div class="map-cameras">
           <div
-            class="map-camera-icon camera-1"
-            @click.stop="showCameraPopup(cameraData[0])"
-            @mouseenter="showTooltip($event, cameraData[0])"
+            v-for="(cluster, index) in clusteredCameras"
+            :key="cluster.id"
+            class="map-camera-icon"
+            :class="[
+              `camera-${index + 1}`,
+              { 'clustered': cluster.cameras.length > 1 }
+            ]"
+            :style="{
+              left: cluster.position_x + 'px',
+              top: cluster.position_y + 'px',
+              transform: cluster.camera_angle ? `translate(-50%, -50%) rotate(${cluster.camera_angle}deg)` : 'translate(-50%, -50%)'
+            }"
+            @click.stop="showCameraPopup(cluster)"
+            @mouseenter="showTooltip($event, cluster.cameras[0])"
             @mouseleave="hideTooltip"
-            title="点击查看摄像头画面"
+            :title="cluster.cameras.length > 1 ? `${cluster.cameras[0].device_name} 等${cluster.cameras.length}个` : `${cluster.cameras[0].device_name} - ${cluster.cameras[0].status}`"
           >
-            <div class="camera-label">摄像机1</div>
-          </div>
-          <div
-            class="map-camera-icon camera-2"
-            @click.stop="showCameraPopup(cameraData[1])"
-            @mouseenter="showTooltip($event, cameraData[1])"
-            @mouseleave="hideTooltip"
-            title="点击查看摄像头画面"
-          >
-            <div class="camera-label">摄像机2</div>
+            <!-- 聚合数量标识 -->
+            <div 
+              v-if="cluster.cameras.length > 1" 
+              class="cluster-count"
+            >
+              {{ cluster.cameras.length }}
+            </div>
+            
+            <div class="camera-label">
+              {{ cluster.cameras.length > 1 ? `${cluster.cameras[0].device_name} 等${cluster.cameras.length}个` : cluster.cameras[0].device_name }}
+            </div>
+            
+            <!-- 在线状态指示器 -->
+            <div v-if="cluster.cameras.some(camera => camera.status === '在线')" class="camera-online-dot"></div>
           </div>
         </div>
       </div>
@@ -489,8 +505,33 @@
                 <span class="live-dot-small"></span>
                 LIVE
               </span>
+              <!-- 聚合摄像头信息 -->
+              <span v-if="currentCluster && currentCluster.cameras && currentCluster.cameras.length > 1" class="cluster-info-badge">
+                <span v-if="isSwitchingCamera" class="switching-indicator">⟳</span>
+                {{ currentClusterIndex + 1 }} / {{ currentCluster.cameras.length }}
+              </span>
             </h3>
             <button class="custom-modal-close" @click="closeCameraPopup">&times;</button>
+          </div>
+          
+          <!-- 聚合摄像头切换按钮 -->
+          <div v-if="currentCluster && currentCluster.cameras && currentCluster.cameras.length > 1" class="cluster-nav-buttons">
+            <button 
+              class="cluster-nav-btn prev-btn" 
+              @click="switchToPrevCamera"
+              :disabled="currentClusterIndex === 0 || isSwitchingCamera"
+              :title="isSwitchingCamera ? '切换中...' : '上一个摄像头'"
+            >
+              <span class="nav-arrow">‹</span>
+            </button>
+            <button 
+              class="cluster-nav-btn next-btn" 
+              @click="switchToNextCamera"
+              :disabled="currentClusterIndex === currentCluster.cameras.length - 1 || isSwitchingCamera"
+              :title="isSwitchingCamera ? '切换中...' : '下一个摄像头'"
+            >
+              <span class="nav-arrow">›</span>
+            </button>
           </div>
           
           <!-- 弹窗内容 -->
@@ -688,9 +729,10 @@
 </template>
 
 <script setup name="HomeView">
-import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { dashboardApi } from '@/api/dashboard'
 import { deviceApi } from '@/api/device'
+import { getLayerCameras } from '@/api/map'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
 import SimpleStreamPlayer from '@/components/SimpleStreamPlayer.vue'
@@ -722,6 +764,11 @@ const currentAlert = ref({})
 // 摄像头弹窗状态
 const cameraPopupVisible = ref(false)
 const currentCameraPopup = ref({})
+
+// 聚合摄像头状态
+const currentCluster = ref(null)
+const currentClusterIndex = ref(0)
+const isSwitchingCamera = ref(false) // 是否正在切换摄像头
 
 // 流媒体播放状态
 const inputStreamUrl = ref('')
@@ -907,6 +954,38 @@ const unprocessedArcLength = computed(() => {
 
 
 // 已删除CAD图层数据相关代码
+
+// 更新地图图片尺寸信息
+const updateMapImageSize = () => {
+  if (!mapImage.value) return
+  
+  // 获取图片的原始尺寸（未缩放）
+  mapImageNaturalSize.width = mapImage.value.naturalWidth
+  mapImageNaturalSize.height = mapImage.value.naturalHeight
+  
+  // 获取图片的实际显示尺寸（已缩放）
+  mapImageDisplaySize.width = mapImage.value.offsetWidth
+  mapImageDisplaySize.height = mapImage.value.offsetHeight
+  
+  console.log('地图图片尺寸已更新:', {
+    原始尺寸: `${mapImageNaturalSize.width}x${mapImageNaturalSize.height}`,
+    显示尺寸: `${mapImageDisplaySize.width}x${mapImageDisplaySize.height}`
+  })
+}
+
+// 地图图片加载完成事件处理
+const handleMapImageLoad = () => {
+  console.log('地图图片加载完成')
+  // 使用nextTick确保DOM已更新
+  nextTick(() => {
+    updateMapImageSize()
+  })
+}
+
+// 监听窗口大小变化，更新地图尺寸
+const handleResize = () => {
+  updateMapImageSize()
+}
 
 // 地图拖拽方法
 const startDrag = (event) => {
@@ -1175,14 +1254,69 @@ const loadCustomMapLayer = () => {
   }
 }
 
+// 加载图层相机数据
+const loadLayerCameras = async (layerId) => {
+  try {
+    console.log('加载图层相机数据，图层ID:', layerId)
+    const response = await getLayerCameras(layerId)
+    if (response.code === 200) {
+      const cameras = Array.isArray(response.data) ? response.data : []
+      layerCameras.value = cameras
+      console.log('成功加载图层相机:', cameras.length, '个')
+    }
+  } catch (error) {
+    console.error('加载图层相机失败:', error)
+    layerCameras.value = []
+  }
+}
+
+// 从localStorage加载图层数据
+const loadHomePageLayer = async () => {
+  try {
+    const savedLayer = localStorage.getItem('homePageMapLayer')
+    if (savedLayer) {
+      const layerData = JSON.parse(savedLayer)
+      currentLayerInfo.value = layerData
+      mapImageUrl.value = layerData.imageUrl
+      console.log('已加载应用于首页的图层:', layerData.layerName)
+      
+      // 加载图层的相机数据
+      if (layerData.layerId) {
+        await loadLayerCameras(layerData.layerId)
+      }
+      
+      // 等待图片加载完成后更新尺寸
+      await nextTick()
+      updateMapImageSize()
+    } else {
+      console.log('未找到应用于首页的图层，使用默认地图')
+    }
+  } catch (error) {
+    console.error('加载首页图层失败:', error)
+    mapImageUrl.value = defaultMapImageUrl
+  }
+}
+
 // 处理地图更新事件
-const handleMapUpdate = (event) => {
+const handleMapUpdate = async (event) => {
   try {
     const mapData = event.detail
     if (mapData && mapData.imageUrl) {
+      currentLayerInfo.value = mapData
       mapImageUrl.value = mapData.imageUrl
       console.log('地图已更新为:', mapData.layerName)
       ElMessage.success(`地图已切换为: ${mapData.layerName}`)
+      
+      // 加载新图层的相机数据
+      if (mapData.layerId) {
+        await loadLayerCameras(mapData.layerId)
+      } else {
+        layerCameras.value = []
+      }
+      
+      // 等待图片加载完成后更新尺寸
+      await nextTick()
+      updateMapImageSize()
     }
   } catch (error) {
     console.error('更新地图失败:', error)
@@ -1196,27 +1330,138 @@ const currentCamera = ref({})
 // 选中的告警
 const selectedAlarm = ref({})
 
-// 背景摄像头数据 - 支持实时视频流
-const cameraData = ref([
-  {
-    id: 1,
-    device_name: '摄像机1',
-    status: '在线',
-    stream_name: 'camera1', // OBS推流密钥
-    image: 'https://via.placeholder.com/600x400/1a1a1a/00d4ff?text=摄像机1实时画面',
-    alert_time: '2024-08-27 14:02:45',
-    alert_type: '未戴安全帽'
-  },
-  {
-    id: 2,
-    device_name: '摄像机2', 
-    status: '在线',
-    stream_name: 'camera2', // OBS推流密钥
-    image: 'https://via.placeholder.com/600x400/1a1a1a/00d4ff?text=摄像机2实时画面',
-    alert_time: '2024-08-27 13:58:32',
-    alert_type: '异常行为'
+// 图层相关数据
+const currentLayerInfo = ref(null)
+const layerCameras = ref([])
+
+// 地图缩放比例相关状态
+const mapImageNaturalSize = reactive({ width: 0, height: 0 })
+const mapImageDisplaySize = reactive({ width: 0, height: 0 })
+
+// 计算地图的缩放比例和偏移量（考虑 object-fit: contain）
+const mapDisplayScale = computed(() => {
+  if (!mapImageNaturalSize.width || !mapImageNaturalSize.height || 
+      !mapImageDisplaySize.width || !mapImageDisplaySize.height) {
+    return { scaleX: 1, scaleY: 1, offsetX: 0, offsetY: 0 }
   }
-])
+  
+  // 计算容器的宽高比和图片的宽高比
+  const containerRatio = mapImageDisplaySize.width / mapImageDisplaySize.height
+  const imageRatio = mapImageNaturalSize.width / mapImageNaturalSize.height
+  
+  let actualWidth, actualHeight, offsetX, offsetY
+  
+  // object-fit: contain 的逻辑：图片会按比例缩放到容器内，保持宽高比
+  if (imageRatio > containerRatio) {
+    // 图片更宽，以容器宽度为准
+    actualWidth = mapImageDisplaySize.width
+    actualHeight = mapImageDisplaySize.width / imageRatio
+    offsetX = 0
+    offsetY = (mapImageDisplaySize.height - actualHeight) / 2
+  } else {
+    // 图片更高或相同，以容器高度为准
+    actualHeight = mapImageDisplaySize.height
+    actualWidth = mapImageDisplaySize.height * imageRatio
+    offsetX = (mapImageDisplaySize.width - actualWidth) / 2
+    offsetY = 0
+  }
+  
+  const scaleX = actualWidth / mapImageNaturalSize.width
+  const scaleY = actualHeight / mapImageNaturalSize.height
+  
+  console.log('地图缩放比例和偏移:', {
+    原始尺寸: `${mapImageNaturalSize.width}x${mapImageNaturalSize.height}`,
+    容器尺寸: `${mapImageDisplaySize.width}x${mapImageDisplaySize.height}`,
+    实际显示尺寸: `${actualWidth.toFixed(2)}x${actualHeight.toFixed(2)}`,
+    缩放比例: `X:${scaleX.toFixed(4)}, Y:${scaleY.toFixed(4)}`,
+    偏移量: `X:${offsetX.toFixed(2)}, Y:${offsetY.toFixed(2)}`
+  })
+  
+  return { scaleX, scaleY, offsetX, offsetY }
+})
+
+// 背景摄像头数据 - 从图层加载，并根据地图缩放比例调整位置
+const cameraData = computed(() => {
+  // 如果有图层相机数据，使用图层数据
+  if (layerCameras.value && layerCameras.value.length > 0) {
+    const scale = mapDisplayScale.value
+    
+    return layerCameras.value.map(camera => {
+      // 根据地图缩放比例和偏移量调整摄像头位置
+      // 配置时保存的是基于原始图片尺寸的坐标，这里要转换为显示尺寸的坐标
+      // 同时要加上 object-fit: contain 产生的偏移量
+      const adjustedX = camera.position_x * scale.scaleX + scale.offsetX
+      const adjustedY = camera.position_y * scale.scaleY + scale.offsetY
+      
+      return {
+        id: camera.id,
+        device_name: camera.camera_name || camera.device_name,
+        status: camera.is_online === 1 ? '在线' : '离线',
+        stream_name: camera.camera_code || camera.channel_id,
+        channel_id: camera.camera_code || camera.channel_id,
+        position_x: adjustedX,
+        position_y: adjustedY,
+        original_position_x: camera.position_x, // 保留原始位置用于调试
+        original_position_y: camera.position_y,
+        camera_angle: camera.camera_angle || 0,
+        image: `https://via.placeholder.com/600x400/1a1a1a/00d4ff?text=${camera.camera_name}`,
+        alert_time: new Date().toLocaleString(),
+        alert_type: '实时监控'
+      }
+    })
+  }
+  
+  // 默认数据（用于没有应用图层时）
+  return []
+})
+
+// 相机聚合计算 - 将位置相同或接近的相机聚合在一起
+const clusteredCameras = computed(() => {
+  if (!cameraData.value || cameraData.value.length === 0) return []
+  
+  const clusters = []
+  const processed = new Set()
+  const tolerance = 20 // 位置容差，像素为单位
+  
+  cameraData.value.forEach((camera, index) => {
+    if (processed.has(index)) return
+    
+    const cluster = {
+      id: `cluster_${clusters.length}`,
+      cameras: [camera],
+      position_x: camera.position_x,
+      position_y: camera.position_y,
+      camera_angle: camera.camera_angle
+    }
+    
+    processed.add(index)
+    
+    // 查找位置相近的其他相机
+    cameraData.value.forEach((otherCamera, otherIndex) => {
+      if (processed.has(otherIndex) || index === otherIndex) return
+      
+      const distance = Math.sqrt(
+        Math.pow(camera.position_x - otherCamera.position_x, 2) +
+        Math.pow(camera.position_y - otherCamera.position_y, 2)
+      )
+      
+      if (distance <= tolerance) {
+        cluster.cameras.push(otherCamera)
+        processed.add(otherIndex)
+      }
+    })
+    
+    clusters.push(cluster)
+  })
+  
+  console.log('首页聚合相机结果:', clusters.map(c => ({
+    位置: `(${c.position_x.toFixed(2)}, ${c.position_y.toFixed(2)})`,
+    相机数量: c.cameras.length,
+    相机列表: c.cameras.map(cam => cam.device_name)
+  })))
+  
+  return clusters
+})
 
 // 视频流相关状态
 const streamStatus = ref({
@@ -1288,9 +1533,14 @@ const showAlertDetails = () => {
 
 // 自动播放摄像头流
 const autoPlayCameraStream = async (camera) => {
-  if (!camera) return
+  if (!camera) {
+    console.warn('autoPlayCameraStream: camera 参数为空')
+    return
+  }
   
   try {
+    console.log('autoPlayCameraStream: 开始加载视频流，摄像头:', camera.device_name || camera.id)
+    
     // 显示加载提示
     ElMessage.info('正在加载视频流...')
     
@@ -1298,106 +1548,218 @@ const autoPlayCameraStream = async (camera) => {
     await getAvailableStreams(true)
     
     // 等待流列表加载完成
-    if (availableStreams.value.length === 0) {
+    if (!availableStreams.value || availableStreams.value.length === 0) {
+      console.warn('autoPlayCameraStream: 未找到可用的视频流')
       ElMessage.warning('未找到可用的视频流，请先在设备管理中启动推流')
       return
     }
+    
+    console.log('autoPlayCameraStream: 找到', availableStreams.value.length, '个可用流')
     
     // 尝试匹配对应的流
     let matchedStream = null
     
     // 方法1: 根据摄像头ID匹配
     if (camera.id) {
-      matchedStream = availableStreams.value.find(stream => 
-        stream.id === camera.id || 
-        stream.device_name?.includes(camera.device_name) ||
-        stream.device_name?.includes(`摄像机${camera.id}`)
-      )
+      matchedStream = availableStreams.value.find(stream => {
+        if (!stream) return false
+        return stream.id === camera.id || 
+               (stream.device_name && camera.device_name && stream.device_name.includes(camera.device_name)) ||
+               (stream.device_name && stream.device_name.includes(`摄像机${camera.id}`))
+      })
     }
     
     // 方法2: 根据设备名称模糊匹配
     if (!matchedStream && camera.device_name) {
-      matchedStream = availableStreams.value.find(stream => 
-        stream.device_name?.includes(camera.device_name) ||
-        camera.device_name?.includes(stream.device_name)
-      )
+      matchedStream = availableStreams.value.find(stream => {
+        if (!stream || !stream.device_name) return false
+        return stream.device_name.includes(camera.device_name) ||
+               camera.device_name.includes(stream.device_name)
+      })
     }
     
     // 方法3: 根据stream_name匹配
     if (!matchedStream && camera.stream_name) {
-      matchedStream = availableStreams.value.find(stream => 
-        stream.stream_id?.includes(camera.stream_name)
-      )
+      matchedStream = availableStreams.value.find(stream => {
+        if (!stream || !stream.stream_id) return false
+        return stream.stream_id.includes(camera.stream_name)
+      })
     }
     
     // 如果还是没找到，使用第一个可用流
-    if (!matchedStream) {
+    if (!matchedStream && availableStreams.value.length > 0) {
       matchedStream = availableStreams.value[0]
-      console.log('未找到完全匹配的流，使用第一个可用流:', matchedStream)
-    } else {
-      console.log('找到匹配的流:', matchedStream)
+      console.log('autoPlayCameraStream: 未找到完全匹配的流，使用第一个可用流:', matchedStream)
+    } else if (matchedStream) {
+      console.log('autoPlayCameraStream: 找到匹配的流:', matchedStream)
     }
     
     // 选择流并自动播放
-    if (matchedStream) {
-      // 静默选择流（不显示消息）
-      const playUrls = matchedStream.play_urls
-      
-      // 优先使用FLV流（低延迟）
-      if (playUrls?.flv) {
-        inputStreamUrl.value = fixStreamUrl(playUrls.flv)
-        selectedProtocol.value = 'flv'
-      } else if (playUrls?.wsflv || playUrls?.ws_flv || playUrls?.['ws-flv']) {
-        const wsUrl = playUrls.wsflv || playUrls.ws_flv || playUrls['ws-flv']
-        inputStreamUrl.value = fixStreamUrl(wsUrl)
-        selectedProtocol.value = 'flv'
-      } else if (playUrls?.hls) {
-        inputStreamUrl.value = fixStreamUrl(playUrls.hls)
-        selectedProtocol.value = 'hls'
-      } else if (playUrls?.rtmp) {
-        inputStreamUrl.value = fixStreamUrl(playUrls.rtmp)
-        selectedProtocol.value = 'rtmp'
-      } else if (playUrls?.rtsp) {
-        inputStreamUrl.value = fixStreamUrl(playUrls.rtsp)
-        selectedProtocol.value = 'rtsp'
-      }
-      
-      console.log('自动选择的流URL:', inputStreamUrl.value)
-      
-      // 延迟一小段时间确保URL已设置，然后自动播放
-      setTimeout(() => {
+    if (!matchedStream) {
+      console.error('autoPlayCameraStream: 无法找到可用的流')
+      ElMessage.error('未找到可播放的视频流')
+      return
+    }
+    
+    // 保存匹配的流名称，避免在 setTimeout 中访问可能已改变的引用
+    const streamDeviceName = matchedStream.device_name || '未知设备'
+    
+    // 静默选择流（不显示消息）
+    const playUrls = matchedStream.play_urls
+    
+    if (!playUrls) {
+      console.error('autoPlayCameraStream: 流没有播放地址')
+      ElMessage.error('该视频流没有可用的播放地址')
+      return
+    }
+    
+    // 优先使用FLV流（低延迟）
+    let streamUrl = null
+    if (playUrls.flv) {
+      streamUrl = fixStreamUrl(playUrls.flv)
+      selectedProtocol.value = 'flv'
+    } else if (playUrls.wsflv || playUrls.ws_flv || playUrls['ws-flv']) {
+      const wsUrl = playUrls.wsflv || playUrls.ws_flv || playUrls['ws-flv']
+      streamUrl = fixStreamUrl(wsUrl)
+      selectedProtocol.value = 'flv'
+    } else if (playUrls.hls) {
+      streamUrl = fixStreamUrl(playUrls.hls)
+      selectedProtocol.value = 'hls'
+    } else if (playUrls.rtmp) {
+      streamUrl = fixStreamUrl(playUrls.rtmp)
+      selectedProtocol.value = 'rtmp'
+    } else if (playUrls.rtsp) {
+      streamUrl = fixStreamUrl(playUrls.rtsp)
+      selectedProtocol.value = 'rtsp'
+    }
+    
+    if (!streamUrl) {
+      console.error('autoPlayCameraStream: 无法生成流地址')
+      ElMessage.error('无法生成有效的流地址')
+      return
+    }
+    
+    inputStreamUrl.value = streamUrl
+    console.log('autoPlayCameraStream: 自动选择的流URL:', streamUrl)
+    
+    // 延迟一小段时间确保URL已设置，然后自动播放
+    setTimeout(() => {
+      try {
         if (inputStreamUrl.value) {
           currentStreamUrl.value = inputStreamUrl.value.trim()
           isPlaying.value = true
           playerKey.value++ // 强制重新渲染播放器
-          ElMessage.success(`正在播放 ${matchedStream.device_name} 的视频流`)
+          ElMessage.success(`正在播放 ${streamDeviceName} 的视频流`)
+          console.log('autoPlayCameraStream: 播放成功')
         } else {
+          console.error('autoPlayCameraStream: 流地址为空')
           ElMessage.error('流地址设置失败')
         }
-      }, 100)
-    } else {
-      ElMessage.error('未找到可播放的视频流')
-    }
+      } catch (err) {
+        console.error('autoPlayCameraStream: 播放时出错:', err)
+        ElMessage.error('播放视频流失败')
+      }
+    }, 150)
   } catch (error) {
-    console.error('自动播放流失败:', error)
-    ElMessage.error('加载视频流失败')
+    console.error('autoPlayCameraStream: 自动播放流失败:', error)
+    ElMessage.error('加载视频流失败: ' + (error?.message || '未知错误'))
   }
 }
 
 // 显示摄像头弹窗
-const showCameraPopup = (camera) => {
-  if (!camera) return
-  currentCameraPopup.value = camera
+const showCameraPopup = (cluster) => {
+  if (!cluster) return
+  
+  // 保存聚合信息
+  currentCluster.value = cluster
+  currentClusterIndex.value = 0
+  
+  // 设置当前摄像头为第一个
+  const firstCamera = cluster.cameras ? cluster.cameras[0] : cluster
+  currentCameraPopup.value = firstCamera
   cameraPopupVisible.value = true
   
   // 自动播放对应的视频流
-  autoPlayCameraStream(camera)
+  autoPlayCameraStream(firstCamera)
+  
+  console.log('打开摄像头弹窗:', {
+    是否聚合: cluster.cameras && cluster.cameras.length > 1,
+    摄像头数量: cluster.cameras ? cluster.cameras.length : 1,
+    当前摄像头: firstCamera.device_name
+  })
+}
+
+// 切换到上一个摄像头
+const switchToPrevCamera = async () => {
+  if (!currentCluster.value || !currentCluster.value.cameras) return
+  if (currentClusterIndex.value <= 0) return
+  if (isSwitchingCamera.value) return // 防止重复点击
+  
+  try {
+    isSwitchingCamera.value = true
+    console.log('开始切换到上一个摄像头...')
+    
+    // 先停止当前播放，避免资源冲突
+    stopStream()
+    
+    // 等待一小段时间确保资源完全释放
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    currentClusterIndex.value--
+    const camera = currentCluster.value.cameras[currentClusterIndex.value]
+    currentCameraPopup.value = camera
+    
+    // 自动播放新的视频流
+    await autoPlayCameraStream(camera)
+    
+    console.log('切换到上一个摄像头成功:', camera.device_name)
+  } catch (error) {
+    console.error('切换摄像头失败:', error)
+    ElMessage.error('切换摄像头失败')
+  } finally {
+    isSwitchingCamera.value = false
+  }
+}
+
+// 切换到下一个摄像头
+const switchToNextCamera = async () => {
+  if (!currentCluster.value || !currentCluster.value.cameras) return
+  if (currentClusterIndex.value >= currentCluster.value.cameras.length - 1) return
+  if (isSwitchingCamera.value) return // 防止重复点击
+  
+  try {
+    isSwitchingCamera.value = true
+    console.log('开始切换到下一个摄像头...')
+    
+    // 先停止当前播放，避免资源冲突
+    stopStream()
+    
+    // 等待一小段时间确保资源完全释放
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    currentClusterIndex.value++
+    const camera = currentCluster.value.cameras[currentClusterIndex.value]
+    currentCameraPopup.value = camera
+    
+    // 自动播放新的视频流
+    await autoPlayCameraStream(camera)
+    
+    console.log('切换到下一个摄像头成功:', camera.device_name)
+  } catch (error) {
+    console.error('切换摄像头失败:', error)
+    ElMessage.error('切换摄像头失败')
+  } finally {
+    isSwitchingCamera.value = false
+  }
 }
 
 // 关闭摄像头弹窗
 const closeCameraPopup = () => {
   cameraPopupVisible.value = false
   currentCameraPopup.value = {}
+  currentCluster.value = null
+  currentClusterIndex.value = 0
+  isSwitchingCamera.value = false
   stopStream() // 关闭弹窗时停止播放
 }
 
@@ -1417,9 +1779,14 @@ const playStream = () => {
 
 // 停止播放
 const stopStream = () => {
+  // 清空流地址
   currentStreamUrl.value = ''
   isPlaying.value = false
+  
+  // 增加 playerKey 强制销毁并重新创建播放器组件，确保资源完全释放
   playerKey.value++
+  
+  console.log('停止播放，playerKey:', playerKey.value)
 }
 
 // 设置快捷示例地址
@@ -1446,30 +1813,39 @@ const getAvailableStreams = async (silent = false) => {
   availableStreams.value = []
   
   try {
-    console.log('正在从后端获取算法流列表...')
+    console.log('getAvailableStreams: 正在从后端获取算法流列表...')
     
     // 调用后端API获取所有算法流信息
     const response = await deviceApi.getAlgorithmStreams()
     
-    console.log('算法流列表响应:', response)
+    console.log('getAvailableStreams: 算法流列表响应:', response)
     
     if (response && response.code === 200) {
-      const streams = response.data || []
+      const streams = Array.isArray(response.data) ? response.data : []
       
       if (streams.length > 0) {
         // 转换后端返回的数据格式为前端需要的格式
-        availableStreams.value = streams.map(stream => ({
-          id: stream.board_id || stream.id,
-          device_name: stream.device_name || stream.board_name || '未知设备',
-          stream_id: stream.stream_id,
-          status: stream.status,
-          play_urls: stream.play_urls || {},
-          start_time: stream.start_time,
-          last_active_time: stream.last_active_time
-        }))
+        availableStreams.value = streams.filter(stream => stream != null).map(stream => {
+          try {
+            return {
+              id: stream.board_id || stream.id,
+              device_name: stream.device_name || stream.board_name || '未知设备',
+              stream_id: stream.stream_id || '',
+              status: stream.status || 'unknown',
+              play_urls: stream.play_urls || {},
+              start_time: stream.start_time || '',
+              last_active_time: stream.last_active_time || ''
+            }
+          } catch (mapError) {
+            console.error('getAvailableStreams: 转换流数据失败:', mapError, stream)
+            return null
+          }
+        }).filter(stream => stream != null)
         
-        if (!silent) {
-          ElMessage.success(`找到 ${streams.length} 个活动的算法流`)
+        console.log('getAvailableStreams: 成功转换', availableStreams.value.length, '个流')
+        
+        if (!silent && availableStreams.value.length > 0) {
+          ElMessage.success(`找到 ${availableStreams.value.length} 个活动的算法流`)
         }
       } else {
         noStreamsFound.value = true
@@ -1479,24 +1855,26 @@ const getAvailableStreams = async (silent = false) => {
       }
     } else {
       const errorMsg = response?.message || '获取流列表失败'
+      console.warn('getAvailableStreams: API返回错误:', errorMsg)
       if (!silent) {
         ElMessage.error(errorMsg)
       }
       noStreamsFound.value = true
     }
   } catch (error) {
-    console.error('获取流列表失败:', error)
+    console.error('getAvailableStreams: 获取流列表失败:', error)
     
     if (!silent) {
-      if (error.response?.status === 401) {
+      if (error?.response?.status === 401) {
         ElMessage.error('认证失败，请重新登录')
-      } else if (error.response?.status === 403) {
+      } else if (error?.response?.status === 403) {
         ElMessage.error('权限不足，无法访问流信息')
       } else {
-        ElMessage.error('获取流列表失败：' + (error.message || '未知错误'))
+        ElMessage.error('获取流列表失败：' + (error?.message || '未知错误'))
       }
     }
     noStreamsFound.value = true
+    availableStreams.value = [] // 确保出错时清空数组
   } finally {
     checkingStreams.value = false
   }
@@ -1504,7 +1882,10 @@ const getAvailableStreams = async (silent = false) => {
 
 // 修复流URL，确保包含正确的端口号
 const fixStreamUrl = (url) => {
-  if (!url) return url
+  if (!url || typeof url !== 'string') {
+    console.warn('fixStreamUrl: URL为空或不是字符串:', url)
+    return url
+  }
   
   const { httpPort } = streamConfig
   
@@ -1517,15 +1898,21 @@ const fixStreamUrl = (url) => {
       urlObj.port = httpPort.toString()
     }
     
-    return urlObj.toString()
+    const fixedUrl = urlObj.toString()
+    console.log('fixStreamUrl: 修复URL', url, '->', fixedUrl)
+    return fixedUrl
   } catch (error) {
-    console.error('URL解析失败:', error)
+    console.error('fixStreamUrl: URL解析失败:', error, 'URL:', url)
     
     // 降级处理：如果URL解析失败，尝试简单的字符串替换
-    if (url.includes('localhost/') && !url.includes('localhost:')) {
-      return url.replace('localhost/', `localhost:${httpPort}/`)
-    } else if (url.includes('localhost:80/')) {
-      return url.replace('localhost:80/', `localhost:${httpPort}/`)
+    try {
+      if (url.includes('localhost/') && !url.includes('localhost:')) {
+        return url.replace('localhost/', `localhost:${httpPort}/`)
+      } else if (url.includes('localhost:80/')) {
+        return url.replace('localhost:80/', `localhost:${httpPort}/`)
+      }
+    } catch (replaceError) {
+      console.error('fixStreamUrl: 字符串替换也失败:', replaceError)
     }
     
     return url
@@ -1801,14 +2188,25 @@ let refreshInterval = null
 // 2. 智能调整：取消注释动态计算部分，会根据数据自动调整Y轴范围
 // 3. 混合方式：可以设置最小显示范围，避免数据较小时图表过于扁平
 
-onMounted(() => {
+onMounted(async () => {
   loadDashboardData()
 
   // 从localStorage加载自定义地图图层
   loadCustomMapLayer()
   
+  // 加载应用于首页的图层和相机数据
+  await loadHomePageLayer()
+  
   // 监听地图更新事件
   window.addEventListener('homePageMapUpdate', handleMapUpdate)
+  
+  // 监听窗口大小变化事件，更新地图尺寸
+  window.addEventListener('resize', handleResize)
+  
+  // 初始化地图尺寸（如果图片已加载）
+  nextTick(() => {
+    updateMapImageSize()
+  })
 
   // 每30秒刷新一次数据
   refreshInterval = setInterval(() => {
@@ -1848,6 +2246,9 @@ onUnmounted(() => {
   
   // 移除地图更新事件监听器
   window.removeEventListener('homePageMapUpdate', handleMapUpdate)
+  
+  // 移除窗口大小变化事件监听器
+  window.removeEventListener('resize', handleResize)
   
   // 清理地图拖拽事件监听器
   document.removeEventListener('mousemove', handleMouseMove)
@@ -3720,6 +4121,75 @@ onUnmounted(() => {
   animation: labelFloat 2s ease-in-out infinite;
 }
 
+/* 聚合数量标识 */
+.cluster-count {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.9), rgba(220, 38, 127, 1));
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  border: 2px solid rgba(0, 255, 255, 0.8);
+  box-shadow: 0 0 12px rgba(245, 108, 108, 0.8);
+  z-index: 10;
+  pointer-events: none;
+  text-shadow: 0 0 3px rgba(245, 108, 108, 0.8);
+}
+
+/* 聚合摄像头样式增强 */
+.map-camera-icon.clustered {
+  filter:
+    drop-shadow(0 0 12px rgba(245, 108, 108, 0.7))
+    drop-shadow(0 0 6px rgba(255, 255, 255, 0.4))
+    contrast(1.3)
+    brightness(1.25)
+    saturate(1.5);
+}
+
+.map-camera-icon.clustered:hover {
+  transform: scale(1.35);
+  filter:
+    drop-shadow(0 0 20px rgba(245, 108, 108, 1.0))
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.7))
+    contrast(1.4)
+    brightness(1.35)
+    saturate(1.6);
+  box-shadow: 0 0 25px rgba(245, 108, 108, 0.9);
+}
+
+/* 在线状态指示器 */
+.camera-online-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background: #00ff00;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+  animation: onlinePulse 2s ease-in-out infinite;
+  z-index: 1002;
+}
+
+@keyframes onlinePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
 
 /* 自定义弹窗样式 */
 .custom-modal-overlay {
@@ -3776,6 +4246,105 @@ onUnmounted(() => {
   text-shadow: 
     0 0 15px rgba(0, 212, 255, 0.8),
     0 0 10px rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* 聚合摄像头信息徽章 */
+.cluster-info-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.8), rgba(220, 38, 127, 0.9));
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 10px rgba(245, 108, 108, 0.6);
+  text-shadow: 0 0 3px rgba(245, 108, 108, 0.8);
+}
+
+/* 切换中指示器 */
+.switching-indicator {
+  display: inline-block;
+  animation: rotate 1s linear infinite;
+  font-size: 16px;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 聚合摄像头切换按钮容器 */
+.cluster-nav-buttons {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  transform: translateY(-50%);
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* 聚合摄像头切换按钮 */
+.cluster-nav-btn {
+  width: 48px;
+  height: 48px;
+  background: rgba(0, 20, 40, 0.85);
+  border: 2px solid rgba(0, 212, 255, 0.6);
+  border-radius: 50%;
+  color: #00d4ff;
+  font-size: 32px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+}
+
+.cluster-nav-btn:hover:not(:disabled) {
+  background: rgba(0, 212, 255, 0.2);
+  border-color: #00d4ff;
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+}
+
+.cluster-nav-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.cluster-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: rgba(100, 100, 100, 0.5);
+  color: rgba(100, 100, 100, 0.8);
+}
+
+.cluster-nav-btn .nav-arrow {
+  line-height: 1;
+}
+
+.cluster-nav-btn.prev-btn {
+  margin-left: 0;
+}
+
+.cluster-nav-btn.next-btn {
+  margin-right: 0;
 }
 
 .custom-modal-close {

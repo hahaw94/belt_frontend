@@ -1624,45 +1624,15 @@ onUnmounted(() => {
 .tech-page-container {
   position: relative;
   width: 100%;
-  min-height: 100vh;
-  max-height: 100vh;
+  min-height: 100%;
+  height: auto;
   padding: 20px;
-  padding-bottom: 40px;
+  padding-bottom: 100px;
   background: transparent;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: visible;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-}
-
-.tech-page-container::-webkit-scrollbar {
-  width: 8px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.tech-page-container::-webkit-scrollbar-track {
-  background: rgba(0, 255, 255, 0.05);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.tech-page-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.3) 0%, 
-    rgba(0, 200, 255, 0.5) 50%, 
-    rgba(0, 255, 255, 0.3) 100%);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
-}
-
-.tech-page-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.5) 0%, 
-    rgba(0, 200, 255, 0.7) 50%, 
-    rgba(0, 255, 255, 0.5) 100%);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
 }
 
 .tech-background {
@@ -1945,7 +1915,9 @@ onUnmounted(() => {
 
 .basic-management-container {
   padding: 20px;
-  min-height: calc(100vh - 120px);
+  padding-bottom: 60px;
+  min-height: 100%;
+  height: auto;
   display: flex;
   flex-direction: column;
 }
@@ -1961,25 +1933,24 @@ onUnmounted(() => {
 }
 
 .management-tabs {
-  flex: 1;
   display: flex;
   flex-direction: column;
   border: none !important;
   overflow: visible;
+  height: auto;
 }
 
 .management-tabs :deep(.el-tabs__content) {
-  flex: 1;
   padding: 20px 0 0 0;
   display: flex;
   flex-direction: column;
   border: none !important;
   overflow: visible;
+  height: auto;
   min-height: auto;
 }
 
 .management-tabs :deep(.el-tab-pane) {
-  flex: 1;
   display: flex;
   flex-direction: column;
   border: none !important;

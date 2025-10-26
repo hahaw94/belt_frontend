@@ -80,35 +80,38 @@ export const deviceApi = {
   },
 
   // ==================== 智能板卡管理 ====================
+  // 注意：后端API路径已更新
+  // - 板卡基础管理：/api/v1/access/boards/*
+  // - 推流控制：/api/v1/monitor/boards/*
 
   // 获取板卡设备列表
   getBoardList(params) {
-    return api.get('/api/v1/algorithm/boards', { params })
+    return api.get('/api/v1/access/boards', { params })
   },
 
   // 创建板卡设备
   createBoard(data) {
-    return api.post('/api/v1/algorithm/boards', data)
+    return api.post('/api/v1/access/boards', data)
   },
 
   // 获取板卡设备详情
   getBoardDetail(boardId) {
-    return api.get(`/api/v1/algorithm/boards/${boardId}`)
+    return api.get(`/api/v1/access/boards/${boardId}`)
   },
 
   // 更新板卡设备
   updateBoard(boardId, data) {
-    return api.put(`/api/v1/algorithm/boards/${boardId}`, data)
+    return api.put(`/api/v1/access/boards/${boardId}`, data)
   },
 
   // 删除板卡设备
   deleteBoard(boardId) {
-    return api.delete(`/api/v1/algorithm/boards/${boardId}`)
+    return api.delete(`/api/v1/access/boards/${boardId}`)
   },
 
   // 批量创建板卡设备
   batchCreateBoards(data) {
-    return api.post('/api/v1/algorithm/boards/batch', data)
+    return api.post('/api/v1/access/boards/batch', data)
   },
 
   // 上传板卡绑定信息
@@ -118,63 +121,63 @@ export const deviceApi = {
     if (description) {
       formData.append('description', description)
     }
-    return api.upload('/api/v1/algorithm/boards/upload-binding', formData)
+    return api.upload('/api/v1/access/boards/upload-binding', formData)
   },
 
   // 板卡固件升级
   upgradeBoardFirmware(boardId, firmwareFile) {
     const formData = new FormData()
     formData.append('firmware', firmwareFile)
-    return api.upload(`/api/v1/algorithm/boards/${boardId}/upgrade`, formData)
+    return api.upload(`/api/v1/access/boards/${boardId}/upgrade`, formData)
   },
 
   // 获取板卡升级状态
   getBoardUpgradeStatus(boardId) {
-    return api.get(`/api/v1/algorithm/boards/${boardId}/upgrade/status`)
+    return api.get(`/api/v1/access/boards/${boardId}/upgrade/status`)
   },
 
   // 获取板卡统计信息
   getBoardStats() {
-    return api.get('/api/v1/algorithm/boards/stats')
+    return api.get('/api/v1/access/boards/stats')
   },
 
   // 测试板卡连接
   testBoardConnection(boardId) {
-    return api.post(`/api/v1/algorithm/boards/${boardId}/test-connection`)
+    return api.post(`/api/v1/access/boards/${boardId}/test-connection`)
   },
 
   // 绑定板卡到摄像机
   bindBoardToCamera(boardId, data) {
-    return api.post(`/api/v1/algorithm/boards/${boardId}/cameras`, data)
+    return api.post(`/api/v1/access/boards/${boardId}/cameras`, data)
   },
 
   // 解绑板卡摄像机
   unbindBoardFromCamera(boardId, cameraId) {
-    return api.delete(`/api/v1/algorithm/boards/${boardId}/cameras/${cameraId}`)
+    return api.delete(`/api/v1/access/boards/${boardId}/cameras/${cameraId}`)
   },
 
   // 获取板卡关联的摄像机
   getBoardCameras(boardId) {
-    return api.get(`/api/v1/algorithm/boards/${boardId}/cameras`)
+    return api.get(`/api/v1/access/boards/${boardId}/cameras`)
   },
 
-  // 开始板卡推流
+  // 开始板卡推流 - 使用新的 /monitor 路径
   startBoardStream(boardId) {
-    return api.post(`/api/v1/algorithm/boards/${boardId}/stream/start`)
+    return api.post(`/api/v1/monitor/boards/${boardId}/stream/start`)
   },
 
-  // 停止板卡推流
+  // 停止板卡推流 - 使用新的 /monitor 路径
   stopBoardStream(boardId) {
-    return api.post(`/api/v1/algorithm/boards/${boardId}/stream/stop`)
+    return api.post(`/api/v1/monitor/boards/${boardId}/stream/stop`)
   },
 
-  // 获取板卡流信息
+  // 获取板卡流信息 - 使用新的 /monitor 路径
   getBoardStreamInfo(boardId) {
-    return api.get(`/api/v1/algorithm/boards/${boardId}/stream`)
+    return api.get(`/api/v1/monitor/boards/${boardId}/stream`)
   },
 
   // 获取所有算法流信息
   getAlgorithmStreams() {
-    return api.get('/api/v1/algorithm/streams')
+    return api.get('/api/v1/monitor/streams')
   }
 }

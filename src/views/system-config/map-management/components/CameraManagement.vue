@@ -44,8 +44,7 @@
 
       <!-- 操作按钮 -->
       <div class="action-buttons">
-        <el-button type="primary" class="tech-button" :icon="Plus" @click="showCreateDialog">新建相机</el-button>
-        <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshCameras">刷新</el-button>
+        <el-button type="primary" class="tech-button" :icon="Refresh" @click="syncWVPCameras" :loading="syncing">同步WVP摄像头</el-button>
       </div>
     </div>
 
@@ -59,6 +58,13 @@
         class="camera-table"
         :scroll-x="true"
       >
+      <template #empty>
+        <div class="empty-state">
+          <div class="empty-icon">📹</div>
+          <div class="empty-text">暂无摄像头数据</div>
+          <div class="empty-hint">请点击上方"同步WVP摄像头"按钮同步数据</div>
+        </div>
+      </template>
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="camera_code" label="相机编码" min-width="120" />
       <el-table-column prop="camera_name" label="相机名称" min-width="150" />
@@ -83,6 +89,14 @@
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="绑定图层" min-width="150" show-overflow-tooltip>
+        <template #default="scope">
+          <span v-if="scope.row.bound_layers && scope.row.bound_layers.length > 0">
+            {{ scope.row.bound_layers.map(l => l.layer_name).join(', ') }}
+          </span>
+          <span v-else style="color: #909399;">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" width="80">
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
@@ -95,19 +109,27 @@
           {{ formatDate(scope.row.create_time) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220">
+      <el-table-column label="操作" width="180">
         <template #default="scope">
           <div class="action-buttons-container">
             <el-button type="text" size="small" class="tech-button-text" @click="viewCamera(scope.row)">查看</el-button>
-            <el-button type="text" size="small" class="tech-button-text" @click="editCamera(scope.row)">编辑</el-button>
             <el-button 
+              v-if="scope.row.is_bound === 1"
               type="text" 
               size="small" 
-              class="tech-button-text tech-button-danger"
-              @click="deleteCamera(scope.row)" 
-              :disabled="scope.row.is_bound === 1"
+              class="tech-button-text tech-button-warning"
+              @click="showUnbindDialog(scope.row)"
             >
-              删除
+              解绑
+            </el-button>
+            <el-button 
+              v-else
+              type="text" 
+              size="small" 
+              class="tech-button-text"
+              @click="showBindDialog(scope.row)"
+            >
+              绑定
             </el-button>
           </div>
         </template>
@@ -128,78 +150,6 @@
       />
     </div>
 
-    <!-- 新建/编辑相机对话框 -->
-    <el-dialog
-      :title="dialogForm.id ? '编辑相机' : '新建相机'"
-      v-model="dialogVisible"
-      width="600px"
-      @close="resetDialog"
-    >
-      <el-form
-        ref="dialogFormRef"
-        :model="dialogForm"
-        :rules="dialogRules"
-        label-width="100px"
-      >
-        <el-form-item label="相机编码" prop="camera_code">
-          <el-input 
-            v-model="dialogForm.camera_code" 
-            placeholder="请输入相机编码"
-            :disabled="!!dialogForm.id"
-          />
-        </el-form-item>
-        <el-form-item label="相机名称" prop="camera_name">
-          <el-input v-model="dialogForm.camera_name" placeholder="请输入相机名称" />
-        </el-form-item>
-        <el-form-item label="IP地址" prop="ip_address">
-          <el-input v-model="dialogForm.ip_address" placeholder="请输入IP地址" />
-        </el-form-item>
-        <el-form-item label="端口" prop="port">
-          <el-input
-            v-model="dialogForm.port"
-            type="number"
-            placeholder="请输入端口"
-            style="width: 100%;"
-            min="1"
-            max="65535"
-          />
-        </el-form-item>
-        <el-form-item label="协议" prop="protocol">
-          <el-select v-model="dialogForm.protocol" placeholder="请选择协议" style="width: 100%;" class="tech-select-protocol">
-            <el-option label="RTSP" value="RTSP" />
-            <el-option label="HTTP" value="HTTP" />
-            <el-option label="GB28181" value="GB28181" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="dialogForm.username" placeholder="请输入用户名（可选）" />
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input
-            v-model="dialogForm.password"
-            type="password"
-            placeholder="请输入密码（可选）"
-            show-password
-          />
-        </el-form-item>
-        <el-form-item label="位置描述" prop="location">
-          <el-input v-model="dialogForm.location" placeholder="请输入位置描述（可选）" />
-        </el-form-item>
-        <el-form-item v-if="dialogForm.id" label="状态" prop="status">
-          <el-radio-group v-model="dialogForm.status">
-            <el-radio :label="1">启用</el-radio>
-            <el-radio :label="0">禁用</el-radio>
-          </el-radio-group>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button class="tech-button-secondary" @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" class="tech-button" @click="submitDialog" :loading="submitting">确认</el-button>
-        </span>
-      </template>
-    </el-dialog>
-
     <!-- 相机详情对话框 -->
     <el-dialog
       title="相机详情"
@@ -208,12 +158,10 @@
     >
       <div v-if="currentCamera" class="camera-detail">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="相机编码">{{ currentCamera.camera_code }}</el-descriptions-item>
-          <el-descriptions-item label="相机名称">{{ currentCamera.camera_name }}</el-descriptions-item>
-          <el-descriptions-item label="IP地址">{{ currentCamera.ip_address }}</el-descriptions-item>
-          <el-descriptions-item label="端口">{{ currentCamera.port }}</el-descriptions-item>
+          <el-descriptions-item label="通道编码">{{ currentCamera.camera_code }}</el-descriptions-item>
+          <el-descriptions-item label="通道名称">{{ currentCamera.camera_name }}</el-descriptions-item>
+          <el-descriptions-item label="来源">WVP平台</el-descriptions-item>
           <el-descriptions-item label="协议">{{ currentCamera.protocol }}</el-descriptions-item>
-          <el-descriptions-item label="用户名">{{ currentCamera.username || '未设置' }}</el-descriptions-item>
           <el-descriptions-item label="在线状态">
             <el-tag :type="currentCamera.is_online === 1 ? 'success' : 'danger'">
               {{ currentCamera.is_online === 1 ? '在线' : '离线' }}
@@ -224,18 +172,100 @@
               {{ currentCamera.is_bound === 1 ? '已绑定' : '未绑定' }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="currentCamera.status === 1 ? 'success' : 'danger'">
-              {{ currentCamera.status === 1 ? '启用' : '禁用' }}
-            </el-tag>
+          <el-descriptions-item label="绑定图层" :span="2">
+            <span v-if="currentCamera.bound_layers && currentCamera.bound_layers.length > 0">
+              {{ currentCamera.bound_layers.map(l => l.layer_name).join(', ') }}
+            </span>
+            <span v-else style="color: #909399;">暂未绑定</span>
           </el-descriptions-item>
-          <el-descriptions-item label="最后心跳">
-            {{ formatDate(currentCamera.last_heartbeat) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="创建时间" :span="2">{{ formatDate(currentCamera.create_time) }}</el-descriptions-item>
-          <el-descriptions-item label="位置描述" :span="2">{{ currentCamera.location || '暂无描述' }}</el-descriptions-item>
+          <el-descriptions-item label="厂商信息" :span="2">{{ currentCamera.location || '暂无信息' }}</el-descriptions-item>
         </el-descriptions>
       </div>
+    </el-dialog>
+
+    <!-- 绑定相机到图层对话框 -->
+    <el-dialog
+      title="绑定相机到图层"
+      v-model="bindDialogVisible"
+      width="500px"
+      @close="resetBindDialog"
+    >
+      <el-form
+        ref="bindFormRef"
+        :model="bindForm"
+        :rules="bindRules"
+        label-width="100px"
+      >
+        <el-form-item label="相机名称">
+          <el-input v-model="bindForm.camera_name" disabled />
+        </el-form-item>
+        <el-form-item label="相机编码">
+          <el-input v-model="bindForm.camera_code" disabled />
+        </el-form-item>
+        <el-form-item label="选择图层" prop="layer_id">
+          <el-select v-model="bindForm.layer_id" placeholder="请选择图层" style="width: 100%;" class="tech-select">
+            <el-option 
+              v-for="layer in availableLayers" 
+              :key="layer.id" 
+              :label="`${layer.layer_name} (${layer.camera_count}个摄像机)`" 
+              :value="layer.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="X坐标" prop="position_x">
+          <el-input
+            v-model="bindForm.position_x"
+            type="number"
+            placeholder="图层上的X坐标"
+            min="0"
+          />
+        </el-form-item>
+        <el-form-item label="Y坐标" prop="position_y">
+          <el-input
+            v-model="bindForm.position_y"
+            type="number"
+            placeholder="图层上的Y坐标"
+            min="0"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button class="tech-button-secondary" @click="bindDialogVisible = false">取消</el-button>
+          <el-button type="primary" class="tech-button" @click="submitBindDialog" :loading="binding">确认绑定</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 解绑相机对话框 -->
+    <el-dialog
+      title="解绑相机"
+      v-model="unbindDialogVisible"
+      width="500px"
+    >
+      <el-alert
+        type="warning"
+        :closable="false"
+        style="margin-bottom: 20px;"
+      >
+        <template #default>
+          <div>确定要解绑以下相机吗？</div>
+          <div style="margin-top: 10px;">
+            <strong>相机名称：</strong>{{ unbindCamera?.camera_name }}<br>
+            <strong>相机编码：</strong>{{ unbindCamera?.camera_code }}<br>
+            <strong>绑定图层：</strong>
+            <span v-if="unbindCamera?.bound_layers && unbindCamera.bound_layers.length > 0">
+              {{ unbindCamera.bound_layers.map(l => l.layer_name).join(', ') }}
+            </span>
+      </div>
+        </template>
+      </el-alert>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button class="tech-button-secondary" @click="unbindDialogVisible = false">取消</el-button>
+          <el-button type="danger" class="tech-button-danger" @click="confirmUnbind" :loading="unbinding">确认解绑</el-button>
+        </span>
+      </template>
     </el-dialog>
   </div>
 </template>
@@ -243,13 +273,14 @@
 <script>
 import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Plus, Refresh } from '@element-plus/icons-vue'
+import { Search, Refresh } from '@element-plus/icons-vue'
 import { 
-  getCameraList, 
-  createCamera, 
-  updateCamera, 
-  deleteCamera as deleteCameraApi,
-  getCameraById 
+  syncWVPChannels,
+  getWVPChannels,
+  getLayerList,
+  getLayerCameras,
+  bindWVPChannelToLayer,
+  unbindWVPChannelFromLayer
 } from '@/api/map'
 
 export default {
@@ -260,12 +291,17 @@ export default {
   setup() {
     // 响应式数据
     const loading = ref(false)
-    const submitting = ref(false)
+    const syncing = ref(false)
+    const binding = ref(false)
+    const unbinding = ref(false)
     const cameraList = ref([])
     const currentCamera = ref(null)
-    const dialogVisible = ref(false)
     const detailVisible = ref(false)
-    const dialogFormRef = ref(null)
+    const bindDialogVisible = ref(false)
+    const unbindDialogVisible = ref(false)
+    const bindFormRef = ref(null)
+    const availableLayers = ref([])
+    const unbindCamera = ref(null)
 
     const searchForm = reactive({
       camera_name: '',
@@ -279,90 +315,159 @@ export default {
       total: 0
     })
 
-    const dialogForm = reactive({
-      id: null,
-      camera_code: '',
+    const bindForm = reactive({
+      camera_id: null,
       camera_name: '',
-      ip_address: '',
-      port: 554,
-      protocol: 'RTSP',
-      username: '',
-      password: '',
-      location: '',
-      status: 1
+      camera_code: '',
+      layer_id: null,
+      position_x: 0,
+      position_y: 0
     })
 
-    // 验证IP地址的正则表达式
-    const validateIP = (rule, value, callback) => {
-      if (!value) {
-        callback(new Error('请输入IP地址'))
-        return
-      }
-      const ipPattern = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
-      if (!ipPattern.test(value)) {
-        callback(new Error('请输入有效的IP地址'))
-      } else {
-        callback()
-      }
-    }
-
-    // 验证端口号
-    const validatePort = (rule, value, callback) => {
-      if (!value) {
-        callback(new Error('请输入端口'))
-        return
-      }
-      const port = parseInt(value)
-      if (isNaN(port) || port < 1 || port > 65535) {
-        callback(new Error('端口范围 1-65535'))
-      } else {
-        callback()
-      }
-    }
-
-    const dialogRules = {
-      camera_code: [
-        { required: true, message: '请输入相机编码', trigger: 'blur' },
-        { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
+    const bindRules = {
+      layer_id: [
+        { required: true, message: '请选择图层', trigger: 'change' }
       ],
-      camera_name: [
-        { required: true, message: '请输入相机名称', trigger: 'blur' },
-        { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
+      position_x: [
+        { required: true, message: '请输入X坐标', trigger: 'blur' }
       ],
-      ip_address: [
-        { required: true, validator: validateIP, trigger: 'blur' }
-      ],
-      port: [
-        { required: true, validator: validatePort, trigger: 'blur' }
-      ],
-      protocol: [
-        { required: true, message: '请选择协议', trigger: 'change' }
+      position_y: [
+        { required: true, message: '请输入Y坐标', trigger: 'blur' }
       ]
     }
 
-    // 获取相机列表
+    // 获取相机列表（从WVP通道获取）
     const loadCameras = async () => {
       loading.value = true
       try {
-        const params = {
-          page: pagination.page,
-          size: pagination.size,
-          ...searchForm
-        }
-        // 移除空值
-        Object.keys(params).forEach(key => {
-          if (params[key] === '' || params[key] === null) {
-            delete params[key]
+        console.log('开始加载WVP摄像头列表...')
+        // 直接从WVP通道列表获取
+        const response = await getWVPChannels()
+        console.log('WVP通道完整响应:', response)
+        console.log('response.data类型:', typeof response.data)
+        console.log('response.data内容:', response.data)
+        
+        // 处理不同的响应格式
+        let cameras = []
+        if (response.data) {
+          // 如果data是数组，直接使用
+          if (Array.isArray(response.data)) {
+            cameras = response.data
           }
-        })
-
-        const response = await getCameraList(params)
-        if (response.code === 200) {
-          // 确保 cameraList 总是一个数组
-          cameraList.value = Array.isArray(response.data?.list) ? response.data.list : []
-          pagination.total = response.data?.total || 0
+          // 如果data是对象且包含list字段
+          else if (response.data.list && Array.isArray(response.data.list)) {
+            cameras = response.data.list
+          }
+          // 如果data是对象但不是数组，可能整个response就是数据
+          else if (typeof response.data === 'object') {
+            // 尝试其他可能的字段名
+            cameras = response.data.data || response.data.items || []
+          }
         }
+        // 如果response本身就是数组
+        else if (Array.isArray(response)) {
+          cameras = response
+        }
+        
+        console.log('解析后的摄像头数组:', cameras)
+        console.log('获取到的WVP通道数量:', cameras.length)
+        
+        if (cameras.length === 0) {
+          console.warn('WVP通道列表为空，请先同步摄像头')
+          cameraList.value = []
+          pagination.total = 0
+          loading.value = false
+          return
+        }
+        
+        // 转换WVP通道数据为相机格式
+        cameras = cameras.map(channel => ({
+          id: channel.id,
+          camera_code: channel.channel_id || channel.channelId,
+          camera_name: channel.channel_name || channel.name || channel.channelName,
+          ip_address: '-',
+          port: '-',
+          protocol: 'WVP',
+          is_online: channel.online === 1 || channel.online === '1' || channel.online === 'ONLINE' ? 1 : 0,
+          is_bound: 0, // 初始假设未绑定
+          status: 1,
+          create_time: channel.create_time || new Date().toISOString(),
+          location: channel.manufacturer || '-',
+          bound_layers: []
+        }))
+        
+        console.log('转换后的相机数量:', cameras.length)
+        
+        // 获取所有图层及其绑定的摄像机，构建映射
+        try {
+          const layersResponse = await getLayerList({ page: 1, size: 100 })
+          if (layersResponse.code === 200) {
+            const layers = layersResponse.data?.list || []
+            
+            // 构建camera_code到图层的映射
+            const cameraToLayersMap = {}
+            
+            // 为每个图层获取其摄像机
+            for (const layer of layers) {
+              try {
+                const layerCamerasResponse = await getLayerCameras(layer.id)
+                if (layerCamerasResponse.code === 200) {
+                  const layerCameras = layerCamerasResponse.data || []
+                  layerCameras.forEach(cam => {
+                    const cameraCode = cam.camera_code || cam.channel_id
+                    if (!cameraToLayersMap[cameraCode]) {
+                      cameraToLayersMap[cameraCode] = []
+                    }
+                    cameraToLayersMap[cameraCode].push({
+                      layer_id: layer.id,
+                      layer_name: layer.layer_name
+                    })
+                  })
+                }
+              } catch (err) {
+                console.error(`获取图层 ${layer.id} 的摄像机失败:`, err)
+              }
+            }
+            
+            // 将绑定信息添加到相机列表
+            cameras = cameras.map(camera => {
+              const boundLayers = cameraToLayersMap[camera.camera_code] || []
+              return {
+                ...camera,
+                is_bound: boundLayers.length > 0 ? 1 : 0,
+                bound_layers: boundLayers
+              }
+            })
+          }
+        } catch (error) {
+          console.error('获取图层绑定信息失败:', error)
+        }
+        
+        // 应用搜索过滤
+        let filteredCameras = cameras
+        if (searchForm.camera_name) {
+          filteredCameras = filteredCameras.filter(cam => 
+            cam.camera_name.toLowerCase().includes(searchForm.camera_name.toLowerCase())
+          )
+        }
+        if (searchForm.status !== null && searchForm.status !== '') {
+          filteredCameras = filteredCameras.filter(cam => cam.status === searchForm.status)
+        }
+        if (searchForm.is_bound !== null && searchForm.is_bound !== '') {
+          filteredCameras = filteredCameras.filter(cam => cam.is_bound === searchForm.is_bound)
+        }
+        
+        console.log('过滤后的相机数量:', filteredCameras.length)
+        
+        // 应用分页
+        pagination.total = filteredCameras.length
+        const start = (pagination.page - 1) * pagination.size
+        const end = start + pagination.size
+        cameraList.value = filteredCameras.slice(start, end)
+        
+        console.log('最终显示的相机数量:', cameraList.value.length)
       } catch (error) {
+        console.error('获取相机列表失败:', error)
         ElMessage.error('获取相机列表失败: ' + (error.message || '未知错误'))
       } finally {
         loading.value = false
@@ -392,142 +497,150 @@ export default {
       loadCameras()
     }
 
-    // 显示新建对话框
-    const showCreateDialog = () => {
-      resetDialog()
-      dialogVisible.value = true
-    }
-
-    // 编辑相机
-    const editCamera = (camera) => {
-      dialogForm.id = camera.id
-      dialogForm.camera_code = camera.camera_code
-      dialogForm.camera_name = camera.camera_name
-      dialogForm.ip_address = camera.ip_address
-      dialogForm.port = camera.port
-      dialogForm.protocol = camera.protocol
-      dialogForm.username = camera.username || ''
-      dialogForm.password = '' // 不显示原密码
-      dialogForm.location = camera.location || ''
-      dialogForm.status = camera.status
-      dialogVisible.value = true
-    }
-
     // 查看相机详情
-    const viewCamera = async (camera) => {
-      try {
-        const response = await getCameraById(camera.id)
-        if (response.code === 200) {
-          currentCamera.value = response.data
-          detailVisible.value = true
-        }
-      } catch (error) {
-        ElMessage.error('获取相机详情失败: ' + (error.message || '未知错误'))
-      }
-    }
-
-    // 删除相机
-    const deleteCamera = (camera) => {
-      if (camera.is_bound === 1) {
-        ElMessage.warning('相机已绑定图层，无法删除')
-        return
-      }
-
-      ElMessageBox.confirm(`确定要删除相机"${camera.camera_name}"吗？`, '删除确认', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(async () => {
-        try {
-          await deleteCameraApi(camera.id)
-          ElMessage.success('删除成功')
-          loadCameras()
-        } catch (error) {
-          ElMessage.error('删除失败: ' + (error.message || '未知错误'))
-        }
-      })
-    }
-
-    // 提交对话框
-    const submitDialog = async () => {
-      try {
-        await dialogFormRef.value.validate()
-        submitting.value = true
-
-        if (dialogForm.id) {
-          // 编辑相机
-          const data = {
-            camera_name: dialogForm.camera_name,
-            ip_address: dialogForm.ip_address,
-            port: parseInt(dialogForm.port, 10),
-            protocol: dialogForm.protocol,
-            username: dialogForm.username || null,
-            password: dialogForm.password || null,
-            location: dialogForm.location || null,
-            status: dialogForm.status
-          }
-          // 移除空值，但保留password字段（即使为空也发送）
-          Object.keys(data).forEach(key => {
-            if (data[key] === '' && key !== 'password') {
-              data[key] = null
-            }
-          })
-
-          await updateCamera(dialogForm.id, data)
-          ElMessage.success('更新成功')
-        } else {
-          // 新建相机
-          const data = {
-            camera_code: dialogForm.camera_code,
-            camera_name: dialogForm.camera_name,
-            ip_address: dialogForm.ip_address,
-            port: parseInt(dialogForm.port, 10),
-            protocol: dialogForm.protocol,
-            username: dialogForm.username || null,
-            password: dialogForm.password || null,
-            location: dialogForm.location || null
-          }
-          // 移除空值，但保留password字段（即使为空也发送）
-          Object.keys(data).forEach(key => {
-            if (data[key] === '' && key !== 'password') {
-              data[key] = null
-            }
-          })
-
-          await createCamera(data)
-          ElMessage.success('创建成功')
-        }
-
-        dialogVisible.value = false
-        loadCameras()
-      } catch (error) {
-        ElMessage.error('操作失败: ' + (error.message || '未知错误'))
-      } finally {
-        submitting.value = false
-      }
-    }
-
-    // 重置对话框
-    const resetDialog = () => {
-      dialogForm.id = null
-      dialogForm.camera_code = ''
-      dialogForm.camera_name = ''
-      dialogForm.ip_address = ''
-      dialogForm.port = 554
-      dialogForm.protocol = 'RTSP'
-      dialogForm.username = ''
-      dialogForm.password = ''
-      dialogForm.location = ''
-      dialogForm.status = 1
-      if (dialogFormRef.value) {
-        dialogFormRef.value.resetFields()
-      }
+    const viewCamera = (camera) => {
+      currentCamera.value = camera
+      detailVisible.value = true
     }
 
     // 格式化日期
     const formatDate = (dateString) => {
       if (!dateString) return '-'
       return new Date(dateString).toLocaleString('zh-CN')
+    }
+
+    // 同步WVP摄像头
+    const syncWVPCameras = async () => {
+      try {
+        await ElMessageBox.confirm(
+          '确定要从WVP同步摄像头吗？\n\n此操作将：\n• 从所有WVP直连设备同步通道信息\n• 保存到本地数据库\n• 更新摄像头状态\n• 可能需要几分钟时间',
+          '同步确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'info'
+          }
+        )
+        
+        syncing.value = true
+        const response = await syncWVPChannels()
+        
+        let message = `${response.message || '同步完成'}\n\n• 设备数量: ${response.device_count || response.data?.device_count || 0}\n• 通道数量: ${response.channel_count || response.data?.channel_count || 0}`
+        
+        if (response.errors && response.errors.length > 0) {
+          message += '\n\n错误详情:\n' + response.errors.join('\n')
+          ElMessage.warning(message)
+        } else {
+          ElMessage.success(message)
+        }
+        
+        // 重新加载摄像头列表
+        await loadCameras()
+      } catch (error) {
+        if (error !== 'cancel') {
+          ElMessage.error('同步摄像头失败: ' + (error.message || '未知错误'))
+        }
+      } finally {
+        syncing.value = false
+      }
+    }
+
+    // 加载可用图层列表
+    const loadAvailableLayers = async () => {
+      try {
+        const response = await getLayerList({ page: 1, size: 100, status: 1 })
+        if (response.code === 200) {
+          availableLayers.value = Array.isArray(response.data?.list) ? response.data.list : []
+        }
+        } catch (error) {
+        console.error('获取图层列表失败:', error)
+      }
+    }
+
+    // 显示绑定对话框
+    const showBindDialog = async (camera) => {
+      bindForm.camera_id = camera.id
+      bindForm.camera_name = camera.camera_name
+      bindForm.camera_code = camera.camera_code
+      bindForm.layer_id = null
+      bindForm.position_x = 0
+      bindForm.position_y = 0
+      
+      await loadAvailableLayers()
+      bindDialogVisible.value = true
+    }
+
+    // 重置绑定对话框
+    const resetBindDialog = () => {
+      bindForm.camera_id = null
+      bindForm.camera_name = ''
+      bindForm.camera_code = ''
+      bindForm.layer_id = null
+      bindForm.position_x = 0
+      bindForm.position_y = 0
+      if (bindFormRef.value) {
+        bindFormRef.value.resetFields()
+      }
+    }
+
+    // 提交绑定对话框
+    const submitBindDialog = async () => {
+      try {
+        await bindFormRef.value.validate()
+        binding.value = true
+
+        await bindWVPChannelToLayer(bindForm.layer_id, {
+          channel_id: bindForm.camera_code,
+          position_x: parseInt(bindForm.position_x, 10),
+          position_y: parseInt(bindForm.position_y, 10)
+        })
+
+        ElMessage.success('绑定成功')
+        bindDialogVisible.value = false
+        loadCameras()
+        
+        // 发送数据更新事件
+        window.dispatchEvent(new CustomEvent('camera-data-updated', {
+          detail: { action: 'bind', camera_code: bindForm.camera_code }
+        }))
+      } catch (error) {
+        ElMessage.error('绑定失败: ' + (error.message || '未知错误'))
+      } finally {
+        binding.value = false
+      }
+    }
+
+    // 显示解绑对话框
+    const showUnbindDialog = (camera) => {
+      unbindCamera.value = camera
+      unbindDialogVisible.value = true
+    }
+
+    // 确认解绑
+    const confirmUnbind = async () => {
+      try {
+        unbinding.value = true
+        
+        // 解绑所有图层
+        if (unbindCamera.value.bound_layers && unbindCamera.value.bound_layers.length > 0) {
+          for (const layer of unbindCamera.value.bound_layers) {
+            await unbindWVPChannelFromLayer(layer.layer_id, unbindCamera.value.camera_code)
+          }
+        }
+
+        ElMessage.success('解绑成功')
+        unbindDialogVisible.value = false
+        loadCameras()
+        
+        // 发送数据更新事件
+        window.dispatchEvent(new CustomEvent('camera-data-updated', {
+          detail: { action: 'unbind', camera_code: unbindCamera.value.camera_code }
+        }))
+      } catch (error) {
+        ElMessage.error('解绑失败: ' + (error.message || '未知错误'))
+      } finally {
+        unbinding.value = false
+      }
     }
 
     // 监听相机数据更新事件
@@ -564,29 +677,34 @@ export default {
 
     return {
       loading,
-      submitting,
+      syncing,
+      binding,
+      unbinding,
       cameraList,
       currentCamera,
-      dialogVisible,
       detailVisible,
-      dialogFormRef,
+      bindDialogVisible,
+      unbindDialogVisible,
+      bindFormRef,
       searchForm,
       pagination,
-      dialogForm,
-      dialogRules,
+      bindForm,
+      bindRules,
+      availableLayers,
+      unbindCamera,
       loadCameras,
       handleSearch,
       refreshCameras,
       handleSizeChange,
       handleCurrentChange,
-      showCreateDialog,
-      editCamera,
       viewCamera,
-      deleteCamera,
-      submitDialog,
-      resetDialog,
       formatDate,
-      Plus,
+      syncWVPCameras,
+      showBindDialog,
+      resetBindDialog,
+      submitBindDialog,
+      showUnbindDialog,
+      confirmUnbind,
       Refresh
     }
   }
@@ -1298,4 +1416,110 @@ export default {
   color: #00ffff !important;
   font-weight: bold !important;
 }
+
+/* 科技感按钮样式 - Success */
+.tech-button-success {
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.2) 0%, rgba(103, 194, 58, 0.4) 100%) !important;
+  border: 1px solid rgba(103, 194, 58, 0.5) !important;
+  color: #67c23a !important;
+  text-shadow: 0 0 5px rgba(103, 194, 58, 0.5) !important;
+  box-shadow: 0 0 10px rgba(103, 194, 58, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.tech-button-success:hover {
+  background: linear-gradient(135deg, rgba(103, 194, 58, 0.3) 0%, rgba(103, 194, 58, 0.5) 100%) !important;
+  border-color: rgba(103, 194, 58, 0.8) !important;
+  box-shadow: 0 0 15px rgba(103, 194, 58, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+/* 文本按钮样式 - Warning */
+.tech-button-text.tech-button-warning {
+  color: #e6a23c !important;
+}
+
+.tech-button-text.tech-button-warning:hover {
+  color: #ffaa00 !important;
+  text-shadow: 0 0 8px rgba(230, 162, 60, 0.5) !important;
+}
+
+/* Danger 按钮样式 */
+.tech-button-danger {
+  background: linear-gradient(135deg, rgba(255, 82, 82, 0.2) 0%, rgba(255, 82, 82, 0.4) 100%) !important;
+  border: 1px solid rgba(255, 82, 82, 0.5) !important;
+  color: #ff5252 !important;
+  text-shadow: 0 0 5px rgba(255, 82, 82, 0.5) !important;
+  box-shadow: 0 0 10px rgba(255, 82, 82, 0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.tech-button-danger:hover {
+  background: linear-gradient(135deg, rgba(255, 82, 82, 0.3) 0%, rgba(255, 82, 82, 0.5) 100%) !important;
+  border-color: rgba(255, 82, 82, 0.8) !important;
+  box-shadow: 0 0 15px rgba(255, 82, 82, 0.4) !important;
+  transform: translateY(-2px);
+}
+
+/* 对话框样式优化 */
+:deep(.el-dialog) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+:deep(.el-dialog__header) {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-dialog__body) {
+  color: #ffffff !important;
+}
+
+/* Alert组件样式 */
+:deep(.el-alert) {
+  background: rgba(0, 20, 40, 0.8) !important;
+  border: 1px solid rgba(230, 162, 60, 0.3) !important;
+}
+
+:deep(.el-alert--warning) {
+  border-color: rgba(230, 162, 60, 0.5) !important;
+}
+
+:deep(.el-alert__content) {
+  color: #ffffff !important;
+}
+
+/* 空状态样式 */
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.empty-icon {
+  font-size: 64px;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.empty-hint {
+  font-size: 14px;
+  color: rgba(0, 255, 255, 0.6);
+  margin-top: 10px;
+}
 </style>
+

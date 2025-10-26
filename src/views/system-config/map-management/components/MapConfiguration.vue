@@ -21,9 +21,6 @@
         <el-button type="primary" class="tech-button" :icon="Plus" @click="showAddCameraDialog" :disabled="!selectedLayerId">
           添加相机
         </el-button>
-        <el-button type="success" class="tech-button-success" :icon="Check" @click="savePositions" :disabled="!hasChanges">
-          保存位置
-        </el-button>
         <el-button type="warning" class="tech-button-warning" @click="resetBackgroundPosition" :disabled="!currentLayer">
           重置背景
         </el-button>
@@ -78,7 +75,7 @@
             :style="{
               left: cluster.position_x + 'px',
               top: cluster.position_y + 'px',
-              transform: cluster.camera_angle ? `rotate(${cluster.camera_angle}deg)` : 'none'
+              transform: cluster.camera_angle ? `translate(-50%, -50%) rotate(${cluster.camera_angle}deg)` : 'translate(-50%, -50%)'
             }"
             @click.stop="selectCluster(cluster)"
             @mousedown="startClusterDrag(cluster, $event)"
@@ -332,17 +329,14 @@ import {
   ZoomIn,
   ZoomOut,
   Plus,
-  Check,
   Refresh
 } from '@element-plus/icons-vue'
 import { 
   getLayerList,
   getLayerCameras,
-  addCameraToLayer,
-  updateCameraPosition,
-  batchUpdateCameraPositions,
-  removeCameraFromLayer,
-  getUnboundCameras
+  getUnboundWVPChannels,
+  bindWVPChannelToLayer,
+  unbindWVPChannelFromLayer
 } from '@/api/map'
 
 export default {
@@ -522,11 +516,19 @@ export default {
       try {
         const response = await getLayerCameras(layerId)
         if (response.code === 200) {
-          // 确保 layerCameras 总是一个数组
-          layerCameras.value = Array.isArray(response.data) ? response.data : []
+          // 确保 layerCameras 总是一个数组，并为每个相机添加camera_id字段
+          const cameras = Array.isArray(response.data) ? response.data : []
+          
+          // 为WVP相机添加camera_id字段（使用camera_code作为唯一标识符）
+          layerCameras.value = cameras.map(camera => ({
+            ...camera,
+            camera_id: camera.camera_code || camera.id // 使用camera_code作为唯一标识符
+          }))
+          
           console.log('加载图层相机数据:', layerCameras.value.map(c => ({
             关联ID: c.id,
             相机ID: c.camera_id,
+            相机编码: c.camera_code,
             相机ID类型: typeof c.camera_id,
             name: c.camera_name,
             位置: { x: c.position_x, y: c.position_y }
@@ -537,16 +539,36 @@ export default {
       }
     }
 
-    // 加载未绑定相机
+    // 加载未绑定相机（使用WVP通道）
     const loadUnboundCameras = async () => {
       try {
-        const response = await getUnboundCameras()
+        console.log('开始加载未绑定的WVP通道...')
+        const response = await getUnboundWVPChannels()
+        console.log('未绑定WVP通道响应:', response)
+        
         if (response.code === 200) {
-          // 确保 unboundCameras 总是一个数组
-          unboundCameras.value = Array.isArray(response.data) ? response.data : []
+          // 将WVP通道数据转换为相机格式
+          const channels = Array.isArray(response.data) ? response.data : []
+          
+          unboundCameras.value = channels.map(channel => ({
+            id: channel.id,
+            camera_id: channel.id, // 用于向后兼容
+            channel_id: channel.channel_id || channel.channelId, // WVP通道ID
+            camera_name: channel.channel_name || channel.name || channel.channelName,
+            camera_code: channel.channel_id || channel.channelId,
+            ip_address: channel.ip_address || '-',
+            port: channel.port || '-',
+            protocol: 'WVP',
+            is_online: channel.online === 1 || channel.online === '1' || channel.online === 'ONLINE' ? 1 : 0,
+            status: 1,
+            location: channel.manufacturer || '-'
+          }))
+          
+          console.log('转换后的未绑定相机:', unboundCameras.value)
         }
       } catch (error) {
-        ElMessage.error('加载未绑定相机失败')
+        console.error('加载未绑定相机失败:', error)
+        ElMessage.error('加载未绑定相机失败: ' + (error.message || '未知错误'))
       }
     }
 
@@ -634,23 +656,25 @@ export default {
       const newX = Math.max(0, Math.min(Math.round(x - dragState.offsetX), canvasSize.width))
       const newY = Math.max(0, Math.min(Math.round(y - dragState.offsetY), canvasSize.height))
       
-      // 如果是聚合相机拖拽，同步移动所有相机
-      if (dragState.clusterCameras && dragState.clusterCameras.length > 0) {
-        dragState.clusterCameras.forEach(clusterCamera => {
+      // 如果是聚合相机拖拽，同步移动所有相机（使用ID数组）
+      if (dragState.clusterCameraIds && dragState.clusterCameraIds.length > 0) {
+        dragState.clusterCameraIds.forEach(cameraId => {
           const camera = layerCameras.value.find(c => {
             const cId = typeof c.camera_id === 'string' ? c.camera_id : String(c.camera_id)
-            const clusterId = typeof clusterCamera.camera_id === 'string' ? clusterCamera.camera_id : String(clusterCamera.camera_id)
-            return cId === clusterId
+            const targetId = typeof cameraId === 'string' ? cameraId : String(cameraId)
+            return cId === targetId
           })
           
           if (camera) {
             camera.position_x = newX
             camera.position_y = newY
+          } else {
+            console.warn('拖拽时找不到相机:', cameraId)
           }
         })
         
         hasChanges.value = true
-        console.log('同步移动聚合相机:', dragState.clusterCameras.map(c => c.camera_name), '位置:', newX, newY)
+        console.log('同步移动聚合相机，ID列表:', dragState.clusterCameraIds, '位置:', newX, newY)
       } else {
         // 单个相机拖拽
         const camera = layerCameras.value.find(c => {
@@ -664,6 +688,8 @@ export default {
           camera.position_y = newY
           hasChanges.value = true
           console.log('更新相机位置:', camera.camera_name, '位置:', camera.position_x, camera.position_y)
+        } else {
+          console.warn('拖拽时找不到相机:', draggingCameraId.value)
         }
       }
     }
@@ -730,8 +756,10 @@ export default {
       dragState.offsetX = x - cluster.position_x
       dragState.offsetY = y - cluster.position_y
       
-      // 记录聚合中的所有相机，用于同步移动
-      dragState.clusterCameras = cluster.cameras
+      // 记录聚合中所有相机的ID，用于同步移动（不保存对象引用，避免计算属性重新计算时引用失效）
+      dragState.clusterCameraIds = cluster.cameras.map(c => c.camera_id)
+      
+      console.log('聚合拖拽，相机ID列表:', dragState.clusterCameraIds)
       
       // 添加全局事件监听
       document.addEventListener('mousemove', handleDocumentMouseMove)
@@ -746,18 +774,70 @@ export default {
     }
 
     // 停止拖拽
-    const stopDrag = () => {
+    const stopDrag = async () => {
+      // 保存拖拽状态信息，用于自动保存
+      const wasDragging = dragState.isDragging
+      const draggedCameraId = draggingCameraId.value
+      const clusterCameraIds = dragState.clusterCameraIds ? [...dragState.clusterCameraIds] : null
+      
       dragState.isDragging = false
       draggingCameraId.value = null
       
       // 清理聚合拖拽状态
-      if (dragState.clusterCameras) {
-        delete dragState.clusterCameras
+      if (dragState.clusterCameraIds) {
+        delete dragState.clusterCameraIds
       }
       
       // 移除全局事件监听
       document.removeEventListener('mousemove', handleDocumentMouseMove)
       document.removeEventListener('mouseup', stopDrag)
+      
+      // 拖拽结束后自动保存位置
+      if (wasDragging && selectedLayerId.value) {
+        try {
+          // 如果是聚合相机拖拽，保存所有聚合相机的位置
+          if (clusterCameraIds && clusterCameraIds.length > 0) {
+            console.log('拖拽结束，自动保存聚合相机位置:', clusterCameraIds)
+            for (const cameraId of clusterCameraIds) {
+              const camera = layerCameras.value.find(c => {
+                const cId = typeof c.camera_id === 'string' ? c.camera_id : String(c.camera_id)
+                const targetId = typeof cameraId === 'string' ? cameraId : String(cameraId)
+                return cId === targetId
+              })
+              
+              if (camera) {
+                await saveSingleCameraPosition(camera)
+              }
+            }
+            // 重新加载相机数据
+            await loadLayerCameras(parseInt(selectedLayerId.value, 10))
+            ElMessage.success(`已保存 ${clusterCameraIds.length} 个相机的位置`)
+          } 
+          // 单个相机拖拽
+          else if (draggedCameraId) {
+            const camera = layerCameras.value.find(c => {
+              const cId = typeof c.camera_id === 'string' ? c.camera_id : String(c.camera_id)
+              const dragId = typeof draggedCameraId === 'string' ? draggedCameraId : String(draggedCameraId)
+              return cId === dragId
+            })
+            
+            if (camera) {
+              console.log('拖拽结束，自动保存相机位置:', camera.camera_name)
+              await saveSingleCameraPosition(camera)
+              // 重新加载相机数据
+              await loadLayerCameras(parseInt(selectedLayerId.value, 10))
+              ElMessage.success('相机位置已保存')
+            }
+          }
+          
+          hasChanges.value = false
+        } catch (error) {
+          console.error('自动保存位置失败:', error)
+          ElMessage.error('保存位置失败: ' + (error.message || '未知错误'))
+          // 即使失败也重新加载，以恢复原始位置
+          await loadLayerCameras(parseInt(selectedLayerId.value, 10))
+        }
+      }
     }
 
     // 背景图片拖拽开始
@@ -856,39 +936,39 @@ export default {
       selectedUnboundCameras.value = selection
     }
 
-    // 确认添加相机
+    // 确认添加相机（使用WVP通道绑定）
     const confirmAddCamera = async () => {
       if (!selectedUnboundCameras.value || selectedUnboundCameras.value.length === 0 || !selectedLayerId.value) return
       
       try {
         // 打印调试信息
-        console.log('准备添加相机到图层:', {
+        console.log('准备绑定WVP通道到图层:', {
           layerId: selectedLayerId.value,
           layerIdType: typeof selectedLayerId.value,
           selectedCameras: selectedUnboundCameras.value.map(c => ({
             id: c.id,
-            idType: typeof c.id,
+            channel_id: c.channel_id,
             name: c.camera_name
           }))
         })
         
-        // 批量添加相机
+        // 批量绑定WVP通道
         const promises = selectedUnboundCameras.value.map((camera, index) => {
           // 为多个相机设置不同的默认位置，避免重叠
           const centerX = Math.floor(canvasSize.width / 2) + (index * 50) - (selectedUnboundCameras.value.length * 25)
           const centerY = Math.floor(canvasSize.height / 2) + (index * 30) - (selectedUnboundCameras.value.length * 15)
           
           const payload = {
-            camera_id: parseInt(camera.id, 10), // 确保传递正确的整型相机ID
+            channel_id: camera.channel_id, // 使用WVP通道ID
             position_x: Math.max(0, Math.min(centerX, canvasSize.width - 50)),
             position_y: Math.max(0, Math.min(centerY, canvasSize.height - 50)),
             camera_icon: null,
             camera_angle: 0
           }
           
-          console.log(`添加相机 ${camera.camera_name} 的请求参数:`, payload)
+          console.log(`绑定WVP通道 ${camera.camera_name} (${camera.channel_id}) 的请求参数:`, payload)
           
-          return addCameraToLayer(parseInt(selectedLayerId.value, 10), payload)
+          return bindWVPChannelToLayer(parseInt(selectedLayerId.value, 10), payload)
         })
         
         await Promise.all(promises)
@@ -912,7 +992,11 @@ export default {
           response: error.response?.data,
           status: error.response?.status,
           layerId: selectedLayerId.value,
-          selectedCameras: selectedUnboundCameras.value.map(c => ({ id: c.id, name: c.camera_name }))
+          selectedCameras: selectedUnboundCameras.value.map(c => ({ 
+            id: c.id, 
+            channel_id: c.channel_id, 
+            name: c.camera_name 
+          }))
         })
         
         let errorMessage = '添加相机失败'
@@ -938,59 +1022,41 @@ export default {
       editPositionVisible.value = true
     }
 
-    // 确认编辑位置
+    // 确认编辑位置（采用先解绑再重新绑定的方式）
     const confirmEditPosition = async () => {
       if (!selectedCamera.value || !selectedLayerId.value) return
       
       try {
-        await updateCameraPosition(parseInt(selectedLayerId.value, 10), selectedCamera.value.camera_id, {
-          position_x: positionForm.position_x,
-          position_y: positionForm.position_y,
-          camera_angle: positionForm.camera_angle || null
+        const positionX = typeof positionForm.position_x === 'string' ? parseInt(positionForm.position_x, 10) : positionForm.position_x
+        const positionY = typeof positionForm.position_y === 'string' ? parseInt(positionForm.position_y, 10) : positionForm.position_y
+        const cameraAngle = typeof positionForm.camera_angle === 'string' ? parseInt(positionForm.camera_angle, 10) : positionForm.camera_angle
+        
+        console.log('编辑位置（先解绑再绑定）:', {
+          相机编码: selectedCamera.value.camera_code,
+          相机名称: selectedCamera.value.camera_name,
+          新位置: { x: positionX, y: positionY },
+          角度: cameraAngle
         })
+        
+        // WVP相机：先解绑，再重新绑定到新位置
+        const channelId = selectedCamera.value.camera_code || selectedCamera.value.channel_id
+        
+        // 1. 先解绑
+        await unbindWVPChannelFromLayer(parseInt(selectedLayerId.value, 10), channelId)
+        console.log('已解绑相机:', channelId)
+        
+        // 2. 重新绑定到新位置
+        await bindWVPChannelToLayer(parseInt(selectedLayerId.value, 10), {
+          channel_id: channelId,
+          position_x: positionX,
+          position_y: positionY,
+          camera_angle: cameraAngle || null
+        })
+        console.log('已重新绑定相机到新位置:', { x: positionX, y: positionY, angle: cameraAngle })
         
         ElMessage.success('位置更新成功')
         editPositionVisible.value = false
         await loadLayerCameras(parseInt(selectedLayerId.value, 10))
-        hasChanges.value = false
-      } catch (error) {
-        ElMessage.error('更新位置失败: ' + (error.message || '未知错误'))
-      }
-    }
-
-    // 保存位置
-    const savePositions = async () => {
-      if (!selectedLayerId.value || !hasChanges.value) return
-      
-      try {
-        // 批量更新所有有变化的相机位置
-        const cameras = layerCameras.value.map(camera => {
-          const cameraId = typeof camera.camera_id === 'string' ? parseInt(camera.camera_id, 10) : camera.camera_id
-          const positionX = typeof camera.position_x === 'string' ? parseInt(camera.position_x, 10) : camera.position_x
-          const positionY = typeof camera.position_y === 'string' ? parseInt(camera.position_y, 10) : camera.position_y
-          
-          console.log('处理相机:', {
-            关联ID: camera.id,
-            相机ID: camera.camera_id,
-            转换后相机ID: cameraId,
-            相机名称: camera.camera_name,
-            位置: { x: positionX, y: positionY }
-          })
-          
-          return {
-            camera_id: cameraId,
-            position_x: positionX,
-            position_y: positionY,
-            camera_angle: camera.camera_angle || null
-          }
-        })
-        
-        console.log('保存位置数据:', { cameras })
-        
-        // 使用批量更新接口
-        await batchUpdateCameraPositions(parseInt(selectedLayerId.value, 10), { cameras })
-        
-        ElMessage.success('位置保存成功')
         hasChanges.value = false
         
         // 发出全局事件，通知其他组件刷新相机数据
@@ -998,18 +1064,113 @@ export default {
           detail: {
             type: 'position_updated',
             layerId: selectedLayerId.value,
-            cameras: cameras
+            camera: {
+              camera_code: channelId,
+              position_x: positionX,
+              position_y: positionY,
+              camera_angle: cameraAngle || null
+            }
+          }
+        }))
+      } catch (error) {
+        console.error('更新位置失败:', error)
+        ElMessage.error('更新位置失败: ' + (error.message || '未知错误'))
+        // 失败时也重新加载数据，恢复原始位置
+        await loadLayerCameras(parseInt(selectedLayerId.value, 10))
+      }
+    }
+
+    // 保存单个相机位置（采用先解绑再重新绑定的方式）
+    const saveSingleCameraPosition = async (camera) => {
+      if (!selectedLayerId.value || !camera) return
+      
+      try {
+        const positionX = typeof camera.position_x === 'string' ? parseInt(camera.position_x, 10) : camera.position_x
+        const positionY = typeof camera.position_y === 'string' ? parseInt(camera.position_y, 10) : camera.position_y
+        
+        console.log('保存单个相机位置（先解绑再绑定）:', {
+          关联ID: camera.id,
+          相机ID: camera.camera_id,
+          相机编码: camera.camera_code,
+          相机名称: camera.camera_name,
+          位置: { x: positionX, y: positionY },
+          角度: camera.camera_angle
+        })
+        
+        // WVP相机：先解绑，再重新绑定到新位置
+        const channelId = camera.camera_code || camera.channel_id
+        
+        // 1. 先解绑
+        await unbindWVPChannelFromLayer(parseInt(selectedLayerId.value, 10), channelId)
+        console.log('已解绑相机:', channelId)
+        
+        // 2. 重新绑定到新位置
+        await bindWVPChannelToLayer(parseInt(selectedLayerId.value, 10), {
+          channel_id: channelId,
+          position_x: positionX,
+          position_y: positionY,
+          camera_angle: camera.camera_angle || null
+        })
+        console.log('已重新绑定相机到新位置:', { x: positionX, y: positionY })
+        
+        // 发出全局事件，通知其他组件刷新相机数据
+        window.dispatchEvent(new CustomEvent('camera-data-updated', {
+          detail: {
+            type: 'position_updated',
+            layerId: selectedLayerId.value,
+            camera: {
+              id: camera.id,
+              camera_id: camera.camera_id,
+              camera_code: camera.camera_code,
+              position_x: positionX,
+              position_y: positionY,
+              camera_angle: camera.camera_angle || null
+            }
+          }
+        }))
+      } catch (error) {
+        console.error('保存单个相机位置失败:', error)
+        throw error
+      }
+    }
+    
+    // 保存位置（批量保存，使用解绑再绑定方式）
+    // 注意：此函数已不再使用（已删除保存位置按钮），保留以备将来使用
+    const savePositions = async () => {
+      if (!selectedLayerId.value || !hasChanges.value) return
+      
+      try {
+        console.log('批量保存相机位置...')
+        
+        // 逐个保存相机位置（使用解绑再绑定方式）
+        for (const camera of layerCameras.value) {
+          await saveSingleCameraPosition(camera)
+        }
+        
+        // 重新加载相机数据
+        await loadLayerCameras(parseInt(selectedLayerId.value, 10))
+        
+        ElMessage.success('所有相机位置保存成功')
+        hasChanges.value = false
+        
+        // 发出全局事件，通知其他组件刷新相机数据
+        window.dispatchEvent(new CustomEvent('camera-data-updated', {
+          detail: {
+            type: 'position_updated',
+            layerId: selectedLayerId.value
           }
         }))
         
         console.log('已发出相机数据更新事件')
       } catch (error) {
-        console.error('保存位置失败:', error)
+        console.error('批量保存位置失败:', error)
         ElMessage.error('保存位置失败: ' + (error.response?.data?.message || error.message || '未知错误'))
+        // 重新加载数据以恢复状态
+        await loadLayerCameras(parseInt(selectedLayerId.value, 10))
       }
     }
 
-    // 从图层移除相机
+    // 从图层移除相机（使用WVP通道解绑）
     const removeCameraFromLayerAction = () => {
       if (!selectedCamera.value || !selectedLayerId.value) return
       
@@ -1023,7 +1184,16 @@ export default {
         }
       ).then(async () => {
         try {
-          await removeCameraFromLayer(parseInt(selectedLayerId.value, 10), selectedCamera.value.camera_id)
+          // 使用WVP通道ID进行解绑
+          const channelId = selectedCamera.value.camera_code || selectedCamera.value.channel_id
+          
+          console.log('准备解绑WVP通道:', {
+            layerId: selectedLayerId.value,
+            channelId: channelId,
+            cameraName: selectedCamera.value.camera_name
+          })
+          
+          await unbindWVPChannelFromLayer(parseInt(selectedLayerId.value, 10), channelId)
           ElMessage.success('相机移除成功')
           await loadLayerCameras(parseInt(selectedLayerId.value, 10))
           clearSelection()
@@ -1033,10 +1203,11 @@ export default {
             detail: {
               type: 'camera_removed',
               layerId: selectedLayerId.value,
-              cameraId: selectedCamera.value.camera_id
+              channelId: channelId
             }
           }))
         } catch (error) {
+          console.error('移除相机失败:', error)
           ElMessage.error('移除相机失败: ' + (error.message || '未知错误'))
         }
       })
@@ -1119,7 +1290,6 @@ export default {
       ZoomIn,
       ZoomOut,
       Plus,
-      Check,
       Refresh
     }
   }
@@ -1207,7 +1377,6 @@ export default {
   width: 24px;
   height: 24px;
   cursor: pointer;
-  transform-origin: center;
   z-index: 10;
 }
 
