@@ -286,7 +286,6 @@ export default {
 }
 
 .management-tabs :deep(.el-tab-pane) {
-  display: block !important;
   height: auto !important;
   border: none !important;
   overflow: visible !important;

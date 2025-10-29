@@ -656,9 +656,9 @@ export default {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  /* Firefox 滚动条样式 */
+  /* Firefox 滚动条样式 - 青蓝色配色 */
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 255, 255, 0.3) rgba(0, 255, 255, 0.1);
+  scrollbar-color: #00a8cc rgba(20, 30, 50, 0.5);
   /* 确保滚动条始终可见 */
   scrollbar-gutter: stable;
   /* 高度由JavaScript动态管理 */
@@ -941,46 +941,24 @@ export default {
   transform: scale(1.1);
 }
 
-/* 科技感滚动条样式 - Webkit内核 (Chrome, Safari, Edge) */
+/* 滚动条样式 - Webkit内核 (Chrome, Safari, Edge) - 青蓝色配色 */
 .menu-container::-webkit-scrollbar {
   width: 8px;
   background: rgba(0, 0, 0, 0.1);
 }
 
 .menu-container::-webkit-scrollbar-track {
-  background: rgba(0, 255, 255, 0.05);
+  background: rgba(20, 30, 50, 0.5);
   border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
 }
 
 .menu-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.3) 0%, 
-    rgba(0, 200, 255, 0.5) 50%, 
-    rgba(0, 255, 255, 0.3) 100%);
+  background: #00a8cc;
   border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  box-shadow: inset 0 0 6px rgba(0, 255, 255, 0.1);
 }
 
 .menu-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.5) 0%, 
-    rgba(0, 200, 255, 0.7) 50%, 
-    rgba(0, 255, 255, 0.5) 100%);
-  box-shadow: 
-    inset 0 0 6px rgba(0, 255, 255, 0.2),
-    0 0 15px rgba(0, 255, 255, 0.4);
-}
-
-.menu-container::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.7) 0%, 
-    rgba(0, 200, 255, 0.9) 50%, 
-    rgba(0, 255, 255, 0.7) 100%);
-  box-shadow: 
-    inset 0 0 6px rgba(0, 255, 255, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.6);
+  background: #00c4e8;
 }
 
 /* 菜单容器的滚动行为优化 */
