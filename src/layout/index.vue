@@ -159,8 +159,8 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import { useSystemStore } from '@/stores/system';
@@ -200,6 +200,7 @@ export default {
   },
   setup() {
     const router = useRouter();
+    const route = useRoute();
     const authStore = useAuthStore();
     const systemStore = useSystemStore();
     const { checkMenuPermission, checkChildPermission } = usePermissions();
@@ -295,6 +296,17 @@ export default {
         menuContainer.value.style.maxHeight = `${availableHeight}px`;
       }
     };
+
+    // 监听路由变化，重置滚动位置
+    watch(() => route.path, () => {
+      // 使用 nextTick 确保 DOM 已更新
+      setTimeout(() => {
+        const mainEl = document.querySelector('.layout-main');
+        if (mainEl) {
+          mainEl.scrollTop = 0;
+        }
+      }, 0);
+    });
 
     // 监听窗口大小变化
     onMounted(() => {

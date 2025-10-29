@@ -1298,7 +1298,7 @@ export default {
 
 <style scoped>
 .map-configuration {
-  height: 100%;
+  height: auto;
   display: flex;
   flex-direction: column;
 }
@@ -1319,12 +1319,11 @@ export default {
 }
 
 .map-container {
-  flex: 1;
   display: flex;
   flex-direction: column;
   border: 1px solid #dcdfe6;
   border-radius: 4px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .map-info {
@@ -1339,9 +1338,8 @@ export default {
 }
 
 .map-wrapper {
-  flex: 1;
   position: relative;
-  overflow: auto;
+  overflow: visible;
   background: rgba(0, 20, 40, 0.3);
   padding: 20px;
 }
@@ -1720,7 +1718,6 @@ export default {
 /* 主容器样式 */
 .map-configuration {
   padding: 20px !important;
-  min-height: calc(100vh - 100px) !important;
   background: transparent !important;
 }
 
@@ -1760,10 +1757,7 @@ export default {
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
   border-radius: 8px !important;
   backdrop-filter: blur(10px) !important;
-  min-height: calc(100vh - 300px) !important;
-  max-height: none !important;
   overflow: visible !important;
-  padding-bottom: 50px !important;
 }
 
 .map-info {
@@ -1779,37 +1773,9 @@ export default {
 
 /* 地图包装器样式 */
 .map-wrapper {
-  overflow: auto !important;
-  max-height: calc(100vh - 350px) !important;
+  overflow: visible !important;
   padding: 20px !important;
   border-radius: 6px !important;
-}
-
-/* 自定义滚动条样式 */
-.map-wrapper::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.map-wrapper::-webkit-scrollbar-track {
-  background: rgba(0, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.map-wrapper::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.3) 0%, 
-    rgba(0, 200, 255, 0.5) 50%, 
-    rgba(0, 255, 255, 0.3) 100%);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-}
-
-.map-wrapper::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.5) 0%, 
-    rgba(0, 200, 255, 0.7) 50%, 
-    rgba(0, 255, 255, 0.5) 100%);
 }
 
 /* 地图画布样式 */
@@ -1817,7 +1783,6 @@ export default {
   background: rgba(0, 10, 20, 0.3) !important;
   border-radius: 6px !important;
   box-shadow: 0 2px 8px rgba(0, 255, 255, 0.1) !important;
-  margin-bottom: 50px !important;
 }
 
 /* 相机面板样式 */

@@ -1,5 +1,5 @@
 <template>
-  <div class="backup-restore tech-page-container">
+  <div class="backup-restore">
     <!-- 科技感背景 -->
     <div class="tech-background">
         </div>
@@ -16,14 +16,13 @@
       
     <!-- 表格区域 -->
     <div class="table-section">
-      <div class="table-container">
         <el-table
           :data="backupList"
           v-loading="loading"
           stripe
-          style="width: 100%; min-width: 1200px;"
+          style="width: 100%;"
           class="backup-table"
-          :scroll-x="true"
+          :show-overflow-tooltip="false"
         >
         <el-table-column prop="file_name" label="备份文件名" min-width="250" />
         <el-table-column label="备份类型" width="120">
@@ -64,7 +63,6 @@
           </template>
         </el-table-column>
         </el-table>
-      </div>
       
       <el-empty v-if="!loading && backupList.length === 0" description="暂无备份文件" />
     </div>
@@ -649,49 +647,18 @@ export default {
 </script>
 
 <style scoped>
-/* 页面容器 */
-.tech-page-container {
+
+/* 页面容器 - 子组件不产生滚动条 */
+.backup-restore {
   position: relative;
   width: 100%;
-  min-height: 100vh;
-  max-height: 100vh;
   padding: 20px;
   padding-bottom: 40px;
   background: transparent;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: visible !important;
   box-sizing: border-box;
 }
 
-/* 自定义滚动条样式 - 科技感 */
-.tech-page-container::-webkit-scrollbar {
-  width: 8px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.tech-page-container::-webkit-scrollbar-track {
-  background: rgba(0, 255, 255, 0.05);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.tech-page-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.3) 0%, 
-    rgba(0, 200, 255, 0.5) 50%, 
-    rgba(0, 255, 255, 0.3) 100%);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
-}
-
-.tech-page-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.5) 0%, 
-    rgba(0, 200, 255, 0.7) 50%, 
-    rgba(0, 255, 255, 0.5) 100%);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-}
 
 /* 科技感背景 */
 .tech-background {
@@ -729,54 +696,24 @@ export default {
   align-items: center;
 }
 
-/* 表格区域样式 */
+/* 表格区域样式 - 禁用滚动，添加边框 */
 .table-section {
   position: relative;
   z-index: 10;
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 20, 40, 0.6);
+  padding: 0;
 }
 
 /* 备份表格样式 - 完全按照图层管理样式 */
 .backup-table {
   margin-bottom: 20px;
-}
-
-/* 表格容器样式 - 支持横向滚动 */
-.table-container {
-  width: 100%;
-  overflow-x: auto;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 6px;
-  background: rgba(0, 20, 40, 0.6);
-}
-
-/* 表格容器滚动条样式 */
-.table-container::-webkit-scrollbar {
-  height: 8px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.table-container::-webkit-scrollbar-track {
-  background: rgba(0, 255, 255, 0.05);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.table-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, 
-    rgba(0, 255, 255, 0.3) 0%, 
-    rgba(0, 255, 255, 0.6) 50%, 
-    rgba(0, 255, 255, 0.3) 100%);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-}
-
-.table-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(90deg, 
-    rgba(0, 255, 255, 0.5) 0%, 
-    rgba(0, 255, 255, 0.8) 50%, 
-    rgba(0, 255, 255, 0.5) 100%);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+  overflow: visible !important;
+  width: 100% !important;
 }
 
 /* 科技感表格样式 */
@@ -784,6 +721,60 @@ export default {
   background: rgba(0, 20, 40, 0.6) !important;
   border: none !important;
   border-radius: 0 !important;
+  overflow: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+/* 彻底禁用表格内部所有可能产生滚动条的元素 */
+:deep(.el-table__body-wrapper),
+:deep(.backup-table .el-table__body-wrapper),
+:deep(.table-section .el-table__body-wrapper) {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+:deep(.el-table__header-wrapper),
+:deep(.backup-table .el-table__header-wrapper),
+:deep(.table-section .el-table__header-wrapper) {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+}
+
+:deep(.el-table__inner-wrapper),
+:deep(.backup-table .el-table__inner-wrapper),
+:deep(.table-section .el-table__inner-wrapper) {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+:deep(.el-table__body),
+:deep(.backup-table .el-table__body),
+:deep(.table-section .el-table__body) {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+
+:deep(.el-table__header),
+:deep(.backup-table .el-table__header),
+:deep(.table-section .el-table__header) {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+
+:deep(.el-table__fixed),
+:deep(.el-table__fixed-right) {
+  display: none !important;
 }
 
 /* 强制去除表格的所有白色背景和边框 */
@@ -834,9 +825,7 @@ export default {
 
 /* 去除表格左右边框和底部边框 */
 :deep(.backup-table .el-table__body),
-:deep(.backup-table .el-table__header),
-:deep(.backup-table .el-table__body-wrapper),
-:deep(.backup-table .el-table__header-wrapper) {
+:deep(.backup-table .el-table__header) {
   border-left: none !important;
   border-right: none !important;
   border-bottom: none !important;
@@ -852,17 +841,54 @@ export default {
   position: relative !important;
 }
 
-/* 去除表格滚动条区域的白色背景 */
-:deep(.backup-table .el-scrollbar) {
+/* 彻底禁用所有 scrollbar 组件的滚动（包括嵌套的） */
+:deep(.el-scrollbar),
+:deep(.backup-table .el-scrollbar),
+:deep(.table-section .el-scrollbar) {
   background: transparent !important;
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+  height: auto !important;
 }
 
-:deep(.backup-table .el-scrollbar__wrap) {
+:deep(.el-scrollbar__wrap),
+:deep(.backup-table .el-scrollbar__wrap),
+:deep(.table-section .el-scrollbar__wrap) {
   background: transparent !important;
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+  height: auto !important;
 }
 
-:deep(.backup-table .el-scrollbar__view) {
+:deep(.el-scrollbar__view),
+:deep(.backup-table .el-scrollbar__view),
+:deep(.table-section .el-scrollbar__view) {
   background: transparent !important;
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+:deep(.el-scrollbar__bar),
+:deep(.backup-table .el-scrollbar__bar),
+:deep(.table-section .el-scrollbar__bar) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+:deep(.el-scrollbar__thumb),
+:deep(.backup-table .el-scrollbar__thumb),
+:deep(.table-section .el-scrollbar__thumb) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 :deep(.backup-table .el-table__header th) {
@@ -876,10 +902,6 @@ export default {
 
 :deep(.backup-table .el-table__header th:last-child) {
   border-right: none !important;
-}
-
-:deep(.backup-table .el-table__body-wrapper) {
-  background: transparent !important;
 }
 
 :deep(.backup-table .el-table__body tr) {
@@ -1030,7 +1052,6 @@ export default {
 @media (max-width: 768px) {
   .tech-page-container {
     padding: 15px;
-    height: calc(100vh - 100px);
   }
   
   .header-section {
@@ -1156,5 +1177,35 @@ export default {
   border-color: rgba(150, 150, 150, 0.3) !important;
   color: rgba(255, 255, 255, 0.5) !important;
   box-shadow: none !important;
+}
+
+/* ==================== 终极滚动条禁用规则（最高优先级） ==================== */
+/* 禁用本组件内所有可能的滚动条 - 放在最后确保最高优先级 */
+:deep(.table-section .el-table),
+:deep(.table-section .el-table *),
+:deep(.table-section .el-scrollbar),
+:deep(.table-section .el-scrollbar *) {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+}
+
+:deep(.table-section .el-table__body-wrapper),
+:deep(.table-section .el-table__header-wrapper),
+:deep(.table-section .el-table__inner-wrapper) {
+  overflow: visible !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+  max-height: none !important;
+  height: auto !important;
+}
+
+/* 隐藏所有可能的滚动条轨道和滑块 */
+:deep(.table-section)::-webkit-scrollbar,
+:deep(.table-section *)::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 </style>

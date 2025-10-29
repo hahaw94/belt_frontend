@@ -266,7 +266,17 @@ const routes = [
 
 const router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
-  routes
+  routes,
+  // 滚动行为：每次路由切换时重置滚动位置到顶部
+  scrollBehavior(to, from, savedPosition) {
+    // 如果有保存的滚动位置（例如点击浏览器的前进/后退按钮），则恢复该位置
+    if (savedPosition) {
+      return savedPosition;
+    } else {
+      // 否则滚动到页面顶部
+      return { top: 0, behavior: 'instant' };
+    }
+  }
 });
 
 // 全局前置守卫：每次路由跳转前执行

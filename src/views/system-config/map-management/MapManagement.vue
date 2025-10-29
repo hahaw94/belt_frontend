@@ -83,10 +83,8 @@ export default {
 .tech-page-container {
   position: relative;
   width: 100%;
-  min-height: 100vh;
-  max-height: 100vh;
+  height: 100%;
   padding: 20px;
-  padding-bottom: 40px;
   background: transparent;
   overflow-y: auto;
   overflow-x: hidden;
@@ -262,8 +260,6 @@ export default {
 }
 
 .map-management-container {
-  padding: 20px;
-  height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
 }
@@ -279,25 +275,21 @@ export default {
 }
 
 .management-tabs {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  flex: 0 0 auto;
   border: none !important;
 }
 
 .management-tabs :deep(.el-tabs__content) {
-  flex: 1;
   padding: 20px 0 0 0;
-  display: flex;
-  flex-direction: column;
   border: none !important;
+  overflow: visible !important;
 }
 
 .management-tabs :deep(.el-tab-pane) {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  display: block !important;
+  height: auto !important;
   border: none !important;
+  overflow: visible !important;
 }
 
 .management-tabs :deep(.el-tabs__header) {
@@ -314,7 +306,6 @@ export default {
 @media (max-width: 768px) {
   .map-management-container {
     padding: 10px;
-    height: calc(100vh - 100px);
   }
   
   .map-management-container h2 {

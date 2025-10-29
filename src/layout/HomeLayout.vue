@@ -60,8 +60,8 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import { useSystemStore } from '@/stores/system';
@@ -77,6 +77,7 @@ export default {
   },
   setup() {
     const router = useRouter();
+    const route = useRoute();
     const authStore = useAuthStore();
     const systemStore = useSystemStore();
     const { checkMenuPermission, checkChildPermission } = usePermissions();
@@ -142,6 +143,16 @@ export default {
     const handleProfileUpdated = () => {
       console.log('个人资料已更新');
     };
+
+    // 监听路由变化，重置滚动位置
+    watch(() => route.path, () => {
+      setTimeout(() => {
+        const mainEl = document.querySelector('.home-main');
+        if (mainEl) {
+          mainEl.scrollTop = 0;
+        }
+      }, 0);
+    });
 
     onMounted(() => {
       // 加载logo配置

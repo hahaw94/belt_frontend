@@ -536,18 +536,10 @@ html, body {
 
 .algorithm-warehouse-container {
   padding: 20px 20px 40px 20px;
-  height: 100vh;
-  max-height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
   box-sizing: border-box;
-  /* Firefox 滚动条样式 */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 255, 255, 0.3) rgba(0, 255, 255, 0.1);
-  /* 确保滚动条始终可见 */
-  scrollbar-gutter: stable;
-  scroll-behavior: smooth;
 }
 
 /* 科技感背景 */
@@ -860,48 +852,6 @@ html, body {
 
 .custom-select-option.is-selected:hover {
   background: rgba(0, 255, 255, 0.25) !important;
-}
-
-/* 主容器科技感滚动条样式 - 与左侧菜单栏一致 */
-.algorithm-warehouse-container::-webkit-scrollbar {
-  width: 8px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.algorithm-warehouse-container::-webkit-scrollbar-track {
-  background: rgba(0, 255, 255, 0.05);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.algorithm-warehouse-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.3) 0%, 
-    rgba(0, 200, 255, 0.5) 50%, 
-    rgba(0, 255, 255, 0.3) 100%);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  box-shadow: inset 0 0 6px rgba(0, 255, 255, 0.1);
-}
-
-.algorithm-warehouse-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.5) 0%, 
-    rgba(0, 200, 255, 0.7) 50%, 
-    rgba(0, 255, 255, 0.5) 100%);
-  box-shadow: 
-    inset 0 0 6px rgba(0, 255, 255, 0.2),
-    0 0 15px rgba(0, 255, 255, 0.4);
-}
-
-.algorithm-warehouse-container::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.7) 0%, 
-    rgba(0, 200, 255, 0.9) 50%, 
-    rgba(0, 255, 255, 0.7) 100%);
-  box-shadow: 
-    inset 0 0 6px rgba(0, 255, 255, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.6);
 }
 
 /* 下拉框滚动条样式 */

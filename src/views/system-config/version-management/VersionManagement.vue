@@ -1566,43 +1566,11 @@ onMounted(async () => {
   position: relative;
   width: 100%;
   min-height: 100vh;
-  max-height: 100vh;
   padding: 20px;
   padding-bottom: 40px;
   background: transparent;
-  overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-}
-
-/* 自定义滚动条样式 - 科技感 */
-.tech-page-container::-webkit-scrollbar {
-  width: 8px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.tech-page-container::-webkit-scrollbar-track {
-  background: rgba(0, 255, 255, 0.05);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.tech-page-container::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.3) 0%, 
-    rgba(0, 200, 255, 0.5) 50%, 
-    rgba(0, 255, 255, 0.3) 100%);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
-}
-
-.tech-page-container::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.5) 0%, 
-    rgba(0, 200, 255, 0.7) 50%, 
-    rgba(0, 255, 255, 0.5) 100%);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
 }
 
 /* 科技感背景 */
