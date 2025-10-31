@@ -209,15 +209,30 @@
           </el-table-column>
           <el-table-column prop="channel_id" label="通道ID" width="180">
             <template #default="{ row }">
-              <code class="channel-id">{{ row.channel_id }}</code>
+              <code class="channel-id">{{ row.channel_id || row.channelId }}</code>
             </template>
           </el-table-column>
-          <el-table-column prop="channel_name" label="通道名称" min-width="150"></el-table-column>
-          <el-table-column prop="status" label="状态" width="100" align="center">
+          <el-table-column prop="channel_name" label="通道名称" min-width="120">
+            <template #default="{ row }">
+              {{ row.channel_name || row.name }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="manufacturer" label="厂商" width="100">
+            <template #default="{ row }">
+              {{ row.manufacturer || '-' }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="80" align="center">
             <template #default="{ row }">
               <el-tag :type="row.status?.toUpperCase() === 'ON' ? 'success' : 'danger'" size="small">
                 {{ row.status?.toUpperCase() || '未知' }}
               </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="180" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button type="primary" size="small" @click="playChannel(row)">播放</el-button>
+              <el-button type="info" size="small" @click="viewChannelDetail(row)">详情</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -399,12 +414,88 @@ export default {
         const response = await gb28181API.getWVPDeviceChannels(this.selectedWVPDevice, params)
         if (response && response.data) {
           this.wvpChannels = response.data.list || []
+          
+          // 同步通道到本地数据库
+          try {
+            await this.syncDeviceChannelsToLocal(this.selectedWVPDevice)
+          } catch (syncError) {
+            console.warn('同步通道到本地数据库失败:', syncError)
+          }
         }
       } catch (error) {
         console.error('加载WVP设备通道失败:', error)
         ElMessage.error('加载WVP设备通道失败')
       } finally {
         this.wvpChannelLoading = false
+      }
+    },
+
+    // 同步设备通道到本地数据库
+    async syncDeviceChannelsToLocal(deviceId) {
+      try {
+        const response = await gb28181API.syncDirectChannels(deviceId)
+        if (response && response.data) {
+          console.log(`同步完成: ${response.data.synced_count || 0} 个通道已保存到本地数据库`)
+        }
+      } catch (error) {
+        console.error('同步通道到本地失败:', error)
+        throw error
+      }
+    },
+
+    // 播放通道
+    playChannel(row) {
+      const channelId = row.channel_id || row.channelId
+      const deviceId = row.device_id || this.selectedWVPDevice
+      
+      if (!channelId) {
+        ElMessage.warning('通道ID为空，无法播放')
+        return
+      }
+      
+      ElMessage.info(`播放功能开发中... 设备ID: ${deviceId}, 通道ID: ${channelId}`)
+      
+      // TODO: 跳转到播放页面或打开播放对话框
+      // this.$router.push({
+      //   name: 'VideoPlayer',
+      //   query: { deviceId, channelId }
+      // })
+    },
+
+    // 查看通道详情
+    async viewChannelDetail(row) {
+      const channelId = row.channel_id || row.channelId
+      const deviceId = row.device_id || this.selectedWVPDevice
+      
+      if (!channelId) {
+        ElMessage.warning('通道ID为空')
+        return
+      }
+      
+      try {
+        const response = await gb28181API.getWVPDeviceChannelInfo(deviceId, channelId)
+        if (response && response.data) {
+          // 显示通道详情对话框
+          const detail = response.data
+          let message = `
+            <div style="text-align: left;">
+              <p><strong>设备ID:</strong> ${detail.device_id || deviceId}</p>
+              <p><strong>通道ID:</strong> ${detail.channel_id || channelId}</p>
+              <p><strong>通道名称:</strong> ${detail.channel_name || detail.name || '-'}</p>
+              <p><strong>制造商:</strong> ${detail.manufacturer || '-'}</p>
+              <p><strong>型号:</strong> ${detail.model || '-'}</p>
+              <p><strong>状态:</strong> ${detail.status || '-'}</p>
+              <p><strong>在线状态:</strong> ${detail.online ? '在线' : '离线'}</p>
+            </div>
+          `
+          this.$alert(message, '通道详情', {
+            dangerouslyUseHTMLString: true,
+            confirmButtonText: '关闭'
+          })
+        }
+      } catch (error) {
+        console.error('获取通道详情失败:', error)
+        ElMessage.error('获取通道详情失败')
       }
     },
 

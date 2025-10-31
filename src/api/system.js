@@ -151,6 +151,18 @@ export const gb28181API = {
   // 获取WVP设备通道详情
   getWVPDeviceChannelInfo(deviceId, channelId) {
     return request.get(`/api/v1/wvp/devices/${deviceId}/channels/${channelId}`)
+  },
+
+  // 同步直连设备通道到本地数据库
+  syncDirectChannels(deviceId) {
+    return request.post('/api/v1/wvp/channels/sync-direct', null, {
+      params: { device_id: deviceId }
+    })
+  },
+
+  // 同步所有直连设备通道到本地数据库
+  syncAllDirectChannels() {
+    return request.post('/api/v1/wvp/channels/sync-all-direct')
   }
 }
 

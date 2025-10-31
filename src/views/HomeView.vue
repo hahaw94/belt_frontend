@@ -599,27 +599,14 @@
               </div>
             </div>
             
-            <!-- 实时视频播放区域 -->
+            <!-- 实时视频播放区域 - H265 硬解码播放器 -->
             <div class="video-display-area">
               <div class="video-player-container">
-                <!-- 通用流媒体播放器组件 - 支持FLV/HLS/RTMP等多种格式 -->
-                <SimpleStreamPlayer 
-                  v-if="currentStreamUrl"
-                  :key="playerKey"
-                  :src="currentStreamUrl"
+                <!-- H265 视频播放器组件 - 支持硬件加速解码，提供实时调试信息 -->
+                <H265Player 
+                  :default-url="currentStreamUrl"
                   :autoplay="false"
-                  :type="selectedProtocol"
                 />
-                <div v-else class="no-stream-hint">
-                  <div class="hint-icon">📺</div>
-                  <div class="hint-text">请在上方输入流地址后点击播放</div>
-                  <div class="hint-example">
-                    <p>示例地址：</p>
-                    <p>• http://localhost/live/camera1.live.flv</p>
-                    <p>• http://localhost/live/camera1/hls.m3u8</p>
-                    <p>• rtmp://localhost:1935/live/camera1</p>
-                  </div>
-                </div>
               </div>
             </div>
             
@@ -735,7 +722,7 @@ import { deviceApi } from '@/api/device'
 import { getLayerCameras } from '@/api/map'
 import { ElMessage } from 'element-plus'
 import { Loading } from '@element-plus/icons-vue'
-import SimpleStreamPlayer from '@/components/SimpleStreamPlayer.vue'
+import H265Player from '@/components/H265Player.vue'
 // import { useAuthStore } from '@/stores/auth'
 // const authStore = useAuthStore() // 暂时注释，如果需要可以取消注释
 const loading = ref(false)
