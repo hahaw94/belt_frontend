@@ -96,8 +96,6 @@
                 <span>接入管理</span>
               </template>
               <el-menu-item v-if="checkMenuPermission('/access/device')" index="/access/device">设备管理</el-menu-item>
-<!--              <el-menu-item v-if="checkMenuPermission('/access/info')" index="/access/info">设备信息</el-menu-item>-->
-<!--              <el-menu-item v-if="checkMenuPermission('/access/protocol')" index="/access/protocol">设备接入协议</el-menu-item>-->
             </el-sub-menu>
 
             <el-sub-menu v-if="checkChildPermission('/detection')" index="/detection">

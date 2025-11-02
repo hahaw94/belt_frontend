@@ -11,9 +11,6 @@
       <el-tab-pane label="图层管理" name="layers">
         <LayerManagement />
       </el-tab-pane>
-      <el-tab-pane label="相机管理" name="cameras">
-        <CameraManagement />
-      </el-tab-pane>
       <el-tab-pane label="地图配置" name="config">
         <MapConfiguration />
       </el-tab-pane>
@@ -26,7 +23,6 @@
 
 <script>
 import LayerManagement from './components/LayerManagement.vue'
-import CameraManagement from './components/CameraManagement.vue'
 import MapConfiguration from './components/MapConfiguration.vue'
 import BackupRestore from './components/BackupRestore.vue'
 
@@ -34,7 +30,6 @@ export default {
   name: 'MapManagement',
   components: {
     LayerManagement,
-    CameraManagement,
     MapConfiguration,
     BackupRestore
   },
@@ -46,7 +41,7 @@ export default {
   mounted() {
     // 根据路由参数设置默认选项卡
     const tab = this.$route.query.tab
-    if (tab && ['layers', 'cameras', 'config', 'backup'].includes(tab)) {
+    if (tab && ['layers', 'config', 'backup'].includes(tab)) {
       this.activeTab = tab
     }
   },

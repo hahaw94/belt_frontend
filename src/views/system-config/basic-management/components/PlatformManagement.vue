@@ -1,125 +1,138 @@
 <template>
   <div class="platform-management">
-    <!-- 国标接入信息（SIP） -->
-    <el-card class="management-section tech-card" shadow="hover">
-      <template #header>
-        <div class="section-header">
-          <span>🌐 国标接入信息（SIP）</span>
-          <el-button type="primary" size="small" :icon="Refresh" @click="loadSIPInfo" :loading="sipLoading">获取接入信息</el-button>
-        </div>
-      </template>
-      <div class="section-content">
-        <el-row :gutter="15">
-          <el-col :span="8">
-            <div class="info-item">
-              <label>编号</label>
-              <div class="info-value">
-                <span class="pill">{{ sipInfo.id || '-' }}</span>
-                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.id)">复制</el-button>
-              </div>
+    <!-- 国标接入信息（SIP）和系统配额统计 - 左右布局 -->
+    <el-row :gutter="20" class="equal-height-row">
+      <el-col :span="12" class="equal-height-col">
+        <!-- 国标接入信息（SIP） -->
+        <el-card class="management-section tech-card" shadow="hover">
+          <template #header>
+            <div class="section-header">
+              <span>国标接入信息（SIP）</span>
+              <el-button type="primary" size="small" :icon="Refresh" @click="loadSIPInfo" :loading="sipLoading">获取接入信息</el-button>
             </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="info-item">
-              <label>域</label>
-              <div class="info-value">
-                <span class="pill">{{ sipInfo.domain || '-' }}</span>
-                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.domain)">复制</el-button>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="info-item">
-              <label>端口</label>
-              <div class="info-value">
-                <span class="pill">{{ sipInfo.port || '-' }}</span>
-                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.port)">复制</el-button>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-        <el-row :gutter="15" style="margin-top: 10px;">
-          <el-col :span="12">
-            <div class="info-item">
-              <label>IP 列表</label>
-              <div class="info-value">
-                <span class="pill">{{ sipInfo.ips || '-' }}</span>
-                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.ips)">复制</el-button>
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="12">
-            <div class="info-item">
-              <label>设备注册密码</label>
-              <div class="info-value">
-                <span class="pill">{{ sipInfo.password || '-' }}</span>
-                <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.password)">复制</el-button>
-              </div>
-            </div>
-          </el-col>
-        </el-row>
-      </div>
-    </el-card>
+          </template>
+          <div class="section-content">
+            <el-row :gutter="15">
+              <el-col :span="12">
+                <div class="info-item">
+                  <label>编号</label>
+                  <div class="info-value">
+                    <span class="pill">{{ sipInfo.id || '-' }}</span>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.id)">复制</el-button>
+                  </div>
+                </div>
+              </el-col>
+              <el-col :span="12">
+                <div class="info-item">
+                  <label>域</label>
+                  <div class="info-value">
+                    <span class="pill">{{ sipInfo.domain || '-' }}</span>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.domain)">复制</el-button>
+                  </div>
+                </div>
+              </el-col>
+            </el-row>
+            <el-row :gutter="15" style="margin-top: 10px;">
+              <el-col :span="12">
+                <div class="info-item">
+                  <label>端口</label>
+                  <div class="info-value">
+                    <span class="pill">{{ sipInfo.port || '-' }}</span>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.port)">复制</el-button>
+                  </div>
+                </div>
+              </el-col>
+              <el-col :span="12">
+                <div class="info-item">
+                  <label>IP 列表</label>
+                  <div class="info-value">
+                    <span class="pill">{{ sipInfo.ips || '-' }}</span>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.ips)">复制</el-button>
+                  </div>
+                </div>
+              </el-col>
+            </el-row>
+            <el-row :gutter="15" style="margin-top: 10px;">
+              <el-col :span="24">
+                <div class="info-item">
+                  <label>设备注册密码</label>
+                  <div class="info-value">
+                    <span class="pill">{{ sipInfo.password || '-' }}</span>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.password)">复制</el-button>
+                  </div>
+                </div>
+              </el-col>
+            </el-row>
+          </div>
+        </el-card>
+      </el-col>
 
-    <!-- 系统配额统计 -->
-    <el-card class="management-section tech-card" shadow="hover">
-      <template #header>
-        <div class="section-header">
-          <span>📊 系统配额统计</span>
-          <el-button type="primary" size="small" :icon="Refresh" @click="loadChannelStats" :loading="statsLoading">刷新</el-button>
-        </div>
-      </template>
-      <div class="section-content">
-        <el-row :gutter="15">
-          <el-col :span="6">
-            <div class="stat-box" style="border-left: 4px solid #3b82f6;">
-              <div class="stat-label">当前通道总数</div>
-              <div class="stat-value">{{ channelStats.total_channels || 0 }}</div>
+      <el-col :span="12" class="equal-height-col">
+        <!-- 系统配额统计 -->
+        <el-card class="management-section tech-card" shadow="hover">
+          <template #header>
+            <div class="section-header">
+              <span>系统配额统计</span>
+              <el-button type="primary" size="small" :icon="Refresh" @click="loadChannelStats" :loading="statsLoading">刷新</el-button>
             </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stat-box" style="border-left: 4px solid #10b981;">
-              <div class="stat-label">全局上限</div>
-              <div class="stat-value">{{ channelStats.global_limit || 0 }}</div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stat-box" style="border-left: 4px solid #f59e0b;">
-              <div class="stat-label">剩余配额</div>
-              <div class="stat-value">{{ channelStats.remaining_quota || 0 }}</div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stat-box" style="border-left: 4px solid #8b5cf6;">
-              <div class="stat-label">使用率</div>
-              <div class="stat-value">{{ channelStats.usage_rate || '0.00%' }}</div>
-            </div>
-          </el-col>
-        </el-row>
-        <el-row :gutter="15" style="margin-top: 15px;">
-          <el-col :span="12">
-            <div class="stat-box">
-              <div class="stat-label">当前播放流</div>
-              <div class="stat-value" style="font-size: 18px;">
-                {{ channelStats.current_active_plays || 0 }} / {{ channelStats.max_concurrent_plays || 0 }}
-              </div>
-            </div>
-          </el-col>
-          <el-col :span="12" v-if="channelStats.warning">
-            <div class="stat-box warning-box">
-              <div class="stat-label" style="color: #d97706; font-weight: bold;">⚠️ 配额告警</div>
-              <div style="font-size: 12px; color: #92400e; margin-top: 5px;">通道数已超过90%，请注意管理</div>
-            </div>
-          </el-col>
-        </el-row>
-      </div>
-    </el-card>
+          </template>
+          <div class="section-content">
+            <el-row :gutter="15">
+              <el-col :span="12">
+                <div class="stat-box" style="border-left: 4px solid #3b82f6;">
+                  <div class="stat-label">当前通道总数</div>
+                  <div class="stat-value">{{ channelStats.total_channels || 0 }}</div>
+                </div>
+              </el-col>
+              <el-col :span="12">
+                <div class="stat-box" style="border-left: 4px solid #10b981;">
+                  <div class="stat-label">全局上限</div>
+                  <div class="stat-value">{{ channelStats.global_limit || 0 }}</div>
+                </div>
+              </el-col>
+            </el-row>
+            <el-row :gutter="15" style="margin-top: 10px;">
+              <el-col :span="12">
+                <div class="stat-box" style="border-left: 4px solid #f59e0b;">
+                  <div class="stat-label">剩余配额</div>
+                  <div class="stat-value">{{ channelStats.remaining_quota || 0 }}</div>
+                </div>
+              </el-col>
+              <el-col :span="12">
+                <div class="stat-box" style="border-left: 4px solid #8b5cf6;">
+                  <div class="stat-label">使用率</div>
+                  <div class="stat-value">{{ channelStats.usage_rate || '0.00%' }}</div>
+                </div>
+              </el-col>
+            </el-row>
+            <el-row :gutter="15" style="margin-top: 10px;">
+              <el-col :span="24">
+                <div class="stat-box">
+                  <div class="stat-label">当前播放流</div>
+                  <div class="stat-value" style="font-size: 18px;">
+                    {{ channelStats.current_active_plays || 0 }} / {{ channelStats.max_concurrent_plays || 0 }}
+                  </div>
+                </div>
+              </el-col>
+            </el-row>
+            <el-row :gutter="15" style="margin-top: 10px;" v-if="channelStats.warning">
+              <el-col :span="24">
+                <div class="stat-box warning-box">
+                  <div class="stat-label" style="color: #d97706; font-weight: bold;">⚠️ 配额告警</div>
+                  <div style="font-size: 12px; color: #92400e; margin-top: 5px;">通道数已超过90%，请注意管理</div>
+                </div>
+              </el-col>
+            </el-row>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
     <!-- 直连设备与通道 -->
     <el-card class="management-section tech-card" shadow="hover">
       <template #header>
         <div class="section-header">
-          <span>🔗 直连设备与通道</span>
+          <span>直连设备与通道</span>
         </div>
       </template>
       <div class="section-content">
@@ -140,7 +153,7 @@
               <el-input-number v-model="wvpDeviceQuery.page" :min="1" style="width: 120px;" />
             </el-form-item>
             <el-form-item label="每页">
-              <el-input-number v-model="wvpDeviceQuery.size" :min="1" :max="100" style="width: 120px;" />
+              <el-input-number v-model="wvpDeviceQuery.count" :min="1" :max="100" style="width: 120px;" />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :icon="Search" @click="loadWVPDevices" :loading="wvpDeviceLoading">刷新设备</el-button>
@@ -150,6 +163,7 @@
 
         <!-- 设备列表 -->
         <el-table
+          v-if="wvpDevicesLoaded"
           :data="wvpDevices"
           v-loading="wvpDeviceLoading"
           class="tech-table"
@@ -157,8 +171,9 @@
           style="width: 100%; margin-top: 15px;"
           @current-change="handleWVPDeviceSelect"
           highlight-current-row
+          :empty-text="wvpDevices.length === 0 && !wvpDeviceLoading ? '暂无数据，请点击【刷新设备】按钮加载数据' : '暂无数据'"
         >
-          <el-table-column type="index" label="序号" width="60"></el-table-column>
+          <el-table-column type="index" label="序号" width="70" align="center"></el-table-column>
           <el-table-column prop="deviceId" label="设备ID" min-width="180">
             <template #default="{ row }">
               <code class="device-id">{{ row.deviceId || row.device_id }}</code>
@@ -187,6 +202,12 @@
             <el-form-item label="关键字">
               <el-input v-model="wvpChannelQuery.query" placeholder="通道名/编号" style="width: 200px;" />
             </el-form-item>
+            <el-form-item label="页码">
+              <el-input-number v-model="wvpChannelQuery.page" :min="1" style="width: 120px;" />
+            </el-form-item>
+            <el-form-item label="每页">
+              <el-input-number v-model="wvpChannelQuery.count" :min="1" :max="100" style="width: 120px;" />
+            </el-form-item>
             <el-form-item>
               <el-button type="primary" :icon="Search" @click="loadWVPDeviceChannels" :loading="wvpChannelLoading" :disabled="!selectedWVPDevice">刷新通道</el-button>
             </el-form-item>
@@ -195,44 +216,45 @@
 
         <!-- 通道列表 -->
         <el-table
+          v-if="wvpChannelsLoaded"
           :data="wvpChannels"
           v-loading="wvpChannelLoading"
           class="tech-table"
           stripe
           style="width: 100%; margin-top: 15px;"
+          :empty-text="wvpChannels.length === 0 && !wvpChannelLoading ? (selectedWVPDevice ? '暂无数据，请点击【刷新通道】按钮加载数据' : '请先选择设备') : '暂无数据'"
         >
-          <el-table-column type="index" label="序号" width="60"></el-table-column>
-          <el-table-column prop="device_id" label="设备ID" width="180">
+          <el-table-column type="index" label="序号" width="70" align="center"></el-table-column>
+          <el-table-column prop="channel_name" label="名称" min-width="120">
             <template #default="{ row }">
-              <code class="device-id">{{ row.device_id }}</code>
+              {{ row.name || row.channel_name || '-' }}
             </template>
           </el-table-column>
-          <el-table-column prop="channel_id" label="通道ID" width="180">
+          <el-table-column prop="channel_id" label="编号" min-width="180">
             <template #default="{ row }">
-              <code class="channel-id">{{ row.channel_id || row.channelId }}</code>
+              <code class="channel-id">{{ row.channelId || row.channel_id || row.deviceId || row.device_id || '-' }}</code>
             </template>
           </el-table-column>
-          <el-table-column prop="channel_name" label="通道名称" min-width="120">
+          <el-table-column prop="manufacturer" label="厂家" min-width="100">
             <template #default="{ row }">
-              {{ row.channel_name || row.name }}
+              {{ row.manufacturer || row.gbManufacturer || '-' }}
             </template>
           </el-table-column>
-          <el-table-column prop="manufacturer" label="厂商" width="100">
+          <el-table-column prop="model" label="型号" min-width="120">
             <template #default="{ row }">
-              {{ row.manufacturer || '-' }}
+              {{ row.model || row.gbModel || '-' }}
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="80" align="center">
+          <el-table-column prop="status" label="在线" width="80" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.status?.toUpperCase() === 'ON' ? 'success' : 'danger'" size="small">
-                {{ row.status?.toUpperCase() || '未知' }}
+              <el-tag :type="(row.status || '').toUpperCase() === 'ON' ? 'success' : 'danger'" size="small">
+                {{ (row.status || '').toUpperCase() || '未知' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="180" align="center" fixed="right">
+          <el-table-column label="操作" width="120" align="center" fixed="right">
             <template #default="{ row }">
               <el-button type="primary" size="small" @click="playChannel(row)">播放</el-button>
-              <el-button type="info" size="small" @click="viewChannelDetail(row)">详情</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -276,26 +298,37 @@ export default {
       // WVP直连设备
       wvpDevices: [],
       wvpDeviceLoading: false,
+      wvpDevicesLoaded: false, // 是否已加载过设备列表
       selectedWVPDevice: null,
       wvpDeviceQuery: {
         status: '',
         query: '',
         page: 1,
-        size: 20
+        count: 20
       },
 
       // WVP通道
       wvpChannels: [],
       wvpChannelLoading: false,
+      wvpChannelsLoaded: false, // 是否已加载过通道列表
       wvpChannelQuery: {
         online: '',
-        query: ''
+        query: '',
+        page: 1,
+        count: 50
       }
     }
   },
   async mounted() {
+    // 添加body类名用于样式控制
+    document.body.classList.add('platform-management-active')
+    
     await this.loadSIPInfo()
     await this.loadChannelStats()
+  },
+  beforeUnmount() {
+    // 移除body类名
+    document.body.classList.remove('platform-management-active')
   },
   methods: {
     // ==================== WVP平台对接方法 ====================
@@ -349,10 +382,11 @@ export default {
     // 加载WVP设备列表
     async loadWVPDevices() {
       this.wvpDeviceLoading = true
+      this.wvpDevicesLoaded = true // 标记已加载
       try {
         const params = {
           page: this.wvpDeviceQuery.page,
-          size: this.wvpDeviceQuery.size
+          count: this.wvpDeviceQuery.count
         }
         
         if (this.wvpDeviceQuery.query) {
@@ -367,10 +401,9 @@ export default {
         if (response && response.data) {
           this.wvpDevices = response.data.list || []
           
-          // 自动选择第一个设备
+          // 自动选择第一个设备（但不自动加载通道，由用户手动点击刷新通道）
           if (this.wvpDevices.length > 0 && !this.selectedWVPDevice) {
             this.selectedWVPDevice = this.wvpDevices[0].deviceId || this.wvpDevices[0].device_id
-            await this.loadWVPDeviceChannels()
           }
         }
       } catch (error) {
@@ -385,7 +418,9 @@ export default {
     handleWVPDeviceSelect(row) {
       if (row) {
         this.selectedWVPDevice = row.deviceId || row.device_id
-        this.loadWVPDeviceChannels()
+        // 清空通道列表，提示用户点击刷新通道
+        this.wvpChannels = []
+        this.wvpChannelsLoaded = false // 重置加载状态
       }
     },
 
@@ -397,10 +432,11 @@ export default {
       }
 
       this.wvpChannelLoading = true
+      this.wvpChannelsLoaded = true // 标记已加载
       try {
         const params = {
-          page: 1,
-          size: 50
+          page: this.wvpChannelQuery.page,
+          count: this.wvpChannelQuery.count
         }
         
         if (this.wvpChannelQuery.query) {
@@ -445,8 +481,8 @@ export default {
 
     // 播放通道
     playChannel(row) {
-      const channelId = row.channel_id || row.channelId
-      const deviceId = row.device_id || this.selectedWVPDevice
+      const channelId = row.channelId || row.channel_id || row.deviceId || row.device_id
+      const deviceId = this.selectedWVPDevice
       
       if (!channelId) {
         ElMessage.warning('通道ID为空，无法播放')
@@ -529,6 +565,29 @@ export default {
   overflow: visible;
 }
 
+/* 等高布局 */
+.equal-height-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.equal-height-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.equal-height-col .tech-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.equal-height-col .tech-card :deep(.el-card__body) {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 /* 代码样式 */
 code.device-id,
 code.channel-id {
@@ -568,6 +627,7 @@ code.channel-id {
   background: rgba(15, 25, 45, 0.95) !important;
   padding: 20px !important;
   border-radius: 0 0 12px 12px !important;
+  overflow: hidden !important;
 }
 
 .section-header {
@@ -589,119 +649,338 @@ code.channel-id {
   min-height: auto;
 }
 
-/* 表格样式 */
+/* 确保row之间的间距一致 */
+.section-content .el-row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  flex: 1;
+  display: flex;
+}
+
+.section-content .el-row .el-col {
+  display: flex;
+}
+
+.section-content .el-row + .el-row {
+  margin-top: 10px !important;
+}
+
+/* 确保两边内容高度完全一致 */
+.equal-height-col .section-content {
+  height: 210px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* 表格样式 - 来自 RoleManagement */
+.tech-table {
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+}
+
+/* 表格整体容器 */
 .tech-table :deep(.el-table) {
   background: rgba(15, 25, 45, 0.95) !important;
-  border-radius: 8px !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  border: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table::after) {
+  display: none !important;
+}
+
+/* 移除所有可能的白色边框 */
+.tech-table :deep(.el-table__inner-wrapper) {
+  border: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__inner-wrapper::before) {
+  display: none !important;
+}
+
+/* 表格头部样式 */
+.tech-table :deep(.el-table__header-wrapper) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border-radius: 12px 12px 0 0 !important;
+  border: none !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header) {
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
+    rgba(25, 40, 65, 1) 100%) !important;
+  border: none !important;
 }
 
 .tech-table :deep(.el-table__header-wrapper .el-table__header th) {
-  background: linear-gradient(135deg,
-    rgba(20, 35, 60, 1) 0%,
+  background: linear-gradient(135deg, 
+    rgba(20, 35, 60, 1) 0%, 
     rgba(25, 40, 65, 1) 100%) !important;
   color: #00d4ff !important;
   font-weight: 600 !important;
   font-size: 14px !important;
   padding: 16px 12px !important;
   border: none !important;
+  border-bottom: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
   text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
+  letter-spacing: 0.5px !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
+  border-right: none !important;
+}
+
+/* 表格头部发光效果 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 255, 255, 0.6) 50%, 
+    transparent 100%);
+  opacity: 0.8;
+}
+
+/* 表格主体样式 */
+.tech-table :deep(.el-table__body-wrapper) {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper::after) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper::before) {
+  display: none !important;
+}
+
+.tech-table :deep(.el-table__body) {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: none !important;
 }
 
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
   background: rgba(25, 35, 55, 0.6) !important;
   color: rgba(255, 255, 255, 0.95) !important;
-  transition: all 0.3s ease !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
 }
 
+/* 移除最后一行的底部边框 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:last-child) {
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:last-child td) {
+  border-bottom: none !important;
+}
+
+/* 交替行颜色 - 创建微妙的斑马纹效果 */
 .tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
   background: rgba(20, 30, 50, 0.7) !important;
 }
 
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
-  background: linear-gradient(90deg,
-    rgba(0, 255, 255, 0.08) 0%,
-    rgba(0, 255, 255, 0.12) 50%,
-    rgba(0, 255, 255, 0.08) 100%) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 4px 20px rgba(0, 255, 255, 0.15) !important;
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
+  background: rgba(25, 35, 55, 0.6) !important;
 }
 
+/* 悬停效果 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
+  background: linear-gradient(90deg, 
+    rgba(0, 255, 255, 0.08) 0%, 
+    rgba(0, 255, 255, 0.12) 50%, 
+    rgba(0, 255, 255, 0.08) 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 20px rgba(0, 255, 255, 0.15),
+    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 1) !important;
+}
+
+/* 选中行样式 */
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr.current-row) {
+  background: rgba(0, 255, 255, 0.12) !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body tr.current-row:hover) {
+  background: rgba(0, 255, 255, 0.15) !important;
+}
+
+/* 单元格样式 */
 .tech-table :deep(.el-table__body-wrapper .el-table__body td) {
   border: none !important;
+  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
   background: transparent !important;
   padding: 14px 12px !important;
   font-size: 13px !important;
+  line-height: 1.5 !important;
+  position: relative !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
+  border-right: none !important;
+}
+
+/* 序号列特殊样式 */
+.tech-table :deep(.el-table__header-wrapper .el-table__header th.el-table-column--selection),
+.tech-table :deep(.el-table__header-wrapper .el-table__header th:first-child) {
+  padding: 12px 8px !important;
+}
+
+.tech-table :deep(.el-table__body-wrapper .el-table__body td.el-table-column--selection),
+.tech-table :deep(.el-table__body-wrapper .el-table__body td:first-child) {
+  padding: 12px 8px !important;
+  white-space: nowrap !important;
+}
+
+/* 数据为空时的样式 */
+.tech-table :deep(.el-table__empty-block) {
+  background: rgba(25, 35, 55, 0.6) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  border: none !important;
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__empty-text) {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 14px !important;
+}
+
+/* 强制移除表格底部所有可能的边框 */
+.tech-table :deep(.el-table--border),
+.tech-table :deep(.el-table--striped),
+.tech-table :deep(.el-table) {
+  border-bottom: none !important;
+}
+
+.tech-table :deep(.el-table__footer-wrapper) {
+  border: none !important;
+  border-bottom: none !important;
+}
+
+/* 移除可能存在的底部分隔线 */
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
 }
 
 /* SIP接入信息样式 */
 .info-item {
-  margin-bottom: 15px;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-height: 60px;
 }
 
 .info-item label {
-  display: block;
-  margin-bottom: 8px;
+  min-width: 90px;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.8);
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .info-value {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex: 1;
 }
 
 .pill {
   display: inline-block;
-  padding: 8px 16px;
+  padding: 10px 16px;
   background: rgba(0, 255, 255, 0.1);
   border: 1px solid rgba(0, 255, 255, 0.3);
   border-radius: 20px;
   color: #00ffff;
   font-family: 'Courier New', monospace;
-  font-size: 13px;
+  font-size: 14px;
   flex: 1;
   text-align: center;
-  min-height: 36px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  word-break: break-all;
+  line-height: 1.4;
 }
 
 /* 系统配额统计样式 */
 .stat-box {
   background: rgba(20, 30, 50, 0.6);
-  padding: 15px;
+  padding: 8px 12px;
   border-radius: 8px;
   border-left: 4px solid;
-  transition: all 0.3s ease;
-}
-
-.stat-box:hover {
-  background: rgba(20, 30, 50, 0.8);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 255, 255, 0.1);
+  flex: 1;
+  min-height: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-bottom: 0;
+  width: 100%;
 }
 
 .stat-label {
   font-size: 12px;
   color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   font-weight: 500;
+  line-height: 1.3;
+  white-space: normal;
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   color: rgba(0, 255, 255, 0.9);
   text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  line-height: 1.2;
+  word-break: break-word;
 }
 
 .warning-box {
   background: rgba(254, 243, 199, 0.1) !important;
   border: 1px solid rgba(245, 158, 11, 0.5) !important;
   border-left: 4px solid #f59e0b !important;
+  flex: 1 !important;
+  min-height: 50px !important;
+  margin-bottom: 0 !important;
 }
 
 /* WVP设备与通道查询样式 */
@@ -726,22 +1005,145 @@ code.channel-id {
   font-weight: 500;
 }
 
+/* 输入框样式覆盖 */
+.wvp-form :deep(.el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  box-shadow: none !important;
+}
+
+.wvp-form :deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.4) !important;
+}
+
+.wvp-form :deep(.el-input__wrapper.is-focus) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+}
+
+.wvp-form :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+}
+
+.wvp-form :deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 选择框样式覆盖 */
+.wvp-form :deep(.el-select .el-input__wrapper) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+}
+
+.wvp-form :deep(.el-input-number__decrease),
+.wvp-form :deep(.el-input-number__increase) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border-color: rgba(0, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.wvp-form :deep(.el-input-number__decrease:hover),
+.wvp-form :deep(.el-input-number__increase:hover) {
+  color: #00ffff !important;
+}
+
 /* 响应式适配 */
 @media (max-width: 1200px) {
   .stat-value {
     font-size: 20px;
   }
   
-  .pill {
+  .stat-label {
     font-size: 12px;
-    padding: 6px 12px;
+  }
+  
+  .pill {
+    font-size: 13px;
+    padding: 8px 14px;
+    min-height: 40px;
+  }
+  
+  .info-item {
+    min-height: 56px;
+  }
+  
+  .info-item label {
+    min-width: 80px;
+    font-size: 13px;
+  }
+  
+  .stat-box {
+    min-height: 50px;
+    padding: 8px 12px;
+  }
+  
+  .warning-box {
+    min-height: 50px !important;
+  }
+  
+  .equal-height-col .section-content {
+    height: 210px;
   }
 }
 
 @media (max-width: 768px) {
+  /* 小屏幕时取消等高，改为堆叠 */
+  .equal-height-row {
+    display: block;
+  }
+  
+  .equal-height-col {
+    display: block;
+    margin-bottom: 20px;
+  }
+  
+  .equal-height-col .tech-card {
+    height: auto;
+  }
+  
+  .equal-height-col .section-content {
+    height: auto !important;
+  }
+  
+  .section-content .el-row {
+    flex: none;
+  }
+  
   .info-value {
     flex-direction: column;
     align-items: stretch;
+  }
+  
+  .info-item {
+    flex-direction: column;
+    align-items: flex-start;
+    min-height: auto;
+  }
+  
+  .info-item label {
+    margin-bottom: 8px;
+  }
+  
+  .pill {
+    min-height: 40px;
+  }
+  
+  .stat-box {
+    min-height: 50px;
+    padding: 8px 12px;
+  }
+  
+  .stat-label {
+    font-size: 12px;
+    white-space: normal;
+  }
+  
+  .stat-value {
+    font-size: 18px;
+  }
+  
+  .warning-box {
+    min-height: 50px !important;
   }
   
   .wvp-query-section .el-form {
@@ -752,5 +1154,64 @@ code.channel-id {
     display: block;
     margin-bottom: 10px;
   }
+}
+</style>
+
+<style>
+/* 针对平台管理页面的下拉菜单样式（非scoped） */
+body.platform-management-active .el-select-dropdown,
+body.platform-management-active .el-popper {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+body.platform-management-active .el-select-dropdown__wrap,
+body.platform-management-active .el-select-dropdown__list {
+  background: transparent !important;
+}
+
+body.platform-management-active .el-select-dropdown__item {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+}
+
+body.platform-management-active .el-select-dropdown__item:hover {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+}
+
+body.platform-management-active .el-select-dropdown__item.is-selected {
+  color: #00ffff !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  font-weight: bold !important;
+}
+
+body.platform-management-active .el-select-dropdown__item.is-disabled {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+body.platform-management-active .el-popper.is-light,
+body.platform-management-active .el-popper.is-pure {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border-color: rgba(0, 255, 255, 0.3) !important;
+}
+
+body.platform-management-active .el-popper.is-light .el-popper__arrow::before,
+body.platform-management-active .el-popper.is-pure .el-popper__arrow::before {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border-color: rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 表格的空状态和加载状态 */
+body.platform-management-active .el-table__empty-block {
+  background: transparent !important;
+}
+
+body.platform-management-active .el-table__empty-text {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+body.platform-management-active .el-loading-mask {
+  background-color: rgba(15, 25, 45, 0.8) !important;
 }
 </style>

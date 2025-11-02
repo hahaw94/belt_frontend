@@ -1,1339 +1,70 @@
 <template>
-  <div class="user-management-integrated-container tech-page-container">
+  <div class="device-management-container tech-page-container">
     <!-- 科技感背景 -->
-    <div class="tech-background">
-    </div>
+    <div class="tech-background"></div>
     
     <h2>设备管理</h2>
 
-    <!-- 板卡列表卡片 -->
-    <el-card class="board-list-card tech-card mb-20" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span>设备列表</span>
-          <div>
-            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="showAddBoard">添加设备</el-button>
-            <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="getBoardStats" :loading="boardStatsLoading">获取统计</el-button>
-            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getBoardList" :loading="boardLoading">刷新列表</el-button>
-          </div>
-        </div>
-      </template>
+    <!-- Tab分页 -->
+    <el-tabs v-model="activeTab" class="management-tabs tech-tabs" @tab-change="handleTabChange">
+      <!-- 相机管理 Tab -->
+      <el-tab-pane label="相机管理" name="camera">
+        <CameraManagement />
+      </el-tab-pane>
 
-      <!-- 设备搜索和筛选 -->
-      <div class="search-filters-card tech-card mb-20">
-        <div class="search-filters-header">
-          <span class="filter-title">搜索筛选</span>
-          <div class="header-stats">
-            <el-tag class="stat-tag online" size="small">
-              <i class="status-dot online"></i>
-              在线: {{ onlineBoardCount }}
-            </el-tag>
-            <el-tag class="stat-tag offline" size="small">
-              <i class="status-dot offline"></i>
-              离线: {{ offlineBoardCount }}
-            </el-tag>
-          </div>
-        </div>
-        <div class="search-filters-content">
-          <div class="filter-row">
-            <div class="filter-item">
-              <label for="deviceNameFilter">设备名称</label>
-              <el-input
-                v-model="boardSearchForm.deviceName"
-                id="deviceNameFilter"
-                placeholder="搜索设备名称"
-                class="tech-input"
-                clearable
-                @keyup.enter="handleBoardSearch"
-                @clear="handleBoardSearch"
-              />
-            </div>
-            <div class="filter-item">
-              <label for="deviceCodeFilter">设备编号</label>
-              <el-input
-                v-model="boardSearchForm.deviceCode"
-                id="deviceCodeFilter"
-                placeholder="搜索设备编号"
-                class="tech-input"
-                clearable
-                @keyup.enter="handleBoardSearch"
-                @clear="handleBoardSearch"
-              />
-            </div>
-            <div class="filter-item">
-              <label for="deviceStatusFilter">设备状态</label>
-              <el-select
-                v-model="boardSearchForm.status"
-                id="deviceStatusFilter"
-                placeholder="全部"
-                class="tech-select"
-                clearable
-                @change="handleBoardSearch"
-              >
-                <el-option label="全部" value="" />
-                <el-option label="在线" value="online" />
-                <el-option label="离线" value="offline" />
-                <el-option label="错误" value="error" />
-              </el-select>
-            </div>
-            <div class="filter-item">
-              <label for="manufacturerFilter">设备厂商</label>
-              <el-select
-                v-model="boardSearchForm.manufacturer"
-                id="manufacturerFilter"
-                placeholder="全部"
-                class="tech-select"
-                clearable
-                @change="handleBoardSearch"
-              >
-                <el-option label="全部" value="" />
-                <el-option label="海康威视" value="海康威视" />
-                <el-option label="大华" value="大华" />
-                <el-option label="华为" value="华为" />
-              </el-select>
-            </div>
-            <div class="filter-actions">
-              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleBoardSearch">搜索</el-button>
-              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetBoardSearch">重置</el-button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-        <!-- 自定义表格 -->
-        <div class="custom-table" v-loading="boardLoading">
-          <!-- 表格头部 -->
-          <div class="table-header">
-            <div class="header-cell id-cell">设备ID</div>
-            <div class="header-cell name-cell">设备名称</div>
-            <div class="header-cell number-cell">设备编号</div>
-            <div class="header-cell ip-cell">设备IP</div>
-            <div class="header-cell status-cell">设备状态</div>
-            <div class="header-cell stream-status-cell">推流状态</div>
-            <div class="header-cell camera-cell">绑定摄像机</div>
-            <div class="header-cell action-cell">操作</div>
-          </div>
-
-          <!-- 表格内容 -->
-          <div class="table-body">
-            <div
-              v-for="(row, index) in paginatedBoards"
-              :key="row.ID || row.id || index"
-              class="table-row-wrapper"
-            >
-              <!-- 主行 -->
-              <div class="table-row">
-                <div class="body-cell id-cell">{{ row.ID || row.id || 'N/A' }}</div>
-                <div class="body-cell name-cell">{{ row.DeviceName || row.device_name || 'N/A' }}</div>
-                <div class="body-cell number-cell">{{ row.DeviceNumber || row.device_number || 'N/A' }}</div>
-                <div class="body-cell ip-cell">{{ row.DeviceIP || row.device_ip || 'N/A' }}</div>
-                <div class="body-cell status-cell">
-                  <span class="status-tag" :class="getStatusClass(row.DeviceStatus || row.device_status)">
-                    {{ getStatusText(row.DeviceStatus || row.device_status) }}
-                  </span>
-                </div>
-                <div class="body-cell stream-status-cell">
-                  <span class="status-tag" :class="getStreamStatusClass(row.StreamStatus || row.stream_status)">
-                    {{ getStreamStatusText(row.StreamStatus || row.stream_status) }}
-                  </span>
-                </div>
-                <div class="body-cell camera-cell">
-                  <span v-if="row.BoundCameraName || row.bound_camera_name" class="camera-tag bound">
-                    {{ row.BoundCameraName || row.bound_camera_name }}
-                  </span>
-                  <span v-else class="camera-tag unbound">未绑定</span>
-                </div>
-                <div class="body-cell action-cell">
-                  <button class="action-btn view-btn" @click="viewBoardDetail(row)">
-                    详情
-                  </button>
-                  <button class="action-btn edit-btn" @click="editBoard(row)">
-                    编辑
-                  </button>
-                  <!-- 推流控制按钮 -->
-                  <button 
-                    v-if="(row.StreamStatus || row.stream_status) === 'streaming'"
-                    class="action-btn pause-btn" 
-                    @click="stopBoardStreaming(row)"
-                    :disabled="streamOperationLoading"
-                  >
-                    暂停推流
-                  </button>
-                  <button 
-                    v-else
-                    class="action-btn start-btn" 
-                    @click="startBoardStreaming(row)"
-                    :disabled="streamOperationLoading"
-                  >
-                    开始推流
-                  </button>
-                  <button class="action-btn stream-btn" @click="showStreamInfo(row)">
-                    流信息
-                  </button>
-                  <button class="action-btn delete-btn" @click="deleteBoard(row)">
-                    删除
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 分页组件 -->
-        <div class="flex-center">
-          <el-pagination
-            v-model:current-page="boardPagination.pageNum"
-            v-model:page-size="boardPagination.pageSize"
-            :page-sizes="[10, 20, 50, 100]"
-            :total="boardPagination.total"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handleBoardSizeChange"
-            @current-change="handleBoardCurrentChange"
-          />
-        </div>
-    </el-card>
-
-    <!-- 设备配置对话框 -->
-    <el-dialog 
-      v-model="boardDialogVisible" 
-      :title="boardDialogTitle" 
-      width="700px"
-      class="tech-dialog"
-      :modal-class="'tech-modal'"
-      destroy-on-close>
-      <div class="dialog-content">
-        <el-form :model="boardForm" :rules="boardRules" ref="boardFormRef" label-width="120px" class="tech-form simplified-form">
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="设备名称" prop="deviceName">
-                <el-input 
-                  v-model="boardForm.deviceName" 
-                  placeholder="请输入设备名称"
-                  class="tech-input">
-                </el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="设备编号" prop="deviceCode">
-                <el-input 
-                  v-model="boardForm.deviceCode" 
-                  placeholder="请输入设备编号"
-                  class="tech-input">
-                </el-input>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="设备IP地址" prop="ipAddress">
-                <el-input 
-                  v-model="boardForm.ipAddress" 
-                  placeholder="请输入IP地址"
-                  class="tech-input">
-                </el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="RTSP端口" prop="port">
-                <el-input-number 
-                  v-model="boardForm.port" 
-                  :min="1" 
-                  :max="65535" 
-                  style="width: 100%"
-                  class="tech-input-number">
-                </el-input-number>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          
-          <el-row :gutter="20">
-            <el-col :span="12">
-              <el-form-item label="RTSP用户名" prop="rtspUsername">
-                <el-input 
-                  v-model="boardForm.rtspUsername" 
-                  placeholder="请输入RTSP用户名"
-                  class="tech-input"
-                  clearable>
-                </el-input>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item label="RTSP密码" prop="rtspPassword">
-                <el-input 
-                  v-model="boardForm.rtspPassword" 
-                  type="password"
-                  placeholder="请输入RTSP密码"
-                  class="tech-input"
-                  show-password
-                  clearable>
-                </el-input>
-              </el-form-item>
-            </el-col>
-          </el-row>
-          
-          <el-row :gutter="20">
-            <el-col :span="24">
-              <el-form-item label="RTSP路径" prop="rtspPath">
-                <el-input 
-                  v-model="boardForm.rtspPath" 
-                  placeholder="请输入RTSP路径，例如：/stream1"
-                  class="tech-input"
-                  clearable>
-                  <template #prepend>rtsp://</template>
-                </el-input>
-              </el-form-item>
-            </el-col>
-          </el-row>
-      </el-form>
-      </div>
-      <template #footer>
-        <div class="dialog-footer dialog-footer-actions">
-          <el-button @click="boardDialogVisible = false">
-            取消操作
-          </el-button>
-          <el-button type="primary" @click="saveBoard" :loading="boardSaving">
-            <span v-if="!boardSaving">确认保存</span>
-            <span v-else>正在保存...</span>
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
-
-
-    <!-- 流信息对话框 -->
-    <el-dialog 
-      v-model="streamInfoDialogVisible" 
-      title="设备流信息" 
-      width="800px"
-      class="tech-dialog"
-      :modal-class="'tech-modal'"
-      destroy-on-close>
-      <div class="dialog-content" v-loading="streamInfoLoading">
-        <div class="stream-info-panel">
-          <div class="info-section">
-            <h3 class="section-title">流基本信息</h3>
-            <div class="info-grid">
-              <div class="info-item">
-                <span class="label">流ID:</span>
-                <span class="value">{{ streamInfo.stream_id || 'N/A' }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">推流状态:</span>
-                <span class="value" :class="getStreamStatusClass(streamInfo.status)">
-                  {{ getStreamStatusText(streamInfo.status) }}
-                </span>
-              </div>
-              <div class="info-item">
-                <span class="label">开始时间:</span>
-                <span class="value">{{ formatTime(streamInfo.start_time) }}</span>
-              </div>
-              <div class="info-item">
-                <span class="label">最后活跃:</span>
-                <span class="value">{{ formatTime(streamInfo.last_active_time) }}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="info-section" v-if="streamInfo.play_urls && Object.keys(streamInfo.play_urls).length > 0">
-            <h3 class="section-title">播放地址</h3>
-            <div class="play-urls-list">
-              <div 
-                v-for="(url, type) in streamInfo.play_urls" 
-                :key="type" 
-                class="url-item">
-                <div class="url-type">{{ type.toUpperCase() }}:</div>
-                <div class="url-content">
-                  <code class="url-code">{{ url }}</code>
-                  <button class="copy-btn" @click="copyToClipboard(url)">复制</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div class="info-section" v-else>
-            <h3 class="section-title">播放地址</h3>
-            <div class="no-data">
-              <p>暂无播放地址</p>
-            </div>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <div class="dialog-footer dialog-footer-actions">
-          <el-button @click="refreshStreamInfo" :loading="streamInfoLoading">
-            刷新信息
-          </el-button>
-          <el-button @click="streamInfoDialogVisible = false">
-            关闭
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
-
-    <!-- 设备详情对话框 -->
-    <el-dialog 
-      v-model="deviceDetailDialogVisible" 
-      title="设备详细信息" 
-      width="900px"
-      class="tech-dialog"
-      :modal-class="'tech-modal'"
-      destroy-on-close>
-      <div class="dialog-content" v-loading="deviceDetailLoading">
-        <div class="device-full-detail-panel">
-          <div class="detail-section">
-            <h3 class="section-title">基础设备信息</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="label">设备ID:</span>
-                <span class="value">{{ deviceDetail.id || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">设备名称:</span>
-                <span class="value">{{ deviceDetail.deviceName || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">设备编号:</span>
-                <span class="value">{{ deviceDetail.deviceNumber || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">设备IP:</span>
-                <span class="value">{{ deviceDetail.deviceIP || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">设备型号:</span>
-                <span class="value">{{ deviceDetail.model || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">厂商:</span>
-                <span class="value">{{ deviceDetail.manufacturer || 'N/A' }}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="detail-section">
-            <h3 class="section-title">状态与配置</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="label">设备状态:</span>
-                <span class="value" :class="getStatusClass(deviceDetail.deviceStatus)">
-                  {{ getStatusText(deviceDetail.deviceStatus) }}
-                </span>
-              </div>
-              <div class="detail-item">
-                <span class="label">推流状态:</span>
-                <span class="value" :class="getStreamStatusClass(deviceDetail.streamStatus)">
-                  {{ getStreamStatusText(deviceDetail.streamStatus) }}
-                </span>
-              </div>
-              <div class="detail-item">
-                <span class="label">固件版本:</span>
-                <span class="value">{{ deviceDetail.firmwareVersion || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">RTSP端口:</span>
-                <span class="value">{{ deviceDetail.rtspPort || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">RTSP路径:</span>
-                <span class="value">{{ deviceDetail.rtspPath || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">序列号:</span>
-                <span class="value">{{ deviceDetail.serialNumber || 'N/A' }}</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="detail-section">
-            <h3 class="section-title">绑定与算法信息</h3>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="label">绑定摄像机:</span>
-                <span class="value">{{ deviceDetail.boundCameraName || '未绑定' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">算法模型类型:</span>
-                <span class="value">{{ deviceDetail.algorithmModelType || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">算法模型版本:</span>
-                <span class="value">{{ deviceDetail.algorithmModelVersion || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">安装位置:</span>
-                <span class="value">{{ deviceDetail.location || 'N/A' }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">创建时间:</span>
-                <span class="value">{{ formatTime(deviceDetail.createdAt) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="label">更新时间:</span>
-                <span class="value">{{ formatTime(deviceDetail.updatedAt) }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <template #footer>
-        <div class="dialog-footer dialog-footer-actions">
-          <el-button @click="refreshDeviceDetail" :loading="deviceDetailLoading">
-            刷新信息
-          </el-button>
-          <el-button @click="deviceDetailDialogVisible = false">
-            关闭
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
+      <!-- 板卡管理 Tab -->
+      <el-tab-pane label="板卡管理" name="board">
+        <BoardManagement />
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  Refresh, Plus, Upload, Search, RefreshRight
-} from '@element-plus/icons-vue'
-import { deviceApi } from '@/api/device'
+import { ref, onMounted, onUnmounted } from 'vue'
+import CameraManagement from './components/CameraManagement.vue'
+import BoardManagement from './components/BoardManagement.vue'
 
-// 响应式数据
-const boardLoading = ref(false)
-const boardStatsLoading = ref(false)
-const streamOperationLoading = ref(false)
+// 当前激活的tab
+const activeTab = ref('camera')
 
-
-// 板卡对话框状态
-const boardDialogVisible = ref(false)
-const boardDialogTitle = ref('添加设备')
-const editingBoardId = ref(null)
-const boardSaving = ref(false)
-
-
-// 流信息对话框状态
-const streamInfoDialogVisible = ref(false)
-const streamInfoLoading = ref(false)
-const currentBoardForStream = ref(null)
-
-// 设备详情对话框状态
-const deviceDetailDialogVisible = ref(false)
-const deviceDetailLoading = ref(false)
-const currentBoardForDetail = ref(null)
-
-// 摄像机列表
-const cameraList = ref([])
-
-// 流信息数据
-const streamInfo = reactive({
-  stream_id: '',
-  status: '',
-  start_time: '',
-  last_active_time: '',
-  play_urls: {}
-})
-
-// 设备详情数据
-const deviceDetail = reactive({
-  id: '',
-  deviceName: '',
-  deviceNumber: '',
-  deviceIP: '',
-  model: '',
-  manufacturer: '',
-  deviceStatus: '',
-  streamStatus: '',
-  firmwareVersion: '',
-  rtspPort: '',
-  rtspPath: '',
-  serialNumber: '',
-  boundCameraName: '',
-  algorithmModelType: '',
-  algorithmModelVersion: '',
-  location: '',
-  createdAt: '',
-  updatedAt: ''
-})
-
-// 板卡数据
-const boardList = ref([])
-
-// 表单引用
-const boardFormRef = ref()
-
-// 板卡搜索表单
-const boardSearchForm = reactive({
-  deviceName: '',
-  deviceCode: '',
-  status: '',
-  manufacturer: ''
-})
-
-// 板卡表单
-const boardForm = reactive({
-  deviceName: '',
-  deviceCode: '',
-  ipAddress: '',
-  port: 554,
-  rtspUsername: '',
-  rtspPassword: '',
-  rtspPath: '',
-  manufacturer: '',
-  model: '',
-  location: '',
-  serialNumber: '',
-  firmwareVersion: '',
-  cameraId: '',
-  cameraName: '',
-  algorithmModelType: '',
-  algorithmModelVersion: '',
-  description: ''
-})
-
-
-// 板卡分页
-const boardPagination = reactive({
-  pageNum: 1,
-  pageSize: 10,
-  total: 0,
-  totalPages: 0
-})
-
-// 计算属性
-const filteredBoards = computed(() => {
-  let filtered = boardList.value
-
-  if (boardSearchForm.deviceName) {
-    filtered = filtered.filter(item => {
-      const deviceName = item.DeviceName || item.device_name || ''
-      return deviceName.toLowerCase().includes(boardSearchForm.deviceName.toLowerCase())
-    })
-  }
-
-  if (boardSearchForm.deviceCode) {
-    filtered = filtered.filter(item => {
-      const deviceCode = item.DeviceNumber || item.device_number || ''
-      return deviceCode.toLowerCase().includes(boardSearchForm.deviceCode.toLowerCase())
-    })
-  }
-
-  if (boardSearchForm.status) {
-    filtered = filtered.filter(item => {
-      const status = item.DeviceStatus || item.device_status
-      return status === boardSearchForm.status
-    })
-  }
-
-  if (boardSearchForm.manufacturer) {
-    filtered = filtered.filter(item => {
-      const manufacturer = item.manufacturer || item.vendor
-      return manufacturer === boardSearchForm.manufacturer
-    })
-  }
-
-  return filtered
-})
-
-// const totalBoards = computed(() => filteredBoards.value.length)
-
-const paginatedBoards = computed(() => {
-  const start = (boardPagination.pageNum - 1) * boardPagination.pageSize
-  const end = start + boardPagination.pageSize
-  return filteredBoards.value.slice(start, end)
-})
-
-const onlineBoardCount = computed(() => {
-  return boardList.value.filter(board => {
-    const status = board.DeviceStatus || board.device_status
-    return status === 'online' || status === 'connected' || status === 'active'
-  }).length
-})
-
-const offlineBoardCount = computed(() => {
-  return boardList.value.filter(board => {
-    const status = board.DeviceStatus || board.device_status
-    return status === 'offline' || status === 'disconnected' || status === 'inactive'
-  }).length
-})
-
-// 表单验证规则
-const boardRules = {
-  deviceName: [{ required: true, message: '请输入设备名称', trigger: 'blur' }],
-  deviceCode: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
-  ipAddress: [
-    { required: true, message: '请输入设备IP地址', trigger: 'blur' },
-    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: '请输入正确的IP地址', trigger: 'blur' }
-  ],
-  port: [{ required: true, message: '请输入通信端口', trigger: 'blur' }]
+// Tab切换处理
+const handleTabChange = (tabName) => {
+  console.log('切换到Tab:', tabName)
+  // 发送tab切换事件
+  window.dispatchEvent(new CustomEvent('tab-changed', {
+    detail: { newTab: tabName }
+  }))
 }
-
 
 // 生命周期
 onMounted(() => {
-  getBoardList()
+  console.log('设备管理页面已挂载')
 })
 
-
-// ==================== 板卡管理方法 ====================
-
-// 获取板卡列表
-const getBoardList = async () => {
-  try {
-    boardLoading.value = true
-    
-    // 检查认证状态
-    const token = localStorage.getItem('token')
-    console.log('当前Token状态:', token ? '已设置' : '未设置')
-    if (!token) {
-      ElMessage.error('请先登录')
-      return
-    }
-    
-    console.log('正在获取板卡列表...')
-    // 映射前端参数到后端期望的参数名
-    const apiParams = {
-      page: boardPagination.pageNum,
-      page_size: boardPagination.pageSize,
-      keyword: boardSearchForm.deviceName || boardSearchForm.deviceCode || '',
-      device_status: boardSearchForm.status,
-      // 映射厂商参数
-      manufacturer: boardSearchForm.manufacturer
-    }
-    
-    console.log('API请求参数:', apiParams)
-    console.log('请求URL: /api/v1/access/boards')
-    const response = await deviceApi.getBoardList(apiParams)
-    
-    console.log('板卡API响应:', response)
-    console.log('响应完整结构:', JSON.stringify(response, null, 2))
-    
-    // 检查响应格式
-    if (response && response.code === 200) {
-      // 直接从响应中获取数据，确保返回数组
-      const rawData = Array.isArray(response.data?.list) ? response.data.list : []
-      console.log('原始板卡数据:', rawData)
-      
-      // 如果有数据，打印第一条数据的字段结构
-      if (rawData.length > 0) {
-        console.log('第一条板卡数据字段:', Object.keys(rawData[0]))
-        console.log('第一条板卡完整数据:', JSON.stringify(rawData[0], null, 2))
-      }
-      
-      boardList.value = rawData
-      boardPagination.total = response.data?.total || 0
-      boardPagination.totalPages = response.data?.totalPages || Math.ceil(boardPagination.total / boardPagination.pageSize)
-      console.log('处理后的板卡列表数据:', boardList.value)
-    } else {
-      const errorMsg = response?.message || '获取板卡列表失败'
-      console.error('板卡API错误响应:', response)
-      ElMessage.error(errorMsg)
-    }
-  } catch (error) {
-    console.error('板卡API错误:', error)
-    
-    // 根据错误类型提供更详细的错误信息
-    if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
-      // 可以在这里跳转到登录页面
-    } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法访问板卡管理')
-    } else if (error.response?.status === 404) {
-      ElMessage.error('板卡管理API接口不存在')
-    } else if (error.response?.status >= 500) {
-      ElMessage.error('服务器错误，请联系管理员')
-    } else {
-      ElMessage.error(`获取板卡列表失败：${error.message}`)
-    }
-  } finally {
-    boardLoading.value = false
-  }
-}
-
-// 获取板卡统计信息
-const getBoardStats = async () => {
-  try {
-    boardStatsLoading.value = true
-    const response = await deviceApi.getBoardStats()
-    if (response.data && response.data.code === 200) {
-      ElMessage.success('统计信息获取成功')
-      console.log('板卡统计信息:', response.data.data)
-    } else {
-      ElMessage.error('获取统计信息失败')
-    }
-  } catch (error) {
-    console.error('获取统计信息错误:', error)
-    ElMessage.error('获取统计信息失败：' + error.message)
-  } finally {
-    boardStatsLoading.value = false
-  }
-}
-
-// 板卡搜索
-const handleBoardSearch = () => {
-  boardPagination.pageNum = 1
-  getBoardList()
-}
-
-// 重置板卡搜索
-const resetBoardSearch = () => {
-  Object.assign(boardSearchForm, {
-    deviceName: '',
-    deviceCode: '',
-    status: '',
-    manufacturer: ''
-  })
-  boardPagination.pageNum = 1
-  getBoardList()
-}
-
-// 显示添加板卡对话框
-const showAddBoard = () => {
-  boardDialogVisible.value = true
-  boardDialogTitle.value = '添加设备'
-  editingBoardId.value = null
-  Object.assign(boardForm, {
-    deviceName: '',
-    deviceCode: '',
-    ipAddress: '',
-    port: 554,
-    rtspUsername: '',
-    rtspPassword: '',
-    rtspPath: '',
-    manufacturer: '',
-    model: '',
-    location: '',
-    serialNumber: '',
-    firmwareVersion: '',
-    cameraId: '',
-    cameraName: '',
-    algorithmModelType: '',
-    algorithmModelVersion: '',
-    description: ''
-  })
-  // 获取摄像机列表
-  getCameraList()
-}
-
-// 查看板卡详情
-const viewBoardDetail = async (board) => {
-  try {
-    currentBoardForDetail.value = board
-    deviceDetailDialogVisible.value = true
-    deviceDetailLoading.value = true
-    
-    const boardId = board.ID || board.id
-    console.log('正在获取设备详情...', boardId)
-    
-    const response = await deviceApi.getBoardDetail(boardId)
-    
-    if (response && response.code === 200) {
-      const detail = response.data
-      Object.assign(deviceDetail, {
-        id: detail.ID || detail.id || '',
-        deviceName: detail.DeviceName || detail.device_name || '',
-        deviceNumber: detail.DeviceNumber || detail.device_number || '',
-        deviceIP: detail.DeviceIP || detail.device_ip || '',
-        model: detail.model || detail.device_model || '',
-        manufacturer: detail.manufacturer || detail.vendor || '',
-        deviceStatus: detail.DeviceStatus || detail.device_status || '',
-        streamStatus: detail.StreamStatus || detail.stream_status || '',
-        firmwareVersion: detail.FirmwareVersion || detail.firmware_version || '',
-        rtspPort: detail.RtspPort || detail.rtsp_port || '',
-        rtspPath: detail.RtspPath || detail.rtsp_path || '',
-        serialNumber: detail.serialNumber || detail.serial_number || detail.sn || '',
-        boundCameraName: detail.BoundCameraName || detail.bound_camera_name || '',
-        algorithmModelType: detail.AlgorithmModelType || detail.algorithm_model_type || '',
-        algorithmModelVersion: detail.AlgorithmModelVersion || detail.algorithm_model_version || '',
-        location: detail.location || detail.install_location || '',
-        createdAt: detail.CreatedAt || detail.created_at || '',
-        updatedAt: detail.UpdatedAt || detail.updated_at || ''
-      })
-    } else {
-      ElMessage.error('获取设备详情失败')
-    }
-  } catch (error) {
-    console.error('获取设备详情错误:', error)
-    ElMessage.error('获取设备详情失败：' + error.message)
-  } finally {
-    deviceDetailLoading.value = false
-  }
-}
-
-// 显示流信息对话框
-const showStreamInfo = async (board) => {
-  try {
-    currentBoardForStream.value = board
-    streamInfoDialogVisible.value = true
-    streamInfoLoading.value = true
-    
-    const boardId = board.ID || board.id
-    console.log('正在获取流信息...', boardId)
-    
-    const response = await deviceApi.getBoardStreamInfo(boardId)
-    
-    if (response && response.code === 200) {
-      const stream = response.data
-      Object.assign(streamInfo, {
-        stream_id: stream.stream_id || '',
-        status: stream.status || '',
-        start_time: stream.start_time || '',
-        last_active_time: stream.last_active_time || '',
-        play_urls: stream.play_urls || {}
-      })
-    } else {
-      ElMessage.error('获取流信息失败')
-    }
-  } catch (error) {
-    console.error('获取流信息错误:', error)
-    ElMessage.error('获取流信息失败：' + error.message)
-  } finally {
-    streamInfoLoading.value = false
-  }
-}
-
-// 刷新流信息
-const refreshStreamInfo = () => {
-  if (currentBoardForStream.value) {
-    showStreamInfo(currentBoardForStream.value)
-  }
-}
-
-// 刷新设备详情
-const refreshDeviceDetail = () => {
-  if (currentBoardForDetail.value) {
-    viewBoardDetail(currentBoardForDetail.value)
-  }
-}
-
-// 复制到剪贴板
-const copyToClipboard = async (text) => {
-  try {
-    await navigator.clipboard.writeText(text)
-    ElMessage.success('已复制到剪贴板')
-  } catch (error) {
-    console.error('复制失败:', error)
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = text
-    document.body.appendChild(textArea)
-    textArea.select()
-    try {
-      document.execCommand('copy')
-      ElMessage.success('已复制到剪贴板')
-    } catch (fallbackError) {
-      ElMessage.error('复制失败')
-    }
-    document.body.removeChild(textArea)
-  }
-}
-
-// 显示编辑板卡对话框
-const editBoard = (board) => {
-  boardDialogVisible.value = true
-  boardDialogTitle.value = '编辑设备'
-  editingBoardId.value = board.ID || board.id
-  Object.assign(boardForm, {
-    deviceName: board.DeviceName || board.device_name || '',
-    deviceCode: board.DeviceNumber || board.device_number || '',
-    ipAddress: board.DeviceIP || board.device_ip || '',
-    port: board.RtspPort || board.rtsp_port || 554,
-    rtspUsername: board.RtspUsername || board.rtsp_username || '',
-    rtspPassword: board.RtspPassword || board.rtsp_password || '',
-    rtspPath: board.RtspPath || board.rtsp_path || '',
-    manufacturer: board.manufacturer || board.vendor || '',
-    model: board.model || board.device_model || '',
-    location: board.location || board.install_location || '',
-    serialNumber: board.serialNumber || board.serial_number || board.sn || '',
-    firmwareVersion: board.FirmwareVersion || board.firmware_version || '',
-    cameraId: board.BoundCameraID || board.bound_camera_id || '',
-    cameraName: board.BoundCameraName || board.bound_camera_name || '',
-    algorithmModelType: board.AlgorithmModelType || board.algorithm_model_type || '',
-    algorithmModelVersion: board.AlgorithmModelVersion || board.algorithm_model_version || '',
-    description: board.Description || board.description || ''
-  })
-  // 获取摄像机列表
-  getCameraList()
-}
-
-// 保存板卡
-const saveBoard = async () => {
-  try {
-    // 表单验证
-    if (!boardFormRef.value) {
-      ElMessage.error('表单引用未找到')
-      return
-    }
-    
-    const isValid = await boardFormRef.value.validate()
-    if (!isValid) {
-      ElMessage.error('请填写完整的板卡信息')
-      return
-    }
-
-    // 检查认证状态
-    const token = localStorage.getItem('token')
-    if (!token) {
-      ElMessage.error('请先登录')
-      return
-    }
-
-    boardSaving.value = true
-
-    // 将前端表单数据映射为后端期望的格式
-    const apiData = {
-      device_name: boardForm.deviceName,
-      device_number: boardForm.deviceCode,
-      device_ip: boardForm.ipAddress,
-      rtsp_port: boardForm.port || 554,
-      rtsp_username: boardForm.rtspUsername || '',
-      rtsp_password: boardForm.rtspPassword || '',
-      rtsp_path: boardForm.rtspPath || '',
-      bound_camera_id: boardForm.cameraId ? parseInt(boardForm.cameraId) : null,
-      bound_camera_name: boardForm.cameraName || '',
-      algorithm_model_type: boardForm.algorithmModelType || '',
-      algorithm_model_version: boardForm.algorithmModelVersion || '',
-      description: boardForm.description || ''
-    }
-
-    if (editingBoardId.value) {
-      // 更新板卡
-      console.log('正在更新板卡...', editingBoardId.value, apiData)
-      const response = await deviceApi.updateBoard(editingBoardId.value, apiData)
-      
-      if (response && response.code === 200) {
-        ElMessage.success('板卡更新成功')
-        boardDialogVisible.value = false
-        getBoardList()
-      } else {
-        const errorMsg = response?.message || '更新板卡失败'
-        ElMessage.error(errorMsg)
-      }
-    } else {
-      // 创建板卡
-      console.log('正在创建板卡...', apiData)
-      const response = await deviceApi.createBoard(apiData)
-      
-      if (response && response.code === 200) {
-        ElMessage.success('板卡创建成功')
-        boardDialogVisible.value = false
-        getBoardList()
-      } else {
-        const errorMsg = response?.message || '创建板卡失败'
-        ElMessage.error(errorMsg)
-      }
-    }
-  } catch (error) {
-    console.error('保存板卡错误:', error)
-    
-    // 根据错误类型提供更详细的错误信息
-    if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
-    } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法操作板卡')
-    } else if (error.response?.status === 409) {
-      ElMessage.error('板卡已存在，请检查设备编号或IP地址')
-    } else if (error.response?.status >= 500) {
-      ElMessage.error('服务器错误，请联系管理员')
-    } else {
-      ElMessage.error(`保存板卡失败：${error.message}`)
-    }
-  } finally {
-    boardSaving.value = false
-  }
-}
-
-// 删除板卡
-const deleteBoard = async (board) => {
-  try {
-    const boardName = board.DeviceName || board.device_name || '未知板卡'
-    const boardId = board.ID || board.id
-    
-    await ElMessageBox.confirm(
-      `确认要删除板卡 "${boardName}" 吗？此操作不可撤销。`,
-      '确认删除',
-      {
-        confirmButtonText: '确认删除',
-        cancelButtonText: '取消',
-        type: 'error'
-      }
-    )
-
-    const response = await deviceApi.deleteBoard(boardId)
-    if (response.data && response.data.code === 200) {
-      ElMessage.success('板卡删除成功')
-      getBoardList()
-    } else {
-      ElMessage.error(response.data?.message || '删除板卡失败')
-    }
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('删除板卡错误:', error)
-      ElMessage.error('删除板卡失败：' + error.message)
-    }
-  }
-}
-
-
-// 获取摄像机列表
-const getCameraList = async () => {
-  try {
-    // 检查认证状态
-    const token = localStorage.getItem('token')
-    if (!token) {
-      ElMessage.error('请先登录')
-      return
-    }
-    
-    console.log('正在获取摄像机列表...')
-    const response = await deviceApi.getCameraList()
-    
-    if (response && response.code === 200) {
-      cameraList.value = response.data || []
-      console.log('摄像机列表数据:', cameraList.value)
-    } else {
-      const errorMsg = response?.message || '获取摄像机列表失败'
-      ElMessage.error(errorMsg)
-    }
-  } catch (error) {
-    console.error('获取摄像机列表错误:', error)
-    
-    if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
-    } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法访问摄像机列表')
-    } else {
-      ElMessage.error(`获取摄像机列表失败：${error.message}`)
-    }
-  }
-}
-
-
-
-// 固件升级
-// const upgradeFirmware = async (board) => {
-//   ElMessage.info(`固件升级功能：${board.deviceName}`)
-//   // TODO: 实现固件升级功能
-// }
-
-// 测试板卡连接
-// const testBoardConnection = async (board) => {
-//   try {
-//     const boardId = board.ID || board.id
-//     const boardName = board.DeviceName || board.device_name || '未知板卡'
-//     
-//     if (!boardId) {
-//       ElMessage.error('板卡ID不存在，无法测试连接')
-//       return
-//     }
-//     
-//     const response = await deviceApi.testBoardConnection(boardId)
-//     if (response && response.code === 200) {
-//       ElMessage.success(`板卡 ${boardName} 连接测试成功`)
-//     } else {
-//       ElMessage.error(`板卡 ${boardName} 连接测试失败`)
-//     }
-//   } catch (error) {
-//     console.error('测试连接错误:', error)
-//     ElMessage.error('连接测试失败：' + error.message)
-//   }
-// }
-
-// 板卡分页变化
-const handleBoardCurrentChange = (pageNum) => {
-  boardPagination.pageNum = pageNum
-  getBoardList()
-}
-
-const handleBoardSizeChange = (pageSize) => {
-  boardPagination.pageSize = pageSize
-  boardPagination.pageNum = 1
-  getBoardList()
-}
-
-// 状态文本辅助函数
-const getStatusText = (status) => {
-  const textMap = {
-    'online': '在线',
-    'offline': '离线', 
-    'error': '错误',
-    'connected': '在线',
-    'disconnected': '离线',
-    'active': '在线',
-    'inactive': '离线'
-  }
-  return textMap[status] || status || '未知'
-}
-
-// 时间格式化函数
-const formatTime = (time) => {
-  if (!time) return 'N/A'
-  try {
-    const date = new Date(time)
-    return date.toLocaleString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    })
-  } catch (error) {
-    return time
-  }
-}
-
-// 获取状态样式类
-const getStatusClass = (status) => {
-  const classMap = {
-    'online': 'online',
-    'offline': 'offline',
-    'error': 'error',
-    '在线': 'online',
-    '离线': 'offline',
-    '错误': 'error',
-    'connected': 'online',
-    'disconnected': 'offline',
-    'active': 'online',
-    'inactive': 'offline'
-  }
-  return classMap[status] || 'offline'
-}
-
-// 获取推流状态文本
-const getStreamStatusText = (status) => {
-  const textMap = {
-    'streaming': '推流中',
-    'stopped': '已停止',
-    'error': '推流错误',
-    'paused': '已暂停',
-    'connecting': '连接中',
-    'disconnected': '已断开',
-    'active': '推流中',
-    'inactive': '已停止'
-  }
-  return textMap[status] || status || '未知'
-}
-
-// 获取推流状态样式类
-const getStreamStatusClass = (status) => {
-  const classMap = {
-    'streaming': 'online',
-    'stopped': 'offline',
-    'error': 'error',
-    'paused': 'offline',
-    'connecting': 'online',
-    'disconnected': 'offline',
-    'active': 'online',
-    'inactive': 'offline'
-  }
-  return classMap[status] || 'offline'
-}
-
-// ==================== 推流控制方法 ====================
-
-// 开始板卡推流
-const startBoardStreaming = async (board) => {
-  try {
-    const boardId = board.ID || board.id
-    const boardName = board.DeviceName || board.device_name || '未知板卡'
-    
-    if (!boardId) {
-      ElMessage.error('板卡ID不存在，无法开始推流')
-      return
-    }
-    
-    streamOperationLoading.value = true
-    console.log('正在开始板卡推流...', boardId)
-    
-    const response = await deviceApi.startBoardStream(boardId)
-    
-    if (response && response.code === 200) {
-      ElMessage.success(`板卡 ${boardName} 推流启动成功`)
-      // 刷新列表以更新推流状态
-      getBoardList()
-    } else {
-      const errorMsg = response?.message || '启动推流失败'
-      ElMessage.error(`板卡 ${boardName} 启动推流失败：${errorMsg}`)
-    }
-  } catch (error) {
-    console.error('启动推流错误:', error)
-    
-    if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
-    } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法控制推流')
-    } else if (error.response?.status === 404) {
-      ElMessage.error('板卡不存在或推流接口不可用')
-    } else if (error.response?.status >= 500) {
-      ElMessage.error('服务器错误，请联系管理员')
-    } else {
-      ElMessage.error(`启动推流失败：${error.message}`)
-    }
-  } finally {
-    streamOperationLoading.value = false
-  }
-}
-
-// 停止板卡推流
-const stopBoardStreaming = async (board) => {
-  try {
-    const boardId = board.ID || board.id
-    const boardName = board.DeviceName || board.device_name || '未知板卡'
-    
-    if (!boardId) {
-      ElMessage.error('板卡ID不存在，无法停止推流')
-      return
-    }
-    
-    streamOperationLoading.value = true
-    console.log('正在停止板卡推流...', boardId)
-    
-    const response = await deviceApi.stopBoardStream(boardId)
-    
-    if (response && response.code === 200) {
-      ElMessage.success(`板卡 ${boardName} 推流已停止`)
-      // 刷新列表以更新推流状态
-      getBoardList()
-    } else {
-      const errorMsg = response?.message || '停止推流失败'
-      ElMessage.error(`板卡 ${boardName} 停止推流失败：${errorMsg}`)
-    }
-  } catch (error) {
-    console.error('停止推流错误:', error)
-    
-    if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
-    } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法控制推流')
-    } else if (error.response?.status === 404) {
-      ElMessage.error('板卡不存在或推流接口不可用')
-    } else if (error.response?.status >= 500) {
-      ElMessage.error('服务器错误，请联系管理员')
-    } else {
-      ElMessage.error(`停止推流失败：${error.message}`)
-    }
-  } finally {
-    streamOperationLoading.value = false
-  }
-}
-
+onUnmounted(() => {
+  console.log('设备管理页面已卸载')
+})
 </script>
 
 <style scoped>
+/* ==================== 科技感主题样式 ==================== */
+
 /* 页面容器 */
 .tech-page-container {
   position: relative;
   width: 100%;
-  min-height: 100vh; /* 最小高度为视口高度，允许内容撑开 */
-  max-height: 100vh; /* 最大高度为视口高度，超出时滚动 */
+  height: 100%;
   padding: 20px;
-  padding-bottom: 40px; /* 底部额外留白，确保分页控件可见 */
-  background: transparent; /* 使用全局背景 */
-  overflow-y: auto; /* 垂直滚动 */
-  overflow-x: hidden; /* 隐藏水平滚动 */
-  box-sizing: border-box; /* 包含padding在内的盒子模型 */
+  background: transparent;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
+/* 自定义滚动条样式 - 科技感 */
 .tech-page-container::-webkit-scrollbar {
   width: 8px;
   background: rgba(0, 0, 0, 0.1);
@@ -1355,7 +86,15 @@ const stopBoardStreaming = async (board) => {
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
 }
 
-/* ==================== 背景效果 ==================== */
+.tech-page-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, 
+    rgba(0, 255, 255, 0.5) 0%, 
+    rgba(0, 200, 255, 0.7) 50%, 
+    rgba(0, 255, 255, 0.5) 100%);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+}
+
+/* 科技感背景 */
 .tech-background {
   position: absolute;
   top: 0;
@@ -1364,15 +103,139 @@ const stopBoardStreaming = async (board) => {
   height: 100%;
   pointer-events: none;
   z-index: 1;
-  background: 
-    radial-gradient(circle at 20% 50%, rgba(0, 255, 255, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(0, 200, 255, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 40% 80%, rgba(0, 255, 255, 0.03) 0%, transparent 50%);
 }
 
+/* 科技感选项卡样式 */
+.tech-tabs {
+  position: relative;
+  z-index: 10;
+}
 
-/* ==================== 页面标题 ==================== */
-.user-management-integrated-container h2 {
+.tech-tabs :deep(.el-tabs) {
+  border: none !important;
+}
+
+.tech-tabs :deep(.el-tabs--card) {
+  border: none !important;
+}
+
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header) {
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__nav-wrap) {
+  border: none !important;
+  background: transparent !important;
+}
+
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__nav) {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* 强制覆盖ElementUI Card类型选项卡的默认样式 */
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item) {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  box-shadow: none !important;
+  outline: none !important;
+  padding: 12px 20px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.tech-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item.is-active) {
+  color: #00ffff !important;
+  background-color: rgba(0, 255, 255, 0.15) !important;
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  outline: none !important;
+}
+
+/* 全局强制覆盖，确保没有任何ElementUI默认样式 */
+.device-management-container :deep(.el-tabs--card > .el-tabs__header .el-tabs__item) {
+  border: none !important;
+  border-color: transparent !important;
+  background-color: rgba(0, 255, 255, 0.05) !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+}
+
+.device-management-container :deep(.el-tabs--card > .el-tabs__header .el-tabs__item.is-active) {
+  border: none !important;
+  border-color: transparent !important;
+  background-color: rgba(0, 255, 255, 0.15) !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+}
+
+.tech-tabs :deep(.el-tabs__header) {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.tech-tabs :deep(.el-tabs__nav-wrap::after) {
+  background-color: transparent !important;
+}
+
+.tech-tabs :deep(.el-tabs__item) {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-weight: 500;
+  border: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+  border-radius: 8px 8px 0 0 !important;
+  margin-right: 2px !important;
+  transition: all 0.3s ease !important;
+}
+
+.tech-tabs :deep(.el-tabs__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.tech-tabs :deep(.el-tabs__item.is-active) {
+  color: #00ffff !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  border: none !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.tech-tabs :deep(.el-tabs__active-bar) {
+  background-color: #00ffff !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.tech-tabs :deep(.el-tabs__content) {
+  position: relative;
+  z-index: 10;
+  background: transparent;
+  border: none !important;
+}
+
+.device-management-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.device-management-container h2 {
   margin: 24px 0 20px 0;
   color: #00ffff;
   font-size: 24px;
@@ -1382,887 +245,326 @@ const stopBoardStreaming = async (board) => {
   z-index: 10;
 }
 
-/* ==================== 科技感卡片 ==================== */
-.tech-card {
-  position: relative;
-  z-index: 10;
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
+.management-tabs {
+  flex: 0 0 auto;
+  border: none !important;
+}
+
+.management-tabs :deep(.el-tabs__content) {
+  padding: 20px 0 0 0;
+  border: none !important;
+  overflow: visible !important;
+}
+
+.management-tabs :deep(.el-tab-pane) {
+  height: auto !important;
+  border: none !important;
+  overflow: visible !important;
+}
+
+.management-tabs :deep(.el-tabs__header) {
+  margin-bottom: 0;
+}
+
+.management-tabs :deep(.el-tabs__nav-wrap) {
+  padding-left: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .device-management-container {
+    padding: 10px;
+  }
+  
+  .device-management-container h2 {
+    font-size: 20px;
+    margin: 16px 0;
+  }
+  
+  .management-tabs :deep(.el-tabs--card > .el-tabs__header .el-tabs__item) {
+    padding: 10px 15px;
+    font-size: 13px;
+  }
+}
+
+/* ==================== 输入框和表单样式 ==================== */
+
+/* 输入框通用样式 */
+:deep(.el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 4px !important;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.4) !important;
+}
+
+:deep(.el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* 选择器样式 */
+:deep(.el-select) {
+  width: 100%;
+}
+
+:deep(.el-select .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-select .el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+}
+
+/* 下拉面板样式 */
+:deep(.el-select-dropdown) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
   backdrop-filter: blur(10px) !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
-  margin-bottom: 20px;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+}
+
+/* 表单标签样式 */
+:deep(.el-form-item__label) {
+  color: #ffffff !important;
+  text-shadow: 0 0 3px rgba(255, 255, 255, 0.3) !important;
+  font-weight: 500;
+}
+
+/* 文本区域样式 */
+:deep(.el-textarea__inner) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+}
+
+:deep(.el-textarea__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+}
+
+:deep(.el-textarea__inner:focus) {
+  border-color: #00ffff !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 数字输入框样式 */
+:deep(.el-input-number) {
+  width: 100%;
+}
+
+:deep(.el-input-number .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+/* 上传组件样式 */
+:deep(.el-upload) {
+  border: 1px dashed rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 20, 40, 0.3) !important;
+  border-radius: 6px;
   transition: all 0.3s ease;
 }
 
-/* ==================== 页面操作区 ==================== */
-.page-operations {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  margin-bottom: 20px;
-  justify-content: flex-end;
+:deep(.el-upload:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2) !important;
 }
 
-.tech-card:hover {
-  box-shadow: 
-    0 12px 40px rgba(0, 0, 0, 0.4),
-    0 0 30px rgba(0, 255, 255, 0.2) !important;
-}
-
-.tech-card :deep(.el-card__header) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px 12px 0 0 !important;
-  color: #00ffff !important;
-  padding: 16px 20px !important;
-}
-
-.tech-card :deep(.el-card__body) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  padding: 20px !important;
-  border-radius: 0 0 12px 12px !important;
-}
-
-/* ==================== 卡片头部 ==================== */
-.card-header {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  font-weight: bold;
-  color: #00ffff !important;
-  width: 100% !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.card-header span {
-  color: #00ffff !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
-  letter-spacing: 1px !important;
-  display: block !important;
-  visibility: visible !important;
-}
-
-/* 板卡列表卡片样式 - 完全按照用户列表样式 */
-.board-list-card.tech-card {
-  position: relative;
-  z-index: 10;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  margin-bottom: 20px;
-}
-
-.board-list-card.tech-card :deep(.el-card__header) {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 0 !important;
-  padding: 16px 20px !important;
-}
-
-.board-list-card.tech-card :deep(.el-card__body) {
-  background: transparent !important;
-  padding: 0 !important;
-}
-
-.board-list-card .card-header {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  font-weight: bold !important;
-  color: #00ffff !important;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
-  width: 100% !important;
-}
-
-.board-list-card .card-header span {
-  color: #00ffff !important;
-  font-weight: bold !important;
-  font-size: 16px !important;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
-}
-
-.board-list-card .card-header > div {
-  display: flex !important;
-  align-items: center !important;
-  gap: 8px !important;
-}
-
-/* 确保卡片头部可见性 */
-.board-list-card :deep(.el-card__header) {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  height: auto !important;
-  min-height: 60px !important;
-  background: transparent !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 0 !important;
-  padding: 16px 20px !important;
-}
-
-
-
-.stat-tag {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  border: none !important;
-}
-
-.stat-tag.online {
-  background: rgba(0, 255, 0, 0.1);
-  color: #00ff00;
-}
-
-.stat-tag.offline {
-  background: rgba(255, 69, 0, 0.1);
-  color: #ff4500;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-  position: relative;
-}
-
-.status-dot.online {
-  background: #00ff00;
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.6);
-}
-
-.status-dot.offline {
-  background: #ff4500;
-  box-shadow: 0 0 8px rgba(255, 69, 0, 0.6);
-}
-
-.status-dot.error {
-  background: #ffff00;
-  box-shadow: 0 0 8px rgba(255, 255, 0, 0.6);
-}
-
-/* ==================== 搜索筛选样式 ==================== */
-.search-filters-card {
-  margin-bottom: 20px;
-  padding: 15px;
-  background: rgba(0, 255, 255, 0.03) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+/* 对话框样式 */
+:deep(.el-dialog) {
+  background: rgba(0, 20, 40, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
   border-radius: 8px !important;
+  backdrop-filter: blur(10px) !important;
 }
 
-.search-filters-header {
-  margin-bottom: 15px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-  padding-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+:deep(.el-dialog__header) {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
 }
 
-.filter-title {
-  color: #00ffff;
-  font-weight: bold;
-  font-size: 16px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
 }
 
-.header-stats {
-  display: flex;
-  gap: 12px;
-  align-items: center;
+:deep(.el-dialog__body) {
+  background: transparent !important;
+  color: #ffffff !important;
 }
 
-.search-filters-content {
-  padding: 0;
+/* 表格样式 */
+:deep(.el-table) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 6px !important;
 }
 
-.filter-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr auto;
-  gap: 15px;
-  align-items: end;
+:deep(.el-table th) {
+  background: rgba(0, 30, 60, 0.8) !important;
+  color: #00ffff !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
 }
 
-.filter-item {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+:deep(.el-table td) {
+  background: transparent !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1) !important;
 }
 
-.filter-item label {
-  color: #00ffff;
-  font-size: 14px;
-  font-weight: 500;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+:deep(.el-table tr:hover td) {
+  background: rgba(0, 255, 255, 0.1) !important;
 }
 
-.filter-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+/* 分页样式 */
+:deep(.el-pagination) {
+  color: #ffffff !important;
+  background: transparent !important;
 }
 
-/* ==================== 操作区域 ==================== */
-.operation-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 0 20px 0;
-  margin-bottom: 15px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+:deep(.el-pagination .el-pager li) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+  margin: 0 2px !important;
 }
 
-.left-operations, .right-operations {
-  display: flex;
-  gap: 16px;
-  align-items: center;
+:deep(.el-pagination .el-pager li:hover) {
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
 }
 
+:deep(.el-pagination .el-pager li.active) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  color: #00ffff !important;
+  border-color: #00ffff !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
+}
 
-/* ==================== 科技感按钮 ==================== */
-.tech-button {
+/* 分页按钮样式 */
+:deep(.el-pagination .btn-prev),
+:deep(.el-pagination .btn-next) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+  border-radius: 4px !important;
+}
+
+:deep(.el-pagination .btn-prev:hover),
+:deep(.el-pagination .btn-next:hover) {
+  color: #00ffff !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+}
+
+:deep(.el-pagination .btn-prev:disabled),
+:deep(.el-pagination .btn-next:disabled) {
+  background: rgba(0, 20, 40, 0.3) !important;
+  border-color: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* 分页输入框和选择器样式 */
+:deep(.el-pagination .el-select) {
+  background: transparent !important;
+}
+
+:deep(.el-pagination .el-select .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-pagination .el-select .el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+:deep(.el-pagination .el-input) {
+  background: transparent !important;
+}
+
+:deep(.el-pagination .el-input .el-input__wrapper) {
+  background: rgba(0, 20, 40, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+:deep(.el-pagination .el-input .el-input__inner) {
+  color: #ffffff !important;
+  background: transparent !important;
+}
+
+/* 分页总数文字样式 */
+:deep(.el-pagination__total) {
+  color: #ffffff !important;
+}
+
+:deep(.el-pagination__jump) {
+  color: #ffffff !important;
+}
+
+:deep(.el-pagination__sizes) {
+  color: #ffffff !important;
+}
+
+/* ==================== 科技感按钮样式 ==================== */
+
+/* 科技感主要按钮 */
+:deep(.tech-button) {
   border: 1px solid rgba(0, 255, 255, 0.4) !important;
   background: rgba(0, 255, 255, 0.1) !important;
   color: #00ffff !important;
-  border-radius: 8px !important;
+  border-radius: 6px !important;
   transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+  padding: 8px 16px !important;
   font-weight: 500 !important;
-  padding: 10px 20px !important;
-  text-shadow: 0 0 6px rgba(0, 255, 255, 0.4) !important;
-  position: relative;
-  overflow: hidden;
 }
 
-.tech-button:hover {
+:deep(.tech-button:hover) {
   background: rgba(0, 255, 255, 0.2) !important;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
   transform: translateY(-1px) !important;
   border-color: rgba(0, 255, 255, 0.6) !important;
 }
 
-.tech-button.primary {
-  background: rgba(0, 120, 255, 0.2) !important;
-  border-color: rgba(0, 120, 255, 0.5) !important;
-}
-
-.tech-button.success {
-  background: rgba(0, 255, 0, 0.1) !important;
-  border-color: rgba(0, 255, 0, 0.4) !important;
-  color: #00ff00 !important;
-}
-
-.tech-button.info {
-  background: rgba(255, 255, 0, 0.1) !important;
-  border-color: rgba(255, 255, 0, 0.4) !important;
-  color: #ffff00 !important;
-}
-
-.tech-button.refresh {
-  background: rgba(255, 165, 0, 0.1) !important;
-  border-color: rgba(255, 165, 0, 0.4) !important;
-  color: #ffa500 !important;
-}
-
-.tech-button.cancel {
-  background: rgba(128, 128, 128, 0.1) !important;
-  border-color: rgba(128, 128, 128, 0.4) !important;
-  color: #808080 !important;
-}
-
-.button-text {
-  position: relative;
-  z-index: 2;
-}
-
-/* ==================== 小按钮样式 ==================== */
-.tech-button-sm {
-  border: 1px solid rgba(0, 255, 255, 0.4) !important;
-  background: rgba(0, 255, 255, 0.1) !important;
-  color: #00ffff !important;
-  border-radius: 6px !important;
-  transition: all 0.3s ease !important;
-  font-size: 12px !important;
-  padding: 6px 12px !important;
-  text-shadow: 0 0 4px rgba(0, 255, 255, 0.3) !important;
-  font-weight: 500 !important;
-}
-
-.tech-button-sm:hover {
-  background: rgba(0, 255, 255, 0.2) !important;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4) !important;
-  transform: translateY(-1px) !important;
-}
-
-.tech-button-sm.view {
-  color: #87ceeb !important;
-  border-color: rgba(135, 206, 235, 0.4) !important;
-  background: rgba(135, 206, 235, 0.1) !important;
-}
-
-.tech-button-sm.edit {
-  color: #00ff00 !important;
-  border-color: rgba(0, 255, 0, 0.4) !important;
-  background: rgba(0, 255, 0, 0.1) !important;
-}
-
-.tech-button-sm.bind {
-  color: #ffff00 !important;
-  border-color: rgba(255, 255, 0, 0.4) !important;
-  background: rgba(255, 255, 0, 0.1) !important;
-}
-
-.tech-button-sm.upgrade {
-  color: #ffa500 !important;
-  border-color: rgba(255, 165, 0, 0.4) !important;
-  background: rgba(255, 165, 0, 0.1) !important;
-}
-
-.tech-button-sm.test {
-  color: #9370db !important;
-  border-color: rgba(147, 112, 219, 0.4) !important;
-  background: rgba(147, 112, 219, 0.1) !important;
-}
-
-.tech-button-sm.delete {
-  color: #ff6b6b !important;
-  border-color: rgba(255, 107, 107, 0.4) !important;
-  background: rgba(255, 107, 107, 0.1) !important;
-}
-
-/* ==================== 自定义表格样式 ==================== */
-.custom-table {
-  background: rgba(15, 25, 45, 0.95);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 8px;
-  overflow: hidden;
-  margin-bottom: 20px;
-  backdrop-filter: blur(10px);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 20px rgba(0, 255, 255, 0.1);
-}
-
-/* 表格头部 */
-.table-header {
-  display: grid;
-  grid-template-columns: 80px 1fr 150px 150px 100px 120px 150px 350px;
-  background: rgba(20, 30, 50, 0.8);
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-}
-
-.header-cell {
-  padding: 12px 8px;
-  color: #00ffff;
-  font-weight: 600;
-  text-align: center;
-  border-right: 1px solid rgba(0, 255, 255, 0.1);
-  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
-  font-size: 14px;
-}
-
-.header-cell:last-child {
-  border-right: none;
-}
-
-/* 表格主体 */
-.table-body {
-  background: rgba(15, 25, 45, 0.95);
-}
-
-.table-row-wrapper {
-  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.table-row-wrapper:last-child {
-  border-bottom: none;
-}
-
-.table-row {
-  display: grid;
-  grid-template-columns: 80px 1fr 150px 150px 100px 120px 150px 350px;
-  transition: all 0.3s ease;
-  background: rgba(15, 25, 45, 0.95);
-}
-
-.table-row:nth-child(even) {
-  background: rgba(20, 30, 50, 0.6);
-}
-
-.body-cell {
-  padding: 12px 8px;
-  color: rgba(255, 255, 255, 0.9);
-  border-right: 1px solid rgba(0, 255, 255, 0.1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-  min-height: 48px;
-}
-
-.body-cell:last-child {
-  border-right: none;
-}
-
-
-/* ID单元格 */
-.id-cell {
-  color: #00ffff;
-  font-family: 'Courier New', monospace;
-  font-weight: 600;
-  text-shadow: 0 0 6px rgba(0, 255, 255, 0.4);
-}
-
-/* 名称单元格 */
-.name-cell {
-  justify-content: flex-start;
-  padding-left: 12px;
-}
-
-/* 编号单元格 */
-.number-cell {
-  font-family: 'Courier New', monospace;
-  justify-content: flex-start;
-  padding-left: 12px;
-}
-
-/* IP单元格 */
-.ip-cell {
-  color: #00ffff;
-  font-family: 'Courier New', monospace;
-}
-
-/* 状态标签 */
-.status-tag {
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.status-tag.online {
-  background: rgba(0, 255, 0, 0.1);
-  color: #00ff00;
-  border: 1px solid rgba(0, 255, 0, 0.3);
-}
-
-.status-tag.offline {
-  background: rgba(255, 69, 0, 0.1);
-  color: #ff4500;
-  border: 1px solid rgba(255, 69, 0, 0.3);
-}
-
-.status-tag.error {
-  background: rgba(255, 255, 0, 0.1);
-  color: #ffff00;
-  border: 1px solid rgba(255, 255, 0, 0.3);
-}
-
-/* 推流状态 */
-.stream-status-cell {
-  justify-content: center;
-}
-
-/* 摄像机标签 */
-.camera-tag {
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.camera-tag.bound {
-  background: rgba(0, 255, 0, 0.1);
-  color: #00ff00;
-  border: 1px solid rgba(0, 255, 0, 0.3);
-}
-
-.camera-tag.unbound {
-  background: rgba(255, 107, 107, 0.1);
-  color: #ff6b6b;
-  border: 1px solid rgba(255, 107, 107, 0.3);
-}
-
-/* 操作按钮 */
-.action-cell {
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.action-btn {
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid;
-  background: transparent;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  min-width: 50px;
-  justify-content: center;
-}
-
-.view-btn {
-  color: #87ceeb;
-  border-color: rgba(135, 206, 235, 0.4);
-}
-
-.view-btn:hover {
-  background: rgba(135, 206, 235, 0.1);
-  border-color: rgba(135, 206, 235, 0.6);
-}
-
-.edit-btn {
-  color: #00ff00;
-  border-color: rgba(0, 255, 0, 0.4);
-}
-
-.edit-btn:hover {
-  background: rgba(0, 255, 0, 0.1);
-  border-color: rgba(0, 255, 0, 0.6);
-}
-
-.stream-btn {
-  color: #00bfff;
-  border-color: rgba(0, 191, 255, 0.4);
-}
-
-.stream-btn:hover {
-  background: rgba(0, 191, 255, 0.1);
-  border-color: rgba(0, 191, 255, 0.6);
-}
-
-.delete-btn {
-  color: #ff6b6b;
-  border-color: rgba(255, 107, 107, 0.4);
-}
-
-.delete-btn:hover {
-  background: rgba(255, 107, 107, 0.1);
-  border-color: rgba(255, 107, 107, 0.6);
-}
-
-.start-btn {
-  color: #00ff00;
-  border-color: rgba(0, 255, 0, 0.4);
-}
-
-.start-btn:hover {
-  background: rgba(0, 255, 0, 0.1);
-  border-color: rgba(0, 255, 0, 0.6);
-}
-
-.start-btn:disabled {
-  color: rgba(0, 255, 0, 0.5);
-  border-color: rgba(0, 255, 0, 0.2);
-  cursor: not-allowed;
-}
-
-.pause-btn {
-  color: #ffa500;
-  border-color: rgba(255, 165, 0, 0.4);
-}
-
-.pause-btn:hover {
-  background: rgba(255, 165, 0, 0.1);
-  border-color: rgba(255, 165, 0, 0.6);
-}
-
-.pause-btn:disabled {
-  color: rgba(255, 165, 0, 0.5);
-  border-color: rgba(255, 165, 0, 0.2);
-  cursor: not-allowed;
-}
-
-
-/* 分页组件样式 */
-.flex-center {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-:deep(.el-pagination) {
-  color: #00ffff !important;
-}
-
-:deep(.el-pagination .el-pager li) {
-  background: rgba(0, 255, 255, 0.1) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  color: #00ffff !important;
-  border-radius: 4px !important;
-  margin: 0 2px !important;
-}
-
-:deep(.el-pagination .el-pager li.is-active) {
-  background: rgba(0, 255, 255, 0.3) !important;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
-}
-
-:deep(.el-pagination .btn-prev),
-:deep(.el-pagination .btn-next) {
-  background: rgba(0, 255, 255, 0.1) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  color: #00ffff !important;
-  border-radius: 4px !important;
-}
-
-
-/* ==================== 详情面板 ==================== */
-.device-detail-panel {
-  background: rgba(20, 30, 50, 0.6);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 20px;
-  margin: 15px;
-}
-
-.detail-title {
-  color: #00ffff;
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
-}
-
-.detail-icon {
-  font-size: 16px;
-  margin-right: 5px;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.detail-group {
-  background: rgba(15, 25, 45, 0.8);
-  border: 1px solid rgba(0, 255, 255, 0.1);
-  border-radius: 6px;
-  padding: 15px;
-}
-
-.detail-group h4 {
-  color: #00ffff;
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 12px 0;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
-}
-
-.detail-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.detail-item:last-child {
-  border-bottom: none;
-}
-
-.detail-item .label {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 12px;
-  min-width: 80px;
-}
-
-.detail-item .value {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 12px;
-  font-weight: 500;
-  text-align: right;
-}
-
-.detail-item .value.status.online {
-  color: #00ff00;
-}
-
-.detail-item .value.status.offline {
-  color: #ff4500;
-}
-
-.detail-item .value.status.error {
-  color: #ffff00;
-}
-
-
-/* ==================== 科技感对话框样式 - 完全采用用户管理样式 ==================== */
-.tech-dialog :deep(.el-dialog),
-:deep(.tech-dialog.el-dialog),
-:deep(.el-dialog.tech-dialog) {
-  background: rgba(45, 55, 75, 0.92) !important;
-  backdrop-filter: blur(15px) !important;
-  border: 1px solid rgba(0, 255, 255, 0.4) !important;
-  border-radius: 15px !important;
-  box-shadow: 
-    0 0 50px rgba(0, 255, 255, 0.3),
-    inset 0 0 50px rgba(0, 255, 255, 0.08) !important;
-}
-
-:deep(.tech-dialog .el-dialog__header) {
-  background: rgba(45, 55, 75, 0.92);
-  border-bottom: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 15px 15px 0 0;
-}
-
-:deep(.tech-dialog .el-dialog__title) {
-  color: #00ffff !important;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-  font-weight: bold;
-}
-
-:deep(.tech-dialog .el-dialog__body) {
-  background: rgba(45, 55, 75, 0.92);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* 科技感表单 - 增强权重 */
-.tech-dialog :deep(.el-form-item__label),
-:deep(.tech-dialog .el-form-item__label) {
-  color: #00ffff !important;
-  font-weight: 500 !important;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
-}
-
-.tech-dialog :deep(.el-input__wrapper),
-:deep(.tech-dialog .el-input__wrapper),
-.tech-dialog :deep(.el-input .el-input__wrapper) {
-  background: rgba(0, 0, 0, 0.4) !important;
-  border: 1px solid rgba(0, 255, 255, 0.4) !important;
-  border-radius: 6px !important;
-  box-shadow: 
-    0 0 15px rgba(0, 255, 255, 0.15),
-    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
-}
-
-.tech-dialog :deep(.el-input__wrapper:hover),
-:deep(.tech-dialog .el-input__wrapper:hover) {
-  border-color: rgba(0, 255, 255, 0.6) !important;
-  box-shadow: 
-    0 0 20px rgba(0, 255, 255, 0.25),
-    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
-}
-
-.tech-dialog :deep(.el-input__wrapper.is-focus),
-:deep(.tech-dialog .el-input__wrapper.is-focus) {
-  border-color: #00ffff !important;
-  box-shadow: 
-    0 0 25px rgba(0, 255, 255, 0.4),
-    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
-}
-
-.tech-dialog :deep(.el-input__inner),
-:deep(.tech-dialog .el-input__inner) {
-  color: rgba(255, 255, 255, 0.95) !important;
-  background: transparent !important;
-}
-
-.tech-dialog :deep(.el-input__inner::placeholder),
-:deep(.tech-dialog .el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.5) !important;
-}
-
-.tech-dialog :deep(.el-textarea__inner),
-:deep(.tech-dialog .el-textarea__inner) {
-  background: rgba(0, 0, 0, 0.4) !important;
-  border: 1px solid rgba(0, 255, 255, 0.4) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  border-radius: 6px !important;
-  box-shadow: 
-    0 0 15px rgba(0, 255, 255, 0.15),
-    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
-}
-
-.tech-dialog :deep(.el-textarea__inner:hover),
-:deep(.tech-dialog .el-textarea__inner:hover) {
-  border-color: rgba(0, 255, 255, 0.6) !important;
-  box-shadow: 
-    0 0 20px rgba(0, 255, 255, 0.25),
-    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
-}
-
-.tech-dialog :deep(.el-textarea__inner:focus),
-:deep(.tech-dialog .el-textarea__inner:focus) {
-  border-color: #00ffff !important;
-  box-shadow: 
-    0 0 25px rgba(0, 255, 255, 0.4),
-    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
-}
-
-.tech-dialog :deep(.el-select .el-select__wrapper),
-:deep(.tech-dialog .el-select .el-select__wrapper) {
-  background: rgba(0, 0, 0, 0.4) !important;
-  border: 1px solid rgba(0, 255, 255, 0.4) !important;
-  border-radius: 6px !important;
-  box-shadow: 
-    0 0 15px rgba(0, 255, 255, 0.15),
-    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
-}
-
-.tech-dialog :deep(.el-select .el-select__wrapper:hover),
-:deep(.tech-dialog .el-select .el-select__wrapper:hover) {
-  border-color: rgba(0, 255, 255, 0.6) !important;
-  box-shadow: 
-    0 0 20px rgba(0, 255, 255, 0.25),
-    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
-}
-
-.tech-dialog :deep(.el-select .el-select__wrapper.is-focused),
-:deep(.tech-dialog .el-select .el-select__wrapper.is-focused) {
-  border-color: #00ffff !important;
-  box-shadow: 
-    0 0 25px rgba(0, 255, 255, 0.4),
-    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
-}
-
-/* InputNumber样式 */
-.tech-dialog :deep(.el-input-number .el-input__wrapper) {
-  background: rgba(0, 0, 0, 0.4) !important;
-  border: 1px solid rgba(0, 255, 255, 0.4) !important;
-  border-radius: 6px !important;
-  box-shadow: 
-    0 0 15px rgba(0, 255, 255, 0.15),
-    inset 0 0 15px rgba(0, 255, 255, 0.08) !important;
-}
-
-.tech-dialog :deep(.el-input-number .el-input__wrapper:hover) {
-  border-color: rgba(0, 255, 255, 0.6) !important;
-  box-shadow: 
-    0 0 20px rgba(0, 255, 255, 0.25),
-    inset 0 0 20px rgba(0, 255, 255, 0.12) !important;
-}
-
-.tech-dialog :deep(.el-input-number .el-input__wrapper.is-focus) {
-  border-color: #00ffff !important;
-  box-shadow: 
-    0 0 25px rgba(0, 255, 255, 0.4),
-    inset 0 0 25px rgba(0, 255, 255, 0.15) !important;
-}
-
-/* 对话框按钮样式 */
-:deep(.tech-dialog .dialog-footer .el-button) {
+/* 科技感小按钮 */
+:deep(.tech-button-sm) {
   border: 1px solid rgba(0, 255, 255, 0.4) !important;
   background: rgba(0, 255, 255, 0.1) !important;
   color: #00ffff !important;
@@ -2271,382 +573,352 @@ const stopBoardStreaming = async (board) => {
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
 }
 
-:deep(.tech-dialog .dialog-footer .el-button:hover) {
+:deep(.tech-button-sm:hover) {
   background: rgba(0, 255, 255, 0.2) !important;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
   transform: translateY(-1px) !important;
 }
 
-:deep(.tech-dialog .dialog-footer .el-button--primary) {
-  background: rgba(0, 255, 255, 0.3) !important;
-  border-color: #00ffff !important;
+/* 科技感次要按钮 */
+:deep(.tech-button-secondary) {
+  border: 1px solid rgba(128, 128, 128, 0.4) !important;
+  background: rgba(64, 64, 64, 0.1) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 8px rgba(128, 128, 128, 0.1) !important;
+  padding: 8px 16px !important;
+}
+
+:deep(.tech-button-secondary:hover) {
+  background: rgba(128, 128, 128, 0.2) !important;
+  box-shadow: 0 0 15px rgba(128, 128, 128, 0.3) !important;
+  transform: translateY(-1px) !important;
   color: #ffffff !important;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  border-color: rgba(128, 128, 128, 0.6) !important;
 }
 
-:deep(.tech-dialog .dialog-footer .el-button--primary:hover) {
-  background: rgba(0, 255, 255, 0.4) !important;
-  box-shadow: 0 0 25px rgba(0, 255, 255, 0.5) !important;
-}
-
-/* ==================== 表单区域 ==================== */
-.dialog-content {
-  color: rgba(255, 255, 255, 0.95);
-}
-
-.simplified-form {
-  background: transparent;
-}
-
-.dialog-footer-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 16px;
-}
-
-/* 强制覆盖 Element Plus 默认样式 */
-.el-dialog.tech-dialog {
-  background: rgba(45, 55, 75, 0.92) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  backdrop-filter: blur(10px) !important;
-  border-radius: 12px !important;
-}
-
-.el-dialog.tech-dialog .el-dialog__header {
-  background: rgba(45, 55, 75, 0.92) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px 12px 0 0 !important;
-}
-
-.el-dialog.tech-dialog .el-dialog__title {
-  color: #00ffff !important;
-  font-weight: bold !important;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4) !important;
-}
-
-.el-dialog.tech-dialog .el-dialog__body {
-  background: rgba(45, 55, 75, 0.92) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.el-dialog.tech-dialog .el-form-item__label {
-  color: #00ffff !important;
+/* 科技感危险按钮 */
+:deep(.tech-button-danger) {
+  border: 1px solid rgba(255, 82, 82, 0.4) !important;
+  background: rgba(255, 82, 82, 0.1) !important;
+  color: #ff5252 !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(255, 82, 82, 0.2) !important;
+  padding: 8px 16px !important;
   font-weight: 500 !important;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3) !important;
 }
 
-.el-dialog.tech-dialog .el-input__wrapper {
-  background: rgba(45, 55, 75, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+:deep(.tech-button-danger:hover) {
+  background: rgba(255, 82, 82, 0.2) !important;
+  box-shadow: 0 0 20px rgba(255, 82, 82, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(255, 82, 82, 0.6) !important;
+}
+
+/* 科技感信息按钮 */
+:deep(.tech-button-info) {
+  border: 1px solid rgba(64, 158, 255, 0.4) !important;
+  background: rgba(64, 158, 255, 0.1) !important;
+  color: #409eff !important;
   border-radius: 6px !important;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(64, 158, 255, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
 }
 
-.el-dialog.tech-dialog .el-input__wrapper:hover {
-  border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+:deep(.tech-button-info:hover) {
+  background: rgba(64, 158, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(64, 158, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(64, 158, 255, 0.6) !important;
 }
 
-.el-dialog.tech-dialog .el-input__wrapper.is-focus {
-  border-color: #00ffff !important;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+/* 科技感成功按钮 */
+:deep(.tech-button-success) {
+  border: 1px solid rgba(103, 194, 58, 0.4) !important;
+  background: rgba(103, 194, 58, 0.1) !important;
+  color: #67c23a !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(103, 194, 58, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
 }
 
-.el-dialog.tech-dialog .el-input__inner {
-  color: rgba(255, 255, 255, 0.95) !important;
+:deep(.tech-button-success:hover) {
+  background: rgba(103, 194, 58, 0.2) !important;
+  box-shadow: 0 0 20px rgba(103, 194, 58, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(103, 194, 58, 0.6) !important;
+}
+
+/* 科技感警告按钮 */
+:deep(.tech-button-warning) {
+  border: 1px solid rgba(230, 162, 60, 0.4) !important;
+  background: rgba(230, 162, 60, 0.1) !important;
+  color: #e6a23c !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(230, 162, 60, 0.2) !important;
+  padding: 8px 16px !important;
+  font-weight: 500 !important;
+}
+
+:deep(.tech-button-warning:hover) {
+  background: rgba(230, 162, 60, 0.2) !important;
+  box-shadow: 0 0 20px rgba(230, 162, 60, 0.4) !important;
+  transform: translateY(-1px) !important;
+  border-color: rgba(230, 162, 60, 0.6) !important;
+}
+
+/* 科技感文本按钮 */
+:deep(.tech-button-text) {
   background: transparent !important;
-}
-
-.el-dialog.tech-dialog .el-input__inner::placeholder {
-  color: rgba(255, 255, 255, 0.5) !important;
-}
-
-.el-dialog.tech-dialog .el-textarea__inner {
-  background: rgba(45, 55, 75, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  border-radius: 6px !important;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
-}
-
-.el-dialog.tech-dialog .el-textarea__inner:hover {
-  border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
-}
-
-.el-dialog.tech-dialog .el-textarea__inner:focus {
-  border-color: #00ffff !important;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
-}
-
-.el-dialog.tech-dialog .el-select .el-select__wrapper {
-  background: rgba(45, 55, 75, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  border-radius: 6px !important;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
-}
-
-.el-dialog.tech-dialog .el-select .el-select__wrapper:hover {
-  border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
-}
-
-.el-dialog.tech-dialog .el-select .el-select__wrapper.is-focused {
-  border-color: #00ffff !important;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
-}
-
-.el-dialog.tech-dialog .el-button {
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  background: rgba(45, 55, 75, 0.8) !important;
+  border: 1px solid transparent !important;
   color: #00ffff !important;
-  border-radius: 6px !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
   transition: all 0.3s ease !important;
 }
 
-.el-dialog.tech-dialog .el-button:hover {
-  background: rgba(0, 255, 255, 0.15) !important;
-  border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.3) !important;
-  transform: translateY(-1px) !important;
+:deep(.tech-button-text:hover) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border-color: rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.2) !important;
 }
 
-.el-dialog.tech-dialog .el-button--primary {
-  background: rgba(0, 150, 200, 0.8) !important;
-  border-color: rgba(0, 200, 255, 0.6) !important;
+:deep(.tech-button-text.tech-button-danger) {
+  color: #ff5252 !important;
+}
+
+:deep(.tech-button-text.tech-button-danger:hover) {
+  background: rgba(255, 82, 82, 0.1) !important;
+  border-color: rgba(255, 82, 82, 0.3) !important;
+  box-shadow: 0 0 8px rgba(255, 82, 82, 0.2) !important;
+}
+
+:deep(.tech-button-text.tech-button-info) {
+  color: #409eff !important;
+}
+
+:deep(.tech-button-text.tech-button-info:hover) {
+  background: rgba(64, 158, 255, 0.1) !important;
+  border-color: rgba(64, 158, 255, 0.3) !important;
+  box-shadow: 0 0 8px rgba(64, 158, 255, 0.2) !important;
+}
+
+/* 科技感按钮组 */
+:deep(.tech-button-group .el-button) {
+  border: 1px solid rgba(128, 128, 128, 0.4) !important;
+  background: rgba(64, 64, 64, 0.1) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+:deep(.tech-button-group .el-button:hover) {
+  background: rgba(128, 128, 128, 0.2) !important;
+  border-color: rgba(128, 128, 128, 0.6) !important;
   color: #ffffff !important;
 }
 
-.el-dialog.tech-dialog .el-button--primary:hover {
-  background: rgba(0, 180, 230, 0.9) !important;
-  border-color: #00ffff !important;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4) !important;
+/* 按钮样式兼容 */
+:deep(.el-button--primary) {
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: #00ffff !important;
 }
 
-/* ==================== 流信息面板样式 ==================== */
-.stream-info-panel {
-  background: rgba(20, 30, 50, 0.6);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 20px;
+:deep(.el-button--primary:hover) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
 }
 
-.info-section {
-  margin-bottom: 25px;
-  padding: 15px;
-  background: rgba(15, 25, 45, 0.8);
-  border: 1px solid rgba(0, 255, 255, 0.1);
-  border-radius: 6px;
+/* ==================== 文字和间距优化 ==================== */
+
+/* 按钮间距优化 */
+.el-button + .el-button {
+  margin-left: 16px !important;
 }
 
-.info-section:last-child {
-  margin-bottom: 0;
+/* 增加文字行间距 */
+:deep(p), :deep(div), :deep(span) {
+  line-height: 1.6 !important;
 }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 15px;
+/* 段落间距优化 */
+:deep(.el-card__body p) {
+  margin-bottom: 16px !important;
 }
 
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+:deep(.el-card__body p:last-child) {
+  margin-bottom: 0 !important;
 }
 
-.info-item:last-child {
-  border-bottom: none;
+/* 表格行间距优化 */
+:deep(.el-table .el-table__row) {
+  height: 50px !important;
 }
 
-.info-item .label {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
-  min-width: 90px;
+/* 描述列表间距优化 */
+:deep(.el-descriptions__body .el-descriptions__table .el-descriptions__cell) {
+  padding: 16px 12px !important;
+  line-height: 1.6 !important;
 }
 
-.info-item .value {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 13px;
-  font-weight: 500;
-  text-align: right;
+/* 表单项间距优化 */
+:deep(.el-form-item) {
+  margin-bottom: 28px !important;
 }
 
-.info-item .value.online {
-  color: #00ff00;
-}
-
-.info-item .value.offline {
-  color: #ff4500;
-}
-
-.info-item .value.error {
-  color: #ffff00;
-}
-
-/* 播放地址列表样式 */
-.play-urls-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.url-item {
-  background: rgba(15, 25, 45, 0.8);
-  border: 1px solid rgba(0, 255, 255, 0.1);
-  border-radius: 6px;
-  padding: 12px;
-}
-
-.url-type {
-  color: #00ffff;
-  font-weight: 600;
-  font-size: 13px;
-  margin-bottom: 8px;
-  text-shadow: 0 0 6px rgba(0, 255, 255, 0.3);
-}
-
-.url-content {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.url-code {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.9);
-  padding: 8px 12px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
-  word-break: break-all;
-}
-
-.copy-btn {
-  background: rgba(0, 255, 255, 0.1);
-  border: 1px solid rgba(0, 255, 255, 0.4);
-  color: #00ffff;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.copy-btn:hover {
-  background: rgba(0, 255, 255, 0.2);
-  border-color: rgba(0, 255, 255, 0.6);
-}
-
-.no-data {
-  text-align: center;
-  padding: 20px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-/* ==================== 设备详情面板样式 ==================== */
-.device-full-detail-panel {
-  background: rgba(20, 30, 50, 0.6);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 8px;
-  padding: 20px;
-}
-
-.detail-section {
-  margin-bottom: 25px;
-  padding: 15px;
-  background: rgba(15, 25, 45, 0.8);
-  border: 1px solid rgba(0, 255, 255, 0.1);
-  border-radius: 6px;
-}
-
-.detail-section:last-child {
-  margin-bottom: 0;
-}
-
-/* ==================== 视图控制 ==================== */
-.list-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-
-.view-controls {
-  display: flex;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.view-controls .tech-button-sm {
-  border: none !important;
-  border-radius: 0 !important;
-  margin: 0 !important;
-}
-
-.view-controls .tech-button-sm:first-child {
-  border-radius: 6px 0 0 6px !important;
-}
-
-.view-controls .tech-button-sm:last-child {
-  border-radius: 0 6px 6px 0 !important;
+/* 其他文本颜色调整 */
+:deep(.tab-content p),
+:deep(.tab-content span),
+:deep(.tab-content div) {
+  color: #ffffff !important;
 }
 </style>
 
-<!-- 全局样式覆盖 -->
+<!-- 全局样式覆盖 - 强制去除ElementUI Card类型选项卡的白边 -->
 <style>
-/* 模态背景 */
-.tech-modal {
-  background: rgba(0, 0, 0, 0.8) !important;
-  backdrop-filter: blur(5px) !important;
+/* 最高优先级样式覆盖 */
+.el-tabs--card > .el-tabs__header .el-tabs__item {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+  background-color: rgba(0, 255, 255, 0.05) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
 }
 
-/* Element Plus 下拉框样式覆盖 */
-.el-select-dropdown {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  border-radius: 8px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
-}
-
-.el-select-dropdown .el-select-dropdown__item {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  transition: all 0.3s ease !important;
-}
-
-.el-select-dropdown .el-select-dropdown__item:hover {
+.el-tabs--card > .el-tabs__header .el-tabs__item:hover {
+  border: none !important;
+  border-color: transparent !important;
   background: rgba(0, 255, 255, 0.1) !important;
-  color: #00ffff !important;
+  background-color: rgba(0, 255, 255, 0.1) !important;
+  box-shadow: none !important;
 }
 
-.el-select-dropdown .el-select-dropdown__item.is-selected {
-  background: rgba(0, 255, 255, 0.2) !important;
+.el-tabs--card > .el-tabs__header .el-tabs__item.is-active {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  background-color: rgba(0, 255, 255, 0.15) !important;
   color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
 }
 
-/* 分页下拉框样式 */
-.el-select-dropdown__item {
+.el-tabs--card > .el-tabs__header {
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+.el-tabs--card {
+  border: none !important;
+}
+
+.el-tabs--border-card {
+  border: none !important;
+  background: transparent !important;
+}
+
+.el-tabs--border-card > .el-tabs__header {
+  border-bottom: none !important;
+  background: transparent !important;
+}
+
+.el-tabs--border-card > .el-tabs__header .el-tabs__item {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+  background-color: rgba(0, 255, 255, 0.05) !important;
+  border-color: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.el-tabs--border-card > .el-tabs__header .el-tabs__item:hover {
+  border: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  background-color: rgba(0, 255, 255, 0.1) !important;
   color: rgba(255, 255, 255, 0.9) !important;
 }
 
-/* 加载动画样式 */
-.el-loading-mask {
-  background: rgba(0, 0, 0, 0.8) !important;
-}
-
-.el-loading-spinner .el-loading-text {
+.el-tabs--border-card > .el-tabs__header .el-tabs__item.is-active {
+  border: none !important;
+  border-top: none !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  background-color: rgba(0, 255, 255, 0.15) !important;
   color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
 }
 
-.el-loading-spinner .circular {
-  border-color: rgba(0, 255, 255, 0.2) !important;
-  border-top-color: #00ffff !important;
+.el-tabs--border-card > .el-tabs__content {
+  border: none !important;
+  background: transparent !important;
+}
+
+/* 默认类型tabs样式覆盖 */
+.el-tabs .el-tabs__header .el-tabs__item {
+  border: none !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  padding: 12px 20px !important;
+  margin-right: 2px !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.el-tabs .el-tabs__header .el-tabs__item:hover {
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: none !important;
+}
+
+.el-tabs .el-tabs__header .el-tabs__item.is-active {
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
+  border: none !important;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.el-tabs .el-tabs__header {
+  border-bottom: none !important;
+}
+
+.el-tabs .el-tabs__nav-wrap::after {
+  background-color: transparent !important;
+}
+
+/* 针对设备管理页面的特定覆盖 */
+.device-management-container .el-tabs--card > .el-tabs__header .el-tabs__item {
+  border: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.05) !important;
+}
+
+.device-management-container .el-tabs--card > .el-tabs__header .el-tabs__item.is-active {
+  border: none !important;
+  border-color: transparent !important;
+  background: rgba(0, 255, 255, 0.15) !important;
+  color: #00ffff !important;
 }
 </style>

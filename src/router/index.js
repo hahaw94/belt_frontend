@@ -130,18 +130,6 @@ const routes = [
         name: 'access-device',
         component: () => import('../views/access/DeviceManagement.vue'),
         meta: { title: '设备管理' }
-      },
-      {
-        path: 'info',
-        name: 'access-info',
-        component: () => import('../views/access/DeviceInfo.vue'),
-        meta: { title: '设备信息' }
-      },
-      {
-        path: 'protocol',
-        name: 'access-protocol',
-        component: () => import('../views/access/DeviceAccessProtocol.vue'),
-        meta: { title: '设备接入协议' }
       }
     ]
   },
