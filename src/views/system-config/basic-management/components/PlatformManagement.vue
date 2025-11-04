@@ -254,12 +254,75 @@
           </el-table-column>
           <el-table-column label="操作" width="120" align="center" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" size="small" @click="playChannel(row)">播放</el-button>
+              <el-button type="primary" size="small" @click="viewChannelControl(row)">查看</el-button>
             </template>
           </el-table-column>
         </el-table>
       </div>
     </el-card>
+
+    <!-- 摄像机控制弹窗 -->
+    <el-dialog
+      v-model="showControlDialog"
+      :title="`摄像机控制 - ${currentChannel.name || '未命名'}`"
+      width="800px"
+      :close-on-click-modal="false"
+      class="control-dialog"
+    >
+      <div v-loading="loadingStreamInfo" class="control-content">
+        <!-- 播放地址列表 -->
+        <div class="stream-section">
+          <h4 class="section-title">播放地址列表</h4>
+          <div v-if="streamUrls && Object.keys(streamUrls).length > 0" class="stream-urls">
+            <div v-for="(url, protocol) in streamUrls" :key="protocol" class="url-item">
+              <span class="protocol-label">{{ protocol }}:</span>
+              <code class="url-value">{{ url }}</code>
+              <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(url)">复制</el-button>
+            </div>
+          </div>
+          <div v-else class="empty-state">
+            {{ loadingStreamInfo ? '正在获取播放地址...' : '未获取到播放地址' }}
+          </div>
+        </div>
+
+        <!-- 云台控制 -->
+        <div class="ptz-section">
+          <h4 class="section-title">云台控制</h4>
+          <div class="ptz-controls">
+            <!-- 方向控制 -->
+            <div class="direction-controls">
+              <div class="direction-grid">
+                <div></div>
+                <el-button class="ptz-btn" @click="handlePTZControl('up')">↑</el-button>
+                <div></div>
+                <el-button class="ptz-btn" @click="handlePTZControl('left')">←</el-button>
+                <el-button class="ptz-btn ptz-stop" @click="handlePTZControl('stop')">■</el-button>
+                <el-button class="ptz-btn" @click="handlePTZControl('right')">→</el-button>
+                <div></div>
+                <el-button class="ptz-btn" @click="handlePTZControl('down')">↓</el-button>
+                <div></div>
+              </div>
+              <!-- 变焦控制 -->
+              <div class="zoom-controls">
+                <el-button class="ptz-btn zoom-btn" @click="handlePTZControl('zoom_in')">放大 +</el-button>
+                <el-button class="ptz-btn zoom-btn" @click="handlePTZControl('zoom_out')">缩小 -</el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 操作日志 -->
+        <div class="log-section">
+          <h4 class="section-title">操作日志</h4>
+          <div class="log-content" ref="logContent">
+            <div v-for="(log, index) in controlLogs" :key="index" :class="['log-item', `log-${log.type}`]">
+              <span class="log-time">{{ log.time }}</span>
+              <span class="log-message">{{ log.message }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -316,7 +379,14 @@ export default {
         query: '',
         page: 1,
         count: 50
-      }
+      },
+
+      // 摄像机控制弹窗
+      showControlDialog: false,
+      currentChannel: {},
+      streamUrls: {},
+      loadingStreamInfo: false,
+      controlLogs: []
     }
   },
   async mounted() {
@@ -479,23 +549,136 @@ export default {
       }
     },
 
-    // 播放通道
-    playChannel(row) {
+    // 查看通道控制（包含流信息和云台控制）
+    async viewChannelControl(row) {
       const channelId = row.channelId || row.channel_id || row.deviceId || row.device_id
       const deviceId = this.selectedWVPDevice
       
       if (!channelId) {
-        ElMessage.warning('通道ID为空，无法播放')
+        ElMessage.warning('通道ID为空')
         return
       }
       
-      ElMessage.info(`播放功能开发中... 设备ID: ${deviceId}, 通道ID: ${channelId}`)
+      // 保存当前通道信息
+      this.currentChannel = {
+        deviceId: deviceId,
+        channelId: channelId,
+        name: row.name || row.channel_name || channelId
+      }
       
-      // TODO: 跳转到播放页面或打开播放对话框
-      // this.$router.push({
-      //   name: 'VideoPlayer',
-      //   query: { deviceId, channelId }
-      // })
+      // 清空之前的数据
+      this.streamUrls = {}
+      this.controlLogs = []
+      
+      // 打开弹窗
+      this.showControlDialog = true
+      
+      // 加载流信息
+      await this.loadStreamInfo()
+    },
+
+    // 加载流信息
+    async loadStreamInfo() {
+      this.loadingStreamInfo = true
+      this.addLog('正在请求播放地址...', 'info')
+      
+      try {
+        // 调用预览开始接口获取流地址
+        const response = await gb28181API.startWVPPreview({
+          deviceId: this.currentChannel.deviceId,
+          channelId: this.currentChannel.channelId
+        })
+        
+        if (response && response.data) {
+          const data = response.data
+          // 提取所有流URL
+          this.streamUrls = this.extractStreamUrls(data)
+          this.addLog('播放地址获取成功', 'success')
+        }
+      } catch (error) {
+        console.error('加载流信息失败:', error)
+        this.addLog('播放地址获取失败: ' + (error.message || '未知错误'), 'error')
+      } finally {
+        this.loadingStreamInfo = false
+      }
+    },
+
+    // 提取流URL
+    extractStreamUrls(data) {
+      const urls = {}
+      
+      // 根据后端返回的数据结构提取URL
+      if (data.flv) urls['FLV'] = data.flv
+      if (data.https_flv) urls['HTTPS-FLV'] = data.https_flv
+      if (data.ws_flv) urls['WS-FLV'] = data.ws_flv
+      if (data.wss_flv) urls['WSS-FLV'] = data.wss_flv
+      if (data.hls) urls['HLS'] = data.hls
+      if (data.https_hls) urls['HTTPS-HLS'] = data.https_hls
+      if (data.fmp4) urls['FMP4'] = data.fmp4
+      if (data.https_fmp4) urls['HTTPS-FMP4'] = data.https_fmp4
+      if (data.ws_fmp4) urls['WS-FMP4'] = data.ws_fmp4
+      if (data.wss_fmp4) urls['WSS-FMP4'] = data.wss_fmp4
+      if (data.ts) urls['TS'] = data.ts
+      if (data.https_ts) urls['HTTPS-TS'] = data.https_ts
+      if (data.ws_ts) urls['WS-TS'] = data.ws_ts
+      if (data.rtsp) urls['RTSP'] = data.rtsp
+      if (data.rtc) urls['WebRTC'] = data.rtc
+      if (data.rtcs) urls['WebRTCS'] = data.rtcs
+      
+      return urls
+    },
+
+    // 云台控制
+    async handlePTZControl(command) {
+      this.addLog(`执行云台控制: ${this.getPTZCommandName(command)}`, 'info')
+      
+      try {
+        await gb28181API.controlWVPPTZ({
+          deviceId: this.currentChannel.deviceId,
+          channelId: this.currentChannel.channelId,
+          cmd: command,
+          speed: 50
+        })
+        
+        this.addLog(`云台控制: ${this.getPTZCommandName(command)} 执行成功`, 'success')
+      } catch (error) {
+        console.error('云台控制失败:', error)
+        this.addLog('云台控制失败: ' + (error.message || '未知错误'), 'error')
+      }
+    },
+
+    // 获取PTZ命令名称
+    getPTZCommandName(cmd) {
+      const names = {
+        'up': '向上',
+        'down': '向下',
+        'left': '向左',
+        'right': '向右',
+        'stop': '停止',
+        'zoom_in': '放大',
+        'zoom_out': '缩小'
+      }
+      return names[cmd] || cmd
+    },
+
+    // 添加日志
+    addLog(message, type = 'info') {
+      const now = new Date()
+      const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`
+      
+      this.controlLogs.push({
+        time,
+        message,
+        type
+      })
+      
+      // 自动滚动到底部
+      this.$nextTick(() => {
+        const logContent = this.$refs.logContent
+        if (logContent) {
+          logContent.scrollTop = logContent.scrollHeight
+        }
+      })
     },
 
     // 查看通道详情
@@ -1213,5 +1396,269 @@ body.platform-management-active .el-table__empty-text {
 
 body.platform-management-active .el-loading-mask {
   background-color: rgba(15, 25, 45, 0.8) !important;
+}
+
+/* 控制弹窗样式 */
+.control-dialog :deep(.el-dialog) {
+  background: rgba(15, 25, 45, 0.98) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 255, 0.2) !important;
+}
+
+.control-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, rgba(20, 35, 60, 1) 0%, rgba(25, 40, 65, 1) 100%) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 12px 12px 0 0 !important;
+  padding: 20px !important;
+}
+
+.control-dialog :deep(.el-dialog__title) {
+  color: #00ffff !important;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+}
+
+.control-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-size: 20px !important;
+}
+
+.control-dialog :deep(.el-dialog__headerbtn .el-dialog__close:hover) {
+  color: #00ffff !important;
+}
+
+.control-dialog :deep(.el-dialog__body) {
+  background: rgba(15, 25, 45, 0.98) !important;
+  padding: 20px !important;
+  border-radius: 0 0 12px 12px !important;
+}
+
+.control-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 各个section的标题 */
+.section-title {
+  color: #00ffff;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 15px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+}
+
+/* 播放地址列表 */
+.stream-section {
+  background: rgba(20, 30, 50, 0.6);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.stream-urls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.url-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: rgba(15, 25, 45, 0.8);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 255, 255, 0.15);
+}
+
+.protocol-label {
+  min-width: 120px;
+  font-weight: 600;
+  color: #00d4ff;
+  font-size: 13px;
+}
+
+.url-value {
+  flex: 1;
+  background: rgba(0, 255, 255, 0.1);
+  color: #00ffff;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+}
+
+/* 云台控制 */
+.ptz-section {
+  background: rgba(20, 30, 50, 0.6);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.ptz-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.direction-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.direction-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 75px);
+  grid-template-rows: repeat(3, 75px);
+  gap: 8px;
+}
+
+.ptz-btn {
+  width: 100%;
+  height: 100%;
+  font-size: 26px;
+  font-weight: bold;
+  background: rgba(0, 255, 255, 0.1) !important;
+  border: 2px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  color: #00ffff !important;
+  transition: all 0.3s ease !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1 !important;
+  min-height: unset !important;
+}
+
+.ptz-btn:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+
+.ptz-btn:active {
+  transform: translateY(0) !important;
+}
+
+.ptz-btn.ptz-stop {
+  background: rgba(239, 68, 68, 0.2) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #ef4444 !important;
+  font-size: 22px;
+}
+
+.ptz-btn.ptz-stop:hover {
+  background: rgba(239, 68, 68, 0.3) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+}
+
+.zoom-controls {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 10px;
+}
+
+.zoom-controls .ptz-btn.zoom-btn {
+  width: 100px;
+  height: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 6px !important;
+}
+
+/* 操作日志 */
+.log-section {
+  background: rgba(20, 30, 50, 0.6);
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.log-content {
+  max-height: 150px;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 10px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+}
+
+.log-item {
+  display: flex;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-item:last-child {
+  border-bottom: none;
+}
+
+.log-time {
+  color: rgba(255, 255, 255, 0.5);
+  min-width: 70px;
+}
+
+.log-message {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.log-item.log-info .log-message {
+  color: #3b82f6;
+}
+
+.log-item.log-success .log-message {
+  color: #10b981;
+}
+
+.log-item.log-error .log-message {
+  color: #ef4444;
+}
+
+/* 自定义滚动条 */
+.log-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.log-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.log-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
 }
 </style>

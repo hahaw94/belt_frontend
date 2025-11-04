@@ -163,6 +163,21 @@ export const gb28181API = {
   // 同步所有直连设备通道到本地数据库
   syncAllDirectChannels() {
     return request.post('/api/v1/wvp/channels/sync-all-direct')
+  },
+
+  // 开始WVP预览（获取流地址）
+  startWVPPreview(data) {
+    return request.post('/api/v1/wvp/preview/start', data)
+  },
+
+  // 停止WVP预览
+  stopWVPPreview(data) {
+    return request.post('/api/v1/wvp/preview/stop', data)
+  },
+
+  // WVP云台控制
+  controlWVPPTZ(data) {
+    return request.post('/api/v1/wvp/ptz', data)
   }
 }
 
