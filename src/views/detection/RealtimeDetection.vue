@@ -56,9 +56,21 @@
 
     <!-- 右侧主内容区 -->
     <div class="main-content">
+      <!-- 性能提示和GPU监控 -->
+      <div v-if="getPlayingWebRTCCount() >= 9" class="performance-tip">
+        <el-icon style="margin-right: 4px;"><Warning /></el-icon>
+        {{ getPlayingWebRTCCount() }}路播放中 - 已启用性能优化模式（禁用统计、降低渲染质量）
+      </div>
+      
+      <!-- GPU使用提示 -->
+      <div v-if="getPlayingWebRTCCount() >= 16" class="gpu-warning">
+        <el-icon style="margin-right: 4px;"><Warning /></el-icon>
+        16路满载播放 - 如遇卡顿请减少播放路数或降低视频分辨率至2688×1520@30fps
+      </div>
+      
       <!-- 视频网格区域 -->
       <div class="video-grid-wrapper">
-    <div class="video-grid" :class="'grid-' + currentLayout">
+        <div class="video-grid" :class="'grid-' + currentLayout">
           <div 
             v-for="n in currentLayout" 
             :key="n" 
@@ -66,68 +78,74 @@
             :class="{ 'active': selectedCell === n }"
             @click="selectCell(n)"
           >
-        <div class="video-container">
-          <!-- 每个分屏都显示视频播放器 -->
-          <div class="video-player-wrapper">
-            <!-- 流地址输入框 -->
-            <div class="stream-input-panel" v-if="!playerStates[n - 1].isPlaying">
-              <el-input
-                v-model="playerStates[n - 1].streamUrl"
-                placeholder="请输入流地址 (支持 HTTP-FLV/WS-FLV/HLS)"
-                class="stream-url-input"
-                @keyup.enter="handlePlayStream(n)"
-              >
-                <template #prepend>
-                  <el-icon><VideoCamera /></el-icon>
-                </template>
-              </el-input>
-              <el-button 
-                type="primary" 
-                @click="handlePlayStream(n)"
-                :loading="playerStates[n - 1].isLoading"
-                class="play-stream-btn"
-              >
-                播放
-              </el-button>
-            </div>
-            
-            <!-- 视频播放区域 - 始终存在于DOM中 -->
-            <video 
-              :ref="el => setVideoRef(el, n)" 
-              class="video-player"
-              muted
-              playsinline
-              preload="none"
-              webkit-playsinline
-              :disablePictureInPicture="true"
-              disableRemotePlayback
-              x5-video-player-type="h5"
-              x5-video-player-fullscreen="true"
-              x5-video-orientation="portraint"
-            ></video>
-            
-            <!-- 停止按钮 (播放时显示) -->
-            <div v-if="playerStates[n - 1].isPlaying" class="stop-btn-wrapper">
-              <el-button 
-                type="danger" 
-                size="small"
-                @click="handleStopStream(n)"
-                class="stop-stream-btn"
-              >
-                <el-icon><Close /></el-icon>
-                停止
-              </el-button>
-            </div>
-          </div>
+            <div class="video-container">
+              <!-- 所有分屏：使用 WebRTC 播放器 -->
+              <div class="video-player-wrapper">
+                <!-- WebRTC 播放器 - 性能优化配置 -->
+                <ZLKWebRTCPlayer
+                  v-if="webrtcPlayers[n - 1].stream"
+                  :key="'player-' + n"
+                  :server-url="webrtcPlayers[n - 1].serverUrl"
+                  :app="webrtcPlayers[n - 1].app"
+                  :stream="webrtcPlayers[n - 1].stream"
+                  :auto-play="true"
+                  :show-controls="false"
+                  :show-status="currentLayout <= 4"
+                  :show-stats="false"
+                  :performance-mode="currentLayout >= 9"
+                  video-codec="H264"
+                  audio-codec="opus"
+                  @play="handleWebRTCPlay(n)"
+                  @pause="handleWebRTCPause(n)"
+                  @error="(error) => handleWebRTCError(n, error)"
+                  @stats-update="(stats) => handleStatsUpdate(n, stats)"
+                />
+                
+                <!-- WebRTC 配置输入面板 -->
+                <div v-else class="stream-input-panel">
+                  <div class="webrtc-config-panel">
+                    <div class="panel-header">
+                      <span style="color: #1890ff; font-weight: 500;">分屏 {{ n }}</span>
+                    </div>
+                    <el-input
+                      v-model="webrtcPlayers[n - 1].url"
+                      placeholder="请输入 WebRTC 播放地址"
+                      class="stream-url-input"
+                      type="textarea"
+                      :rows="currentLayout <= 4 ? 4 : 2"
+                      @keyup.enter="startWebRTC(n)"
+                    >
+                      <template #prepend>
+                        <el-icon><VideoCamera /></el-icon>
+                      </template>
+                    </el-input>
+                    <div v-if="currentLayout <= 4" class="url-example">
+                      <span style="opacity: 0.6; font-size: 11px;">
+                        示例: http://10.18.21.207:18081/index/api/webrtc?app=rtp&stream=xxx&type=play
+                      </span>
+                    </div>
+                    <el-button 
+                      type="primary" 
+                      @click="startWebRTC(n)"
+                      :loading="webrtcPlayers[n - 1].isLoading"
+                      class="play-stream-btn"
+                      :style="{ marginTop: currentLayout <= 4 ? '8px' : '4px', width: '100%', height: currentLayout <= 4 ? '40px' : '32px', fontSize: currentLayout <= 4 ? '15px' : '13px' }"
+                    >
+                      <el-icon><VideoPlay /></el-icon>
+                      播放
+                    </el-button>
+                  </div>
+                </div>
+              </div>
 
-          <div class="video-info-bar">
-            <span class="channel-name">通道 {{ n }}</span>
-            <span class="time-display">{{ currentTime }}</span>
-          </div>
-          <div class="overlay-info" v-if="hasWarning(n)">
-            <el-tag type="danger" size="small">预警</el-tag>
-          </div>
-        </div>
+              <div class="video-info-bar">
+                <span class="channel-name">通道 {{ n }}</span>
+                <span class="time-display">{{ currentTime }}</span>
+              </div>
+              <div class="overlay-info" v-if="hasWarning(n)">
+                <el-tag type="danger" size="small">预警</el-tag>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -223,9 +241,10 @@ import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { ElButton, ElTag, ElInput, ElTree, ElTooltip, ElMessage } from 'element-plus'
 import { 
   VideoCamera, Folder, Search, VideoPlay, VideoPause,
-  DArrowLeft, DArrowRight, Monitor, Close
+  DArrowLeft, DArrowRight, Monitor, Warning
 } from '@element-plus/icons-vue'
 import { gb28181API } from '@/api/system'
+import ZLKWebRTCPlayer from '@/components/ZLKWebRTCPlayer.vue'
 
 export default {
   name: 'RealtimeDetection',
@@ -243,7 +262,8 @@ export default {
     VideoPause,
     DArrowLeft,
     DArrowRight,
-    Close
+    Warning,
+    ZLKWebRTCPlayer
   },
   setup() {
     const currentLayout = ref(16) // 默认16分屏
@@ -256,12 +276,26 @@ export default {
     const currentTime = ref('')
     const loading = ref(false)
 
-    // 多个视频播放器相关
+    // WebRTC 播放器配置（所有分屏使用）
+    const MAX_WEBRTC_PLAYERS = 16
+    
+    // 每个分屏的配置
+    const webrtcPlayers = ref(Array.from({ length: MAX_WEBRTC_PLAYERS }, () => ({
+      url: '',           // URL 输入框
+      serverUrl: '',     // 解析后的服务器地址
+      app: '',           // 解析后的 app
+      stream: '',        // 解析后的 stream
+      isPlaying: false,  // 是否正在播放
+      isLoading: false,  // 是否加载中
+      stats: null        // 统计信息
+    })))
+
+    // 多个视频播放器相关（已不使用，但保留以防其他代码引用）
     const MAX_PLAYERS = 16 // 最大支持16个播放器
     const videoRefs = {} // 存储每个video元素的引用
     const playerInstances = {} // 存储每个播放器实例
     
-    // 每个播放器的状态
+    // 每个播放器的状态（已不使用，但保留以防其他代码引用）
     const playerStates = ref(Array.from({ length: MAX_PLAYERS }, () => ({
       streamUrl: '',
       isPlaying: false,
@@ -474,6 +508,7 @@ export default {
         clearInterval(timeInterval)
       }
       cleanupAllPlayers()
+      cleanupPerformanceOptimization()
     })
 
     // 监听搜索文本变化
@@ -1253,6 +1288,203 @@ export default {
       stopGlobalSync()
     }
 
+    // ========== WebRTC 播放器相关方法 ==========
+    
+    // 解析 WebRTC URL
+    const parseWebRTCUrl = (url) => {
+      try {
+        // URL 示例: http://10.18.21.207:18081/index/api/webrtc?app=rtp&stream=xxx&type=play
+        const urlObj = new URL(url.trim())
+        
+        // 提取服务器地址（协议 + 主机 + 端口）
+        const serverUrl = `${urlObj.protocol}//${urlObj.host}`
+        
+        // 提取查询参数
+        const params = new URLSearchParams(urlObj.search)
+        const app = params.get('app')
+        const stream = params.get('stream')
+        
+        if (!app || !stream) {
+          throw new Error('URL 中缺少 app 或 stream 参数')
+        }
+        
+        return {
+          serverUrl,
+          app,
+          stream
+        }
+      } catch (error) {
+        console.error('解析 WebRTC URL 失败:', error)
+        throw new Error('WebRTC URL 格式错误')
+      }
+    }
+    
+    // 开始 WebRTC 播放
+    const startWebRTC = (playerIndex) => {
+      const player = webrtcPlayers.value[playerIndex - 1]
+      
+      if (!player.url) {
+        ElMessage.warning(`分屏 ${playerIndex}: 请输入 WebRTC 播放地址`)
+        return
+      }
+      
+      try {
+        player.isLoading = true
+        
+        // 解析 URL
+        const config = parseWebRTCUrl(player.url)
+        
+        // 更新配置
+        player.serverUrl = config.serverUrl
+        player.app = config.app
+        player.stream = config.stream
+        
+        // 减少日志输出
+        // console.log(`分屏 ${playerIndex} WebRTC 配置:`, config)
+        
+        // 触发 ZLKWebRTCPlayer 组件的播放
+        // 组件会通过 watch 监听配置变化自动播放
+        setTimeout(() => {
+          player.isLoading = false
+        }, 1000)
+      } catch (error) {
+        ElMessage.error(`分屏 ${playerIndex}: ${error.message || '解析 WebRTC 地址失败'}`)
+        player.isLoading = false
+      }
+    }
+    
+    // 获取当前播放的 WebRTC 流数量
+    const getPlayingWebRTCCount = () => {
+      return webrtcPlayers.value.filter(p => p.isPlaying).length
+    }
+    
+    // WebRTC 播放成功
+    const handleWebRTCPlay = (playerIndex) => {
+      const player = webrtcPlayers.value[playerIndex - 1]
+      player.isPlaying = true
+      player.isLoading = false
+      
+      const playingCount = getPlayingWebRTCCount()
+      
+      // 减少提示频率，仅在重要节点提示
+      if (playingCount === 1 || playingCount === 4 || playingCount === 9 || playingCount === 16) {
+        let message = `已启动 ${playingCount} 路 WebRTC 播放`
+        
+        // 性能提示
+        if (playingCount >= 16) {
+          message += ' - 极限性能模式已启用'
+        } else if (playingCount >= 9) {
+          message += ' - 性能优化模式已启用'
+        }
+        
+        console.log(message)
+        ElMessage.success(message)
+      }
+      
+      // 应用性能优化策略
+      applyPerformanceOptimization(playingCount)
+    }
+    
+    // WebRTC 播放暂停
+    const handleWebRTCPause = (playerIndex) => {
+      const player = webrtcPlayers.value[playerIndex - 1]
+      player.isPlaying = false
+      
+      // 更新性能优化策略
+      const playingCount = getPlayingWebRTCCount()
+      applyPerformanceOptimization(playingCount)
+      
+      // 减少日志输出
+      // console.log(`分屏 ${playerIndex} WebRTC 播放停止`)
+    }
+    
+    // WebRTC 播放错误
+    const handleWebRTCError = (playerIndex, error) => {
+      const player = webrtcPlayers.value[playerIndex - 1]
+      player.isPlaying = false
+      player.isLoading = false
+      
+      // 错误仍需要日志，但减少控制台输出
+      console.error(`分屏 ${playerIndex} 播放错误:`, error)
+      ElMessage.error(`分屏 ${playerIndex} 播放失败: ${error}`)
+    }
+    
+    // WebRTC 统计信息更新
+    const handleStatsUpdate = (playerIndex, stats) => {
+      const player = webrtcPlayers.value[playerIndex - 1]
+      player.stats = stats
+      
+      // 性能监控：16路播放时显示总体统计
+      const playingCount = getPlayingWebRTCCount()
+      if (playingCount >= 16) {
+        // 可以在这里添加性能统计逻辑
+        // console.log(`16路播放统计 - 分屏${playerIndex}:`, stats)
+      }
+    }
+    
+    // 应用性能优化策略
+    const applyPerformanceOptimization = (playingCount) => {
+      try {
+        // 根据播放路数动态调整页面渲染性能
+        const body = document.body
+        
+        if (playingCount >= 16) {
+          // 16路：极限性能模式
+          body.style.imageRendering = 'optimizeSpeed'
+          body.style.webkitFontSmoothing = 'none'
+          
+          // 禁用页面动画
+          const style = document.createElement('style')
+          style.id = 'performance-boost-16'
+          style.innerHTML = `
+            * {
+              animation: none !important;
+              transition: none !important;
+            }
+          `
+          if (!document.getElementById('performance-boost-16')) {
+            document.head.appendChild(style)
+          }
+        } else if (playingCount >= 9) {
+          // 9路：性能优化模式
+          body.style.imageRendering = 'optimizeSpeed'
+          
+          // 移除极限优化样式
+          const style16 = document.getElementById('performance-boost-16')
+          if (style16) style16.remove()
+        } else {
+          // 正常模式
+          body.style.imageRendering = ''
+          body.style.webkitFontSmoothing = ''
+          
+          // 移除所有优化样式
+          const style16 = document.getElementById('performance-boost-16')
+          if (style16) style16.remove()
+        }
+        
+        // 提示用户已应用优化
+        if (playingCount === 9 || playingCount === 16) {
+          console.log(`已应用${playingCount}路性能优化策略`)
+        }
+      } catch (error) {
+        console.warn('应用性能优化失败:', error)
+      }
+    }
+    
+    // 清理性能优化
+    const cleanupPerformanceOptimization = () => {
+      try {
+        const body = document.body
+        body.style.imageRendering = ''
+        body.style.webkitFontSmoothing = ''
+        
+        const style16 = document.getElementById('performance-boost-16')
+        if (style16) style16.remove()
+      } catch (error) {
+        console.warn('清理性能优化失败:', error)
+      }
+    }
+
     return {
       currentLayout,
       selectedCell,
@@ -1273,11 +1505,20 @@ export default {
       handleNext,
       handlePlayPause,
       loadDevices,
-      // 多个视频播放器相关
+      // 多个视频播放器相关（保留但不使用）
       playerStates,
       setVideoRef,
       handlePlayStream,
-      handleStopStream
+      handleStopStream,
+      // WebRTC 播放器相关
+      webrtcPlayers,
+      startWebRTC,
+      handleWebRTCPlay,
+      handleWebRTCPause,
+      handleWebRTCError,
+      handleStatsUpdate,
+      getPlayingWebRTCCount,
+      applyPerformanceOptimization
     }
   }
 }
@@ -1396,6 +1637,50 @@ export default {
   min-width: 0;
 }
 
+/* 性能提示 */
+.performance-tip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  margin: 0 8px 6px;
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(255, 193, 7, 0.1) 100%);
+  border: 1px solid rgba(255, 152, 0, 0.3);
+  border-radius: 6px;
+  color: #ffa726;
+  font-size: 13px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+/* GPU警告提示 */
+.gpu-warning {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  margin: 0 8px 8px;
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.2) 0%, rgba(229, 57, 53, 0.15) 100%);
+  border: 1px solid rgba(244, 67, 54, 0.4);
+  border-radius: 6px;
+  color: #ff5252;
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  animation: pulse-warning 2s ease-in-out infinite;
+}
+
+@keyframes pulse-warning {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(0.995);
+  }
+}
+
 .video-grid-wrapper {
   flex: 1;
   padding: 8px;
@@ -1410,6 +1695,10 @@ export default {
   display: grid;
   gap: 6px;
   background: transparent;
+  
+  /* 性能优化 - 减少重绘和回流 */
+  contain: layout style;
+  will-change: auto;
 }
 
 /* 单屏模式 */
@@ -1446,6 +1735,23 @@ export default {
 .grid-16 {
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(4, 1fr);
+  gap: 4px; /* 减小间距降低合成开销 */
+}
+
+/* 16分屏时减少视觉效果以提升性能 */
+.grid-16 .video-cell {
+  border-width: 1px; /* 减小边框 */
+  backdrop-filter: none; /* 禁用模糊效果 */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); /* 简化阴影 */
+  transition: none; /* 禁用过渡动画 */
+}
+
+.grid-16 .video-cell:hover {
+  transform: none; /* 禁用悬停动画 */
+}
+
+.grid-16 .video-cell.active {
+  transform: none; /* 禁用激活动画 */
 }
 
 .video-cell {
@@ -1460,6 +1766,14 @@ export default {
     0 2px 8px rgba(0, 0, 0, 0.3),
     inset 0 0 20px rgba(64, 158, 255, 0.05);
   backdrop-filter: blur(10px);
+  
+  /* 性能优化 - CSS Containment */
+  contain: layout style paint;
+  content-visibility: auto;
+  
+  /* GPU加速 */
+  transform: translateZ(0);
+  will-change: auto;
 }
 
 .video-cell.active {
@@ -1835,6 +2149,28 @@ export default {
   color: rgba(145, 202, 255, 0.5);
 }
 
+.stream-url-input :deep(.el-textarea__inner) {
+  background: rgba(10, 14, 39, 0.7);
+  border: 1px solid rgba(64, 158, 255, 0.3);
+  color: #e8f4ff;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+}
+
+.stream-url-input :deep(.el-textarea__inner:hover) {
+  border-color: rgba(64, 158, 255, 0.5);
+}
+
+.stream-url-input :deep(.el-textarea__inner:focus) {
+  border-color: #1890ff;
+  box-shadow: 0 0 10px rgba(24, 144, 255, 0.3);
+}
+
+.stream-url-input :deep(.el-textarea__inner::placeholder) {
+  color: rgba(145, 202, 255, 0.5);
+}
+
 .stream-url-input :deep(.el-input-group__prepend) {
   background: rgba(24, 144, 255, 0.15);
   border-color: rgba(64, 158, 255, 0.3);
@@ -1877,16 +2213,67 @@ export default {
   image-rendering: -webkit-optimize-contrast;
 }
 
-/* 16分屏：极限性能优化 */
+/* 9分屏以上：启用性能优化 */
+.grid-9 .video-player,
 .grid-16 .video-player {
+  /* CSS Containment - 关键性能优化 */
+  contain: layout style paint;
+  content-visibility: auto;
+  
+  /* 降低渲染质量 */
   image-rendering: optimizeSpeed;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
+  
+  /* GPU硬件加速 */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* 16分屏：极限性能优化 */
+.grid-16 .video-player {
   image-rendering: pixelated; /* 最激进的渲染优化 */
   /* 进一步降低渲染质量 */
   filter: contrast(0.95) brightness(0.98);
-  /* 减少GPU合成层 */
-  transform: translateZ(0) scale(0.99);
+  /* 隔离渲染上下文 */
+  isolation: isolate;
+}
+
+/* WebRTC 配置面板 */
+.webrtc-config-panel {
+  width: 100%;
+}
+
+.panel-header {
+  margin-bottom: 8px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.url-example {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(24, 144, 255, 0.08);
+  border-radius: 4px;
+  border-left: 3px solid rgba(24, 144, 255, 0.5);
+}
+
+/* 占位分屏样式 */
+.placeholder-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(5, 15, 30, 0.5) 0%, rgba(10, 20, 35, 0.6) 100%);
+}
+
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .stop-btn-wrapper {

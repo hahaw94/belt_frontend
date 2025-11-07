@@ -599,14 +599,68 @@
               </div>
             </div>
             
-            <!-- 实时视频播放区域 - H265 硬解码播放器 -->
+            <!-- 实时视频播放区域 - WebRTC 低延迟播放器 -->
             <div class="video-display-area">
+              <!-- 手动输入控制面板 -->
+              <div class="manual-input-panel">
+                <div class="input-wrapper">
+                  <el-input
+                    v-model="manualStreamUrl"
+                    placeholder="手动输入 WebRTC 流地址 (http://IP:端口/index/api/webrtc?app=xxx&stream=xxx&type=play)"
+                    class="stream-url-input"
+                    clearable
+                    @keyup.enter="playManualStream"
+                  >
+                    <template #prepend>
+                      <el-icon><VideoCamera /></el-icon>
+                    </template>
+                  </el-input>
+                  <el-button 
+                    type="primary" 
+                    @click="playManualStream"
+                    :loading="isPlaying"
+                    class="play-btn"
+                  >
+                    <el-icon><VideoPlay /></el-icon>
+                    播放
+                  </el-button>
+                  <el-button 
+                    type="danger" 
+                    @click="stopStream"
+                    :disabled="!webrtcStream"
+                    class="stop-btn"
+                  >
+                    <el-icon><VideoPause /></el-icon>
+                    停止
+                  </el-button>
+                </div>
+              </div>
+              
               <div class="video-player-container">
-                <!-- H265 视频播放器组件 - 支持硬件加速解码，提供实时调试信息 -->
-                <H265Player 
-                  :default-url="currentStreamUrl"
-                  :autoplay="false"
+                <!-- WebRTC 视频播放器组件 - 超低延迟，GPU优化 -->
+                <ZLKWebRTCPlayer 
+                  v-if="webrtcStream"
+                  :key="playerKey"
+                  :server-url="webrtcServerUrl"
+                  :app="webrtcApp"
+                  :stream="webrtcStream"
+                  :auto-play="true"
+                  :show-controls="false"
+                  :show-status="true"
+                  :show-stats="false"
+                  :performance-mode="false"
+                  video-codec="H264"
+                  audio-codec="opus"
+                  @play="handleWebRTCPlay"
+                  @pause="handleWebRTCPause"
+                  @error="handleWebRTCError"
                 />
+                
+                <!-- 无流时的提示 -->
+                <div v-else class="no-stream-placeholder">
+                  <el-icon :size="64" style="color: rgba(255, 255, 255, 0.3);"><VideoCamera /></el-icon>
+                  <p style="margin-top: 16px; color: rgba(255, 255, 255, 0.6);">请点击地图上的摄像头图标或手动输入 WebRTC 流地址</p>
+                </div>
               </div>
             </div>
             
@@ -721,8 +775,10 @@ import { dashboardApi } from '@/api/dashboard'
 import { deviceApi } from '@/api/device'
 import { getLayerCameras } from '@/api/map'
 import { ElMessage } from 'element-plus'
-import { Loading } from '@element-plus/icons-vue'
-import H265Player from '@/components/H265Player.vue'
+import { Loading, VideoCamera, VideoPlay, VideoPause } from '@element-plus/icons-vue'
+// eslint-disable-next-line no-unused-vars
+import H265Player from '@/components/H265Player.vue' // 保留但不使用
+import ZLKWebRTCPlayer from '@/components/ZLKWebRTCPlayer.vue' // 新增WebRTC播放器
 // import { useAuthStore } from '@/stores/auth'
 // const authStore = useAuthStore() // 暂时注释，如果需要可以取消注释
 const loading = ref(false)
@@ -763,6 +819,12 @@ const currentStreamUrl = ref('')
 const selectedProtocol = ref('auto')
 const isPlaying = ref(false)
 const playerKey = ref(0)
+
+// WebRTC 播放器配置
+const webrtcServerUrl = ref('')
+const webrtcApp = ref('')
+const webrtcStream = ref('')
+const manualStreamUrl = ref('') // 手动输入的流地址
 
 // 流列表状态
 const availableStreams = ref([])
@@ -1502,6 +1564,81 @@ const formatEventTime = (timeStr) => {
 
 
 
+// 解析 WebRTC URL
+const parseWebRTCUrl = (url) => {
+  try {
+    // URL 示例: http://10.18.21.207:18081/index/api/webrtc?app=rtp&stream=xxx&type=play
+    const urlObj = new URL(url.trim())
+    
+    // 提取服务器地址（协议 + 主机 + 端口）
+    const serverUrl = `${urlObj.protocol}//${urlObj.host}`
+    
+    // 提取查询参数
+    const params = new URLSearchParams(urlObj.search)
+    const app = params.get('app')
+    const stream = params.get('stream')
+    
+    if (!app || !stream) {
+      throw new Error('URL 中缺少 app 或 stream 参数')
+    }
+    
+    return {
+      serverUrl,
+      app,
+      stream
+    }
+  } catch (error) {
+    console.error('解析 WebRTC URL 失败:', error)
+    return null
+  }
+}
+
+// WebRTC 播放成功事件
+const handleWebRTCPlay = () => {
+  isPlaying.value = true
+  console.log('WebRTC 播放成功')
+}
+
+// WebRTC 播放暂停事件
+const handleWebRTCPause = () => {
+  isPlaying.value = false
+  console.log('WebRTC 播放暂停')
+}
+
+// WebRTC 播放错误事件
+const handleWebRTCError = (error) => {
+  isPlaying.value = false
+  console.error('WebRTC 播放错误:', error)
+  ElMessage.error(`播放失败: ${error}`)
+}
+
+// 手动播放流
+const playManualStream = () => {
+  if (!manualStreamUrl.value.trim()) {
+    ElMessage.warning('请输入 WebRTC 流地址')
+    return
+  }
+  
+  try {
+    // 解析 WebRTC URL
+    const webrtcConfig = parseWebRTCUrl(manualStreamUrl.value)
+    if (webrtcConfig) {
+      webrtcServerUrl.value = webrtcConfig.serverUrl
+      webrtcApp.value = webrtcConfig.app
+      webrtcStream.value = webrtcConfig.stream
+      isPlaying.value = true
+      playerKey.value++ // 强制重新渲染播放器
+      ElMessage.success('正在播放 WebRTC 视频流（超低延迟）')
+      console.log('手动播放 WebRTC 成功', webrtcConfig)
+    } else {
+      ElMessage.error('WebRTC 流地址解析失败，请检查格式')
+    }
+  } catch (error) {
+    console.error('手动播放失败:', error)
+    ElMessage.error('播放失败: ' + (error?.message || '未知错误'))
+  }
+}
+
 // 关闭告警弹窗
 const closeAlert = (event) => {
   console.log('closeAlert called', event) // 添加调试日志
@@ -1600,9 +1737,15 @@ const autoPlayCameraStream = async (camera) => {
       return
     }
     
-    // 优先使用FLV流（低延迟）
+    // 优先使用 WebRTC 流（超低延迟）
     let streamUrl = null
-    if (playUrls.flv) {
+    let useWebRTC = false
+    
+    if (playUrls.webrtc) {
+      streamUrl = fixStreamUrl(playUrls.webrtc)
+      selectedProtocol.value = 'webrtc'
+      useWebRTC = true
+    } else if (playUrls.flv) {
       streamUrl = fixStreamUrl(playUrls.flv)
       selectedProtocol.value = 'flv'
     } else if (playUrls.wsflv || playUrls.ws_flv || playUrls['ws-flv']) {
@@ -1627,17 +1770,32 @@ const autoPlayCameraStream = async (camera) => {
     }
     
     inputStreamUrl.value = streamUrl
-    console.log('autoPlayCameraStream: 自动选择的流URL:', streamUrl)
+    console.log('autoPlayCameraStream: 自动选择的流URL:', streamUrl, '协议:', selectedProtocol.value)
     
     // 延迟一小段时间确保URL已设置，然后自动播放
     setTimeout(() => {
       try {
         if (inputStreamUrl.value) {
-          currentStreamUrl.value = inputStreamUrl.value.trim()
-          isPlaying.value = true
-          playerKey.value++ // 强制重新渲染播放器
-          ElMessage.success(`正在播放 ${streamDeviceName} 的视频流`)
-          console.log('autoPlayCameraStream: 播放成功')
+          // 如果是 WebRTC 协议，解析 URL 并设置 WebRTC 配置
+          if (useWebRTC) {
+            const webrtcConfig = parseWebRTCUrl(inputStreamUrl.value)
+            if (webrtcConfig) {
+              webrtcServerUrl.value = webrtcConfig.serverUrl
+              webrtcApp.value = webrtcConfig.app
+              webrtcStream.value = webrtcConfig.stream
+              isPlaying.value = true
+              playerKey.value++ // 强制重新渲染播放器
+              ElMessage.success(`正在播放 ${streamDeviceName} 的 WebRTC 视频流（超低延迟）`)
+              console.log('autoPlayCameraStream: WebRTC 播放成功', webrtcConfig)
+            } else {
+              console.error('autoPlayCameraStream: WebRTC URL 解析失败')
+              ElMessage.error('WebRTC 流地址解析失败')
+            }
+          } else {
+            // 传统流播放（FLV/HLS等）- 目前不支持，提示用户使用WebRTC
+            console.warn('autoPlayCameraStream: 当前仅支持 WebRTC 协议')
+            ElMessage.warning('当前播放器仅支持 WebRTC 协议，请确保流地址包含 WebRTC 格式')
+          }
         } else {
           console.error('autoPlayCameraStream: 流地址为空')
           ElMessage.error('流地址设置失败')
@@ -1769,6 +1927,11 @@ const stopStream = () => {
   // 清空流地址
   currentStreamUrl.value = ''
   isPlaying.value = false
+  
+  // 清空 WebRTC 配置
+  webrtcServerUrl.value = ''
+  webrtcApp.value = ''
+  webrtcStream.value = ''
   
   // 增加 playerKey 强制销毁并重新创建播放器组件，确保资源完全释放
   playerKey.value++
@@ -5268,6 +5431,113 @@ onUnmounted(() => {
 
 .check-btn:hover {
   background: rgba(0, 212, 255, 0.25) !important;
+}
+
+/* WebRTC 播放器占位符样式 */
+.no-stream-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(10, 20, 35, 0.8) 0%, rgba(15, 25, 40, 0.9) 100%);
+  border-radius: 8px;
+  min-height: 400px;
+}
+
+.no-stream-placeholder p {
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* 手动输入控制面板 */
+.manual-input-panel {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(15, 30, 50, 0.95) 0%, rgba(10, 22, 40, 0.98) 100%);
+  border-bottom: 1px solid rgba(64, 158, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stream-url-input {
+  flex: 1;
+}
+
+.stream-url-input :deep(.el-input__wrapper) {
+  background: rgba(10, 14, 39, 0.7);
+  border: 1px solid rgba(64, 158, 255, 0.3);
+  box-shadow: none;
+  transition: all 0.3s;
+}
+
+.stream-url-input :deep(.el-input__wrapper:hover) {
+  border-color: rgba(64, 158, 255, 0.5);
+}
+
+.stream-url-input :deep(.el-input__wrapper.is-focus) {
+  border-color: #1890ff;
+  box-shadow: 0 0 10px rgba(24, 144, 255, 0.3);
+}
+
+.stream-url-input :deep(.el-input__inner) {
+  color: #e8f4ff;
+  font-size: 13px;
+}
+
+.stream-url-input :deep(.el-input__inner::placeholder) {
+  color: rgba(145, 202, 255, 0.5);
+  font-size: 12px;
+}
+
+.stream-url-input :deep(.el-input-group__prepend) {
+  background: rgba(24, 144, 255, 0.15);
+  border-color: rgba(64, 158, 255, 0.3);
+  color: #1890ff;
+}
+
+.play-btn,
+.stop-btn {
+  min-width: 90px;
+  height: 36px;
+  font-weight: 500;
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.play-btn {
+  background: linear-gradient(135deg, #1890ff 0%, #0066cc 100%);
+  border: none;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+
+.play-btn:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.5);
+  transform: translateY(-2px);
+}
+
+.stop-btn {
+  background: linear-gradient(135deg, rgba(255, 77, 79, 0.9) 0%, rgba(204, 51, 51, 0.95) 100%);
+  border: 1px solid rgba(255, 77, 79, 0.5);
+  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3);
+}
+
+.stop-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(255, 102, 102, 0.95) 0%, rgba(230, 69, 69, 1) 100%);
+  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.5);
+  transform: translateY(-2px);
+}
+
+.stop-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 
