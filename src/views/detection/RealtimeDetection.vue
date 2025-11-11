@@ -78,72 +78,58 @@
             :class="{ 'active': selectedCell === n }"
             @click="selectCell(n)"
           >
-            <div class="video-container">
-              <!-- 所有分屏：使用 WebRTC 播放器 -->
-              <div class="video-player-wrapper">
-                <!-- WebRTC 播放器 - 性能优化配置 -->
-                <ZLKWebRTCPlayer
-                  v-if="webrtcPlayers[n - 1].stream"
-                  :key="'player-' + n"
-                  :server-url="webrtcPlayers[n - 1].serverUrl"
-                  :app="webrtcPlayers[n - 1].app"
-                  :stream="webrtcPlayers[n - 1].stream"
-                  :auto-play="true"
-                  :show-controls="false"
-                  :show-status="currentLayout <= 4"
-                  :show-stats="false"
-                  :performance-mode="currentLayout >= 9"
-                  video-codec="H264"
-                  audio-codec="opus"
-                  @play="handleWebRTCPlay(n)"
-                  @pause="handleWebRTCPause(n)"
-                  @error="(error) => handleWebRTCError(n, error)"
-                  @stats-update="(stats) => handleStatsUpdate(n, stats)"
-                />
+              <div class="video-container">
+                <!-- 停止播放按钮 -->
+                <div v-if="webrtcPlayers[n - 1].stream" class="stop-btn-wrapper">
+                  <el-button 
+                    :size="currentLayout >= 9 ? 'small' : 'default'"
+                    type="danger" 
+                    @click.stop="stopWebRTCPlay(n)"
+                    class="stop-stream-btn"
+                  >
+                    <el-icon><VideoPause /></el-icon>
+                    <span v-if="currentLayout <= 4">停止</span>
+                  </el-button>
+                </div>
                 
-                <!-- WebRTC 配置输入面板 -->
+                <!-- 所有分屏：使用 WebRTC 播放器 -->
+                <div class="video-player-wrapper">
+                  <!-- WebRTC 播放器 - 性能优化配置 -->
+                  <ZLKWebRTCPlayer
+                    v-if="webrtcPlayers[n - 1].stream"
+                    :key="'player-' + n"
+                    :server-url="webrtcPlayers[n - 1].serverUrl"
+                    :app="webrtcPlayers[n - 1].app"
+                    :stream="webrtcPlayers[n - 1].stream"
+                    :auto-play="true"
+                    :show-controls="false"
+                    :show-status="currentLayout <= 4"
+                    :show-stats="false"
+                    :performance-mode="currentLayout >= 9"
+                    video-codec="H264"
+                    audio-codec="opus"
+                    @play="handleWebRTCPlay(n)"
+                    @pause="handleWebRTCPause(n)"
+                    @error="(error) => handleWebRTCError(n, error)"
+                    @stats-update="(stats) => handleStatsUpdate(n, stats)"
+                  />
+                
+                <!-- 空闲分屏提示 -->
                 <div v-else class="stream-input-panel">
-                  <div class="webrtc-config-panel">
-                    <div class="panel-header">
-                      <span style="color: #1890ff; font-weight: 500;">分屏 {{ n }}</span>
-                    </div>
-                    <el-input
-                      v-model="webrtcPlayers[n - 1].url"
-                      placeholder="请输入 WebRTC 播放地址"
-                      class="stream-url-input"
-                      type="textarea"
-                      :rows="currentLayout <= 4 ? 4 : 2"
-                      @keyup.enter="startWebRTC(n)"
-                    >
-                      <template #prepend>
-                        <el-icon><VideoCamera /></el-icon>
-                      </template>
-                    </el-input>
-                    <div v-if="currentLayout <= 4" class="url-example">
-                      <span style="opacity: 0.6; font-size: 11px;">
-                        示例: http://10.18.21.207:18081/index/api/webrtc?app=rtp&stream=xxx&type=play
-                      </span>
-                    </div>
-                    <el-button 
-                      type="primary" 
-                      @click="startWebRTC(n)"
-                      :loading="webrtcPlayers[n - 1].isLoading"
-                      class="play-stream-btn"
-                      :style="{ marginTop: currentLayout <= 4 ? '8px' : '4px', width: '100%', height: currentLayout <= 4 ? '40px' : '32px', fontSize: currentLayout <= 4 ? '15px' : '13px' }"
-                    >
-                      <el-icon><VideoPlay /></el-icon>
-                      播放
-                    </el-button>
+                  <div class="empty-screen-hint">
+                    <el-icon :size="currentLayout <= 4 ? 60 : 40" style="color: rgba(64, 158, 255, 0.3);"><VideoCamera /></el-icon>
+                    <p style="margin-top: 12px; color: rgba(255, 255, 255, 0.6); font-size: 14px;">
+                      {{ selectedCell === n ? '请在左侧选择通道播放' : '点击选中此分屏' }}
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div class="video-info-bar">
-                <span class="channel-name">通道 {{ n }}</span>
+                <span class="channel-name">
+                  {{ webrtcPlayers[n - 1].channelInfo ? webrtcPlayers[n - 1].channelInfo.channelName : `分屏 ${n}` }}
+                </span>
                 <span class="time-display">{{ currentTime }}</span>
-              </div>
-              <div class="overlay-info" v-if="hasWarning(n)">
-                <el-tag type="danger" size="small">预警</el-tag>
               </div>
             </div>
           </div>
@@ -238,7 +224,7 @@
 
 <script>
 import { ref, watch, onMounted, onUnmounted, computed, nextTick } from 'vue'
-import { ElButton, ElTag, ElInput, ElTree, ElTooltip, ElMessage } from 'element-plus'
+import { ElButton, ElInput, ElTree, ElTooltip, ElMessage } from 'element-plus'
 import { 
   VideoCamera, Folder, Search, VideoPlay, VideoPause,
   DArrowLeft, DArrowRight, Monitor, Warning
@@ -250,7 +236,6 @@ export default {
   name: 'RealtimeDetection',
   components: {
     ElButton,
-    ElTag,
     ElInput,
     ElTree,
     ElTooltip,
@@ -268,7 +253,6 @@ export default {
   setup() {
     const currentLayout = ref(16) // 默认16分屏
     const selectedCell = ref(1) // 当前选中的视频格子
-    const warnings = ref(new Set([2, 4])) // 模拟某些摄像头有预警
     const searchText = ref('')
     const statusFilter = ref('all')
     const treeRef = ref(null)
@@ -287,7 +271,8 @@ export default {
       stream: '',        // 解析后的 stream
       isPlaying: false,  // 是否正在播放
       isLoading: false,  // 是否加载中
-      stats: null        // 统计信息
+      stats: null,       // 统计信息
+      channelInfo: null  // 通道信息（deviceId, channelId, channelName）
     })))
 
     // 多个视频播放器相关（已不使用，但保留以防其他代码引用）
@@ -431,14 +416,13 @@ export default {
           for (const device of devices) {
             const deviceId = device.deviceId || device.device_id
             const deviceName = device.name || deviceId
-            const isOnline = device.status?.toUpperCase() === 'ON'
             
-            // 创建设备节点
+            // 创建设备节点（在线状态先设为false，稍后根据通道状态更新）
             const deviceNode = {
               id: `device-${deviceId}`,
               label: deviceName,
               type: 'device',
-              online: isOnline,
+              online: false,
               deviceId: deviceId,
               children: []
             }
@@ -452,12 +436,18 @@ export default {
               
               if (channelResponse && channelResponse.data && channelResponse.data.list) {
                 const channels = channelResponse.data.list
+                let hasOnlineChannel = false
                 
                 // 添加通道节点
                 channels.forEach((channel, index) => {
                   const channelId = channel.channelId || channel.channel_id || channel.deviceId || channel.device_id
                   const channelName = channel.name || channel.channel_name || `通道 ${index + 1}`
                   const channelOnline = channel.status?.toUpperCase() === 'ON'
+                  
+                  // 如果有任何一个通道在线，则设备也显示在线
+                  if (channelOnline) {
+                    hasOnlineChannel = true
+                  }
                   
                   deviceNode.children.push({
                     id: `channel-${deviceId}-${channelId}`,
@@ -469,6 +459,9 @@ export default {
                     channelData: channel
                   })
                 })
+                
+                // 根据通道在线状态更新设备在线状态
+                deviceNode.online = hasOnlineChannel
               }
             } catch (error) {
               console.error(`加载设备 ${deviceId} 的通道失败:`, error)
@@ -527,10 +520,6 @@ export default {
       selectedCell.value = n
     }
 
-    const hasWarning = (cameraId) => {
-      return warnings.value.has(cameraId)
-    }
-
     const filterNode = (value, data) => {
       if (!value) return true
       return data.label.toLowerCase().includes(value.toLowerCase())
@@ -538,10 +527,98 @@ export default {
 
     const handleNodeClick = async (data) => {
       console.log('节点点击:', data)
+      
       if (data.type === 'channel') {
-        ElMessage.success(`选中通道: ${data.label}`)
-        // TODO: 这里可以开始播放该通道的视频流
-        // 可以调用 gb28181API.startWVPPreview 获取流地址
+        // 检查是否有选中的分屏
+        if (!selectedCell.value) {
+          ElMessage.warning('请先选择一个分屏')
+          return
+        }
+        
+        // 检查通道是否在线
+        if (!data.online) {
+          ElMessage.warning(`通道 ${data.label} 离线，无法播放`)
+          return
+        }
+        
+        const playerIndex = selectedCell.value
+        const player = webrtcPlayers.value[playerIndex - 1]
+        
+        try {
+          player.isLoading = true
+          ElMessage.info(`正在获取通道 ${data.label} 的播放地址...`)
+          
+          // 调用后台API获取WebRTC流地址（使用驼峰命名）
+          const response = await gb28181API.startWVPPreview({
+            deviceId: data.deviceId,
+            channelId: data.channelId
+          })
+          
+          console.log('获取播放地址响应:', response)
+          
+          // 检查响应
+          if (response && response.data) {
+            const streamData = response.data
+            
+            // 提取WebRTC URL（后端返回的字段名是 rtc 或 rtcs）
+            let webrtcUrl = null
+            if (streamData.rtc) {
+              webrtcUrl = streamData.rtc
+            } else if (streamData.rtcs) {
+              webrtcUrl = streamData.rtcs
+            } else if (streamData.webrtc_url) {
+              webrtcUrl = streamData.webrtc_url
+            } else if (streamData.urls && streamData.urls.webrtc) {
+              webrtcUrl = streamData.urls.webrtc
+            }
+            
+            if (!webrtcUrl) {
+              // 如果没有WebRTC地址，显示所有可用的流地址用于调试
+              console.log('可用的流地址:', streamData)
+              throw new Error('未获取到WebRTC播放地址，请检查流媒体服务器配置')
+            }
+            
+            console.log(`分屏 ${playerIndex} 获取到WebRTC地址:`, webrtcUrl)
+            
+            // 解析URL并配置播放器
+            const config = parseWebRTCUrl(webrtcUrl)
+            player.url = webrtcUrl
+            player.serverUrl = config.serverUrl
+            player.app = config.app
+            player.stream = config.stream
+            
+            // 保存通道信息到播放器
+            player.channelInfo = {
+              deviceId: data.deviceId,
+              channelId: data.channelId,
+              channelName: data.label
+            }
+            
+            ElMessage.success(`通道 ${data.label} 已开始播放到分屏 ${playerIndex}`)
+            
+            // 触发播放（通过组件的watch监听）
+            setTimeout(() => {
+              player.isLoading = false
+            }, 1000)
+            
+          } else {
+            throw new Error('获取播放地址失败')
+          }
+          
+        } catch (error) {
+          console.error('播放通道失败:', error)
+          player.isLoading = false
+          
+          let errorMsg = '获取播放地址失败'
+          if (error.message) {
+            errorMsg = error.message
+          } else if (error.response && error.response.data && error.response.data.message) {
+            errorMsg = error.response.data.message
+          }
+          
+          ElMessage.error(`通道 ${data.label}: ${errorMsg}`)
+        }
+        
       } else if (data.type === 'device') {
         ElMessage.info(`选中设备: ${data.label}`)
       }
@@ -1398,6 +1475,52 @@ export default {
       // console.log(`分屏 ${playerIndex} WebRTC 播放停止`)
     }
     
+    // 停止WebRTC播放
+    const stopWebRTCPlay = async (playerIndex) => {
+      const player = webrtcPlayers.value[playerIndex - 1]
+      
+      try {
+        // 如果有通道信息，调用后台API停止预览（使用驼峰命名）
+        if (player.channelInfo) {
+          await gb28181API.stopWVPPreview({
+            deviceId: player.channelInfo.deviceId,
+            channelId: player.channelInfo.channelId
+          })
+        }
+        
+        // 清空播放器配置
+        player.url = ''
+        player.serverUrl = ''
+        player.app = ''
+        player.stream = ''
+        player.isPlaying = false
+        player.isLoading = false
+        player.stats = null
+        player.channelInfo = null
+        
+        ElMessage.success(`分屏 ${playerIndex} 已停止播放`)
+        
+        // 更新性能优化策略
+        const playingCount = getPlayingWebRTCCount()
+        applyPerformanceOptimization(playingCount)
+        
+      } catch (error) {
+        console.error('停止播放失败:', error)
+        
+        // 即使停止失败也清空配置
+        player.url = ''
+        player.serverUrl = ''
+        player.app = ''
+        player.stream = ''
+        player.isPlaying = false
+        player.isLoading = false
+        player.stats = null
+        player.channelInfo = null
+        
+        ElMessage.warning(`分屏 ${playerIndex} 停止播放（部分失败）`)
+      }
+    }
+    
     // WebRTC 播放错误
     const handleWebRTCError = (playerIndex, error) => {
       const player = webrtcPlayers.value[playerIndex - 1]
@@ -1498,7 +1621,6 @@ export default {
       loading,
       setLayout,
       selectCell,
-      hasWarning,
       filterNode,
       handleNodeClick,
       handlePrevious,
@@ -1513,6 +1635,7 @@ export default {
       // WebRTC 播放器相关
       webrtcPlayers,
       startWebRTC,
+      stopWebRTCPlay,
       handleWebRTCPlay,
       handleWebRTCPause,
       handleWebRTCError,
@@ -1843,13 +1966,6 @@ export default {
   color: #69b1ff;
   font-size: 11px;
   font-family: 'Courier New', monospace;
-}
-
-.overlay-info {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 10;
 }
 
 /* 底部控制栏 */
@@ -2276,11 +2392,32 @@ export default {
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* 空闲分屏提示样式 */
+.empty-screen-hint {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 20px;
+}
+
+.empty-screen-hint p {
+  margin: 0;
+  line-height: 1.5;
+}
+
 .stop-btn-wrapper {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
   z-index: 20;
+  opacity: 0.85;
+  transition: opacity 0.3s;
+}
+
+.stop-btn-wrapper:hover {
+  opacity: 1;
 }
 
 .stop-stream-btn {
@@ -2290,12 +2427,25 @@ export default {
   backdrop-filter: blur(5px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   transition: all 0.3s;
+  padding: 6px 12px;
 }
 
 .stop-stream-btn:hover {
   background: linear-gradient(135deg, rgba(255, 102, 102, 0.95) 0%, rgba(230, 69, 69, 1) 100%);
   box-shadow: 0 4px 12px rgba(255, 77, 79, 0.5);
   transform: translateY(-2px);
+}
+
+/* 9分屏及以上时的停止按钮样式 */
+.grid-9 .stop-stream-btn,
+.grid-16 .stop-stream-btn {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.grid-16 .stop-btn-wrapper {
+  top: 4px;
+  right: 4px;
 }
 
 /* 响应式设计 */

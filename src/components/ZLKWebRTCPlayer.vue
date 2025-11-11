@@ -120,6 +120,12 @@ const stats = ref({
   bitrate: 0
 })
 
+// 重连相关
+const reconnectAttempts = ref(0)
+const maxReconnectAttempts = 3
+const reconnectDelay = 2000 // 2秒后重连
+let reconnectTimer = null
+
 // 计算状态类和文本
 const statusClass = computed(() => {
   return {
@@ -134,7 +140,7 @@ const statusClass = computed(() => {
 const statusText = computed(() => {
   const textMap = {
     idle: '未播放',
-    connecting: '连接中...',
+    connecting: reconnectAttempts.value > 0 ? `重连中 (${reconnectAttempts.value}/${maxReconnectAttempts})...` : '连接中...',
     playing: '播放中',
     error: `错误: ${errorMessage.value}`,
     stopped: '已停止'
@@ -180,15 +186,21 @@ const play = async () => {
     
     // 监听连接状态变化
     pc.value.onconnectionstatechange = () => {
-      // 仅在状态改变时输出
-      // console.log('Connection state:', pc.value.connectionState)
+      console.log('Connection state:', pc.value.connectionState)
       
       if (pc.value.connectionState === 'connected') {
         status.value = 'playing'
+        reconnectAttempts.value = 0 // 重置重连次数
         emit('play')
-      } else if (pc.value.connectionState === 'failed' || 
-                 pc.value.connectionState === 'closed') {
-        handleError('WebRTC 连接失败')
+      } else if (pc.value.connectionState === 'disconnected') {
+        console.log('WebRTC 连接断开，尝试重连...')
+        attemptReconnect()
+      } else if (pc.value.connectionState === 'failed') {
+        console.log('WebRTC 连接失败，尝试重连...')
+        attemptReconnect()
+      } else if (pc.value.connectionState === 'closed') {
+        console.log('WebRTC 连接已关闭')
+        // 如果是用户主动关闭，不重连
       }
     }
     
@@ -278,9 +290,57 @@ const play = async () => {
   }
 }
 
+// 尝试重连
+const attemptReconnect = () => {
+  // 清除已有的重连定时器
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
+  
+  if (reconnectAttempts.value >= maxReconnectAttempts) {
+    handleError(`WebRTC 连接失败，已尝试重连 ${maxReconnectAttempts} 次`)
+    return
+  }
+  
+  reconnectAttempts.value++
+  console.log(`准备第 ${reconnectAttempts.value} 次重连...`)
+  status.value = 'connecting'
+  
+  reconnectTimer = setTimeout(() => {
+    console.log(`开始第 ${reconnectAttempts.value} 次重连`)
+    // 先清理旧连接
+    if (pc.value) {
+      try {
+        pc.value.close()
+      } catch (e) {
+        console.warn('关闭旧连接失败:', e)
+      }
+      pc.value = null
+    }
+    
+    // 清除视频源
+    if (videoElement.value) {
+      videoElement.value.srcObject = null
+    }
+    
+    // 重新播放
+    play()
+  }, reconnectDelay)
+}
+
 // 停止播放
 const stop = () => {
   try {
+    // 清除重连定时器
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer)
+      reconnectTimer = null
+    }
+    
+    // 重置重连计数
+    reconnectAttempts.value = 0
+    
     // 停止统计监控
     stopStatsMonitor()
     
@@ -393,6 +453,11 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  // 清除重连定时器
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer)
+    reconnectTimer = null
+  }
   stop()
 })
 
