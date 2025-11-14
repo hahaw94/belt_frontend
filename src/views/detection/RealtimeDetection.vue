@@ -5,6 +5,7 @@
       <div class="sidebar-header">
         <el-icon><VideoCamera /></el-icon>
         <span>显示所有通道</span>
+        <span class="total-indicator">{{ getOnlineChannelCount() }}/{{ getTotalChannelCount() }}</span>
       </div>
       
       <el-input 
@@ -42,6 +43,9 @@
               <el-icon v-else-if="data.type === 'device'"><Monitor /></el-icon>
               <el-icon v-else><VideoCamera /></el-icon>
               <span class="node-label">{{ node.label }}</span>
+              <span v-if="data.type === 'device'" class="device-indicator">
+                {{ getDeviceOnlineChannelCount(data.id) }}/{{ getDeviceTotalChannelCount(data.id) }}
+              </span>
               <span v-if="data.online !== undefined" :class="['status-dot', data.online ? 'online' : 'offline']"></span>
             </span>
           </template>
@@ -251,7 +255,7 @@ export default {
     ZLKWebRTCPlayer
   },
   setup() {
-    const currentLayout = ref(16) // 默认16分屏
+    const currentLayout = ref(4) // 默认4分屏
     const selectedCell = ref(1) // 当前选中的视频格子
     const searchText = ref('')
     const statusFilter = ref('all')
@@ -1608,6 +1612,56 @@ export default {
       }
     }
 
+    // 获取总在线通道数
+    const getOnlineChannelCount = () => {
+      let count = 0
+      const traverse = (nodes) => {
+        if (!nodes) return
+        nodes.forEach(node => {
+          if (node.type === 'channel' && node.online) {
+            count++
+          }
+          if (node.children) {
+            traverse(node.children)
+          }
+        })
+      }
+      traverse(rawDeviceTree.value)
+      return count
+    }
+
+    // 获取总通道数
+    const getTotalChannelCount = () => {
+      let count = 0
+      const traverse = (nodes) => {
+        if (!nodes) return
+        nodes.forEach(node => {
+          if (node.type === 'channel') {
+            count++
+          }
+          if (node.children) {
+            traverse(node.children)
+          }
+        })
+      }
+      traverse(rawDeviceTree.value)
+      return count
+    }
+
+    // 获取指定设备的在线通道数
+    const getDeviceOnlineChannelCount = (deviceId) => {
+      const device = rawDeviceTree.value.find(node => node.id === deviceId)
+      if (!device || !device.children) return 0
+      return device.children.filter(channel => channel.type === 'channel' && channel.online).length
+    }
+
+    // 获取指定设备的总通道数
+    const getDeviceTotalChannelCount = (deviceId) => {
+      const device = rawDeviceTree.value.find(node => node.id === deviceId)
+      if (!device || !device.children) return 0
+      return device.children.filter(channel => channel.type === 'channel').length
+    }
+
     return {
       currentLayout,
       selectedCell,
@@ -1641,7 +1695,12 @@ export default {
       handleWebRTCError,
       handleStatsUpdate,
       getPlayingWebRTCCount,
-      applyPerformanceOptimization
+      applyPerformanceOptimization,
+      // 通道指标相关
+      getOnlineChannelCount,
+      getTotalChannelCount,
+      getDeviceOnlineChannelCount,
+      getDeviceTotalChannelCount
     }
   }
 }
@@ -1749,6 +1808,30 @@ export default {
 
 .status-dot.offline {
   background: #999;
+}
+
+.total-indicator {
+  margin-left: auto;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.3) 0%, rgba(24, 144, 255, 0.15) 100%);
+  border: 1px solid rgba(64, 158, 255, 0.4);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #91caff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.device-indicator {
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 3px;
+  font-size: 11px;
+  color: #81c784;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* 右侧主内容区 */
