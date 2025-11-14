@@ -5,30 +5,94 @@
     
     <h2>数据样本采集</h2>
     
+    <!-- 搜索筛选卡片 -->
+    <div class="search-filters-card tech-card mb-20">
+      <div class="search-filters-header">
+        <span class="filter-title">搜索筛选</span>
+      </div>
+      <div class="search-filters-content">
+        <div class="filter-row">
+          <div class="filter-item filter-item-wide">
+            <label for="timeRange">时间范围</label>
+            <el-date-picker
+              v-model="searchForm.timeRange"
+              id="timeRange"
+              type="datetimerange"
+              range-separator="至"
+              start-placeholder="开始时间"
+              end-placeholder="结束时间"
+              :shortcuts="dateShortcuts"
+              class="tech-input"
+              value-format="YYYY-MM-DD HH:mm:ss"
+            />
+          </div>
+          <div class="filter-item">
+            <label for="sampleType">样本类型</label>
+            <el-select
+              v-model="searchForm.sampleType"
+              id="sampleType"
+              placeholder="全部"
+              class="tech-select"
+              clearable
+            >
+              <el-option label="全部" value="" />
+              <el-option label="误报样本" value="false_positive" />
+            </el-select>
+          </div>
+          <div class="filter-item">
+            <label for="exportStatus">导出状态</label>
+            <el-select
+              v-model="searchForm.exportStatus"
+              id="exportStatus"
+              placeholder="全部"
+              class="tech-select"
+              clearable
+            >
+              <el-option label="全部" value="" />
+              <el-option label="未导出" :value="false" />
+              <el-option label="已导出" :value="true" />
+            </el-select>
+          </div>
+          <div class="filter-actions">
+            <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">搜索</el-button>
+            <el-button :icon="Refresh" class="tech-button-sm" @click="handleReset">重置</el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
     <div class="content-area tech-card">
       <div class="button-group">
         <el-button type="primary" :icon="Download" size="small" class="tech-button-sm" @click="handleExport">
           导出选中样本
         </el-button>
+        <el-button type="warning" :icon="Download" size="small" class="tech-button-sm" @click="handleExportAll">
+          导出所有误报
+        </el-button>
         <el-button type="success" :icon="Upload" size="small" class="tech-button-sm" @click="handleUpload">
           上传至训练平台
+        </el-button>
+        <el-button type="info" :icon="Upload" size="small" class="tech-button-sm" @click="handlePackageAll">
+          打包所有误报
         </el-button>
       </div>
 
       <div class="tech-table">
         <el-table
           :data="sampleList"
+          v-loading="loading"
           style="width: 100%"
           @selection-change="handleSelectionChange"
           :border="false"
         >
         <el-table-column type="selection" width="55" />
-        <el-table-column type="index" width="50" />
-        <el-table-column prop="time" label="时间" width="180" />
-        <el-table-column prop="type" label="样本类型" width="120" />
-        <el-table-column prop="source" label="来源设备" width="150" />
-        <el-table-column prop="description" label="描述" />
-        <el-table-column prop="status" label="状态" width="120">
+        <el-table-column type="index" label="序号" width="80" align="center" header-align="center" />
+        <el-table-column prop="time" label="告警时间" width="180" header-align="center" />
+        <el-table-column prop="type" label="告警类型" width="120" header-align="center" />
+        <el-table-column prop="level" label="级别" width="80" align="center" header-align="center" />
+        <el-table-column prop="location" label="位置" width="150" header-align="center" />
+        <el-table-column prop="description" label="描述" min-width="200" header-align="center" />
+        <el-table-column prop="status" label="导出状态" width="120" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
               {{ row.status }}
@@ -179,16 +243,28 @@
 </template>
 
 <script>
-import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Download,
-  Upload
+  Upload,
+  Search,
+  Refresh
 } from '@element-plus/icons-vue'
+import { eventApi } from '@/api/event'
 
 export default {
   name: 'DataCollection',
   setup() {
+    // 搜索表单
+    const searchForm = ref({
+      timeRange: [],
+      sampleType: 'false_positive', // 默认显示误报样本
+      exportStatus: ''
+    })
+
+    // 加载状态
+    const loading = ref(false)
 
     // 分页相关
     const currentPage = ref(1)
@@ -221,32 +297,56 @@ export default {
       return pages
     })
 
-    // 表格数据
-    const sampleList = ref([
+    // 告警类型映射
+    const alarmTypeMap = {
+      'person_intrusion': '人员入侵',
+      'behavior': '异常行为',
+      'object': '可疑物品',
+      'intrusion': '区域入侵',
+      'smoke_detection': '烟雾检测',
+      'fire_detection': '火灾检测'
+    }
+
+    // 告警级别映射
+    const alarmLevelMap = {
+      1: '低',
+      2: '中',
+      3: '高'
+    }
+
+    // 日期快捷选项
+    const dateShortcuts = [
       {
-        id: 1,
-        time: '2024-01-20 10:30:00',
-        type: '误报样本',
-        source: '摄像头1',
-        description: '误报：正常人员活动',
-        status: '未处理',
-        images: [
-          'https://example.com/image1.jpg',
-          'https://example.com/image2.jpg'
-        ]
+        text: '最近一天',
+        value: () => {
+          const end = new Date()
+          const start = new Date()
+          start.setTime(start.getTime() - 3600 * 1000 * 24)
+          return [start, end]
+        }
       },
       {
-        id: 2,
-        time: '2024-01-20 11:20:00',
-        type: '漏报样本',
-        source: '摄像头2',
-        description: '漏报：未检测到异常行为',
-        status: '已上传',
-        images: [
-          'https://example.com/image3.jpg'
-        ]
+        text: '最近七天',
+        value: () => {
+          const end = new Date()
+          const start = new Date()
+          start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
+          return [start, end]
+        }
+      },
+      {
+        text: '最近一个月',
+        value: () => {
+          const end = new Date()
+          const start = new Date()
+          start.setTime(start.getTime() - 3600 * 1000 * 24 * 30)
+          return [start, end]
+        }
       }
-    ])
+    ]
+
+    // 表格数据（从后端获取）
+    const sampleList = ref([])
 
     // 选中的样本
     const selectedSamples = ref([])
@@ -257,14 +357,98 @@ export default {
     const selectedSample = ref(null)
     const uploadProgress = ref(0)
 
+    // 获取图片URL
+    const getImageUrl = (path) => {
+      if (!path) return ''
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path
+      }
+      return `${import.meta.env.VITE_API_BASE_URL || ''}${path}`
+    }
+
+    // 加载误报样本列表
+    const loadSampleList = async () => {
+      loading.value = true
+      try {
+        const params = {
+          page: currentPage.value,
+          page_size: pageSize.value,
+          status: 2 // 只查询误报告警 (status=2)
+        }
+
+        // 时间范围
+        if (searchForm.value.timeRange && searchForm.value.timeRange.length === 2) {
+          params.start_time = searchForm.value.timeRange[0]
+          params.end_time = searchForm.value.timeRange[1]
+        }
+
+        // 导出状态筛选
+        if (searchForm.value.exportStatus !== '') {
+          params.is_exported = searchForm.value.exportStatus
+        }
+
+        const response = await eventApi.getAlarmList(params)
+        console.log('API响应:', response)
+        
+        if (response) {
+          const alarmData = response.data || []
+          
+          if (Array.isArray(alarmData)) {
+            sampleList.value = alarmData.map(alarm => ({
+              id: alarm.id,
+              time: alarm.alarm_time,
+              type: alarmTypeMap[alarm.alarm_type] || alarm.alarm_type,
+              typeRaw: alarm.alarm_type,
+              level: alarmLevelMap[alarm.alarm_level] || alarm.alarm_level,
+              location: alarm.location || alarm.camera_name || '-',
+              description: `${alarm.location || alarm.camera_name || '未知位置'}检测到${alarmTypeMap[alarm.alarm_type] || alarm.alarm_type}`,
+              status: alarm.is_exported ? '已导出' : '未导出',
+              isExported: alarm.is_exported,
+              alarmCode: alarm.alarm_code,
+              snapshotPath: alarm.snapshot_path,
+              videoPath: alarm.video_path,
+              images: alarm.snapshot_path ? [getImageUrl(alarm.snapshot_path)] : []
+            }))
+          } else {
+            console.error('API返回的data不是数组:', alarmData)
+            sampleList.value = []
+          }
+          
+          total.value = response.total || 0
+        } else {
+          sampleList.value = []
+          total.value = 0
+        }
+      } catch (error) {
+        console.error('加载样本列表失败：', error)
+        ElMessage.error('加载样本列表失败：' + (error.message || '未知错误'))
+        sampleList.value = []
+        total.value = 0
+      } finally {
+        loading.value = false
+      }
+    }
+
+    // 搜索
+    const handleSearch = () => {
+      currentPage.value = 1
+      loadSampleList()
+    }
+
+    // 重置
+    const handleReset = () => {
+      searchForm.value = {
+        timeRange: [],
+        sampleType: 'false_positive',
+        exportStatus: ''
+      }
+      currentPage.value = 1
+      loadSampleList()
+    }
+
     // 获取状态标签类型
     const getStatusType = (status) => {
-      const statusMap = {
-        '未处理': 'info',
-        '已上传': 'success',
-        '处理中': 'warning'
-      }
-      return statusMap[status] || 'info'
+      return status === '已导出' ? 'success' : 'info'
     }
 
     // 表格选择变化
@@ -278,44 +462,178 @@ export default {
       previewDialogVisible.value = true
     }
 
-    // 导出样本
-    const handleExport = () => {
+    // 导出选中样本
+    const handleExport = async () => {
       if (selectedSamples.value.length === 0) {
         ElMessage.warning('请选择要导出的样本')
         return
       }
-      // 实现导出逻辑
-      ElMessage.success(`已导出 ${selectedSamples.value.length} 个样本`)
+
+      try {
+        const alarmIds = selectedSamples.value.map(item => item.id)
+        const response = await eventApi.exportFalsePositives({ alarm_ids: alarmIds })
+        
+        if (response && response.download_url) {
+          // 自动下载
+          const link = document.createElement('a')
+          link.href = response.download_url
+          link.download = response.file_name || 'false_positives.zip'
+          link.click()
+          
+          ElMessage.success(`已导出 ${selectedSamples.value.length} 个样本`)
+          
+          // 刷新列表
+          loadSampleList()
+        } else {
+          ElMessage.error('导出失败：未返回下载链接')
+        }
+      } catch (error) {
+        console.error('导出样本失败：', error)
+        ElMessage.error('导出样本失败：' + (error.message || '未知错误'))
+      }
     }
 
-    // 上传样本
-    const handleUpload = () => {
+    // 导出所有误报
+    const handleExportAll = async () => {
+      try {
+        await ElMessageBox.confirm(
+          '确认要导出所有误报样本吗？',
+          '提示',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        )
+
+        const response = await eventApi.exportFalsePositives({})
+        
+        if (response && response.download_url) {
+          // 自动下载
+          const link = document.createElement('a')
+          link.href = response.download_url
+          link.download = response.file_name || 'false_positives_all.zip'
+          link.click()
+          
+          ElMessage.success(`已导出所有误报样本，共 ${response.alarm_count || 0} 条`)
+          
+          // 刷新列表
+          loadSampleList()
+        } else {
+          ElMessage.error('导出失败：未返回下载链接')
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('导出所有误报失败：', error)
+          ElMessage.error('导出失败：' + (error.message || '未知错误'))
+        }
+      }
+    }
+
+    // 上传选中样本至训练平台
+    const handleUpload = async () => {
       if (selectedSamples.value.length === 0) {
         ElMessage.warning('请选择要上传的样本')
         return
       }
+
       uploadDialogVisible.value = true
       uploadProgress.value = 0
-      // 模拟上传进度
-      const timer = setInterval(() => {
-        if (uploadProgress.value < 100) {
-          uploadProgress.value += 10
+
+      try {
+        // 模拟上传进度
+        const progressTimer = setInterval(() => {
+          if (uploadProgress.value < 90) {
+            uploadProgress.value += 10
+          }
+        }, 300)
+
+        const alarmIds = selectedSamples.value.map(item => item.id)
+        const response = await eventApi.packageFalsePositives({ alarm_ids: alarmIds })
+        
+        clearInterval(progressTimer)
+        uploadProgress.value = 100
+        
+        if (response) {
+          ElMessage.success(`成功上传 ${selectedSamples.value.length} 个样本至训练平台`)
+          
+          // 延迟关闭对话框
+          setTimeout(() => {
+            uploadDialogVisible.value = false
+            // 刷新列表
+            loadSampleList()
+          }, 1500)
         } else {
-          clearInterval(timer)
-          ElMessage.success('样本上传成功')
+          uploadProgress.value = 0
+          ElMessage.error('上传失败')
         }
-      }, 300)
+      } catch (error) {
+        uploadProgress.value = 0
+        console.error('上传样本失败：', error)
+        ElMessage.error('上传失败：' + (error.message || '未知错误'))
+      }
+    }
+
+    // 打包所有误报至训练平台
+    const handlePackageAll = async () => {
+      try {
+        await ElMessageBox.confirm(
+          '确认要打包并上传所有误报样本至训练平台吗？',
+          '提示',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        )
+
+        uploadDialogVisible.value = true
+        uploadProgress.value = 0
+
+        // 模拟上传进度
+        const progressTimer = setInterval(() => {
+          if (uploadProgress.value < 90) {
+            uploadProgress.value += 10
+          }
+        }, 300)
+
+        const response = await eventApi.packageFalsePositives({})
+        
+        clearInterval(progressTimer)
+        uploadProgress.value = 100
+        
+        if (response) {
+          ElMessage.success(`成功打包上传所有误报样本，共 ${response.alarm_count || 0} 条`)
+          
+          // 延迟关闭对话框
+          setTimeout(() => {
+            uploadDialogVisible.value = false
+            // 刷新列表
+            loadSampleList()
+          }, 1500)
+        } else {
+          uploadProgress.value = 0
+          ElMessage.error('打包上传失败')
+        }
+      } catch (error) {
+        if (error !== 'cancel') {
+          uploadProgress.value = 0
+          console.error('打包上传失败：', error)
+          ElMessage.error('打包上传失败：' + (error.message || '未知错误'))
+        }
+      }
     }
 
     // 分页处理
     const handleSizeChange = (val) => {
       pageSize.value = val
-      // 重新加载数据
+      currentPage.value = 1
+      loadSampleList()
     }
 
     const handleCurrentChange = (val) => {
       currentPage.value = val
-      // 重新加载数据
+      loadSampleList()
     }
 
     // 跳转到指定页面
@@ -324,10 +642,18 @@ export default {
         return
       }
       currentPage.value = page
-      // 重新加载数据
+      loadSampleList()
     }
 
+    // 组件挂载时加载数据
+    onMounted(() => {
+      loadSampleList()
+    })
+
     return {
+      loading,
+      searchForm,
+      dateShortcuts,
       sampleList,
       currentPage,
       pageSize,
@@ -343,12 +669,18 @@ export default {
       handleSelectionChange,
       handlePreview,
       handleExport,
+      handleExportAll,
       handleUpload,
+      handlePackageAll,
+      handleSearch,
+      handleReset,
       handleSizeChange,
       handleCurrentChange,
       goToPage,
       Download,
-      Upload
+      Upload,
+      Search,
+      Refresh
     }
   }
 }
@@ -383,6 +715,101 @@ export default {
   text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
   position: relative;
   z-index: 10;
+}
+
+/* 搜索筛选卡片 */
+.search-filters-card {
+  position: relative;
+  z-index: 10;
+  background: rgba(15, 25, 45, 0.95) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
+  backdrop-filter: blur(10px) !important;
+  border: none !important;
+  margin-bottom: 20px !important;
+  padding: 20px !important;
+}
+
+.search-filters-header {
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.filter-title {
+  color: #00ffff;
+  font-size: 16px;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.search-filters-content {
+  padding: 0;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 15px;
+  align-items: end;
+}
+
+.filter-item-wide {
+  grid-column: span 1;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.filter-item label {
+  color: #00ffff;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 1600px) {
+  .filter-row {
+    grid-template-columns: 2fr 1fr;
+  }
+  
+  .filter-item:nth-child(3) {
+    grid-column: 1;
+  }
+  
+  .filter-actions {
+    grid-column: 2;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 1200px) {
+  .filter-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .filter-item-wide {
+    grid-column: span 2;
+  }
+  
+  .filter-actions {
+    grid-column: span 2;
+  }
 }
 
 /* 自定义滚动条样式 - 科技感 */

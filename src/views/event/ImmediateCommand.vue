@@ -3,7 +3,17 @@
     <!-- 科技感背景 -->
     <div class="tech-background"></div>
 
-    <h2>即时告警批示</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin: 24px 0 20px 0;">
+      <h2 style="margin: 0;">即时告警批示</h2>
+      <el-button 
+        type="primary" 
+        class="tech-button-sm" 
+        :icon="Bell"
+        @click="openSubscriptionDialog"
+      >
+        订阅配置
+      </el-button>
+    </div>
 
     <!-- 搜索筛选卡片 -->
     <div class="search-filters-card tech-card mb-20">
@@ -213,6 +223,57 @@
       </template>
     </el-dialog>
 
+    <!-- 订阅配置对话框 -->
+    <el-dialog
+      v-model="subscriptionDialogVisible"
+      title="告警订阅配置"
+      width="600px"
+    >
+      <el-form :model="subscriptionForm" label-width="120px">
+        <el-form-item label="订阅告警类型">
+          <el-checkbox-group v-model="subscriptionForm.alarmTypes">
+            <el-checkbox label="person_intrusion">人员入侵</el-checkbox>
+            <el-checkbox label="belt_anomaly">皮带异常</el-checkbox>
+            <el-checkbox label="smoke_detection">烟雾检测</el-checkbox>
+            <el-checkbox label="fire_alarm">火灾报警</el-checkbox>
+            <el-checkbox label="equipment_fault">设备故障</el-checkbox>
+          </el-checkbox-group>
+        </el-form-item>
+        <el-form-item label="Web推送">
+          <el-switch v-model="subscriptionForm.enableWebPush" />
+          <span style="margin-left: 10px; color: rgba(255, 255, 255, 0.6); font-size: 12px;">
+            在浏览器中接收告警通知
+          </span>
+        </el-form-item>
+        <el-form-item label="邮件推送">
+          <el-switch v-model="subscriptionForm.enableEmail" />
+          <span style="margin-left: 10px; color: rgba(255, 255, 255, 0.6); font-size: 12px;">
+            通过邮件接收告警通知
+          </span>
+        </el-form-item>
+        <el-form-item 
+          v-if="subscriptionForm.enableEmail" 
+          label="邮箱地址"
+          required
+        >
+          <el-input
+            v-model="subscriptionForm.emailAddress"
+            placeholder="请输入邮箱地址"
+            type="email"
+            class="tech-input"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="subscriptionDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSubscriptionSubmit" :loading="subscriptionLoading">
+            保存配置
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
     <!-- 处理告警对话框 -->
     <el-dialog
       v-model="processDialogVisible"
@@ -272,9 +333,10 @@
 </template>
 
 <script>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { Search, Refresh, Bell } from '@element-plus/icons-vue'
+import { eventApi } from '@/api/event'
 
 export default {
   name: 'ImmediateCommand',
@@ -340,7 +402,9 @@ export default {
     // 对话框控制
     const notifyDialogVisible = ref(false)
     const processDialogVisible = ref(false)
+    const subscriptionDialogVisible = ref(false)
     const currentAlarm = ref(null)
+    const subscriptionLoading = ref(false)
 
     // 通知表单
     const notifyForm = reactive({
@@ -355,6 +419,14 @@ export default {
       transferTo: '',
       delayTime: '',
       description: ''
+    })
+
+    // 订阅表单
+    const subscriptionForm = reactive({
+      alarmTypes: [],
+      enableWebPush: true,
+      enableEmail: false,
+      emailAddress: ''
     })
 
     // 日期快捷选项
@@ -492,6 +564,79 @@ export default {
       // 可以在这里添加行点击的逻辑
     }
 
+    // 打开订阅配置对话框
+    const openSubscriptionDialog = async () => {
+      subscriptionDialogVisible.value = true
+      subscriptionLoading.value = true
+      
+      try {
+        const response = await eventApi.getSubscription()
+        if (response.data) {
+          // 解析alarm_types（后端返回的是JSON字符串）
+          let alarmTypes = []
+          if (response.data.alarm_types) {
+            try {
+              alarmTypes = JSON.parse(response.data.alarm_types)
+            } catch (e) {
+              console.error('解析告警类型失败：', e)
+            }
+          }
+          
+          subscriptionForm.alarmTypes = Array.isArray(alarmTypes) ? alarmTypes : []
+          subscriptionForm.enableWebPush = response.data.enable_web_push !== false
+          subscriptionForm.enableEmail = response.data.enable_email === true
+          subscriptionForm.emailAddress = response.data.email_address || ''
+        }
+      } catch (error) {
+        console.error('获取订阅配置失败：', error)
+        ElMessage.warning('获取订阅配置失败，将使用默认配置')
+      } finally {
+        subscriptionLoading.value = false
+      }
+    }
+
+    // 提交订阅配置
+    const handleSubscriptionSubmit = async () => {
+      // 验证邮箱
+      if (subscriptionForm.enableEmail && !subscriptionForm.emailAddress) {
+        ElMessage.warning('启用邮件推送时，邮箱地址不能为空')
+        return
+      }
+      
+      if (subscriptionForm.enableEmail && subscriptionForm.emailAddress) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!emailRegex.test(subscriptionForm.emailAddress)) {
+          ElMessage.warning('请输入有效的邮箱地址')
+          return
+        }
+      }
+
+      subscriptionLoading.value = true
+      
+      try {
+        const data = {
+          alarm_types: subscriptionForm.alarmTypes,
+          enable_web_push: subscriptionForm.enableWebPush,
+          enable_email: subscriptionForm.enableEmail,
+          email_address: subscriptionForm.enableEmail ? subscriptionForm.emailAddress : null
+        }
+        
+        await eventApi.updateSubscription(data)
+        ElMessage.success('订阅配置保存成功')
+        subscriptionDialogVisible.value = false
+      } catch (error) {
+        console.error('保存订阅配置失败：', error)
+        ElMessage.error('保存订阅配置失败，请稍后重试')
+      } finally {
+        subscriptionLoading.value = false
+      }
+    }
+
+    // 页面加载时获取订阅配置
+    onMounted(() => {
+      // 可以在这里预加载订阅配置
+    })
+
 
     return {
       searchForm,
@@ -505,8 +650,11 @@ export default {
       userList,
       notifyDialogVisible,
       processDialogVisible,
+      subscriptionDialogVisible,
+      subscriptionLoading,
       notifyForm,
       processForm,
+      subscriptionForm,
       handleSearch,
       handleReset,
       getStatusType,
@@ -520,8 +668,11 @@ export default {
       handleCurrentChange,
       goToPage,
       handleRowClick,
+      openSubscriptionDialog,
+      handleSubscriptionSubmit,
       Search,
-      Refresh
+      Refresh,
+      Bell
     }
   }
 }
