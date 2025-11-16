@@ -9,6 +9,26 @@
     <div class="search-filters-card tech-card mb-20">
       <div class="search-filters-header">
         <span class="filter-title">搜索筛选</span>
+        <div class="view-toggle-buttons">
+          <el-button 
+            :type="viewMode === 'list' ? 'primary' : ''"
+            :class="['view-toggle-btn', { active: viewMode === 'list' }]"
+            @click="viewMode = 'list'"
+            size="small"
+          >
+            <el-icon><List /></el-icon>
+            列表
+          </el-button>
+          <el-button 
+            :type="viewMode === 'thumbnail' ? 'primary' : ''"
+            :class="['view-toggle-btn', { active: viewMode === 'thumbnail' }]"
+            @click="viewMode = 'thumbnail'"
+            size="small"
+          >
+            <el-icon><Grid /></el-icon>
+            缩略图
+          </el-button>
+        </div>
       </div>
       <div class="search-filters-content">
         <div class="filter-row">
@@ -83,8 +103,10 @@
 
     <!-- 表格和分页 -->
     <div class="content-area tech-card">
+      <!-- 列表视图 -->
       <el-table
-        :data="alarmList"
+        v-if="viewMode === 'list'"
+        :data="displayAlarmList"
         v-loading="loading"
         border
         stripe
@@ -116,6 +138,39 @@
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- 缩略图视图 -->
+      <div v-if="viewMode === 'thumbnail'" class="thumbnail-view" v-loading="loading">
+        <div class="thumbnail-grid">
+          <div 
+            v-for="alarm in displayAlarmList" 
+            :key="alarm.id" 
+            class="thumbnail-card"
+            @click="handleView(alarm)"
+          >
+            <div class="thumbnail-image">
+              <el-image 
+                :src="alarm.images && alarm.images.length > 0 ? alarm.images[0] : getDefaultImage(alarm.type)"
+                fit="cover"
+                class="alarm-thumbnail"
+              >
+                <template #error>
+                  <div class="image-slot">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+              <div class="thumbnail-badge" :class="getLevelClass(alarm.level)">
+                {{ alarm.level }}
+              </div>
+            </div>
+            <div class="thumbnail-info">
+              <div class="thumbnail-title">{{ alarm.type }}</div>
+              <div class="thumbnail-desc">{{ alarm.location }} - {{ alarm.time }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- 增强型分页组件 -->
       <div class="pagination-container tech-pagination">
@@ -278,7 +333,7 @@
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { Search, Refresh, List, Grid, Picture } from '@element-plus/icons-vue'
 import { eventApi } from '@/api/event'
 
 export default {
@@ -304,6 +359,93 @@ export default {
 
     // 告警列表
     const alarmList = ref([])
+
+    // 视图模式：list 或 thumbnail（默认为缩略图）
+    const viewMode = ref('thumbnail')
+
+    // 假数据用于缩略图展示
+    const mockAlarmData = [
+      {
+        id: 'mock-1',
+        time: '2024-11-16 14:30:25',
+        type: '人员入侵',
+        level: '高',
+        location: '东门入口',
+        description: '东门入口检测到人员入侵',
+        status: '未处理',
+        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=人员入侵']
+      },
+      {
+        id: 'mock-2',
+        time: '2024-11-16 14:25:18',
+        type: '异常行为',
+        level: '中',
+        location: '停车场A区',
+        description: '停车场A区检测到异常行为',
+        status: '未处理',
+        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=异常行为']
+      },
+      {
+        id: 'mock-3',
+        time: '2024-11-16 14:20:42',
+        type: '可疑物品',
+        level: '高',
+        location: '大厅中央',
+        description: '大厅中央检测到可疑物品',
+        status: '已处理',
+        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=可疑物品']
+      },
+      {
+        id: 'mock-4',
+        time: '2024-11-16 14:15:33',
+        type: '区域入侵',
+        level: '中',
+        location: '仓库3号',
+        description: '仓库3号检测到区域入侵',
+        status: '未处理',
+        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=区域入侵']
+      },
+      {
+        id: 'mock-5',
+        time: '2024-11-16 14:10:15',
+        type: '烟雾检测',
+        level: '高',
+        location: '办公室201',
+        description: '办公室201检测到烟雾检测',
+        status: '已确认',
+        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=烟雾检测']
+      },
+      {
+        id: 'mock-6',
+        time: '2024-11-16 14:05:08',
+        type: '火灾检测',
+        level: '高',
+        location: '配电房',
+        description: '配电房检测到火灾检测',
+        status: '已处理',
+        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=火灾检测']
+      },
+      {
+        id: 'mock-7',
+        time: '2024-11-16 14:00:52',
+        type: '人员入侵',
+        level: '低',
+        location: '后门通道',
+        description: '后门通道检测到人员入侵',
+        status: '误报',
+        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=人员入侵']
+      },
+      {
+        id: 'mock-8',
+        time: '2024-11-16 13:55:30',
+        type: '异常行为',
+        level: '中',
+        location: '电梯间B',
+        description: '电梯间B检测到异常行为',
+        status: '未处理',
+        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=异常行为']
+      }
+    ]
 
     // 告警类型映射
     const alarmTypeMap = {
@@ -347,6 +489,14 @@ export default {
     // 对话框相关
     const dialogVisible = ref(false)
     const selectedAlarm = ref(null)
+
+    // 计算显示的告警列表（缩略图模式下如果没有真实数据则使用假数据）
+    const displayAlarmList = computed(() => {
+      if (viewMode.value === 'thumbnail' && alarmList.value.length === 0) {
+        return mockAlarmData
+      }
+      return alarmList.value
+    })
 
     // 计算总页数
     const totalPages = computed(() => {
@@ -513,6 +663,30 @@ export default {
       }
       // 否则拼接后端地址
       return `${import.meta.env.VITE_API_BASE_URL || ''}${path}`
+    }
+
+    // 获取默认图片（根据告警类型）
+    const getDefaultImage = (type) => {
+      // 这里使用占位图片，实际项目中可以根据类型返回不同的默认图
+      const images = {
+        '人员入侵': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=人员入侵',
+        '异常行为': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=异常行为',
+        '可疑物品': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=可疑物品',
+        '区域入侵': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=区域入侵',
+        '烟雾检测': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=烟雾检测',
+        '火灾检测': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=火灾检测'
+      }
+      return images[type] || 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=告警图片'
+    }
+
+    // 获取级别样式类
+    const getLevelClass = (level) => {
+      const classMap = {
+        '低': 'level-low',
+        '中': 'level-medium',
+        '高': 'level-high'
+      }
+      return classMap[level] || 'level-low'
     }
 
     // 查看告警详情
@@ -693,6 +867,7 @@ export default {
       loading,
       searchForm,
       alarmList,
+      displayAlarmList,
       currentPage,
       pageSize,
       total,
@@ -701,6 +876,7 @@ export default {
       dateShortcuts,
       dialogVisible,
       selectedAlarm,
+      viewMode,
       handleSearch,
       handleReset,
       getStatusType,
@@ -711,8 +887,13 @@ export default {
       handleCurrentChange,
       handleRowClick,
       goToPage,
+      getDefaultImage,
+      getLevelClass,
       Search,
-      Refresh
+      Refresh,
+      List,
+      Grid,
+      Picture
     }
   }
 }
@@ -842,6 +1023,9 @@ export default {
   margin-bottom: 15px;
   border-bottom: 1px solid rgba(0, 255, 255, 0.2);
   padding-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .filter-title {
@@ -849,6 +1033,40 @@ export default {
   font-weight: bold;
   font-size: 16px;
   text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+/* 视图切换按钮样式 */
+.view-toggle-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.view-toggle-btn {
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  background: rgba(0, 255, 255, 0.08) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  padding: 6px 12px !important;
+  font-size: 13px !important;
+}
+
+.view-toggle-btn:hover {
+  background: rgba(0, 255, 255, 0.15) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px) !important;
+  color: #00ffff !important;
+}
+
+.view-toggle-btn.active {
+  background: rgba(0, 255, 255, 0.25) !important;
+  border-color: #00ffff !important;
+  color: #00ffff !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+}
+
+.view-toggle-btn :deep(.el-icon) {
+  margin-right: 4px;
 }
 
 .search-filters-content {
@@ -2117,5 +2335,164 @@ export default {
 .tech-table :deep(*[class*="el-table"]) {
   border-left: 0 !important;
   border-right: 0 !important;
+}
+
+/* ==================== 缩略图视图样式 ==================== */
+.thumbnail-view {
+  width: 100%;
+  min-height: 400px;
+  padding: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.thumbnail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.thumbnail-card {
+  background: rgba(25, 35, 55, 0.8);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.thumbnail-card:hover {
+  transform: translateY(-5px);
+  border-color: #00ffff;
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.3),
+    0 0 20px rgba(0, 255, 255, 0.3);
+  background: rgba(30, 40, 60, 0.9);
+}
+
+.thumbnail-image {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  background: rgba(20, 30, 50, 0.8);
+}
+
+.alarm-thumbnail {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.thumbnail-card:hover .alarm-thumbnail {
+  transform: scale(1.05);
+}
+
+.image-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(20, 30, 50, 0.9);
+  color: rgba(0, 255, 255, 0.5);
+  font-size: 48px;
+}
+
+.thumbnail-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.thumbnail-badge.level-low {
+  background: rgba(144, 147, 153, 0.8);
+  border: 1px solid rgba(144, 147, 153, 0.5);
+  color: #ffffff;
+}
+
+.thumbnail-badge.level-medium {
+  background: rgba(230, 162, 60, 0.8);
+  border: 1px solid rgba(230, 162, 60, 0.5);
+  color: #ffffff;
+}
+
+.thumbnail-badge.level-high {
+  background: rgba(245, 108, 108, 0.8);
+  border: 1px solid rgba(245, 108, 108, 0.5);
+  color: #ffffff;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(245, 108, 108, 0.3);
+  }
+  50% {
+    box-shadow: 0 2px 15px rgba(245, 108, 108, 0.6);
+  }
+}
+
+.thumbnail-info {
+  padding: 12px 15px;
+  background: rgba(20, 30, 50, 0.6);
+}
+
+.thumbnail-title {
+  color: #00ffff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thumbnail-desc {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 响应式布局 */
+@media (max-width: 1600px) {
+  .thumbnail-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+@media (max-width: 1200px) {
+  .thumbnail-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .thumbnail-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+  }
+  
+  .thumbnail-image {
+    height: 140px;
+  }
+  
+  .thumbnail-info {
+    padding: 10px 12px;
+  }
 }
 </style>

@@ -26,8 +26,9 @@
           </button>
         </div>
 
-        <!-- 最右侧用户菜单 -->
+        <!-- 最右侧用户菜单和告警通知 -->
         <div class="header-user">
+          <!-- 用户下拉菜单 -->
           <el-dropdown>
             <span class="el-dropdown-link">
               <el-avatar :size="30" :src="userAvatarUrl"></el-avatar>
@@ -41,6 +42,17 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+          
+          <!-- 告警通知铃铛 -->
+          <div class="alert-notification-wrapper">
+            <AlertNotification
+              :alert-history="alertStore.recentAlerts"
+              @test-alert="handleTestAlert"
+              @mark-as-read="handleMarkAsRead"
+              @mark-all-as-read="handleMarkAllAsRead"
+              @clear-history="handleClearHistory"
+            />
+          </div>
         </div>
       </el-header>
 
@@ -107,15 +119,6 @@
               <el-menu-item v-if="checkMenuPermission('/detection/playback')" index="/detection/playback">录像回放</el-menu-item>
             </el-sub-menu>
 
-            <el-sub-menu v-if="checkChildPermission('/recording')" index="/recording">
-              <template #title>
-                <el-icon><VideoCamera /></el-icon>
-                <span>录像管理</span>
-              </template>
-              <el-menu-item v-if="checkMenuPermission('/recording/list')" index="/recording/list">录像列表</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/recording/statistics')" index="/recording/statistics">录像统计</el-menu-item>
-            </el-sub-menu>
-
             <el-sub-menu v-if="checkChildPermission('/event')" index="/event">
               <template #title>
                 <el-icon><Bell /></el-icon>
@@ -162,7 +165,9 @@ import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import { useSystemStore } from '@/stores/system';
+import { useAlertStore } from '@/stores/alertStore';
 import ProfileModal from '@/components/ProfileModal.vue';
+import AlertNotification from '@/components/AlertNotification.vue';
 import { usePermissions } from '@/composables/usePermissions';
 import {
   ArrowDown,
@@ -173,7 +178,6 @@ import {
   User,
   Connection,
   Monitor,
-  VideoCamera,
   Bell,
   Document,
   TrendCharts
@@ -183,6 +187,7 @@ export default {
   name: 'LayoutIndex',
   components: {
     ProfileModal,
+    AlertNotification,
     ArrowDown,
     Expand,
     Fold,
@@ -191,7 +196,6 @@ export default {
     User,
     Connection,
     Monitor,
-    VideoCamera,
     Bell,
     Document,
     TrendCharts
@@ -201,6 +205,7 @@ export default {
     const route = useRoute();
     const authStore = useAuthStore();
     const systemStore = useSystemStore();
+    const alertStore = useAlertStore();
     const { checkMenuPermission, checkChildPermission } = usePermissions();
     
     const userAvatarUrl = ref(require('@/assets/images/main/main-head.png'));
@@ -285,6 +290,23 @@ export default {
       console.log('个人资料已更新');
     };
 
+    // 告警相关处理方法
+    const handleTestAlert = (alertData) => {
+      alertStore.addAlert(alertData);
+    };
+
+    const handleMarkAsRead = (alertId) => {
+      alertStore.markAsRead(alertId);
+    };
+
+    const handleMarkAllAsRead = () => {
+      alertStore.markAllAsRead();
+    };
+
+    const handleClearHistory = () => {
+      alertStore.clearHistory();
+    };
+
     // 动态调整菜单容器高度
     const adjustMenuHeight = () => {
       if (menuContainer.value) {
@@ -323,6 +345,7 @@ export default {
       isCollapse,
       displayUsername,
       currentLogoUrl,
+      alertStore,
       checkMenuPermission,
       checkChildPermission,
       goToHome,
@@ -333,6 +356,10 @@ export default {
       showProfile,
       showProfileModal,
       handleProfileUpdated,
+      handleTestAlert,
+      handleMarkAsRead,
+      handleMarkAllAsRead,
+      handleClearHistory,
     };
   },
 };
@@ -576,9 +603,16 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 15px; /* 在铃铛和用户信息之间添加间距 */
   z-index: 10000;
   position: relative;
-  margin-right: 20px;
+  margin-right: 1.5%; /* 使用百分比向右移动 */
+}
+
+.alert-notification-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .header-user .el-dropdown {
@@ -1066,7 +1100,7 @@ export default {
   }
 
   .header-user {
-    margin-right: 10px;
+    margin-right: 1.2%;
   }
 }
 
@@ -1128,7 +1162,7 @@ export default {
   }
 
   .header-user {
-    margin-right: 5px;
+    margin-right: 1%;
   }
 
   .app-logo {
@@ -1165,7 +1199,7 @@ export default {
   }
 
   .header-user {
-    margin-right: 2px;
+    margin-right: 0.8%;
   }
 
   .app-logo {

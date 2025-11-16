@@ -27,8 +27,9 @@
           </button>
         </div>
 
-        <!-- 最右侧用户菜单 -->
+        <!-- 最右侧用户菜单和告警通知 -->
         <div class="header-user">
+          <!-- 用户下拉菜单 -->
           <el-dropdown>
             <span class="el-dropdown-link">
               <el-avatar :size="30" :src="userAvatarUrl"></el-avatar>
@@ -42,6 +43,18 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+          
+          <!-- 告警通知铃铛 -->
+          <div class="alert-notification-wrapper">
+            <AlertNotification
+              :alert-history="alertStore.recentAlerts"
+              @test-alert="handleTestAlert"
+              @mark-as-read="handleMarkAsRead"
+              @mark-all-as-read="handleMarkAllAsRead"
+              @clear-history="handleClearHistory"
+              @alert-click="handleAlertClick"
+            />
+          </div>
         </div>
       </el-header>
 
@@ -65,7 +78,9 @@ import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import { useSystemStore } from '@/stores/system';
+import { useAlertStore } from '@/stores/alertStore';
 import ProfileModal from '@/components/ProfileModal.vue';
+import AlertNotification from '@/components/AlertNotification.vue';
 import { usePermissions } from '@/composables/usePermissions';
 import { ArrowDown } from '@element-plus/icons-vue';
 
@@ -73,6 +88,7 @@ export default {
   name: 'HomeLayout',
   components: {
     ProfileModal,
+    AlertNotification,
     ArrowDown
   },
   setup() {
@@ -80,6 +96,7 @@ export default {
     const route = useRoute();
     const authStore = useAuthStore();
     const systemStore = useSystemStore();
+    const alertStore = useAlertStore();
     const { checkMenuPermission, checkChildPermission } = usePermissions();
     
     const userAvatarUrl = ref(require('@/assets/images/main/main-head.png'));
@@ -144,6 +161,36 @@ export default {
       console.log('个人资料已更新');
     };
 
+    // 告警相关处理方法
+    const handleTestAlert = (alertData) => {
+      alertStore.addAlert(alertData);
+    };
+
+    const handleMarkAsRead = (alertId) => {
+      alertStore.markAsRead(alertId);
+    };
+
+    const handleMarkAllAsRead = () => {
+      alertStore.markAllAsRead();
+    };
+
+    const handleClearHistory = () => {
+      alertStore.clearHistory();
+    };
+
+    // 处理点击告警历史，跳转到告警展示页面
+    // eslint-disable-next-line no-unused-vars
+    const handleAlertClick = (alert) => {
+      console.log('HomeLayout: 告警点击事件触发:', alert);
+      console.log('HomeLayout: 准备跳转到 /event/alarm-display');
+      // 跳转到告警信息展示页面
+      router.push('/event/alarm-display').then(() => {
+        console.log('HomeLayout: 跳转成功');
+      }).catch(err => {
+        console.error('HomeLayout: 跳转失败:', err);
+      });
+    };
+
     // 监听路由变化，重置滚动位置
     watch(() => route.path, () => {
       setTimeout(() => {
@@ -163,6 +210,7 @@ export default {
       userAvatarUrl,
       displayUsername,
       currentLogoUrl,
+      alertStore,
       checkMenuPermission,
       checkChildPermission,
       goToHome,
@@ -171,6 +219,11 @@ export default {
       showProfile,
       showProfileModal,
       handleProfileUpdated,
+      handleTestAlert,
+      handleMarkAsRead,
+      handleMarkAllAsRead,
+      handleClearHistory,
+      handleAlertClick,
     };
   },
 };
@@ -403,9 +456,16 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 15px; /* 在铃铛和用户信息之间添加间距 */
   z-index: 10000;
   position: relative;
-  margin-right: 20px;
+  margin-right: 1.5%; /* 使用百分比向右移动 */
+}
+
+.alert-notification-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .app-logo {
@@ -533,7 +593,7 @@ export default {
   }
 
   .header-user {
-    margin-right: 10px;
+    margin-right: 1.2%;
   }
 }
 
@@ -587,7 +647,7 @@ export default {
   }
 
   .header-user {
-    margin-right: 5px;
+    margin-right: 1%;
   }
 
   .app-logo {
@@ -624,7 +684,7 @@ export default {
   }
 
   .header-user {
-    margin-right: 2px;
+    margin-right: 0.8%;
   }
 
   .app-logo {

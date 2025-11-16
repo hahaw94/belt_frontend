@@ -155,28 +155,6 @@ const routes = [
       }
     ]
   },
-  // 录像管理
-  {
-    path: '/recording',
-    name: 'recording',
-    redirect: '/recording/list',
-    component: Layout,
-    meta: { title: '录像管理', icon: 'VideoCamera', requiresAuth: true },
-    children: [
-      {
-        path: 'list',
-        name: 'recording-list',
-        component: () => import('../views/recording/RecordingList.vue'),
-        meta: { title: '录像列表' }
-      },
-      {
-        path: 'statistics',
-        name: 'recording-statistics',
-        component: () => import('../views/recording/RecordingStatistics.vue'),
-        meta: { title: '录像统计' }
-      }
-    ]
-  },
   // 事件中心
   {
     path: '/event',

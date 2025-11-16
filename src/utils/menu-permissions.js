@@ -34,11 +34,7 @@ export const MENU_PERMISSIONS = {
   '/detection': ['module:monitor'], // 实时检测主菜单权限
   '/detection/realtime': ['module:monitor'],
   '/detection/playback': ['module:monitor'],
-  
-  // 录像管理
-  '/recording': ['module:video'], // 录像管理主菜单权限
-  '/recording/list': ['module:video'],
-  '/recording/statistics': ['module:video'],
+  '/detection/history': ['module:monitor'], // 新增历史记录菜单
   
   // 事件中心
   '/event': ['module:event'], // 事件中心主菜单权限
@@ -170,9 +166,6 @@ export const MENU_TITLES = {
   '/detection': '实时检测',
   '/detection/realtime': '实时画面',
   '/detection/playback': '录像回放',
-  '/recording': '录像管理',
-  '/recording/list': '录像列表',
-  '/recording/statistics': '录像统计',
   '/event': '事件中心',
   '/event/alarm-display': '告警信息展示',
   '/event/data-collection': '告警数据收集',

@@ -1,12 +1,56 @@
 <template>
   <div id="app">
     <router-view />
+    
+    <!-- 告警弹窗 - 只在已登录状态显示，全局固定在右下角 -->
+    <template v-if="authStore.isAuthenticated">
+      <AlertToast
+        :alerts="alertStore.activeAlerts"
+        :max-visible="3"
+        :duration="5000"
+        @remove-alert="handleRemoveAlert"
+        @toast-click="handleToastClick"
+      />
+    </template>
   </div>
 </template>
 
 <script>
+import { useRouter } from 'vue-router'
+import { useAlertStore } from './stores/alertStore'
+import { useAuthStore } from './stores/auth'
+import AlertToast from './components/AlertToast.vue'
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    AlertToast
+  },
+  setup() {
+    const router = useRouter()
+    const alertStore = useAlertStore()
+    const authStore = useAuthStore()
+
+    // 处理移除活动告警
+    const handleRemoveAlert = (alertId) => {
+      alertStore.removeActiveAlert(alertId)
+    }
+
+    // 处理点击冒泡消息，跳转到告警展示页面
+    const handleToastClick = (alert) => {
+      // 跳转到告警信息展示页面
+      router.push('/event/alarm-display')
+      // 移除该告警
+      alertStore.removeActiveAlert(alert.id)
+    }
+
+    return {
+      alertStore,
+      authStore,
+      handleRemoveAlert,
+      handleToastClick
+    }
+  }
 }
 </script>
 
@@ -46,4 +90,5 @@ html .el-popper,
   background: rgba(15, 25, 45, 0.98) !important;
   border: 1px solid rgba(0, 255, 255, 0.4) !important;
 }
+
 </style>
