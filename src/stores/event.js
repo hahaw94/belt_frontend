@@ -386,22 +386,6 @@ export const useEventStore = defineStore('event', () => {
     }
   }
 
-  /**
-   * 发送即时指令
-   * @param {Object} commandData - 指令数据
-   */
-  const sendImmediateCommand = async (commandData) => {
-    try {
-      const response = await eventAPI.sendImmediateCommand(commandData)
-      if (response.success) {
-        return response
-      }
-      throw new Error(response.message)
-    } catch (error) {
-      console.error('发送即时指令失败:', error)
-      throw error
-    }
-  }
 
   /**
    * 设置筛选条件
@@ -580,7 +564,6 @@ export const useEventStore = defineStore('event', () => {
     manageEmergencyPlan,
     configurePushChannels,
     fetchDataCollectionStats,
-    sendImmediateCommand,
     setFilters,
     clearFilters,
     setPagination,

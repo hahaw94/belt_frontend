@@ -580,7 +580,8 @@ export default {
               alarmCode: alarm.alarm_code,
               handleRemark: alarm.handle_remark,
               handleTime: alarm.handle_time,
-              images: alarm.snapshot_path ? [getImageUrl(alarm.snapshot_path)] : []
+              images: alarm.snapshot_url ? [alarm.snapshot_url] : 
+                       (alarm.snapshot_path ? [getImageUrl(alarm.snapshot_path)] : [])
             }))
           } else {
             console.error('API返回的data不是数组:', alarmData)
@@ -661,8 +662,11 @@ export default {
       if (path.startsWith('http://') || path.startsWith('https://')) {
         return path
       }
-      // 否则拼接后端地址
-      return `${import.meta.env.VITE_API_BASE_URL || ''}${path}`
+      // 否则拼接后端地址（与api/index.js保持一致）
+      const baseURL = process.env.NODE_ENV === 'development' 
+        ? '' // 开发环境使用代理
+        : (process.env.VUE_APP_API_BASE_URL || window.location.origin)
+      return `${baseURL}${path}`
     }
 
     // 获取默认图片（根据告警类型）
@@ -711,7 +715,8 @@ export default {
             level: alarmLevelMap[alarm.alarm_level] || alarm.alarm_level,
             handleRemark: alarm.handle_remark,
             handleTime: alarm.handle_time,
-            images: alarm.snapshot_path ? [getImageUrl(alarm.snapshot_path)] : []
+            images: alarm.snapshot_url ? [alarm.snapshot_url] : 
+                   (alarm.snapshot_path ? [getImageUrl(alarm.snapshot_path)] : [])
           }
           dialogVisible.value = true
         } else {

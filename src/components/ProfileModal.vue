@@ -605,6 +605,9 @@ export default {
         
         updating.value = true
         
+        // 检查是否需要修改密码
+        const hasPasswordChange = editForm.oldPassword || editForm.newPassword || editForm.confirmPassword
+        
         // 准备更新数据（只传递有变化的字段）
         const updateData = {}
         if (editForm.email !== profileData.email) {
@@ -614,26 +617,79 @@ export default {
           updateData.phone = editForm.phone || null
         }
 
-        // 如果没有任何变化
-        if (Object.keys(updateData).length === 0) {
+        // 如果有密码修改，先处理密码修改
+        if (hasPasswordChange) {
+          // 验证密码字段
+          if (!editForm.oldPassword || !editForm.newPassword || !editForm.confirmPassword) {
+            ElMessage.warning('请完整填写密码信息')
+            return
+          }
+
+          try {
+            const passwordResponse = await authApi.changePassword({
+              old_password: editForm.oldPassword,
+              new_password: editForm.newPassword
+            })
+
+            if (passwordResponse.success) {
+              ElMessage.success('密码修改成功！系统将自动退出，请使用新密码重新登录')
+              
+              // 清空密码字段
+              editForm.oldPassword = ''
+              editForm.newPassword = ''
+              editForm.confirmPassword = ''
+              
+              // 密码修改成功后，后端会使所有token失效，需要重新登录
+              // 延迟3秒后自动退出登录，给用户足够时间看到成功提示
+              setTimeout(() => {
+                // 清除本地存储
+                localStorage.removeItem('token')
+                localStorage.removeItem('refreshToken') 
+                localStorage.removeItem('userInfo')
+                
+                // 关闭弹窗
+                visible.value = false
+                
+                // 跳转到登录页面
+                window.location.href = '/login'
+              }, 3000)
+              
+              // 不继续处理其他更新，直接返回
+              return
+            } else {
+              ElMessage.error(passwordResponse.message || '密码修改失败')
+              return
+            }
+          } catch (passwordError) {
+            console.error('修改密码失败:', passwordError)
+            ElMessage.error(passwordError.message || '密码修改失败，请重试')
+            return
+          }
+        }
+
+        // 处理个人资料更新
+        if (Object.keys(updateData).length > 0) {
+          const response = await userApi.updateMyProfile(updateData)
+          if (response.success) {
+            ElMessage.success('个人资料更新成功')
+          } else {
+            ElMessage.error(response.message || '个人资料更新失败')
+            return
+          }
+        } else if (!hasPasswordChange) {
           ElMessage.info('没有需要更新的信息')
           return
         }
 
-        const response = await userApi.updateMyProfile(updateData)
-        if (response.success) {
-          ElMessage.success('个人资料更新成功')
-          // 重新加载数据
-          await loadProfile()
-          // 切换到查看标签页
-          activeTab.value = 'view'
-          // 触发更新事件
-          emit('profile-updated')
-        } else {
-          ElMessage.error(response.message || '更新失败')
-        }
+        // 重新加载数据
+        await loadProfile()
+        // 切换到查看标签页
+        activeTab.value = 'view'
+        // 触发更新事件
+        emit('profile-updated')
+        
       } catch (error) {
-        console.error('更新个人资料失败:', error)
+        console.error('更新失败:', error)
         if (error.message) {
           ElMessage.error(error.message)
         } else {

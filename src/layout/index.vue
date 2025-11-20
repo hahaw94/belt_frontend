@@ -126,7 +126,6 @@
               </template>
               <el-menu-item v-if="checkMenuPermission('/event/alarm-display')" index="/event/alarm-display">告警信息展示</el-menu-item>
               <el-menu-item v-if="checkMenuPermission('/event/data-collection')" index="/event/data-collection">告警数据收集</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/event/immediate-command')" index="/event/immediate-command">即时告警批示</el-menu-item>
               <el-menu-item v-if="checkMenuPermission('/event/linkage-settings')" index="/event/linkage-settings">告警联动设置</el-menu-item>
               <el-menu-item v-if="checkMenuPermission('/event/warning-push')" index="/event/warning-push">预警推送</el-menu-item>
             </el-sub-menu>

@@ -121,7 +121,6 @@ router.beforeEach((to, from, next) => {
 | `/event` | `module:event` | 事件中心主菜单 |
 | `/event/alarm-display` | `module:event` | 告警信息展示 |
 | `/event/data-collection` | `module:event` | 告警数据收集 |
-| `/event/immediate-command` | `module:event` | 即时告警批示 |
 | `/event/linkage-settings` | `module:event` | 告警联动设置 |
 | `/event/warning-push` | `module:event` | 预警推送 |
 | `/log` | `module:log` | 日志中心 |

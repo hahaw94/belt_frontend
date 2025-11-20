@@ -40,7 +40,6 @@ export const MENU_PERMISSIONS = {
   '/event': ['module:event'], // 事件中心主菜单权限
   '/event/alarm-display': ['module:event'],
   '/event/data-collection': ['module:event'],
-  '/event/immediate-command': ['module:event'],
   '/event/linkage-settings': ['module:event'],
   '/event/warning-push': ['module:event'],
   
@@ -169,7 +168,6 @@ export const MENU_TITLES = {
   '/event': '事件中心',
   '/event/alarm-display': '告警信息展示',
   '/event/data-collection': '告警数据收集',
-  '/event/immediate-command': '即时告警批示',
   '/event/linkage-settings': '告警联动设置',
   '/event/warning-push': '预警推送',
   '/log': '日志中心',

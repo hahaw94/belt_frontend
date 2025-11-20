@@ -4,87 +4,85 @@
     <div class="tech-background"></div>
     
     <h2>数据样本采集</h2>
-    
-    <!-- 搜索筛选卡片 -->
-    <div class="search-filters-card tech-card mb-20">
-      <div class="search-filters-header">
-        <span class="filter-title">搜索筛选</span>
-      </div>
-      <div class="search-filters-content">
-        <div class="filter-row">
-          <div class="filter-item filter-item-wide">
-            <label for="timeRange">时间范围</label>
-            <el-date-picker
-              v-model="searchForm.timeRange"
-              id="timeRange"
-              type="datetimerange"
-              range-separator="至"
-              start-placeholder="开始时间"
-              end-placeholder="结束时间"
-              :shortcuts="dateShortcuts"
-              class="tech-input"
-              value-format="YYYY-MM-DD HH:mm:ss"
-            />
+
+    <el-card class="sample-list-card tech-card mb-20" shadow="hover">
+      <template #header>
+        <div class="card-header">
+          <span>告警列表</span>
+          <div>
+            <el-button type="primary" :icon="Download" size="small" class="tech-button-sm" @click="handleExport">
+              导出选中样本
+            </el-button>
+            <el-button type="warning" :icon="Download" size="small" class="tech-button-sm" @click="handleExportAll">
+              导出所有误报
+            </el-button>
+            <el-button type="success" :icon="Upload" size="small" class="tech-button-sm" @click="handleUpload">
+              上传至训练平台
+            </el-button>
+            <el-button type="info" :icon="Upload" size="small" class="tech-button-sm" @click="handlePackageAll">
+              打包所有误报
+            </el-button>
           </div>
-          <div class="filter-item">
-            <label for="sampleType">样本类型</label>
-            <el-select
-              v-model="searchForm.sampleType"
-              id="sampleType"
-              placeholder="全部"
-              class="tech-select"
-              clearable
-            >
-              <el-option label="全部" value="" />
-              <el-option label="误报样本" value="false_positive" />
-            </el-select>
-          </div>
-          <div class="filter-item">
-            <label for="exportStatus">导出状态</label>
-            <el-select
-              v-model="searchForm.exportStatus"
-              id="exportStatus"
-              placeholder="全部"
-              class="tech-select"
-              clearable
-            >
-              <el-option label="全部" value="" />
-              <el-option label="未导出" :value="false" />
-              <el-option label="已导出" :value="true" />
-            </el-select>
-          </div>
-          <div class="filter-actions">
-            <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">搜索</el-button>
-            <el-button :icon="Refresh" class="tech-button-sm" @click="handleReset">重置</el-button>
+        </div>
+      </template>
+
+      <!-- 搜索筛选卡片 -->
+      <div class="search-filters-card mb-20">
+        <div class="search-filters-header">
+          <span class="filter-title">搜索筛选</span>
+        </div>
+        <div class="search-filters-content">
+          <div class="filter-row">
+            <div class="filter-item filter-item-wide">
+              <label for="timeRange">时间范围</label>
+              <el-date-picker
+                v-model="searchForm.timeRange"
+                id="timeRange"
+                type="datetimerange"
+                range-separator="至"
+                start-placeholder="开始时间"
+                end-placeholder="结束时间"
+                :shortcuts="dateShortcuts"
+                class="tech-input"
+                value-format="YYYY-MM-DD HH:mm:ss"
+              />
+            </div>
+            <div class="filter-item">
+              <label for="sampleType">样本类型</label>
+              <el-select
+                v-model="searchForm.sampleType"
+                id="sampleType"
+                placeholder="全部"
+                class="tech-select"
+                clearable
+              >
+                <el-option label="全部" value="" />
+                <el-option label="误报样本" value="false_positive" />
+              </el-select>
+            </div>
+            <div class="filter-item">
+              <label for="exportStatus">导出状态</label>
+              <el-select
+                v-model="searchForm.exportStatus"
+                id="exportStatus"
+                placeholder="全部"
+                class="tech-select"
+                clearable
+              >
+                <el-option label="全部" value="" />
+                <el-option label="未导出" :value="false" />
+                <el-option label="已导出" :value="true" />
+              </el-select>
+            </div>
+            <div class="filter-actions">
+              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">搜索</el-button>
+              <el-button :icon="Refresh" class="tech-button-sm" @click="handleReset">重置</el-button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    
-    <div class="content-area tech-card">
-      <div class="button-group">
-        <el-button type="primary" :icon="Download" size="small" class="tech-button-sm" @click="handleExport">
-          导出选中样本
-        </el-button>
-        <el-button type="warning" :icon="Download" size="small" class="tech-button-sm" @click="handleExportAll">
-          导出所有误报
-        </el-button>
-        <el-button type="success" :icon="Upload" size="small" class="tech-button-sm" @click="handleUpload">
-          上传至训练平台
-        </el-button>
-        <el-button type="info" :icon="Upload" size="small" class="tech-button-sm" @click="handlePackageAll">
-          打包所有误报
-        </el-button>
-      </div>
 
-      <div class="tech-table">
-        <el-table
-          :data="sampleList"
-          v-loading="loading"
-          style="width: 100%"
-          @selection-change="handleSelectionChange"
-          :border="false"
-        >
+      <el-table :data="sampleList" v-loading="loading" border stripe class="tech-table" style="width: 100%;" @selection-change="handleSelectionChange">
         <el-table-column type="selection" width="55" />
         <el-table-column type="index" label="序号" width="80" align="center" header-align="center" />
         <el-table-column prop="time" label="告警时间" width="180" header-align="center" />
@@ -107,7 +105,6 @@
           </template>
         </el-table-column>
       </el-table>
-      </div>
 
       <!-- 增强型分页组件 -->
       <div class="pagination-container tech-pagination">
@@ -172,7 +169,7 @@
           </el-button>
         </div>
       </div>
-    </div>
+    </el-card>
 
     <!-- 预览对话框 -->
     <el-dialog
@@ -717,20 +714,34 @@ export default {
   z-index: 10;
 }
 
+/* 卡片头部样式 */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header > span {
+  font-weight: bold;
+  color: #00ffff;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+  font-size: 16px;
+}
+
+.card-header > div {
+  display: flex;
+  gap: 10px;
+}
+
 /* 搜索筛选卡片 */
 .search-filters-card {
   position: relative;
   z-index: 10;
-  background: rgba(15, 25, 45, 0.95) !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
-  border: none !important;
   margin-bottom: 20px !important;
-  padding: 20px !important;
+  padding: 15px !important;
+  background: rgba(0, 255, 255, 0.03) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
 }
 
 .search-filters-header {
@@ -772,6 +783,20 @@ export default {
   font-size: 14px;
   font-weight: 500;
   text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+}
+
+.tech-input :deep(.el-input__wrapper),
+.tech-select :deep(.el-select__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-input :deep(.el-input__inner),
+.tech-select :deep(.el-select__input) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
 }
 
 .filter-actions {
@@ -877,6 +902,49 @@ export default {
   border: none !important;
   box-shadow: none !important;
   margin-bottom: 20px;
+}
+
+.tech-card :deep(.el-card__body) {
+  padding: 20px;
+  background: transparent !important;
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+.tech-card :deep(.el-card__header) {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  padding: 16px 20px;
+}
+
+.sample-list-card {
+  position: relative;
+  z-index: 10;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-bottom: 20px;
+}
+
+.sample-list-card :deep(.el-card__body) {
+  padding: 20px;
+  background: transparent !important;
+  border: none !important;
+  border-top: none !important;
+  border-bottom: none !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+.sample-list-card :deep(.el-card__header) {
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  padding: 16px 20px;
 }
 
 .content-area {
@@ -1043,7 +1111,7 @@ export default {
 }
 
 /* 科技感表格 - 彻底解决白线问题 */
-.tech-table {
+.tech-table.el-table {
   background: rgba(15, 25, 45, 0.95) !important;
   border-radius: 12px !important;
   overflow: hidden !important;
@@ -1051,7 +1119,41 @@ export default {
     0 8px 32px rgba(0, 0, 0, 0.3),
     0 0 0 1px rgba(0, 255, 255, 0.2) !important;
   backdrop-filter: blur(10px) !important;
-  border: none !important;
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+}
+
+/* 强制移除表格的所有边框 - 最高优先级 */
+.tech-table.el-table,
+.tech-table.el-table.el-table--border,
+.tech-table.el-table.el-table--striped {
+  border: 0 !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-top: 0 !important;
+  border-bottom: 0 !important;
+}
+
+/* 强制移除表格外层的所有可能白色边框 */
+.tech-table,
+.tech-table *,
+.tech-table::before,
+.tech-table::after,
+.tech-table *::before,
+.tech-table *::after {
+  box-sizing: border-box !important;
+}
+
+/* 移除表格外层的div容器边框 */
+.sample-list-card .el-table,
+.sample-list-card > .el-table {
+  margin: 0 !important;
+  border: 0 !important;
 }
 
 /* 表格整体容器 - 彻底移除所有边框 */
@@ -1314,6 +1416,31 @@ export default {
 .tech-table :deep(td:last-child),
 .tech-table :deep(th:last-child) {
   border-right: none !important;
+}
+
+/* 移除所有边框补丁元素 */
+.tech-table :deep(.el-table__border-left-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-right-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-bottom-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.tech-table :deep(.el-table__border-top-patch) {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 /* 移除表格容器本身的边框 */

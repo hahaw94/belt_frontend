@@ -104,7 +104,24 @@ request.interceptors.response.use(
         case 400:
           break
         case 401:
-          // 认证失败，跳转登录页
+          // 检查是否是密码修改导致的token失效
+          if (res.message && (
+            res.message.includes('password change') || 
+            res.message.includes('密码修改') ||
+            res.message.includes('Token is invalid due to password change')
+          )) {
+            // 密码修改导致的401，不显示错误消息，由密码修改逻辑处理
+            // 但仍需要清除token和跳转
+            localStorage.removeItem('token')
+            localStorage.removeItem('refreshToken')
+            localStorage.removeItem('userInfo')
+            if (window.location.pathname !== '/login') {
+              window.location.href = '/login'
+            }
+            return Promise.reject(new Error('Token invalidated due to password change'))
+          }
+          
+          // 普通的认证失败，跳转登录页
           localStorage.removeItem('token')
           localStorage.removeItem('refreshToken')
           localStorage.removeItem('userInfo')
@@ -139,7 +156,18 @@ request.interceptors.response.use(
           // 不显示弹窗，静默处理400错误
           return Promise.reject(error)
         case 401:
-          message = '未授权，请重新登录'
+          // 检查是否是密码修改导致的token失效
+          if (data?.message && (
+            data.message.includes('password change') || 
+            data.message.includes('密码修改') ||
+            data.message.includes('Token is invalid due to password change')
+          )) {
+            // 密码修改导致的401，不显示错误消息，由密码修改逻辑处理
+            message = null
+          } else {
+            message = '未授权，请重新登录'
+          }
+          
           localStorage.removeItem('token')
           localStorage.removeItem('refreshToken')
           localStorage.removeItem('userInfo')
@@ -167,7 +195,10 @@ request.interceptors.response.use(
           message = `请求失败 (${status})`
       }
       
-      ElMessage.error(message)
+      // 只有在message不为null时才显示错误消息
+      if (message) {
+        ElMessage.error(message)
+      }
     } else if (error.request) {
       console.error('网络请求详情:', {
         url: error.config?.url,

@@ -76,6 +76,43 @@ export const eventApi = {
     return api.post('/api/v1/alarms/false-positives/package', data)
   },
 
+  // ========== 告警类型管理 ==========
+
+  /**
+   * 获取所有告警类型（用于订阅选择）
+   */
+  getAlarmTypes() {
+    return api.get('/api/v1/alarms/types')
+  },
+
+  /**
+   * 获取告警类型字典（管理用）
+   * @param {boolean} activeOnly - 是否只获取启用的类型
+   */
+  getAlarmTypeDict(activeOnly = false) {
+    return api.get('/api/v1/alarms/type-dict', { active: activeOnly })
+  },
+
+  /**
+   * 创建告警类型
+   * @param {Object} data - 告警类型数据
+   * @param {number} data.id - 类型ID
+   * @param {string} data.type_name - 类型名称
+   * @param {string} data.type_code - 类型编码
+   * @param {boolean} data.is_active - 是否启用
+   */
+  createAlarmType(data) {
+    return api.post('/api/v1/alarms/type-dict', data)
+  },
+
+  /**
+   * 删除告警类型
+   * @param {number} id - 类型ID
+   */
+  deleteAlarmType(id) {
+    return api.delete(`/api/v1/alarms/type-dict/${id}`)
+  },
+
   // ========== 用户订阅配置 ==========
 
   /**
@@ -95,6 +132,301 @@ export const eventApi = {
    */
   updateSubscription(data) {
     return api.put('/api/v1/alarms/subscriptions', data)
+  },
+
+  // ==================== 联动规则管理 ====================
+
+  /**
+   * 获取规则列表
+   * @param {Object} params - 查询参数
+   */
+  getLinkageRules(params) {
+    return api.get('/api/v1/linkage/rules', params)
+  },
+
+  /**
+   * 获取规则详情
+   * @param {number} id - 规则ID
+   */
+  getLinkageRule(id) {
+    return api.get(`/api/v1/linkage/rules/${id}`)
+  },
+
+  /**
+   * 创建规则
+   * @param {Object} data - 规则数据
+   */
+  createLinkageRule(data) {
+    return api.post('/api/v1/linkage/rules', data)
+  },
+
+  /**
+   * 更新规则
+   * @param {number} id - 规则ID
+   * @param {Object} data - 规则数据
+   */
+  updateLinkageRule(id, data) {
+    return api.put(`/api/v1/linkage/rules/${id}`, data)
+  },
+
+  /**
+   * 删除规则
+   * @param {number} id - 规则ID
+   */
+  deleteLinkageRule(id) {
+    return api.delete(`/api/v1/linkage/rules/${id}`)
+  },
+
+  /**
+   * 切换规则状态
+   * @param {number} id - 规则ID
+   * @param {boolean} enabled - 是否启用
+   */
+  toggleLinkageRuleStatus(id, enabled) {
+    return api.put(`/api/v1/linkage/rules/${id}/status`, { enabled })
+  },
+
+  /**
+   * 按板卡分组获取规则列表（通过查询所有规则并按板卡分组）
+   */
+  async getRulesByBoards() {
+    try {
+      // 获取所有规则，支持分页（后端page_size最大100）
+      let allRules = []
+      let page = 1
+      const pageSize = 100
+      let hasMore = true
+      
+      // 循环获取所有页的数据
+      while (hasMore) {
+        const response = await api.get('/api/v1/linkage/rules', { page, page_size: pageSize })
+        
+        if (response.code === 200 && response.data && response.data.list) {
+          allRules = allRules.concat(response.data.list)
+          
+          // 检查是否还有更多数据
+          const total = response.data.total || 0
+          hasMore = allRules.length < total
+          page++
+          
+          // 安全限制：最多获取1000条规则
+          if (allRules.length >= 1000) {
+            console.warn('规则数量超过1000条，已停止加载')
+            break
+          }
+        } else {
+          hasMore = false
+        }
+      }
+      
+      // 按板卡分组
+      const boardRulesMap = {}
+      allRules.forEach(rule => {
+        if (rule.target_boards && Array.isArray(rule.target_boards)) {
+          rule.target_boards.forEach(boardId => {
+            if (!boardRulesMap[boardId]) {
+              boardRulesMap[boardId] = {
+                board_id: boardId,
+                board_name: boardId, // 如果有板卡名称映射，可以在这里处理
+                rules: [],
+                plan_name: null
+              }
+            }
+            // 转换规则格式
+            const ruleItem = {
+              name: rule.rule_name,
+              trigger_condition: rule.trigger_conditions && rule.trigger_conditions[0] ? {
+                alarm_type: rule.trigger_conditions[0].value,
+                alarm_level: rule.trigger_conditions.find(c => c.condition_type === 'alarm_level')?.value || 1
+              } : {},
+              linkage_actions: rule.linkage_actions || []
+            }
+            boardRulesMap[boardId].rules.push(ruleItem)
+            if (rule.plan_id && !boardRulesMap[boardId].plan_name) {
+              // 可以通过plan_id查询预案名称
+              boardRulesMap[boardId].plan_id = rule.plan_id
+            }
+          })
+        }
+      })
+      
+      return {
+        code: 200,
+        data: Object.values(boardRulesMap)
+      }
+    } catch (error) {
+      console.error('获取板卡规则失败:', error)
+      return {
+        code: 500,
+        data: [],
+        error: error.message
+      }
+    }
+  },
+
+  /**
+   * 编辑板卡规则（通过创建/更新规则实现）
+   * @param {Object} data - 规则数据 { board_id, rule_items }
+   */
+  async editBoardRules(data) {
+    // 将rule_items转换为后端期望的格式并创建规则
+    const { board_id, rule_items } = data
+    
+    // 为每个规则项创建一个规则
+    const results = []
+    for (const item of rule_items) {
+      const ruleData = {
+        rule_name: item.name || `${board_id}规则`,
+        trigger_conditions: [
+          {
+            condition_type: 'alarm_type',
+            operator: 'equals',
+            value: item.trigger_condition?.alarm_type
+          },
+          {
+            condition_type: 'alarm_level',
+            operator: 'equals',
+            value: item.trigger_condition?.alarm_level
+          }
+        ],
+        linkage_actions: item.linkage_actions || [],
+        target_boards: [board_id]
+      }
+      
+      try {
+        const result = await api.post('/api/v1/linkage/rules', ruleData)
+        results.push(result)
+      } catch (error) {
+        console.error('创建规则失败:', error)
+      }
+    }
+    
+    return {
+      code: 200,
+      data: { success: true, created: results.length },
+      msg: '板卡规则保存成功'
+    }
+  },
+
+  // ==================== 联动预案管理 ====================
+
+  /**
+   * 获取预案列表
+   * @param {Object} params - 查询参数
+   */
+  getLinkagePlans(params) {
+    return api.get('/api/v1/linkage/plans', params)
+  },
+
+  /**
+   * 获取预案详情
+   * @param {number} id - 预案ID
+   */
+  getLinkagePlan(id) {
+    return api.get(`/api/v1/linkage/plans/${id}`)
+  },
+
+  /**
+   * 创建预案
+   * @param {Object} data - 预案数据
+   * @param {string} data.plan_name - 预案名称
+   * @param {string} data.description - 描述
+   * @param {string} data.category - 分类
+   * @param {Array} data.rule_items - 规则项数组（前端格式）
+   */
+  createLinkagePlan(data) {
+    // 转换前端rule_items格式为后端trigger_conditions_template和linkage_actions_template
+    const backendData = {
+      plan_name: data.plan_name,
+      description: data.description || null,
+      category: data.category || null,
+      trigger_conditions_template: [],
+      linkage_actions_template: []
+    }
+    
+    // 如果有rule_items，提取第一个作为模板（或合并所有）
+    if (data.rule_items && data.rule_items.length > 0) {
+      const firstItem = data.rule_items[0]
+      if (firstItem.trigger_condition) {
+        backendData.trigger_conditions_template = [
+          {
+            condition_type: 'alarm_type',
+            operator: 'equals',
+            value: firstItem.trigger_condition.alarm_type
+          },
+          {
+            condition_type: 'alarm_level',
+            operator: 'equals',
+            value: firstItem.trigger_condition.alarm_level
+          }
+        ]
+      }
+      if (firstItem.linkage_actions) {
+        backendData.linkage_actions_template = firstItem.linkage_actions
+      }
+    }
+    
+    return api.post('/api/v1/linkage/plans', backendData)
+  },
+
+  /**
+   * 更新预案
+   * @param {number} id - 预案ID
+   * @param {Object} data - 预案数据
+   */
+  updateLinkagePlan(id, data) {
+    // 转换前端rule_items格式为后端trigger_conditions_template和linkage_actions_template
+    const backendData = {
+      plan_name: data.plan_name,
+      description: data.description || null,
+      category: data.category || null
+    }
+    
+    // 如果有rule_items，提取第一个作为模板
+    if (data.rule_items && data.rule_items.length > 0) {
+      const firstItem = data.rule_items[0]
+      if (firstItem.trigger_condition) {
+        backendData.trigger_conditions_template = [
+          {
+            condition_type: 'alarm_type',
+            operator: 'equals',
+            value: firstItem.trigger_condition.alarm_type
+          },
+          {
+            condition_type: 'alarm_level',
+            operator: 'equals',
+            value: firstItem.trigger_condition.alarm_level
+          }
+        ]
+      }
+      if (firstItem.linkage_actions) {
+        backendData.linkage_actions_template = firstItem.linkage_actions
+      }
+    }
+    
+    return api.put(`/api/v1/linkage/plans/${id}`, backendData)
+  },
+
+  /**
+   * 删除预案
+   * @param {number} id - 预案ID
+   */
+  deleteLinkagePlan(id) {
+    return api.delete(`/api/v1/linkage/plans/${id}`)
+  },
+
+  /**
+   * 应用预案到板卡
+   * @param {number} id - 预案ID
+   * @param {Object} data - 应用数据
+   * @param {Array} data.target_boards - 目标板卡ID数组
+   */
+  applyPlanToBoards(id, data) {
+    // 后端只需要target_boards字段
+    const backendData = {
+      target_boards: data.target_boards || data.board_ids || []
+    }
+    return api.post(`/api/v1/linkage/plans/${id}/apply`, backendData)
   },
 
   // ========== 旧接口保留（向后兼容）==========
@@ -142,10 +474,5 @@ export const eventApi = {
   // 获取数据采集统计
   getDataCollection(params) {
     return api.get('/api/events/data-collection', params)
-  },
-
-  // 发送即时指令
-  sendImmediateCommand(data) {
-    return api.post('/api/events/immediate-command', data)
   }
 }

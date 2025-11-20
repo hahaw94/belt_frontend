@@ -176,12 +176,6 @@ const routes = [
         meta: { title: '告警数据收集' }
       },
       {
-        path: 'immediate-command',
-        name: 'event-immediate-command',
-        component: () => import('../views/event/ImmediateCommand.vue'),
-        meta: { title: '即时告警批示' }
-      },
-      {
         path: 'linkage-settings',
         name: 'event-linkage-settings',
         component: () => import('../views/event/LinkageSettings.vue'),
