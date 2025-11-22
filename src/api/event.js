@@ -187,125 +187,18 @@ export const eventApi = {
   },
 
   /**
-   * 按板卡分组获取规则列表（通过查询所有规则并按板卡分组）
+   * 按板卡分组获取规则列表（直接调用后端专用接口）
    */
-  async getRulesByBoards() {
-    try {
-      // 获取所有规则，支持分页（后端page_size最大100）
-      let allRules = []
-      let page = 1
-      const pageSize = 100
-      let hasMore = true
-      
-      // 循环获取所有页的数据
-      while (hasMore) {
-        const response = await api.get('/api/v1/linkage/rules', { page, page_size: pageSize })
-        
-        if (response.code === 200 && response.data && response.data.list) {
-          allRules = allRules.concat(response.data.list)
-          
-          // 检查是否还有更多数据
-          const total = response.data.total || 0
-          hasMore = allRules.length < total
-          page++
-          
-          // 安全限制：最多获取1000条规则
-          if (allRules.length >= 1000) {
-            console.warn('规则数量超过1000条，已停止加载')
-            break
-          }
-        } else {
-          hasMore = false
-        }
-      }
-      
-      // 按板卡分组
-      const boardRulesMap = {}
-      allRules.forEach(rule => {
-        if (rule.target_boards && Array.isArray(rule.target_boards)) {
-          rule.target_boards.forEach(boardId => {
-            if (!boardRulesMap[boardId]) {
-              boardRulesMap[boardId] = {
-                board_id: boardId,
-                board_name: boardId, // 如果有板卡名称映射，可以在这里处理
-                rules: [],
-                plan_name: null
-              }
-            }
-            // 转换规则格式
-            const ruleItem = {
-              name: rule.rule_name,
-              trigger_condition: rule.trigger_conditions && rule.trigger_conditions[0] ? {
-                alarm_type: rule.trigger_conditions[0].value,
-                alarm_level: rule.trigger_conditions.find(c => c.condition_type === 'alarm_level')?.value || 1
-              } : {},
-              linkage_actions: rule.linkage_actions || []
-            }
-            boardRulesMap[boardId].rules.push(ruleItem)
-            if (rule.plan_id && !boardRulesMap[boardId].plan_name) {
-              // 可以通过plan_id查询预案名称
-              boardRulesMap[boardId].plan_id = rule.plan_id
-            }
-          })
-        }
-      })
-      
-      return {
-        code: 200,
-        data: Object.values(boardRulesMap)
-      }
-    } catch (error) {
-      console.error('获取板卡规则失败:', error)
-      return {
-        code: 500,
-        data: [],
-        error: error.message
-      }
-    }
+  getRulesByBoards() {
+    return api.get('/api/v1/linkage/rules/boards')
   },
 
   /**
-   * 编辑板卡规则（通过创建/更新规则实现）
+   * 编辑板卡规则（使用后端专用接口）
    * @param {Object} data - 规则数据 { board_id, rule_items }
    */
-  async editBoardRules(data) {
-    // 将rule_items转换为后端期望的格式并创建规则
-    const { board_id, rule_items } = data
-    
-    // 为每个规则项创建一个规则
-    const results = []
-    for (const item of rule_items) {
-      const ruleData = {
-        rule_name: item.name || `${board_id}规则`,
-        trigger_conditions: [
-          {
-            condition_type: 'alarm_type',
-            operator: 'equals',
-            value: item.trigger_condition?.alarm_type
-          },
-          {
-            condition_type: 'alarm_level',
-            operator: 'equals',
-            value: item.trigger_condition?.alarm_level
-          }
-        ],
-        linkage_actions: item.linkage_actions || [],
-        target_boards: [board_id]
-      }
-      
-      try {
-        const result = await api.post('/api/v1/linkage/rules', ruleData)
-        results.push(result)
-      } catch (error) {
-        console.error('创建规则失败:', error)
-      }
-    }
-    
-    return {
-      code: 200,
-      data: { success: true, created: results.length },
-      msg: '板卡规则保存成功'
-    }
+  editBoardRules(data) {
+    return api.post('/api/v1/linkage/rules/boards/edit', data)
   },
 
   // ==================== 联动预案管理 ====================

@@ -151,7 +151,7 @@
             <div class="thumbnail-image">
               <el-image 
                 :src="alarm.images && alarm.images.length > 0 ? alarm.images[0] : getDefaultImage(alarm.type)"
-                fit="cover"
+                fit="contain"
                 class="alarm-thumbnail"
               >
                 <template #error>
@@ -912,16 +912,11 @@ export default {
   position: relative;
   width: 100%;
   min-height: 100vh;
-  max-height: 100vh;
   padding: 20px;
   padding-bottom: 40px;
   background: transparent;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: visible;
   box-sizing: border-box;
-  height: calc(100vh - 120px);
-  display: flex;
-  flex-direction: column;
 }
 
 /* 标题样式 */
@@ -1007,10 +1002,7 @@ export default {
 }
 
 .content-area {
-  flex: 1;
   padding: 0;
-  display: flex;
-  flex-direction: column;
   background: transparent !important;
   border: none !important;
 }
@@ -1957,6 +1949,7 @@ export default {
   border-radius: 8px;
   position: relative;
   z-index: 1;
+  margin-top: 20px;
 }
 
 .pagination-info {
@@ -2345,8 +2338,7 @@ export default {
 /* ==================== 缩略图视图样式 ==================== */
 .thumbnail-view {
   width: 100%;
-  min-height: 400px;
-  padding: 0;
+  padding: 20px 0;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -2357,6 +2349,7 @@ export default {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   width: 100%;
+  padding-bottom: 20px; /* 底部留白 */
 }
 
 .thumbnail-card {

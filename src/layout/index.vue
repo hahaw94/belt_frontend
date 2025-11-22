@@ -28,6 +28,17 @@
 
         <!-- 最右侧用户菜单和告警通知 -->
         <div class="header-user">
+          <!-- 告警通知铃铛 -->
+          <div class="alert-notification-wrapper">
+            <AlertNotification
+              :alert-history="alertStore.recentAlerts"
+              @test-alert="handleTestAlert"
+              @mark-as-read="handleMarkAsRead"
+              @mark-all-as-read="handleMarkAllAsRead"
+              @clear-history="handleClearHistory"
+            />
+          </div>
+          
           <!-- 用户下拉菜单 -->
           <el-dropdown>
             <span class="el-dropdown-link">
@@ -42,17 +53,6 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
-          
-          <!-- 告警通知铃铛 -->
-          <div class="alert-notification-wrapper">
-            <AlertNotification
-              :alert-history="alertStore.recentAlerts"
-              @test-alert="handleTestAlert"
-              @mark-as-read="handleMarkAsRead"
-              @mark-all-as-read="handleMarkAllAsRead"
-              @clear-history="handleClearHistory"
-            />
-          </div>
         </div>
       </el-header>
 
@@ -602,7 +602,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 15px; /* 在铃铛和用户信息之间添加间距 */
+  gap: 8px; /* 减小铃铛和用户信息之间的间距 */
   z-index: 10000;
   position: relative;
   margin-right: 1.5%; /* 使用百分比向右移动 */

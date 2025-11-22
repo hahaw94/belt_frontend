@@ -1,136 +1,113 @@
 <template>
-  <div class="video-playback tech-page-container">
-    <!-- 科技感背景 -->
-    <div class="tech-background"></div>
-    
-    <h2>录像管理</h2>
+  <div class="video-playback">
+    <!-- 左侧设备树 -->
+    <div class="device-sidebar">
+      <div class="sidebar-header">
+        <el-icon><VideoCamera /></el-icon>
+        <span>显示所有通道</span>
+        <span class="total-indicator">{{ getOnlineChannelCount() }}/{{ getTotalChannelCount() }}</span>
+      </div>
+      
+      <el-input 
+        v-model="searchText" 
+        placeholder="搜索设备..." 
+        class="search-input"
+        clearable
+      >
+        <template #prefix>
+          <el-icon><Search /></el-icon>
+        </template>
+      </el-input>
+      
+      <div class="status-filters">
+        <span class="filter-label">状态：</span>
+        <el-button :type="statusFilter === 'all' ? 'primary' : ''" size="small" @click="statusFilter = 'all'">不限</el-button>
+        <el-button :type="statusFilter === 'online' ? 'primary' : ''" size="small" @click="statusFilter = 'online'">在线</el-button>
+        <el-button :type="statusFilter === 'offline' ? 'primary' : ''" size="small" @click="statusFilter = 'offline'">离线</el-button>
+      </div>
 
-    <!-- 录像列表区域 -->
-    <el-card class="record-list-card tech-card mb-20" shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span>录像列表</span>
-          <div>
-            <el-button type="primary" :icon="TrendCharts" size="small" class="tech-button-sm" @click="showStatisticsDialog = true">统计信息</el-button>
-            <el-button type="success" :icon="UploadIcon" size="small" class="tech-button-sm" @click="showUploadDialog = true">上传录像</el-button>
-          </div>
-        </div>
-      </template>
-        
-        <el-table 
-          :data="recordList" 
-          height="calc(100% - 100px)" 
-          style="width: 100%"
-          v-loading="loading"
-          :row-class-name="getRowClassName"
-          @row-click="handleRowClick"
-          class="tech-table"
-          border
+      <div v-loading="loading" element-loading-text="正在加载设备和通道..." class="tree-loading-wrapper">
+        <el-tree
+          :data="deviceTree"
+          :props="treeProps"
+          node-key="id"
+          default-expand-all
+          :filter-node-method="filterNode"
+          ref="treeRef"
+          class="device-tree"
+          @node-click="handleNodeClick"
         >
-          <el-table-column prop="title" label="标题" min-width="100" show-overflow-tooltip />
-          <el-table-column prop="format" label="格式" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag size="small" type="success">{{ row.format?.toUpperCase() }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="file_size_str" label="大小" width="110" />
-          <el-table-column prop="upload_time" label="上传时间" width="150" />
-          <el-table-column fixed="right" label="操作" width="240">
-            <template #default="scope">
-              <el-button 
-                size="small"
-                class="tech-button-xs"
-                @click.stop="playRecord(scope.row)"
-                :loading="playingId === scope.row.id"
-              >
-                <el-icon><VideoPlay /></el-icon>
-                播放
-              </el-button>
-              <el-button 
-                size="small"
-                class="tech-button-xs"
-                @click.stop="downloadRecord(scope.row)"
-              >
-                <el-icon><Download /></el-icon>
-                下载
-              </el-button>
-              <el-button 
-                size="small"
-                class="tech-button-xs"
-                @click.stop="deleteRecord(scope.row)"
-              >
-                <el-icon><Delete /></el-icon>
-                删除
-              </el-button>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <!-- 分页 -->
-        <div class="pagination-container tech-pagination">
-          <div class="pagination-info">
-            <span>共 <span class="total-count">{{ pagination.total }}</span> 条记录，每页显示 
-              <el-select 
-                v-model="pagination.pageSize" 
-                @change="handleSizeChange"
-                class="page-size-select"
-                size="small"
-              >
-                <el-option label="10" :value="10" />
-                <el-option label="20" :value="20" />
-                <el-option label="50" :value="50" />
-                <el-option label="100" :value="100" />
-              </el-select> 条
+          <template #default="{ node, data }">
+            <span class="custom-tree-node">
+              <el-icon v-if="data.type === 'group'"><Folder /></el-icon>
+              <el-icon v-else-if="data.type === 'device'"><Monitor /></el-icon>
+              <el-icon v-else><VideoCamera /></el-icon>
+              <span class="node-label">{{ node.label }}</span>
+              <span v-if="data.type === 'device'" class="device-indicator">
+                {{ getDeviceOnlineChannelCount(data.id) }}/{{ getDeviceTotalChannelCount(data.id) }}
+              </span>
+              <span v-if="data.online !== undefined" :class="['status-dot', data.online ? 'online' : 'offline']"></span>
             </span>
-          </div>
-          <div class="pagination-controls">
-            <el-button 
-              class="pagination-btn"
-              size="small" 
-              :disabled="pagination.page === 1 || loading"
-              @click="handlePageChange(1)"
-            >
-              首页
-            </el-button>
-            <el-button 
-              class="pagination-btn"
-              size="small" 
-              :disabled="pagination.page === 1 || loading"
-              @click="handlePageChange(pagination.page - 1)"
-            >
-              上一页
-            </el-button>
-            <div class="pagination-pages">
-              <button 
-                v-for="page in visiblePages" 
-                :key="page"
-                class="page-btn"
-                :class="{ active: page === pagination.page }"
-                @click="handlePageChange(page)"
-                :disabled="loading"
-              >
-                {{ page }}
-              </button>
+          </template>
+        </el-tree>
+        
+        <div v-if="!loading && deviceTree.length === 0" class="empty-state">
+          <el-icon :size="40" style="color: rgba(255, 255, 255, 0.3);"><VideoCamera /></el-icon>
+          <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.5);">暂无设备数据</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧主内容区 -->
+    <div class="main-content">
+      <!-- 视频播放区域 -->
+      <div class="video-grid-wrapper">
+        <div class="video-grid grid-1">
+          <div class="video-cell">
+            <div class="video-container">
+              <!-- 停止播放按钮 -->
+              <div v-if="currentVideo" class="stop-btn-wrapper">
+                <el-button 
+                  type="danger" 
+                  @click="stopPlayback"
+                  class="stop-stream-btn"
+                >
+                  <el-icon><VideoPause /></el-icon>
+                  停止
+                </el-button>
+              </div>
+              
+              <!-- 视频播放器 -->
+              <div class="video-player-wrapper">
+                <video 
+                  v-if="currentVideo && currentVideoUrl"
+                  ref="videoPlayer"
+                  class="video-player"
+                  :src="currentVideoUrl"
+                  controls
+                  autoplay
+                  @loadedmetadata="onVideoLoaded"
+                  @timeupdate="onTimeUpdate"
+                  @ended="onVideoEnded"
+                >
+                  您的浏览器不支持视频播放。
+                </video>
+              
+                <!-- 空闲状态提示 -->
+                <div v-else class="stream-input-panel">
+                  <div class="empty-screen-hint">
+                    <el-icon :size="60" style="color: rgba(64, 158, 255, 0.3);"><VideoCamera /></el-icon>
+                    <p style="margin-top: 12px; color: rgba(255, 255, 255, 0.6); font-size: 14px;">
+                      请在左侧选择通道播放
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <el-button 
-              class="pagination-btn"
-              size="small" 
-              :disabled="pagination.page === totalPages || loading"
-              @click="handlePageChange(pagination.page + 1)"
-            >
-              下一页
-            </el-button>
-            <el-button 
-              class="pagination-btn"
-              size="small" 
-              :disabled="pagination.page === totalPages || loading"
-              @click="handlePageChange(totalPages)"
-            >
-              末页
-            </el-button>
           </div>
         </div>
-    </el-card>
+      </div>
+    </div>
 
     <!-- 统计信息弹窗 -->
     <el-dialog 
@@ -350,18 +327,19 @@
 </template>
 
 <script>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { gb28181API } from '@/api/system'
 import {
-  VideoPlay,
   Upload as UploadIcon,
   Folder,
-  Download,
-  Delete,
   VideoCamera,
   TrendCharts,
   FolderOpened,
-  Coin
+  Coin,
+  VideoPause,
+  Search,
+  Monitor
 } from '@element-plus/icons-vue'
 import { detectionApi } from '@/api/detection'
 import { useRecordingStore } from '@/stores/recording'
@@ -369,14 +347,14 @@ import { useRecordingStore } from '@/stores/recording'
 export default {
   name: 'VideoPlayback',
   components: {
-    VideoPlay,
     Folder,
-    Download,
-    Delete,
     VideoCamera,
     TrendCharts,
     FolderOpened,
-    Coin
+    Coin,
+    VideoPause,
+    Search,
+    Monitor
   },
   setup() {
     // 使用录像store
@@ -413,6 +391,113 @@ export default {
     const showStatisticsDialog = ref(false)
     const showPlayDialog = ref(false)
     const showUploadDialog = ref(false)
+    const currentTime = ref('')
+
+    // 设备树相关
+    const searchText = ref('')
+    const statusFilter = ref('all')
+    const treeRef = ref(null)
+    const rawDeviceTree = ref([])
+    
+    // 树形结构配置
+    const treeProps = {
+      children: 'children',
+      label: 'label'
+    }
+
+    // 根据状态过滤后的设备树
+    const deviceTree = computed(() => {
+      let filteredTree = JSON.parse(JSON.stringify(rawDeviceTree.value))
+      
+      // 应用状态过滤
+      if (statusFilter.value !== 'all') {
+        filteredTree = filterTreeByStatus(filteredTree, statusFilter.value)
+      }
+      
+      return filteredTree
+    })
+
+    // 根据状态过滤树形数据
+    const filterTreeByStatus = (tree, status) => {
+      return tree.filter(node => {
+        // 如果有子节点，先递归过滤子节点
+        if (node.children && node.children.length > 0) {
+          node.children = filterTreeByStatus(node.children, status)
+        }
+        
+        // 如果是设备或通道节点，根据在线状态过滤
+        if (node.type === 'device' || node.type === 'channel') {
+          const isOnline = node.online === true || (node.status && node.status.toUpperCase() === 'ON')
+          if (status === 'online' && !isOnline) {
+            return false
+          }
+          if (status === 'offline' && isOnline) {
+            return false
+          }
+        }
+        
+        // 保留有子节点的分组节点
+        if (node.type === 'group' && (!node.children || node.children.length === 0)) {
+          return false
+        }
+        
+        return true
+      })
+    }
+
+    // 获取在线通道数
+    const getOnlineChannelCount = () => {
+      let count = 0
+      const countOnlineChannels = (nodes) => {
+        nodes.forEach(node => {
+          if (node.type === 'channel' && node.online) {
+            count++
+          }
+          if (node.children) {
+            countOnlineChannels(node.children)
+          }
+        })
+      }
+      countOnlineChannels(rawDeviceTree.value)
+      return count
+    }
+
+    // 获取总通道数
+    const getTotalChannelCount = () => {
+      let count = 0
+      const countChannels = (nodes) => {
+        nodes.forEach(node => {
+          if (node.type === 'channel') {
+            count++
+          }
+          if (node.children) {
+            countChannels(node.children)
+          }
+        })
+      }
+      countChannels(rawDeviceTree.value)
+      return count
+    }
+
+    // 获取设备的在线通道数
+    const getDeviceOnlineChannelCount = (deviceId) => {
+      const device = rawDeviceTree.value.find(d => d.id === deviceId)
+      if (!device || !device.children) return 0
+      return device.children.filter(ch => ch.online).length
+    }
+
+    // 获取设备的总通道数
+    const getDeviceTotalChannelCount = (deviceId) => {
+      const device = rawDeviceTree.value.find(d => d.id === deviceId)
+      if (!device || !device.children) return 0
+      return device.children.length
+    }
+
+    // 树节点过滤
+    const filterNode = (value, data) => {
+      if (!value) return true
+      return data.label.toLowerCase().includes(value.toLowerCase())
+    }
 
     // 进度条颜色
     const progressColor = computed(() => {
@@ -530,6 +615,86 @@ export default {
       }
     }
 
+    // 加载设备列表
+    const loadDevices = async () => {
+      loading.value = true
+      try {
+        const response = await gb28181API.getWVPDevices({
+          page: 1,
+          count: 100
+        })
+        
+        if (response && response.data && response.data.list) {
+          const devices = response.data.list
+          const deviceTreeData = []
+          
+          // 为每个设备加载通道
+          for (const device of devices) {
+            const deviceId = device.deviceId || device.device_id
+            const deviceName = device.name || deviceId
+            
+            // 创建设备节点
+            const deviceNode = {
+              id: `device-${deviceId}`,
+              label: deviceName,
+              type: 'device',
+              online: false,
+              deviceId: deviceId,
+              children: []
+            }
+            
+            // 加载该设备的通道
+            try {
+              const channelResponse = await gb28181API.getWVPDeviceChannels(deviceId, {
+                page: 1,
+                count: 100
+              })
+              
+              if (channelResponse && channelResponse.data && channelResponse.data.list) {
+                const channels = channelResponse.data.list
+                let hasOnlineChannel = false
+                
+                // 添加通道节点
+                channels.forEach((channel, index) => {
+                  const channelId = channel.channelId || channel.channel_id || channel.deviceId || channel.device_id
+                  const channelName = channel.name || channel.channel_name || `通道 ${index + 1}`
+                  const channelOnline = channel.status?.toUpperCase() === 'ON'
+                  
+                  if (channelOnline) {
+                    hasOnlineChannel = true
+                  }
+                  
+                  deviceNode.children.push({
+                    id: `channel-${deviceId}-${channelId}`,
+                    label: channelName,
+                    type: 'channel',
+                    online: channelOnline,
+                    deviceId: deviceId,
+                    channelId: channelId,
+                    channelData: channel
+                  })
+                })
+                
+                deviceNode.online = hasOnlineChannel
+              }
+            } catch (error) {
+              console.error(`加载设备 ${deviceId} 的通道失败:`, error)
+            }
+            
+            deviceTreeData.push(deviceNode)
+          }
+          
+          rawDeviceTree.value = deviceTreeData
+          ElMessage.success(`成功加载 ${devices.length} 个设备`)
+        }
+      } catch (error) {
+        console.error('加载设备列表失败:', error)
+        ElMessage.error('加载设备列表失败，请检查网络连接')
+      } finally {
+        loading.value = false
+      }
+    }
+
     // 加载录像列表
     const loadRecordingList = async () => {
       loading.value = true
@@ -578,6 +743,24 @@ export default {
       }
     }
 
+    // 处理节点点击
+    const handleNodeClick = async (data) => {
+      console.log('节点点击:', data)
+      
+      if (data.type === 'channel') {
+        // 检查通道是否在线
+        if (!data.online) {
+          ElMessage.warning(`通道 ${data.label} 离线，无法播放`)
+          return
+        }
+        
+        ElMessage.info('录像回放功能开发中，敬请期待')
+        // TODO: 实现录像回放功能
+      } else if (data.type === 'device') {
+        ElMessage.info(`选中设备: ${data.label}`)
+      }
+    }
+
     // 播放录像
     const playRecord = async (record) => {
       try {
@@ -602,7 +785,6 @@ export default {
           if (playUrl) {
             currentVideo.value = record
             currentVideoUrl.value = playUrl
-            showPlayDialog.value = true
             
             // 等待视频元素更新
             setTimeout(() => {
@@ -636,6 +818,8 @@ export default {
         videoPlayer.value.pause()
         videoPlayer.value.currentTime = 0
       }
+      currentVideo.value = null
+      currentVideoUrl.value = ''
     }
 
     // 下载录像（预留功能）
@@ -699,18 +883,13 @@ export default {
       loadRecordingList()
     }
 
-    // 表格行样式
-    const getRowClassName = ({ row }) => {
-      if (currentVideo.value && row.id === currentVideo.value.id) {
-        return 'playing-row'
-      }
-      return ''
+    // 更新时间显示
+    const updateTime = () => {
+      const now = new Date()
+      currentTime.value = now.toLocaleTimeString('zh-CN', { hour12: false })
     }
 
-    // 表格行点击
-    const handleRowClick = (row) => {
-      playRecord(row)
-    }
+    let timeInterval = null
 
     // 视频事件处理
     const onVideoLoaded = () => {
@@ -795,10 +974,25 @@ export default {
       return '#F56C6C'
     }
 
+    // 监听搜索文本变化
+    watch(searchText, (val) => {
+      if (treeRef.value) {
+        treeRef.value.filter(val)
+      }
+    })
+
     // 组件挂载时加载数据
     onMounted(() => {
-      loadRecordingList()
+      loadDevices()
       recordingStore.fetchStatistics()
+      updateTime()
+      timeInterval = setInterval(updateTime, 1000)
+    })
+
+    onUnmounted(() => {
+      if (timeInterval) {
+        clearInterval(timeInterval)
+      }
     })
 
     return {
@@ -822,8 +1016,20 @@ export default {
       pagination,
       handlePageChange,
       handleSizeChange,
-      getRowClassName,
-      handleRowClick,
+      currentTime,
+      
+      // 设备树相关
+      searchText,
+      statusFilter,
+      treeRef,
+      deviceTree,
+      treeProps,
+      filterNode,
+      handleNodeClick,
+      getOnlineChannelCount,
+      getTotalChannelCount,
+      getDeviceOnlineChannelCount,
+      getDeviceTotalChannelCount,
       
       // 播放相关
       videoPlayer,
@@ -855,256 +1061,309 @@ export default {
 </script>
 
 <style scoped>
-/* ==================== 科技感主题样式 ==================== */
+/* ==================== 完全复制实时画面样式 ==================== */
 
 /* 页面容器 */
 .video-playback {
-  position: relative;
-  width: 100%;
+  display: flex;
   height: 100%;
-  padding: 20px;
-  background: transparent;
-  overflow-y: auto;
-  overflow-x: hidden;
-  box-sizing: border-box;
+  width: 100%;
+  background: linear-gradient(135deg, #0a1628 0%, #0d1b2e 50%, #0a1628 100%);
+  overflow: hidden;
+}
+
+/* ==================== 左侧设备树 ==================== */
+.device-sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, rgba(15, 30, 50, 0.95) 0%, rgba(10, 22, 40, 0.98) 100%);
+  border-right: 1px solid rgba(64, 158, 255, 0.2);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
 }
 
-/* 自定义滚动条样式 - 科技感 */
-.video-playback::-webkit-scrollbar {
-  width: 8px;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.video-playback::-webkit-scrollbar-track {
-  background: rgba(0, 255, 255, 0.05);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.1);
-}
-
-.video-playback::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.3) 0%, 
-    rgba(0, 200, 255, 0.5) 50%, 
-    rgba(0, 255, 255, 0.3) 100%);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
-}
-
-.video-playback::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.5) 0%, 
-    rgba(0, 200, 255, 0.7) 50%, 
-    rgba(0, 255, 255, 0.5) 100%);
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-}
-
-/* 科技感背景 */
-.tech-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* 页面标题 */
-.video-playback h2 {
-  margin: 24px 0 20px 0;
-  color: #00ffff;
-  font-size: 24px;
-  font-weight: 600;
-  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
-  position: relative;
-  z-index: 10;
-}
-
-/* 工具栏 */
-.toolbar-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  position: relative;
-  z-index: 10;
-  gap: 20px;
-}
-
-.toolbar-left {
-  flex: 1;
-}
-
-.toolbar-right {
-  display: flex;
-  gap: 12px;
-}
-
-/* 科技感按钮 */
-.tech-button-sm {
-  border: 1px solid rgba(0, 255, 255, 0.4) !important;
-  background: rgba(0, 255, 255, 0.1) !important;
-  color: #00ffff !important;
-  border-radius: 6px !important;
-  transition: all 0.3s ease !important;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
-}
-
-.tech-button-sm:hover {
-  background: rgba(0, 255, 255, 0.2) !important;
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
-  transform: translateY(-1px) !important;
-}
-
-/* 科技感小按钮 */
-.tech-button-xs {
-  font-size: 12px !important;
-  padding: 3px 6px !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  background: rgba(0, 255, 255, 0.08) !important;
-  color: #00ffff !important;
-  border-radius: 4px !important;
-  transition: all 0.3s ease !important;
-  margin: 0 1px !important;
-  height: 28px !important;
-  line-height: 1 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 2px !important;
-}
-
-.tech-button-xs:hover {
-  background: rgba(0, 255, 255, 0.15) !important;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
-  transform: translateY(-1px) !important;
-}
-
-.tech-button-xs :deep(.el-icon) {
-  font-size: 12px !important;
-}
-
-/* 科技感卡片 */
-.tech-card {
-  position: relative;
-  z-index: 10;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  margin-bottom: 20px;
-}
-
-.tech-card :deep(.el-card__header) {
-  background: transparent;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 0;
-}
-
-.tech-card :deep(.el-card__body) {
-  background: transparent;
-  padding: 0;
-}
-
-/* 卡片头部样式 */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0;
-  font-weight: bold;
-  color: #00ffff;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-}
-
-.card-header > span {
-  color: #00ffff;
-  font-size: 16px;
-  font-weight: 600;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-  letter-spacing: 0.5px;
-}
-
-.card-header > div {
-  display: flex;
-  gap: 12px;
-}
-
-/* 边距工具类 */
-.mb-20 {
-  margin-bottom: 20px !important;
-}
-
-/* 录像列表区域 */
-.record-list {
-  flex: 1;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  position: relative;
-  z-index: 10;
-}
-
-.list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-/* 上传区域 */
-.upload-section {
-  padding: 20px;
-}
-
-.section-title {
-  color: rgba(0, 255, 255, 0.9);
-  font-size: 16px;
-  font-weight: 600;
-  margin-bottom: 15px;
+.sidebar-header {
+  padding: 12px 15px;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.15) 0%, rgba(24, 144, 255, 0.05) 100%);
+  border-bottom: 1px solid rgba(64, 158, 255, 0.3);
   display: flex;
   align-items: center;
   gap: 8px;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
-}
-
-.file-info {
-  margin-left: 10px;
-  color: rgba(255, 255, 255, 0.7);
+  color: #e8f4ff;
   font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
 }
 
-.content-area {
+.total-indicator {
+  margin-left: auto;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, rgba(24, 144, 255, 0.3) 0%, rgba(24, 144, 255, 0.15) 100%);
+  border: 1px solid rgba(64, 158, 255, 0.4);
+  border-radius: 4px;
+  font-size: 12px;
+  color: #91caff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* 搜索输入框 */
+.search-input {
+  margin: 10px 12px 8px;
+}
+
+.search-input :deep(.el-input__wrapper) {
+  background: rgba(15, 30, 50, 0.6);
+  border: 1px solid rgba(64, 158, 255, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.search-input :deep(.el-input__inner) {
+  color: #e8f4ff;
+}
+
+.search-input :deep(.el-input__inner::placeholder) {
+  color: rgba(145, 202, 255, 0.5);
+}
+
+.search-input :deep(.el-input__wrapper:hover) {
+  border-color: #1890ff;
+  box-shadow: 0 0 8px rgba(24, 144, 255, 0.3);
+}
+
+.search-input :deep(.el-input__wrapper.is-focus) {
+  border-color: #1890ff;
+  box-shadow: 0 0 12px rgba(24, 144, 255, 0.4);
+}
+
+/* 状态过滤器 */
+.status-filters {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(64, 158, 255, 0.15);
+}
+
+.filter-label {
+  color: #91caff;
+  font-size: 12px;
+}
+
+.status-filters :deep(.el-button--small) {
+  height: 26px;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: rgba(24, 144, 255, 0.1);
+  border-color: rgba(64, 158, 255, 0.3);
+  color: #91caff;
+}
+
+.status-filters :deep(.el-button--small:hover) {
+  background: rgba(24, 144, 255, 0.2);
+  border-color: #1890ff;
+  color: #e8f4ff;
+}
+
+.status-filters :deep(.el-button--small.el-button--primary) {
+  background: linear-gradient(135deg, #1890ff 0%, #0066cc 100%);
+  border-color: #1890ff;
+  color: #fff;
+}
+
+/* 树形加载容器 */
+.tree-loading-wrapper {
   flex: 1;
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* 设备树样式 */
+.device-tree {
+  flex: 1;
+  overflow-y: auto;
+  background: transparent;
+  color: #e8f4ff;
+  padding: 4px 0;
+}
+
+.device-tree::-webkit-scrollbar {
+  width: 6px;
+}
+
+.device-tree::-webkit-scrollbar-track {
+  background: rgba(10, 20, 35, 0.3);
+  border-radius: 3px;
+}
+
+.device-tree::-webkit-scrollbar-thumb {
+  background: rgba(64, 158, 255, 0.3);
+  border-radius: 3px;
+}
+
+.device-tree::-webkit-scrollbar-thumb:hover {
+  background: rgba(64, 158, 255, 0.5);
+}
+
+.device-tree :deep(.el-tree-node__content) {
+  background: transparent;
+  color: #e8f4ff;
+  height: 32px;
+  transition: all 0.2s;
+}
+
+.device-tree :deep(.el-tree-node__content:hover) {
+  background: rgba(24, 144, 255, 0.15);
+}
+
+.device-tree :deep(.el-tree-node:focus > .el-tree-node__content) {
+  background: rgba(24, 144, 255, 0.2);
+}
+
+.device-tree :deep(.el-tree-node__expand-icon) {
+  color: #91caff;
+}
+
+.custom-tree-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  padding: 2px 0;
+}
+
+.node-label {
+  flex: 1;
+  font-size: 13px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: auto;
+}
+
+.status-dot.online {
+  background: #52c41a;
+}
+
+.status-dot.offline {
+  background: #999;
+}
+
+.device-indicator {
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%);
+  border: 1px solid rgba(76, 175, 80, 0.3);
+  border-radius: 3px;
+  font-size: 11px;
+  color: #81c784;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+/* ==================== 右侧主内容区 ==================== */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.video-grid-wrapper {
+  flex: 1;
+  padding: 8px;
+  background: transparent;
+  overflow: hidden;
   min-height: 0;
 }
 
-/* 视频播放区域 */
-.video-area {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
+.video-grid {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  gap: 6px;
+  background: transparent;
+  contain: layout style;
+  will-change: auto;
+}
+
+.grid-1 {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+}
+
+.video-cell {
+  background: linear-gradient(135deg, rgba(10, 20, 35, 0.8) 0%, rgba(15, 25, 40, 0.9) 100%);
+  border: 2px solid rgba(64, 158, 255, 0.25);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    inset 0 0 20px rgba(64, 158, 255, 0.05);
+  backdrop-filter: blur(10px);
+  contain: layout style paint;
+  content-visibility: auto;
+  transform: translateZ(0);
+  will-change: auto;
 }
 
 .video-container {
+  position: relative;
+  width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
 }
 
-.video-wrapper {
-  flex: 1;
-  position: relative;
-  background: #000;
-  border-radius: 8px;
-  overflow: hidden;
-  min-height: 400px;
+.stop-btn-wrapper {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.stop-stream-btn {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(229, 57, 53, 0.95) 100%);
+  border: 1px solid rgba(244, 67, 54, 0.6);
+  color: #fff;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+}
+
+.stop-stream-btn:hover {
+  background: linear-gradient(135deg, rgba(244, 67, 54, 1) 0%, rgba(229, 57, 53, 1) 100%);
+  box-shadow: 0 0 15px rgba(244, 67, 54, 0.5);
+  transform: translateY(-1px);
+}
+
+.video-player-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .video-player {
@@ -1113,79 +1372,20 @@ export default {
   object-fit: contain;
 }
 
-.video-placeholder {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+.stream-input-panel {
+  width: 100%;
+  height: 100%;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.4);
-  gap: 20px;
 }
 
-.video-placeholder p {
-  font-size: 16px;
-  margin: 0;
+.empty-screen-hint {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
 }
 
-.video-info-bar {
-  display: flex;
-  gap: 20px;
-  padding: 12px 16px;
-  background: rgba(20, 30, 50, 0.6);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 8px;
-  backdrop-filter: blur(5px);
-}
-
-.info-item {
-  display: flex;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.info-item .label {
-  color: rgba(0, 255, 255, 0.8);
-  font-weight: 500;
-}
-
-.info-item .value {
-  color: rgba(255, 255, 255, 0.9);
-}
-
-/* 录像列表区域 */
-.record-list {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-}
-
-.pagination-wrapper {
-  margin-top: 15px;
-  display: flex;
-  justify-content: center;
-}
-
-/* 表格行高亮样式 */
-:deep(.playing-row) {
-  background: rgba(0, 255, 255, 0.1) !important;
-}
-
-:deep(.playing-row:hover td) {
-  background: rgba(0, 255, 255, 0.15) !important;
-}
+/* ==================== Element Plus 组件样式覆盖 ==================== */
 
 /* 按钮样式 */
 :deep(.el-button) {
@@ -1309,316 +1509,6 @@ export default {
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.4) !important;
 }
 
-/* 科技感表格 - 参考图片设计 */
-.tech-table {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
-  border: none !important;
-}
-
-/* 表格整体容器 */
-.tech-table :deep(.el-table) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  border: none !important;
-}
-
-.tech-table :deep(.el-table::before) {
-  display: none !important;
-}
-
-/* 移除所有可能的白色边框 */
-.tech-table :deep(.el-table__inner-wrapper) {
-  border: none !important;
-}
-
-.tech-table :deep(.el-table__inner-wrapper::after) {
-  display: none !important;
-}
-
-/* 表格头部样式 - 参考图片的头部设计 */
-.tech-table :deep(.el-table__header-wrapper) {
-  background: linear-gradient(135deg, 
-    rgba(20, 35, 60, 1) 0%, 
-    rgba(25, 40, 65, 1) 100%) !important;
-  border-radius: 12px 12px 0 0 !important;
-  border: none !important;
-}
-
-.tech-table :deep(.el-table__header-wrapper .el-table__header) {
-  background: linear-gradient(135deg, 
-    rgba(20, 35, 60, 1) 0%, 
-    rgba(25, 40, 65, 1) 100%) !important;
-  border: none !important;
-}
-
-.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
-  background: linear-gradient(135deg, 
-    rgba(20, 35, 60, 1) 0%, 
-    rgba(25, 40, 65, 1) 100%) !important;
-  color: #00d4ff !important;
-  font-weight: 600 !important;
-  font-size: 14px !important;
-  padding: 16px 12px !important;
-  border: none !important;
-  border-bottom: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
-  letter-spacing: 0.5px !important;
-  position: relative !important;
-}
-
-.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
-  border-right: none !important;
-}
-
-/* 表格头部发光效果 */
-.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(0, 255, 255, 0.6) 50%, 
-    transparent 100%);
-  opacity: 0.8;
-}
-
-/* 表格主体样式 - 参考图片的行设计 */
-.tech-table :deep(.el-table__body-wrapper) {
-  background: transparent !important;
-}
-
-.tech-table :deep(.el-table__body) {
-  background: transparent !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
-  background: rgba(25, 35, 55, 0.6) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  position: relative !important;
-}
-
-/* 交替行颜色 - 创建微妙的斑马纹效果 */
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
-  background: rgba(20, 30, 50, 0.7) !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
-  background: rgba(25, 35, 55, 0.6) !important;
-}
-
-/* 悬停效果 - 参考图片的交互效果 */
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
-  background: linear-gradient(90deg, 
-    rgba(0, 255, 255, 0.08) 0%, 
-    rgba(0, 255, 255, 0.12) 50%, 
-    rgba(0, 255, 255, 0.08) 100%) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 
-    0 4px 20px rgba(0, 255, 255, 0.15),
-    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 1) !important;
-}
-
-/* 单元格样式 - 参考图片的单元格设计 */
-.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
-  border: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
-  background: transparent !important;
-  padding: 14px 12px !important;
-  font-size: 13px !important;
-  line-height: 1.5 !important;
-  position: relative !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
-  border-right: none !important;
-}
-
-/* 彻底移除所有表格边框 - 最终解决方案 */
-.tech-table :deep(.el-table--border) {
-  border: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table--border .el-table__inner-wrapper) {
-  border: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
-  display: none !important;
-  content: none !important;
-}
-
-.tech-table :deep(.el-table--border .el-table__inner-wrapper::before) {
-  display: none !important;
-  content: none !important;
-}
-
-/* 移除所有边框补丁元素 */
-.tech-table :deep(.el-table__border-left-patch) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-.tech-table :deep(.el-table__border-right-patch) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-.tech-table :deep(.el-table__border-bottom-patch) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-.tech-table :deep(.el-table__border-top-patch) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-/* 单元格边框控制 */
-.tech-table :deep(.el-table--border td) {
-  border: none !important;
-  border-left: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table--border th) {
-  border: none !important;
-  border-left: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  outline: none !important;
-}
-
-/* 移除表格外围的所有可能边框 */
-.tech-table :deep(.el-table__body-wrapper) {
-  border: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table__header-wrapper) {
-  border: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table__footer-wrapper) {
-  border: none !important;
-  outline: none !important;
-}
-
-/* 最强力的边框移除 - 覆盖所有可能的边框样式 */
-.tech-table :deep(*) {
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-}
-
-.tech-table :deep(td) {
-  border: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
-}
-
-.tech-table :deep(th) {
-  border: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
-}
-
-.tech-table :deep(td:last-child),
-.tech-table :deep(th:last-child) {
-  border-right: none !important;
-}
-
-/* 移除表格容器本身的边框 */
-.tech-table,
-.tech-table :deep(.el-table),
-.tech-table :deep(.el-table__inner-wrapper) {
-  border: none !important;
-  outline: none !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
-}
-
-/* 专门针对左右边框的强力移除 */
-.tech-table :deep(.el-table),
-.tech-table :deep(.el-table *),
-.tech-table :deep(.el-table__inner-wrapper),
-.tech-table :deep(.el-table__header),
-.tech-table :deep(.el-table__body),
-.tech-table :deep(.el-table__header-wrapper),
-.tech-table :deep(.el-table__body-wrapper) {
-  border-left: none !important;
-  border-right: none !important;
-}
-
-/* 强制移除表格左右的所有可能边框元素 */
-.tech-table::before,
-.tech-table::after,
-.tech-table :deep(.el-table)::before,
-.tech-table :deep(.el-table)::after,
-.tech-table :deep(.el-table__inner-wrapper)::before,
-.tech-table :deep(.el-table__inner-wrapper)::after {
-  display: none !important;
-  content: none !important;
-  border: none !important;
-}
-
-/* 确保表格外层容器没有任何边框 */
-.tech-table {
-  border: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  box-sizing: border-box !important;
-  position: relative !important;
-}
-
-/* 数据为空时的样式 */
-.tech-table :deep(.el-table__empty-block) {
-  background: rgba(25, 35, 55, 0.6) !important;
-  color: rgba(255, 255, 255, 0.6) !important;
-  border: none !important;
-}
-
-.tech-table :deep(.el-table__empty-text) {
-  color: rgba(255, 255, 255, 0.6) !important;
-  font-size: 14px !important;
-}
-
 /* 行列样式 */
 :deep(.el-row) {
   background: transparent !important;
@@ -1626,54 +1516,6 @@ export default {
 
 :deep(.el-col) {
   background: transparent !important;
-}
-
-/* 按钮样式 */
-:deep(.el-button--text) {
-  color: rgba(0, 255, 255, 0.8) !important;
-}
-
-:deep(.el-button--text:hover) {
-  color: #00ffff !important;
-  background: rgba(0, 255, 255, 0.1) !important;
-}
-
-/* 分页样式 */
-:deep(.el-pagination) {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-:deep(.el-pagination button) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-pagination button:hover) {
-  background: rgba(0, 255, 255, 0.15) !important;
-  color: #00ffff !important;
-}
-
-:deep(.el-pagination .el-pager li) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  margin: 0 3px;
-}
-
-:deep(.el-pagination .el-pager li:hover) {
-  background: rgba(0, 255, 255, 0.15) !important;
-  color: #00ffff !important;
-}
-
-:deep(.el-pagination .el-pager li.is-active) {
-  background: rgba(0, 255, 255, 0.3) !important;
-  color: #00ffff !important;
-  border-color: rgba(0, 255, 255, 0.5) !important;
-}
-
-:deep(.el-select .el-input.is-focus .el-input__wrapper) {
-  box-shadow: 0 0 0 1px rgba(0, 255, 255, 0.5) inset !important;
 }
 
 /* Tag 样式 */
