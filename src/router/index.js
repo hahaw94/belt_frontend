@@ -173,7 +173,7 @@ const routes = [
         path: 'data-collection',
         name: 'event-data-collection',
         component: () => import('../views/event/DataCollection.vue'),
-        meta: { title: '告警数据收集' }
+        meta: { title: '误报数据收集' }
       },
       {
         path: 'linkage-settings',

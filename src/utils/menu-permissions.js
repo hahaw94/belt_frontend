@@ -167,7 +167,7 @@ export const MENU_TITLES = {
   '/detection/playback': '录像回放',
   '/event': '事件中心',
   '/event/alarm-display': '告警信息展示',
-  '/event/data-collection': '告警数据收集',
+  '/event/data-collection': '误报数据收集',
   '/event/linkage-settings': '告警联动设置',
   '/event/warning-push': '预警推送',
   '/log': '日志中心',

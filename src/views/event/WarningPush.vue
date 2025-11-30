@@ -227,6 +227,7 @@
         </span>
       </template>
     </el-dialog>
+
   </div>
 </template>
 
@@ -510,6 +511,7 @@ export default {
       }
       pagination.page = page
     }
+
 
     // 组件挂载时加载数据
     onMounted(() => {

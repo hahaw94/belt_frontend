@@ -31,13 +31,34 @@ export const eventApi = {
 
   /**
    * 处理告警
-   * @param {number} alarmId - 告警ID
+   * @param {string} alarmId - 告警ID
    * @param {Object} data - 处理数据
    * @param {string} data.result - 处理结果 ('confirmed' | 'false_positive')
    * @param {string} data.remark - 处理备注
    */
   handleAlarm(alarmId, data) {
     return api.post(`/api/v1/alarms/${alarmId}/handle`, data)
+  },
+
+  /**
+   * 批量处理告警（通过ID列表）
+   * @param {Object} data - 处理数据
+   * @param {Array} data.alarm_ids - 告警ID数组
+   * @param {string} data.handle_result - 处理结果 ('confirmed' | 'false_positive')
+   * @param {string} data.remark - 处理备注
+   */
+  batchHandleAlarms(data) {
+    return api.post('/api/v1/alarms/batch-handle', data)
+  },
+
+  /**
+   * 批量标记误报（通过筛选条件）
+   * @param {Object} data - 标记数据
+   * @param {Object} data.filters - 筛选条件
+   * @param {string} data.remark - 处理说明
+   */
+  batchMarkFalsePositive(data) {
+    return api.post('/api/v1/alarms/batch-mark-false-positive', data)
   },
 
   /**
@@ -56,8 +77,10 @@ export const eventApi = {
    * 导出误报样本
    * @param {Object} data - 导出参数
    * @param {Array} data.alarm_ids - 告警ID数组（可选）
-   * @param {string} data.start_time - 开始时间（可选，格式：YYYY-MM-DDTHH:mm:ssZ）
-   * @param {string} data.end_time - 结束时间（可选，格式：YYYY-MM-DDTHH:mm:ssZ）
+   * @param {string} data.start_time - 开始时间（可选）
+   * @param {string} data.end_time - 结束时间（可选）
+   * @param {Array} data.alarm_types - 告警类型数组（可选）
+   * @param {boolean} data.only_unexported - 是否只导出未导出的（可选）
    * @returns {Promise} 响应包含：file_name, file_size, alarm_count, download_url
    */
   exportFalsePositives(data) {
@@ -68,12 +91,87 @@ export const eventApi = {
    * 打包误报样本（上传训练平台）
    * @param {Object} data - 打包参数
    * @param {Array} data.alarm_ids - 告警ID数组（可选）
-   * @param {string} data.start_time - 开始时间（可选，格式：YYYY-MM-DDTHH:mm:ssZ）
-   * @param {string} data.end_time - 结束时间（可选，格式：YYYY-MM-DDTHH:mm:ssZ）
-   * @returns {Promise} 响应包含：alarm_count, package_id, message
+   * @param {string} data.start_time - 开始时间（可选）
+   * @param {string} data.end_time - 结束时间（可选）
+   * @param {Array} data.alarm_types - 告警类型数组（可选）
+   * @param {boolean} data.only_unexported - 是否只导出未导出的（可选）
+   * @returns {Promise} 响应包含：alarm_count, file_name, download_url
    */
   packageFalsePositives(data) {
     return api.post('/api/v1/alarms/false-positives/package', data)
+  },
+
+  /**
+   * 获取误报样本统计信息
+   * @param {Object} params - 查询参数
+   * @param {string} params.start_date - 开始日期（可选，格式：YYYY-MM-DD）
+   * @param {string} params.end_date - 结束日期（可选，格式：YYYY-MM-DD）
+   * @param {string} params.alarm_types - 告警类型ID列表（逗号分隔，可选）
+   * @returns {Promise} 响应包含统计数据
+   */
+  getFalsePositiveStats(params) {
+    return api.get('/api/v1/alarms/false-positives/stats', params)
+  },
+
+  /**
+   * 统计误报数量
+   * @param {Object} params - 查询参数
+   * @param {string} params.start_date - 开始日期（可选）
+   * @param {string} params.end_date - 结束日期（可选）
+   * @param {string} params.alarm_types - 告警类型ID列表（逗号分隔，可选）
+   * @param {boolean} params.only_unexported - 是否只统计未导出的（可选）
+   * @returns {Promise} 响应包含：count
+   */
+  countFalsePositives(params) {
+    return api.get('/api/v1/alarms/false-positives/count', params)
+  },
+
+  /**
+   * 批量标记误报（按条件）
+   * @param {Object} data - 标记数据
+   * @param {string} data.start_time - 开始时间（可选）
+   * @param {string} data.end_time - 结束时间（可选）
+   * @param {Array} data.alarm_types - 告警类型数组（可选）
+   * @param {Array} data.alarm_levels - 告警级别数组（可选）
+   * @param {Array} data.board_ids - 板卡ID数组（可选）
+   * @param {string} data.remark - 处理说明（必填）
+   * @returns {Promise} 响应包含：affected_count
+   */
+  batchMarkFalsePositiveByFilter(data) {
+    return api.post('/api/v1/alarms/batch/mark-false-positive', data)
+  },
+
+  /**
+   * 批量标记误报（按ID列表）
+   * @param {Object} data - 标记数据
+   * @param {Array} data.alarm_ids - 告警ID数组（必填）
+   * @param {string} data.remark - 处理说明（必填）
+   * @returns {Promise} 响应包含：affected_count, failed_ids
+   */
+  batchMarkFalsePositiveByIDs(data) {
+    return api.post('/api/v1/alarms/batch/mark-false-positive-by-ids', data)
+  },
+
+  /**
+   * 预览批量标记误报数量
+   * @param {Object} data - 筛选条件
+   * @param {string} data.start_time - 开始时间（可选）
+   * @param {string} data.end_time - 结束时间（可选）
+   * @param {Array} data.alarm_types - 告警类型数组（可选）
+   * @param {Array} data.alarm_levels - 告警级别数组（可选）
+   * @param {Array} data.board_ids - 板卡ID数组（可选）
+   * @returns {Promise} 响应包含：total_count, unhandled_count, handled_count, alarm_list
+   */
+  previewBatchMarkFalsePositive(data) {
+    return api.post('/api/v1/alarms/batch/preview-mark-false-positive', data)
+  },
+
+  /**
+   * 获取事件中心板卡列表
+   * @returns {Promise} 响应包含板卡列表
+   */
+  getEventBoards() {
+    return api.get('/api/v1/event/boards')
   },
 
   // ========== 告警类型管理 ==========
@@ -367,5 +465,39 @@ export const eventApi = {
   // 获取数据采集统计
   getDataCollection(params) {
     return api.get('/api/events/data-collection', params)
+  },
+
+  // ========== 训练平台配置管理 ==========
+
+  /**
+   * 获取训练平台配置
+   * @returns {Promise} 响应包含配置信息
+   */
+  getTrainingPlatformConfig() {
+    return api.get('/api/v1/alarms/training-platform/config')
+  },
+
+  /**
+   * 保存训练平台配置
+   * @param {Object} data - 配置数据
+   * @param {string} data.platform_name - 平台名称
+   * @param {string} data.platform_url - 平台URL
+   * @param {string} data.api_key - API密钥
+   * @param {string} data.auth_type - 认证类型 (api_key, bearer_token, basic_auth)
+   * @param {string} data.callback_url - 回调URL（可选）
+   * @param {string} data.additional_params - 额外参数JSON（可选）
+   * @param {number} data.timeout - 超时时间（秒）
+   * @returns {Promise}
+   */
+  saveTrainingPlatformConfig(data) {
+    return api.post('/api/v1/alarms/training-platform/config', data)
+  },
+
+  /**
+   * 检查训练平台配置是否存在
+   * @returns {Promise} 响应包含exists字段
+   */
+  checkTrainingPlatformConfigExists() {
+    return api.get('/api/v1/alarms/training-platform/config/exists')
   }
 }

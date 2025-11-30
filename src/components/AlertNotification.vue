@@ -22,14 +22,6 @@
             <div class="header-actions">
               <el-button 
                 size="small" 
-                type="primary" 
-                @click="testAlert"
-                class="test-btn"
-              >
-                测试
-              </el-button>
-              <el-button 
-                size="small" 
                 text 
                 @click="markAllAsRead"
                 v-if="hasUnreadAlerts"
@@ -117,7 +109,7 @@ export default {
       default: () => []
     }
   },
-  emits: ['test-alert', 'mark-as-read', 'mark-all-as-read', 'clear-history', 'alert-click'],
+  emits: ['mark-as-read', 'mark-all-as-read', 'clear-history', 'alert-click'],
   setup(props, { emit }) {
     const router = useRouter()
     const dropdownRef = ref(null)
@@ -142,34 +134,6 @@ export default {
       return props.alertHistory.slice(start, end)
     })
 
-    const testAlert = () => {
-      const testAlerts = [
-        {
-          type: 'error',
-          message: '检测到异常行为：人员进入危险区域',
-          image: 'https://via.placeholder.com/300x200/1a2a4a/ff4d4f?text=危险区域告警'
-        },
-        {
-          type: 'warning',
-          message: '设备温度过高，请及时检查',
-          image: 'https://via.placeholder.com/300x200/1a2a4a/ffc107?text=温度告警'
-        },
-        {
-          type: 'info',
-          message: '新的检测任务已开始执行',
-          image: 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=任务通知'
-        },
-        {
-          type: 'success',
-          message: '系统自检完成，所有设备正常',
-          image: 'https://via.placeholder.com/300x200/1a2a4a/67c23a?text=系统正常'
-        }
-      ]
-      
-      const randomAlert = testAlerts[Math.floor(Math.random() * testAlerts.length)]
-      emit('test-alert', randomAlert)
-      ElMessage.success('测试告警已发送')
-    }
 
     const markAsRead = (alertId) => {
       emit('mark-as-read', alertId)
@@ -246,7 +210,6 @@ export default {
       hasUnreadAlerts,
       totalPages,
       paginatedAlerts,
-      testAlert,
       markAsRead,
       markAllAsRead,
       clearHistory,
@@ -341,16 +304,6 @@ export default {
   align-items: center;
 }
 
-.test-btn {
-  background: linear-gradient(135deg, #00d4ff, #0099cc);
-  border: none;
-  color: white;
-  font-weight: 500;
-}
-
-.test-btn:hover {
-  background: linear-gradient(135deg, #0099cc, #007399);
-}
 
 .notification-content {
   max-height: 350px;

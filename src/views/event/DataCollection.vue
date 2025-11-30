@@ -3,498 +3,598 @@
     <!-- 科技感背景 -->
     <div class="tech-background"></div>
     
-    <h2>数据样本采集</h2>
+    <h2>误报数据收集</h2>
 
-    <el-card class="sample-list-card tech-card mb-20" shadow="hover">
+    <!-- 数据收集操作卡片 -->
+    <el-card class="operation-card tech-card mb-20" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>告警列表</span>
-          <div>
-            <el-button type="primary" :icon="Download" size="small" class="tech-button-sm" @click="handleExport">
-              导出选中样本
-            </el-button>
-            <el-button type="warning" :icon="Download" size="small" class="tech-button-sm" @click="handleExportAll">
-              导出所有误报
-            </el-button>
-            <el-button type="success" :icon="Upload" size="small" class="tech-button-sm" @click="handleUpload">
-              上传至训练平台
-            </el-button>
-            <el-button type="info" :icon="Upload" size="small" class="tech-button-sm" @click="handlePackageAll">
-              打包所有误报
-            </el-button>
-          </div>
+          <span>数据收集操作</span>
         </div>
       </template>
 
-      <!-- 搜索筛选卡片 -->
-      <div class="search-filters-card mb-20">
-        <div class="search-filters-header">
-          <span class="filter-title">搜索筛选</span>
+      <div class="operation-content">
+        <!-- 选择数据范围 -->
+        <div class="range-selection">
+          <label class="section-label">选择数据范围</label>
+          <el-radio-group v-model="operationForm.rangeType" @change="handleRangeChange">
+            <el-radio label="all">所有未导出的误报</el-radio>
+            <el-radio label="timeRange">按时间范围</el-radio>
+            <el-radio label="alarmType">按告警类型</el-radio>
+          </el-radio-group>
         </div>
-        <div class="search-filters-content">
-          <div class="filter-row">
-            <div class="filter-item filter-item-wide">
-              <label for="timeRange">时间范围</label>
+
+        <!-- 时间范围选择 -->
+        <div v-show="operationForm.rangeType === 'timeRange'" class="time-range-group">
+          <div class="time-range-inputs">
+            <div class="input-item">
+              <label>开始日期</label>
               <el-date-picker
-                v-model="searchForm.timeRange"
-                id="timeRange"
-                type="datetimerange"
-                range-separator="至"
-                start-placeholder="开始时间"
-                end-placeholder="结束时间"
-                :shortcuts="dateShortcuts"
+                v-model="operationForm.startDate"
+                type="date"
+                placeholder="选择开始日期"
                 class="tech-input"
-                value-format="YYYY-MM-DD HH:mm:ss"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
               />
             </div>
-            <div class="filter-item">
-              <label for="sampleType">样本类型</label>
-              <el-select
-                v-model="searchForm.sampleType"
-                id="sampleType"
-                placeholder="全部"
-                class="tech-select"
-                clearable
-              >
-                <el-option label="全部" value="" />
-                <el-option label="误报样本" value="false_positive" />
-              </el-select>
-            </div>
-            <div class="filter-item">
-              <label for="exportStatus">导出状态</label>
-              <el-select
-                v-model="searchForm.exportStatus"
-                id="exportStatus"
-                placeholder="全部"
-                class="tech-select"
-                clearable
-              >
-                <el-option label="全部" value="" />
-                <el-option label="未导出" :value="false" />
-                <el-option label="已导出" :value="true" />
-              </el-select>
-            </div>
-            <div class="filter-actions">
-              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">搜索</el-button>
-              <el-button :icon="Refresh" class="tech-button-sm" @click="handleReset">重置</el-button>
+            <div class="input-item">
+              <label>结束日期</label>
+              <el-date-picker
+                v-model="operationForm.endDate"
+                type="date"
+                placeholder="选择结束日期"
+                class="tech-input"
+                value-format="YYYY-MM-DD"
+                style="width: 100%"
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      <el-table :data="sampleList" v-loading="loading" border stripe class="tech-table" style="width: 100%;" @selection-change="handleSelectionChange">
-        <el-table-column type="selection" width="55" />
-        <el-table-column type="index" label="序号" width="80" align="center" header-align="center" />
-        <el-table-column prop="time" label="告警时间" width="180" header-align="center" />
-        <el-table-column prop="type" label="告警类型" width="120" header-align="center" />
-        <el-table-column prop="level" label="级别" width="80" align="center" header-align="center" />
-        <el-table-column prop="location" label="位置" width="150" header-align="center" />
-        <el-table-column prop="description" label="描述" min-width="200" header-align="center" />
-        <el-table-column prop="status" label="导出状态" width="120" align="center" header-align="center">
-          <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
-              {{ row.status }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column fixed="right" label="操作" width="120">
-          <template #default="{ row }">
-            <el-button link type="primary" @click="handlePreview(row)">
-              预览
+        <!-- 告警类型选择 -->
+        <div v-show="operationForm.rangeType === 'alarmType'" class="alarm-type-group">
+          <label class="section-label">选择告警类型</label>
+          <div class="alarm-type-checkboxes">
+            <el-checkbox-group v-model="operationForm.selectedTypes">
+              <el-checkbox 
+                v-for="type in alarmTypeList" 
+                :key="type.id" 
+                :label="type.id"
+              >
+                {{ type.name }}
+              </el-checkbox>
+            </el-checkbox-group>
+          </div>
+        </div>
+
+        <!-- 仅未导出选项 -->
+        <div v-show="operationForm.rangeType !== 'all'" class="unexported-option">
+          <el-checkbox v-model="operationForm.onlyUnexported">
+            📌 仅导出未导出的数据
+            <span class="hint-text">(取消勾选将导出所有数据)</span>
+          </el-checkbox>
+        </div>
+
+        <!-- 数据预览 -->
+        <div v-show="previewData.visible" class="data-preview">
+          <div class="preview-content">
+            <div class="preview-info">
+              <span class="preview-label">当前选择将导出：</span>
+              <span class="preview-count">{{ previewData.count }}</span>
+              <span class="preview-unit">条数据</span>
+            </div>
+            <el-button 
+              text 
+              @click="previewData.visible = false"
+              class="preview-close"
+            >
+              ✕
             </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-
-      <!-- 增强型分页组件 -->
-      <div class="pagination-container tech-pagination">
-        <div class="pagination-info">
-          <span>共 <span class="total-count">{{ total }}</span> 条记录，每页显示 
-            <el-select 
-              v-model="pageSize" 
-              @change="handleSizeChange"
-              class="page-size-select"
-              size="small"
-            >
-              <el-option label="10" :value="10" />
-              <el-option label="20" :value="20" />
-              <el-option label="50" :value="50" />
-              <el-option label="100" :value="100" />
-            </el-select> 条
-          </span>
-        </div>
-        <div class="pagination-controls">
-          <el-button 
-            class="pagination-btn"
-            size="small" 
-            :disabled="currentPage === 1"
-            @click="goToPage(1)"
-          >
-            首页
-          </el-button>
-          <el-button 
-            class="pagination-btn"
-            size="small" 
-            :disabled="currentPage === 1"
-            @click="goToPage(currentPage - 1)"
-          >
-            上一页
-          </el-button>
-          <div class="pagination-pages">
-            <button 
-              v-for="page in visiblePages" 
-              :key="page"
-              class="page-btn"
-              :class="{ active: page === currentPage }"
-              @click="goToPage(page)"
-            >
-              {{ page }}
-            </button>
           </div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="operation-buttons">
           <el-button 
-            class="pagination-btn"
-            size="small" 
-            :disabled="currentPage === totalPages"
-            @click="goToPage(currentPage + 1)"
+            type="info" 
+            :icon="View" 
+            class="tech-button-sm"
+            @click="handlePreview"
+            :loading="previewLoading"
           >
-            下一页
+            预览数量
           </el-button>
           <el-button 
-            class="pagination-btn"
-            size="small" 
-            :disabled="currentPage === totalPages"
-            @click="goToPage(totalPages)"
+            type="success" 
+            :icon="Download" 
+            class="tech-button-sm"
+            @click="handleExport"
+            :loading="exportLoading"
           >
-            末页
+            导出样本包
+          </el-button>
+          <el-button 
+            type="primary" 
+            :icon="Upload" 
+            class="tech-button-sm"
+            @click="handlePackageUpload"
+            :loading="uploadLoading"
+          >
+            打包并上传
+          </el-button>
+          <el-button 
+            type="warning" 
+            :icon="Setting" 
+            class="tech-button-sm config-button"
+            @click="showConfigDialog"
+          >
+            训练平台配置管理
           </el-button>
         </div>
       </div>
     </el-card>
 
-    <!-- 预览对话框 -->
-    <el-dialog
-      v-model="previewDialogVisible"
-      title="样本预览"
-      width="60%"
-    >
-      <div v-if="selectedSample" class="sample-preview">
-        <div class="preview-item">
-          <span class="label">时间：</span>
-          <span>{{ selectedSample.time }}</span>
-        </div>
-        <div class="preview-item">
-          <span class="label">类型：</span>
-          <span>{{ selectedSample.type }}</span>
-        </div>
-        <div class="preview-item">
-          <span class="label">来源：</span>
-          <span>{{ selectedSample.source }}</span>
-        </div>
-        <div class="preview-item">
-          <span class="label">描述：</span>
-          <span>{{ selectedSample.description }}</span>
-        </div>
-        <div class="preview-images">
-          <el-image
-            v-for="(image, index) in selectedSample.images"
-            :key="index"
-            :src="image"
-            :preview-src-list="selectedSample.images"
-            fit="cover"
-            class="sample-image"
-          />
-        </div>
-      </div>
-    </el-dialog>
-
-    <!-- 上传进度对话框 -->
-    <el-dialog
-      v-model="uploadDialogVisible"
-      title="上传进度"
-      width="30%"
-      :close-on-click-modal="false"
-      :close-on-press-escape="false"
-      :show-close="false"
-    >
-      <div class="upload-progress">
-        <el-progress
-          :percentage="uploadProgress"
-          :status="uploadProgress === 100 ? 'success' : ''"
-        />
-        <div class="progress-text">
-          {{ uploadProgress === 100 ? '上传完成' : '正在上传...' }}
-        </div>
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button
-            :disabled="uploadProgress !== 100"
-            @click="uploadDialogVisible = false"
+    <!-- 样本统计卡片（包含筛选和统计） -->
+    <el-card class="stats-card tech-card mb-20" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>样本统计</span>
+          <el-button 
+            type="primary" 
+            :icon="Refresh" 
+            size="small" 
+            class="tech-button-sm" 
+            @click="loadStats"
+            :loading="statsLoading"
           >
-            关闭
+            刷新
           </el-button>
-        </span>
+        </div>
+      </template>
+
+      <div class="stats-wrapper">
+        <!-- 统计筛选区域 -->
+        <div class="filter-section">
+          <div class="filter-header">
+            <span class="filter-title">筛选条件</span>
+          </div>
+          
+          <div class="filter-content">
+            <div class="filter-row">
+              <!-- 时间范围 -->
+              <div class="filter-item">
+                <label>开始日期</label>
+                <el-date-picker
+                  v-model="filterForm.startDate"
+                  type="date"
+                  placeholder="选择开始日期"
+                  class="tech-input"
+                  value-format="YYYY-MM-DD"
+                  style="width: 100%"
+                />
+              </div>
+              
+              <div class="filter-item">
+                <label>结束日期</label>
+                <el-date-picker
+                  v-model="filterForm.endDate"
+                  type="date"
+                  placeholder="选择结束日期"
+                  class="tech-input"
+                  value-format="YYYY-MM-DD"
+                  style="width: 100%"
+                />
+              </div>
+
+              <!-- 操作按钮 -->
+              <div class="filter-actions">
+                <el-button 
+                  type="primary" 
+                  :icon="Search" 
+                  class="tech-button-sm" 
+                  @click="handleFilter"
+                  :loading="statsLoading"
+                >
+                  筛选
+                </el-button>
+                <el-button 
+                  :icon="Refresh" 
+                  class="tech-button-sm" 
+                  @click="handleReset"
+                >
+                  重置
+                </el-button>
+              </div>
+            </div>
+
+            <!-- 告警类型选择 -->
+            <div class="alarm-type-section">
+              <label>告警类型（可多选，不选则统计所有）</label>
+              <div class="alarm-type-list">
+                <el-checkbox-group v-model="filterForm.alarmTypes">
+                  <el-checkbox 
+                    v-for="type in alarmTypeList" 
+                    :key="type.id" 
+                    :label="type.id"
+                    class="alarm-type-checkbox"
+                  >
+                    {{ type.name }}
+                  </el-checkbox>
+                </el-checkbox-group>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分隔线 -->
+        <div class="stats-divider"></div>
+
+        <!-- 统计数据区域 -->
+        <div v-loading="statsLoading" class="stats-content">
+          <div class="stats-grid">
+            <!-- 总误报数 -->
+            <div class="stat-item stat-yellow">
+              <div class="stat-value">{{ stats.total || 0 }}</div>
+              <div class="stat-label">总误报数</div>
+            </div>
+            
+            <!-- 未导出 -->
+            <div class="stat-item stat-blue">
+              <div class="stat-value">{{ stats.unexported || 0 }}</div>
+              <div class="stat-label">未导出</div>
+            </div>
+            
+            <!-- 已导出 -->
+            <div class="stat-item stat-green">
+              <div class="stat-value">{{ stats.exported || 0 }}</div>
+              <div class="stat-label">已导出</div>
+            </div>
+            
+            <!-- 今日新增 -->
+            <div class="stat-item stat-purple">
+              <div class="stat-value">{{ stats.today || 0 }}</div>
+              <div class="stat-label">今日新增</div>
+            </div>
+          </div>
+
+          <!-- 按类型统计 -->
+          <div class="type-stats-section" v-if="stats.by_type && stats.by_type.length > 0">
+            <h4 class="section-title">按类型统计</h4>
+            <div class="type-stats-grid">
+              <div 
+                v-for="item in stats.by_type" 
+                :key="item.type_id" 
+                class="type-stat-item"
+              >
+                <div class="type-stat-value">{{ item.count }}</div>
+                <div class="type-stat-label">{{ item.type_name }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-card>
+
+    <!-- 训练平台配置对话框 -->
+    <el-dialog
+      v-model="configDialog.visible"
+      title="训练平台配置管理"
+      width="700px"
+      :close-on-click-modal="false"
+    >
+      <div v-loading="configDialog.loading" class="config-form">
+        <el-alert
+          v-if="configDialog.status"
+          :title="configDialog.statusText"
+          :type="configDialog.statusType"
+          :closable="false"
+          style="margin-bottom: 20px"
+        />
+
+        <el-form :model="configForm" label-width="120px" label-position="left">
+          <el-form-item label="平台名称" required>
+            <el-input
+              v-model="configForm.platform_name"
+              placeholder="如：AI训练平台"
+              class="tech-input"
+            />
+          </el-form-item>
+
+          <el-form-item label="平台URL" required>
+            <el-input
+              v-model="configForm.platform_url"
+              placeholder="http://training-platform:8080/api/upload"
+              class="tech-input"
+            />
+          </el-form-item>
+
+          <el-form-item label="认证类型" required>
+            <el-select
+              v-model="configForm.auth_type"
+              placeholder="选择认证类型"
+              class="tech-input"
+              style="width: 100%"
+            >
+              <el-option label="API Key" value="api_key" />
+              <el-option label="Bearer Token" value="bearer_token" />
+              <el-option label="Basic Auth" value="basic_auth" />
+            </el-select>
+          </el-form-item>
+
+          <el-form-item :label="authLabel" required>
+            <el-input
+              v-model="configForm.api_key"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="输入API密钥或认证信息"
+              class="tech-input"
+            >
+              <template #suffix>
+                <el-icon @click="showPassword = !showPassword" style="cursor: pointer">
+                  <View v-if="showPassword" />
+                  <Hide v-else />
+                </el-icon>
+              </template>
+            </el-input>
+            <div class="form-hint">{{ authHelp }}</div>
+          </el-form-item>
+
+          <el-form-item label="超时时间（秒）">
+            <el-input-number
+              v-model="configForm.timeout"
+              :min="60"
+              :max="36000"
+              :step="60"
+              class="tech-input"
+              style="width: 100%"
+            />
+          </el-form-item>
+
+        </el-form>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="configDialog.visible = false">取消</el-button>
+          <el-button type="primary" @click="handleSaveConfig" :loading="configDialog.saving">
+            保存配置
+          </el-button>
+        </div>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  Download,
-  Upload,
-  Search,
-  Refresh
-} from '@element-plus/icons-vue'
+import { Refresh, Search, Download, Upload, View, Setting, Hide } from '@element-plus/icons-vue'
 import { eventApi } from '@/api/event'
 
 export default {
   name: 'DataCollection',
   setup() {
-    // 搜索表单
-    const searchForm = ref({
-      timeRange: [],
-      sampleType: 'false_positive', // 默认显示误报样本
-      exportStatus: ''
+    // 数据收集操作表单
+    const operationForm = ref({
+      rangeType: 'all', // all, timeRange, alarmType
+      startDate: '',
+      endDate: '',
+      selectedTypes: [],
+      onlyUnexported: true
+    })
+
+    // 预览数据
+    const previewData = ref({
+      visible: false,
+      count: 0
     })
 
     // 加载状态
-    const loading = ref(false)
+    const previewLoading = ref(false)
+    const exportLoading = ref(false)
+    const uploadLoading = ref(false)
 
-    // 分页相关
-    const currentPage = ref(1)
-    const pageSize = ref(10)
-    const total = ref(100)
-
-    // 计算总页数
-    const totalPages = computed(() => {
-      return Math.ceil(total.value / pageSize.value) || 1
+    // 训练平台配置对话框
+    const configDialog = ref({
+      visible: false,
+      loading: false,
+      saving: false,
+      status: false,
+      statusText: '',
+      statusType: 'info'
     })
 
-    // 计算可见页码
-    const visiblePages = computed(() => {
-      const maxVisiblePages = 5
-      const totalPagesValue = totalPages.value
-      const currentPageValue = currentPage.value
-      
-      let startPage = Math.max(1, currentPageValue - Math.floor(maxVisiblePages / 2))
-      let endPage = Math.min(totalPagesValue, startPage + maxVisiblePages - 1)
-      
-      if (endPage - startPage + 1 < maxVisiblePages) {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1)
-      }
-      
-      const pages = []
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i)
-      }
-      
-      return pages
+    // 配置表单
+    const configForm = ref({
+      platform_name: '',
+      platform_url: '',
+      api_key: '',
+      auth_type: 'api_key',
+      timeout: 300
     })
 
-    // 告警类型映射
-    const alarmTypeMap = {
-      'person_intrusion': '人员入侵',
-      'behavior': '异常行为',
-      'object': '可疑物品',
-      'intrusion': '区域入侵',
-      'smoke_detection': '烟雾检测',
-      'fire_detection': '火灾检测'
-    }
+    // 密码显示状态
+    const showPassword = ref(false)
 
-    // 告警级别映射
-    const alarmLevelMap = {
-      1: '低',
-      2: '中',
-      3: '高'
-    }
-
-    // 日期快捷选项
-    const dateShortcuts = [
-      {
-        text: '最近一天',
-        value: () => {
-          const end = new Date()
-          const start = new Date()
-          start.setTime(start.getTime() - 3600 * 1000 * 24)
-          return [start, end]
-        }
-      },
-      {
-        text: '最近七天',
-        value: () => {
-          const end = new Date()
-          const start = new Date()
-          start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
-          return [start, end]
-        }
-      },
-      {
-        text: '最近一个月',
-        value: () => {
-          const end = new Date()
-          const start = new Date()
-          start.setTime(start.getTime() - 3600 * 1000 * 24 * 30)
-          return [start, end]
-        }
+    // 认证标签和帮助文本
+    const authLabel = computed(() => {
+      const labels = {
+        'api_key': 'API Key',
+        'bearer_token': 'Bearer Token',
+        'basic_auth': 'Basic Auth'
       }
-    ]
+      return labels[configForm.value.auth_type] || 'API Key'
+    })
 
-    // 表格数据（从后端获取）
-    const sampleList = ref([])
-
-    // 选中的样本
-    const selectedSamples = ref([])
-
-    // 对话框控制
-    const previewDialogVisible = ref(false)
-    const uploadDialogVisible = ref(false)
-    const selectedSample = ref(null)
-    const uploadProgress = ref(0)
-
-    // 获取图片URL
-    const getImageUrl = (path) => {
-      if (!path) return ''
-      if (path.startsWith('http://') || path.startsWith('https://')) {
-        return path
+    const authHelp = computed(() => {
+      const helps = {
+        'api_key': '请输入训练平台的API密钥',
+        'bearer_token': '请输入Bearer Token',
+        'basic_auth': '请输入Basic Auth凭证（格式：username:password）'
       }
-      return `${import.meta.env.VITE_API_BASE_URL || ''}${path}`
-    }
+      return helps[configForm.value.auth_type] || '请输入认证信息'
+    })
 
-    // 加载误报样本列表
-    const loadSampleList = async () => {
-      loading.value = true
+    // 筛选表单
+    const filterForm = ref({
+      startDate: '',
+      endDate: '',
+      alarmTypes: []
+    })
+
+    // 告警类型列表
+    const alarmTypeList = ref([])
+
+    // 统计数据
+    const stats = ref({
+      total: 0,
+      unexported: 0,
+      exported: 0,
+      today: 0,
+      by_type: []
+    })
+    
+    // 加载状态
+    const statsLoading = ref(false)
+
+    // 加载告警类型列表
+    const loadAlarmTypes = async () => {
       try {
-        const params = {
-          page: currentPage.value,
-          page_size: pageSize.value,
-          status: 2 // 只查询误报告警 (status=2)
-        }
-
-        // 时间范围
-        if (searchForm.value.timeRange && searchForm.value.timeRange.length === 2) {
-          params.start_time = searchForm.value.timeRange[0]
-          params.end_time = searchForm.value.timeRange[1]
-        }
-
-        // 导出状态筛选
-        if (searchForm.value.exportStatus !== '') {
-          params.is_exported = searchForm.value.exportStatus
-        }
-
-        const response = await eventApi.getAlarmList(params)
-        console.log('API响应:', response)
-        
-        if (response) {
-          const alarmData = response.data || []
-          
-          if (Array.isArray(alarmData)) {
-            sampleList.value = alarmData.map(alarm => ({
-              id: alarm.id,
-              time: alarm.alarm_time,
-              type: alarmTypeMap[alarm.alarm_type] || alarm.alarm_type,
-              typeRaw: alarm.alarm_type,
-              level: alarmLevelMap[alarm.alarm_level] || alarm.alarm_level,
-              location: alarm.location || alarm.camera_name || '-',
-              description: `${alarm.location || alarm.camera_name || '未知位置'}检测到${alarmTypeMap[alarm.alarm_type] || alarm.alarm_type}`,
-              status: alarm.is_exported ? '已导出' : '未导出',
-              isExported: alarm.is_exported,
-              alarmCode: alarm.alarm_code,
-              snapshotPath: alarm.snapshot_path,
-              videoPath: alarm.video_path,
-              images: alarm.snapshot_path ? [getImageUrl(alarm.snapshot_path)] : []
-            }))
-          } else {
-            console.error('API返回的data不是数组:', alarmData)
-            sampleList.value = []
-          }
-          
-          total.value = response.total || 0
-        } else {
-          sampleList.value = []
-          total.value = 0
+        const response = await eventApi.getAlarmTypes()
+        console.log('告警类型响应:', response)
+        if (response && response.data) {
+          alarmTypeList.value = response.data
         }
       } catch (error) {
-        console.error('加载样本列表失败：', error)
-        ElMessage.error('加载样本列表失败：' + (error.message || '未知错误'))
-        sampleList.value = []
-        total.value = 0
+        console.error('加载告警类型失败：', error)
+      }
+    }
+
+    // 构建操作参数
+    const buildOperationParams = () => {
+      const params = {}
+      
+      if (operationForm.value.rangeType === 'timeRange') {
+        if (!operationForm.value.startDate || !operationForm.value.endDate) {
+          throw new Error('请选择开始和结束日期')
+        }
+        params.start_date = operationForm.value.startDate
+        params.end_date = operationForm.value.endDate
+        params.only_unexported = operationForm.value.onlyUnexported
+      } else if (operationForm.value.rangeType === 'alarmType') {
+        if (operationForm.value.selectedTypes.length === 0) {
+          throw new Error('请至少选择一个告警类型')
+        }
+        params.alarm_types = operationForm.value.selectedTypes
+        params.only_unexported = operationForm.value.onlyUnexported
+      }
+      // rangeType === 'all' 时不需要额外参数，默认导出所有未导出的
+      
+      return params
+    }
+
+    // 范围类型改变
+    const handleRangeChange = () => {
+      // 清空预览
+      previewData.value.visible = false
+      previewData.value.count = 0
+    }
+
+    // 预览数量
+    const handlePreview = async () => {
+      previewLoading.value = true
+      try {
+        const params = buildOperationParams()
+        console.log('预览参数:', params)
+        
+        const response = await eventApi.countFalsePositives(params)
+        console.log('预览响应:', response)
+        
+        if (response && response.data) {
+          // 响应格式: {data: {data: {count: xxx}}}
+          const count = response.data.data?.count || response.data.count || 0
+          previewData.value.count = count
+          previewData.value.visible = true
+          ElMessage.success(`找到 ${count} 条符合条件的数据`)
+        }
+      } catch (error) {
+        console.error('预览失败：', error)
+        ElMessage.error(error.message || '预览失败')
       } finally {
-        loading.value = false
+        previewLoading.value = false
       }
     }
 
-    // 搜索
-    const handleSearch = () => {
-      currentPage.value = 1
-      loadSampleList()
-    }
-
-    // 重置
-    const handleReset = () => {
-      searchForm.value = {
-        timeRange: [],
-        sampleType: 'false_positive',
-        exportStatus: ''
-      }
-      currentPage.value = 1
-      loadSampleList()
-    }
-
-    // 获取状态标签类型
-    const getStatusType = (status) => {
-      return status === '已导出' ? 'success' : 'info'
-    }
-
-    // 表格选择变化
-    const handleSelectionChange = (selection) => {
-      selectedSamples.value = selection
-    }
-
-    // 预览样本
-    const handlePreview = (row) => {
-      selectedSample.value = row
-      previewDialogVisible.value = true
-    }
-
-    // 导出选中样本
+    // 导出样本包
     const handleExport = async () => {
-      if (selectedSamples.value.length === 0) {
-        ElMessage.warning('请选择要导出的样本')
-        return
-      }
-
       try {
-        const alarmIds = selectedSamples.value.map(item => item.id)
-        const response = await eventApi.exportFalsePositives({ alarm_ids: alarmIds })
+        const params = buildOperationParams()
         
-        if (response && response.download_url) {
+        await ElMessageBox.confirm(
+          '确认要导出误报样本包吗？',
+          '提示',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'info'
+          }
+        )
+
+        exportLoading.value = true
+        console.log('导出参数:', params)
+        
+        const response = await eventApi.exportFalsePositives(params)
+        console.log('导出响应:', response)
+        
+        if (response && response.data) {
+          const data = response.data.data || response.data
+          
           // 自动下载
-          const link = document.createElement('a')
-          link.href = response.download_url
-          link.download = response.file_name || 'false_positives.zip'
-          link.click()
-          
-          ElMessage.success(`已导出 ${selectedSamples.value.length} 个样本`)
-          
-          // 刷新列表
-          loadSampleList()
-        } else {
-          ElMessage.error('导出失败：未返回下载链接')
+          if (data.download_url) {
+            const link = document.createElement('a')
+            link.href = data.download_url
+            link.download = data.file_name || 'false_positives.zip'
+            link.click()
+            
+            ElMessage.success(`导出成功！共 ${data.alarm_count || 0} 条数据`)
+            
+            // 刷新统计
+            loadStats()
+          } else {
+            ElMessage.error('导出失败：未返回下载链接')
+          }
         }
       } catch (error) {
-        console.error('导出样本失败：', error)
-        ElMessage.error('导出样本失败：' + (error.message || '未知错误'))
+        if (error !== 'cancel') {
+          console.error('导出失败：', error)
+          ElMessage.error(error.message || '导出失败')
+        }
+      } finally {
+        exportLoading.value = false
       }
     }
 
-    // 导出所有误报
-    const handleExportAll = async () => {
+    // 打包并上传
+    const handlePackageUpload = async () => {
       try {
+        // 先检查是否已配置训练平台
+        console.log('检查训练平台配置是否存在...')
+        const configExists = await eventApi.checkTrainingPlatformConfigExists()
+        console.log('配置存在检查响应:', configExists)
+        
+        const exists = configExists.data?.exists || configExists.data?.data?.exists || false
+        console.log('配置是否存在:', exists)
+        
+        if (!exists) {
+          ElMessage.warning('请先配置训练平台信息')
+          showConfigDialog()
+          return
+        }
+
+        const params = buildOperationParams()
+        
         await ElMessageBox.confirm(
-          '确认要导出所有误报样本吗？',
+          '确认要打包并上传误报样本到训练平台吗？',
           '提示',
           {
             confirmButtonText: '确定',
@@ -503,181 +603,241 @@ export default {
           }
         )
 
-        const response = await eventApi.exportFalsePositives({})
+        uploadLoading.value = true
+        console.log('打包上传参数:', params)
         
-        if (response && response.download_url) {
-          // 自动下载
-          const link = document.createElement('a')
-          link.href = response.download_url
-          link.download = response.file_name || 'false_positives_all.zip'
-          link.click()
+        const response = await eventApi.packageFalsePositives(params)
+        console.log('打包上传响应:', response)
+        
+        if (response && response.data) {
+          const data = response.data.data || response.data
+          ElMessage.success(`打包上传成功！共 ${data.alarm_count || 0} 条数据`)
           
-          ElMessage.success(`已导出所有误报样本，共 ${response.alarm_count || 0} 条`)
-          
-          // 刷新列表
-          loadSampleList()
-        } else {
-          ElMessage.error('导出失败：未返回下载链接')
+          // 刷新统计
+          loadStats()
         }
       } catch (error) {
         if (error !== 'cancel') {
-          console.error('导出所有误报失败：', error)
-          ElMessage.error('导出失败：' + (error.message || '未知错误'))
-        }
-      }
-    }
-
-    // 上传选中样本至训练平台
-    const handleUpload = async () => {
-      if (selectedSamples.value.length === 0) {
-        ElMessage.warning('请选择要上传的样本')
-        return
-      }
-
-      uploadDialogVisible.value = true
-      uploadProgress.value = 0
-
-      try {
-        // 模拟上传进度
-        const progressTimer = setInterval(() => {
-          if (uploadProgress.value < 90) {
-            uploadProgress.value += 10
-          }
-        }, 300)
-
-        const alarmIds = selectedSamples.value.map(item => item.id)
-        const response = await eventApi.packageFalsePositives({ alarm_ids: alarmIds })
-        
-        clearInterval(progressTimer)
-        uploadProgress.value = 100
-        
-        if (response) {
-          ElMessage.success(`成功上传 ${selectedSamples.value.length} 个样本至训练平台`)
-          
-          // 延迟关闭对话框
-          setTimeout(() => {
-            uploadDialogVisible.value = false
-            // 刷新列表
-            loadSampleList()
-          }, 1500)
-        } else {
-          uploadProgress.value = 0
-          ElMessage.error('上传失败')
-        }
-      } catch (error) {
-        uploadProgress.value = 0
-        console.error('上传样本失败：', error)
-        ElMessage.error('上传失败：' + (error.message || '未知错误'))
-      }
-    }
-
-    // 打包所有误报至训练平台
-    const handlePackageAll = async () => {
-      try {
-        await ElMessageBox.confirm(
-          '确认要打包并上传所有误报样本至训练平台吗？',
-          '提示',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        )
-
-        uploadDialogVisible.value = true
-        uploadProgress.value = 0
-
-        // 模拟上传进度
-        const progressTimer = setInterval(() => {
-          if (uploadProgress.value < 90) {
-            uploadProgress.value += 10
-          }
-        }, 300)
-
-        const response = await eventApi.packageFalsePositives({})
-        
-        clearInterval(progressTimer)
-        uploadProgress.value = 100
-        
-        if (response) {
-          ElMessage.success(`成功打包上传所有误报样本，共 ${response.alarm_count || 0} 条`)
-          
-          // 延迟关闭对话框
-          setTimeout(() => {
-            uploadDialogVisible.value = false
-            // 刷新列表
-            loadSampleList()
-          }, 1500)
-        } else {
-          uploadProgress.value = 0
-          ElMessage.error('打包上传失败')
-        }
-      } catch (error) {
-        if (error !== 'cancel') {
-          uploadProgress.value = 0
           console.error('打包上传失败：', error)
-          ElMessage.error('打包上传失败：' + (error.message || '未知错误'))
+          ElMessage.error(error.message || '打包上传失败')
         }
+      } finally {
+        uploadLoading.value = false
       }
     }
 
-    // 分页处理
-    const handleSizeChange = (val) => {
-      pageSize.value = val
-      currentPage.value = 1
-      loadSampleList()
+    // 显示配置对话框
+    const showConfigDialog = async () => {
+      configDialog.value.visible = true
+      configDialog.value.status = false
+      await loadTrainingPlatformConfig()
     }
 
-    const handleCurrentChange = (val) => {
-      currentPage.value = val
-      loadSampleList()
+    // 加载训练平台配置
+    const loadTrainingPlatformConfig = async () => {
+      configDialog.value.loading = true
+      try {
+        console.log('正在加载训练平台配置...')
+        const response = await eventApi.getTrainingPlatformConfig()
+        console.log('训练平台配置响应:', response)
+        
+        if (response && response.data) {
+          const config = response.data
+          console.log('解析配置数据:', config)
+          configForm.value = {
+            platform_name: config.platform_name || '',
+            platform_url: config.platform_url || '',
+            api_key: config.api_key || '',
+            auth_type: config.auth_type || 'api_key',
+            timeout: config.timeout || 300
+          }
+          
+          configDialog.value.status = true
+          configDialog.value.statusText = '已加载现有配置'
+          configDialog.value.statusType = 'success'
+        }
+      } catch (error) {
+        console.error('加载配置失败 - 完整错误:', error)
+        console.error('错误响应:', error.response)
+        console.error('错误状态码:', error.response?.status)
+        console.error('错误数据:', error.response?.data)
+        
+        if (error.response && error.response.status === 404) {
+          console.log('配置不存在（404），显示未配置提示')
+          configDialog.value.status = true
+          configDialog.value.statusText = '训练平台尚未配置，请填写配置信息'
+          configDialog.value.statusType = 'info'
+        } else {
+          const errorMsg = error.response?.data?.error || error.message || '未知错误'
+          console.error('其他错误:', errorMsg)
+          configDialog.value.status = true
+          configDialog.value.statusText = '加载配置失败：' + errorMsg
+          configDialog.value.statusType = 'error'
+        }
+      } finally {
+        configDialog.value.loading = false
+      }
     }
 
-    // 跳转到指定页面
-    const goToPage = (page) => {
-      if (page < 1 || page > totalPages.value || page === currentPage.value) {
+    // 保存训练平台配置
+    const handleSaveConfig = async () => {
+      // 验证必填字段
+      if (!configForm.value.platform_name) {
+        ElMessage.warning('请输入平台名称')
         return
       }
-      currentPage.value = page
-      loadSampleList()
+      if (!configForm.value.platform_url) {
+        ElMessage.warning('请输入平台URL')
+        return
+      }
+      if (!configForm.value.api_key) {
+        ElMessage.warning('请输入认证信息')
+        return
+      }
+
+      // 验证额外参数是否为有效JSON
+      if (configForm.value.additional_params) {
+        try {
+          JSON.parse(configForm.value.additional_params)
+        } catch (e) {
+          ElMessage.warning('额外参数必须是有效的JSON格式')
+          return
+        }
+      }
+
+      configDialog.value.saving = true
+      try {
+        const data = {
+          platform_name: configForm.value.platform_name,
+          platform_url: configForm.value.platform_url,
+          api_key: configForm.value.api_key,
+          auth_type: configForm.value.auth_type,
+          timeout: configForm.value.timeout
+        }
+
+        console.log('保存配置数据:', data)
+        const response = await eventApi.saveTrainingPlatformConfig(data)
+        console.log('保存配置响应:', response)
+        
+        ElMessage.success('配置保存成功')
+        configDialog.value.status = true
+        configDialog.value.statusText = '配置保存成功'
+        configDialog.value.statusType = 'success'
+        
+        // 延迟关闭对话框
+        setTimeout(() => {
+          configDialog.value.visible = false
+        }, 1500)
+      } catch (error) {
+        console.error('保存配置失败：', error)
+        ElMessage.error('保存配置失败：' + (error.message || '未知错误'))
+        configDialog.value.status = true
+        configDialog.value.statusText = '保存配置失败：' + (error.message || '未知错误')
+        configDialog.value.statusType = 'error'
+      } finally {
+        configDialog.value.saving = false
+      }
+    }
+
+    // 加载统计数据（支持筛选参数）
+    const loadStats = async (params = {}) => {
+      statsLoading.value = true
+      try {
+        // 构建查询参数
+        const queryParams = {}
+        if (params.start_date) {
+          queryParams.start_date = params.start_date
+        }
+        if (params.end_date) {
+          queryParams.end_date = params.end_date
+        }
+        if (params.alarm_types && params.alarm_types.length > 0) {
+          // 后端接收逗号分隔的字符串
+          queryParams.alarm_types = params.alarm_types.join(',')
+        }
+
+        console.log('查询参数:', queryParams)
+        const response = await eventApi.getFalsePositiveStats(queryParams)
+        console.log('API响应数据:', response)
+        
+        // 后端返回 {"data": stats}，响应拦截器包装后变成 {code: 200, data: {data: stats}}
+        // 所以需要访问 response.data.data
+        if (response && response.data && response.data.data) {
+          stats.value = response.data.data
+          console.log('统计数据已更新:', stats.value)
+        } else if (response && response.data) {
+          // 兼容处理：如果只有一层data
+          stats.value = response.data
+          console.log('统计数据已更新(兼容模式):', stats.value)
+        } else {
+          console.warn('响应数据格式异常:', response)
+          ElMessage.warning('获取统计数据格式异常')
+        }
+      } catch (error) {
+        console.error('加载统计信息失败：', error)
+        ElMessage.error('加载统计信息失败：' + (error.message || '未知错误'))
+      } finally {
+        statsLoading.value = false
+      }
+    }
+
+    // 筛选统计
+    const handleFilter = () => {
+      const params = {
+        start_date: filterForm.value.startDate,
+        end_date: filterForm.value.endDate,
+        alarm_types: filterForm.value.alarmTypes
+      }
+      loadStats(params)
+    }
+
+    // 重置筛选
+    const handleReset = () => {
+      filterForm.value = {
+        startDate: '',
+        endDate: '',
+        alarmTypes: []
+      }
+      loadStats()
     }
 
     // 组件挂载时加载数据
     onMounted(() => {
-      loadSampleList()
+      loadAlarmTypes()
+      loadStats()
     })
 
     return {
-      loading,
-      searchForm,
-      dateShortcuts,
-      sampleList,
-      currentPage,
-      pageSize,
-      total,
-      totalPages,
-      visiblePages,
-      selectedSamples,
-      previewDialogVisible,
-      uploadDialogVisible,
-      selectedSample,
-      uploadProgress,
-      getStatusType,
-      handleSelectionChange,
+      operationForm,
+      previewData,
+      previewLoading,
+      exportLoading,
+      uploadLoading,
+      handleRangeChange,
       handlePreview,
       handleExport,
-      handleExportAll,
-      handleUpload,
-      handlePackageAll,
-      handleSearch,
+      handlePackageUpload,
+      configDialog,
+      configForm,
+      showPassword,
+      authLabel,
+      authHelp,
+      showConfigDialog,
+      handleSaveConfig,
+      filterForm,
+      alarmTypeList,
+      stats,
+      statsLoading,
+      loadStats,
+      handleFilter,
       handleReset,
-      handleSizeChange,
-      handleCurrentChange,
-      goToPage,
+      Refresh,
+      Search,
       Download,
       Upload,
-      Search,
-      Refresh
+      View,
+      Setting,
+      Hide
     }
   }
 }
@@ -691,14 +851,12 @@ export default {
   position: relative;
   width: 100%;
   min-height: 100vh;
-  max-height: 100vh;
   padding: 20px;
   padding-bottom: 40px;
   background: transparent;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
-  height: calc(100vh - 120px);
   display: flex;
   flex-direction: column;
 }
@@ -728,75 +886,510 @@ export default {
   font-size: 16px;
 }
 
-.card-header > div {
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+
+/* 科技感背景 */
+.tech-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.data-collection {
+  padding: 20px;
+  min-height: 100vh;
   display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* 科技感卡片样式 - 恢复边框和背景 */
+.tech-card {
+  position: relative;
+  z-index: 10;
+  background: rgba(15, 25, 45, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.2) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  margin-bottom: 20px;
+  backdrop-filter: blur(10px) !important;
+}
+
+.tech-card :deep(.el-card__body) {
+  padding: 20px !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.tech-card :deep(.el-card__header) {
+  background: rgba(20, 30, 50, 0.8) !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
+  padding: 16px 20px !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+/* 数据收集操作卡片样式 - 修复高度问题 */
+.operation-card {
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+.operation-card :deep(.el-card) {
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+.operation-card :deep(.el-card__body) {
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 20px !important;
+}
+
+.operation-content {
+  min-height: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.range-selection {
+  margin-bottom: 0;
+}
+
+.section-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+:deep(.el-radio-group) {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+:deep(.el-radio) {
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin-right: 0 !important;
+}
+
+:deep(.el-radio__input.is-checked .el-radio__inner) {
+  background: rgba(0, 255, 255, 0.8) !important;
+  border-color: #00ffff !important;
+}
+
+:deep(.el-radio__inner) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-radio__label) {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.time-range-group,
+.alarm-type-group {
+  margin-bottom: 0;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.15);
+  border-radius: 6px;
+  min-height: auto;
+  height: auto;
+}
+
+.time-range-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.input-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-item label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.alarm-type-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.unexported-option {
+  margin-bottom: 0;
+  padding: 10px;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 6px;
+}
+
+.unexported-option :deep(.el-checkbox__label) {
+  color: rgba(96, 165, 250, 1) !important;
+  font-weight: 500;
+}
+
+.hint-text {
+  margin-left: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  font-weight: normal;
+}
+
+.data-preview {
+  margin-bottom: 0;
+  padding: 12px;
+  background: rgba(2, 132, 199, 0.15);
+  border: 1px solid rgba(2, 132, 199, 0.4);
+  border-radius: 6px;
+  border-left: 4px solid rgba(2, 132, 199, 0.8);
+}
+
+.preview-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preview-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-label {
+  color: rgba(7, 89, 133, 1);
+  font-weight: 600;
+}
+
+.preview-count {
+  font-size: 20px;
+  font-weight: bold;
+  color: #0284c7;
+}
+
+.preview-unit {
+  color: rgba(7, 89, 133, 1);
+}
+
+.preview-close {
+  color: rgba(7, 89, 133, 0.7) !important;
+  padding: 4px 8px !important;
+}
+
+.operation-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.config-button {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 191, 36, 0.1) 100%) !important;
+  border-color: rgba(245, 158, 11, 0.5) !important;
+  color: #f59e0b !important;
+}
+
+.config-button:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(251, 191, 36, 0.2) 100%) !important;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* 科技感对话框样式 - 与告警展示保持一致 */
+/* 遮罩层样式 */
+.tech-dialog :deep(.el-overlay) {
+  background-color: rgba(0, 0, 0, 0.7) !important;
+}
+
+/* 弹窗主体 */
+.tech-dialog :deep(.el-dialog) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 15px !important;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(0, 255, 255, 0.15),
+    inset 0 0 50px rgba(0, 255, 255, 0.08) !important;
+}
+
+.tech-dialog :deep(.el-dialog__header) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 15px 15px 0 0 !important;
+  padding: 20px 24px !important;
+}
+
+.tech-dialog :deep(.el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+  font-weight: bold !important;
+  font-size: 18px !important;
+}
+
+.tech-dialog :deep(.el-dialog__headerbtn) {
+  top: 20px !important;
+  right: 20px !important;
+}
+
+.tech-dialog :deep(.el-dialog__close) {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 20px !important;
+}
+
+.tech-dialog :deep(.el-dialog__close):hover {
+  color: #00ffff !important;
+}
+
+.tech-dialog :deep(.el-dialog__body) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  padding: 24px !important;
+  max-height: 70vh !important;
+  overflow-y: auto !important;
+}
+
+.tech-dialog :deep(.el-dialog__footer) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-top: 1px solid rgba(0, 255, 255, 0.3) !important;
+  padding: 16px 24px !important;
+  border-radius: 0 0 15px 15px !important;
+}
+
+/* 对话框按钮样式 */
+.tech-dialog :deep(.el-button) {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-dialog :deep(.el-button:hover) {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.tech-dialog :deep(.el-button--primary) {
+  background: rgba(0, 255, 255, 0.3) !important;
+  border-color: #00ffff !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+}
+
+.tech-dialog :deep(.el-button--primary:hover) {
+  background: rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.5) !important;
+}
+
+.config-form {
+  min-height: 200px;
+  background: transparent !important;
+}
+
+.config-form :deep(.el-form) {
+  background: transparent !important;
+}
+
+.config-form :deep(.el-form-item) {
+  background: transparent !important;
+}
+
+.config-form :deep(.el-form-item__label) {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-weight: 500 !important;
+  background: transparent !important;
+}
+
+.config-form :deep(.el-form-item__content) {
+  background: transparent !important;
+}
+
+.config-form :deep(.el-input__wrapper) {
+  background: rgba(35, 45, 65, 0.9) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.config-form :deep(.el-input__wrapper:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.config-form :deep(.el-input__wrapper.is-focus) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 0 0 16px rgba(0, 255, 255, 0.3) !important;
+}
+
+.config-form :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.config-form :deep(.el-textarea__inner) {
+  background: rgba(35, 45, 65, 0.9) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.config-form :deep(.el-textarea__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.5) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
+}
+
+.config-form :deep(.el-textarea__inner:focus) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 0 0 16px rgba(0, 255, 255, 0.3) !important;
+}
+
+.config-form :deep(.el-select) {
+  width: 100%;
+}
+
+.config-form :deep(.el-select .el-input__wrapper) {
+  background: rgba(35, 45, 65, 0.9) !important;
+}
+
+.config-form :deep(.el-input-number) {
+  width: 100%;
+}
+
+.config-form :deep(.el-input-number .el-input__wrapper) {
+  background: rgba(35, 45, 65, 0.9) !important;
+}
+
+/* 下拉选择框弹出层样式 */
+:deep(.el-select-dropdown) {
+  background: rgba(45, 55, 75, 0.95) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+:deep(.el-select-dropdown__item) {
+  color: rgba(255, 255, 255, 0.9) !important;
+  background: transparent !important;
+}
+
+:deep(.el-select-dropdown__item:hover) {
+  background: rgba(0, 255, 255, 0.15) !important;
+}
+
+:deep(.el-select-dropdown__item.selected) {
+  color: #00ffff !important;
+  background: rgba(0, 255, 255, 0.2) !important;
+}
+
+/* Alert组件样式 */
+.config-form :deep(.el-alert) {
+  background: rgba(35, 45, 65, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+.config-form :deep(.el-alert--success) {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+.config-form :deep(.el-alert--info) {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+.config-form :deep(.el-alert--error) {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+}
+
+.config-form :deep(.el-alert__title) {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.form-hint {
+  margin-top: 5px;
+  font-size: 12px;
+  color: rgba(0, 255, 255, 0.6);
+  font-style: italic;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
   gap: 10px;
 }
 
-/* 搜索筛选卡片 */
-.search-filters-card {
-  position: relative;
-  z-index: 10;
-  margin-bottom: 20px !important;
-  padding: 15px !important;
-  background: rgba(0, 255, 255, 0.03) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 8px !important;
+/* 统计卡片包装器 */
+.stats-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.search-filters-header {
+/* 筛选区域样式 */
+.filter-section {
+  background: rgba(0, 255, 255, 0.03);
+  border: 1px solid rgba(0, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 15px;
+}
+
+.filter-header {
   margin-bottom: 15px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
 }
 
 .filter-title {
-  color: #00ffff;
-  font-size: 16px;
+  color: rgba(0, 255, 255, 0.9);
+  font-size: 14px;
   font-weight: 600;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
 }
 
-.search-filters-content {
+.filter-content {
   padding: 0;
 }
 
 .filter-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr auto;
   gap: 15px;
   align-items: end;
-}
-
-.filter-item-wide {
-  grid-column: span 1;
+  margin-bottom: 15px;
 }
 
 .filter-item {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
 }
 
 .filter-item label {
-  color: #00ffff;
-  font-size: 14px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
   font-weight: 500;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
-}
-
-.tech-input :deep(.el-input__wrapper),
-.tech-select :deep(.el-select__wrapper) {
-  background-color: rgba(65, 75, 95, 0.85) !important;
-  border: 1px solid rgba(0, 255, 255, 0.4) !important;
-  border-radius: 6px !important;
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
-}
-
-.tech-input :deep(.el-input__inner),
-.tech-select :deep(.el-select__input) {
-  color: rgba(255, 255, 255, 0.95) !important;
-  background: transparent !important;
 }
 
 .filter-actions {
@@ -804,37 +1397,218 @@ export default {
   gap: 10px;
 }
 
-.mb-20 {
+.alarm-type-section {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(0, 255, 255, 0.15);
+}
+
+.alarm-type-section > label {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.alarm-type-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.alarm-type-checkbox {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* 分隔线样式 */
+.stats-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 255, 255, 0.3) 20%,
+    rgba(0, 255, 255, 0.5) 50%,
+    rgba(0, 255, 255, 0.3) 80%,
+    transparent 100%
+  );
+  margin: 20px 0;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+/* 日期选择器样式 */
+.tech-input :deep(.el-input__wrapper) {
+  background-color: rgba(65, 75, 95, 0.85) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
+}
+
+.tech-input :deep(.el-input__inner) {
+  color: rgba(255, 255, 255, 0.95) !important;
+  background: transparent !important;
+}
+
+/* Checkbox样式 */
+:deep(.el-checkbox) {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
+  background: rgba(0, 255, 255, 0.8) !important;
+  border-color: #00ffff !important;
+}
+
+:deep(.el-checkbox__inner) {
+  background: rgba(20, 30, 50, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+}
+
+:deep(.el-checkbox__inner:hover) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+}
+
+:deep(.el-checkbox__label) {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* 样本统计卡片样式 */
+.stats-content {
+  padding: 10px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
   margin-bottom: 20px;
 }
 
-@media (max-width: 1600px) {
-  .filter-row {
-    grid-template-columns: 2fr 1fr;
-  }
-  
-  .filter-item:nth-child(3) {
-    grid-column: 1;
-  }
-  
-  .filter-actions {
-    grid-column: 2;
-    justify-content: flex-end;
-  }
+.stat-item {
+  text-align: center;
+  padding: 20px 15px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  backdrop-filter: blur(5px);
 }
 
-@media (max-width: 1200px) {
-  .filter-row {
-    grid-template-columns: 1fr 1fr;
-  }
-  
-  .filter-item-wide {
-    grid-column: span 2;
-  }
-  
-  .filter-actions {
-    grid-column: span 2;
-  }
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 255, 255, 0.2);
+}
+
+.stat-yellow {
+  background: linear-gradient(135deg, rgba(254, 243, 199, 0.15) 0%, rgba(252, 211, 77, 0.1) 100%);
+  border-color: rgba(252, 211, 77, 0.3);
+}
+
+.stat-blue {
+  background: linear-gradient(135deg, rgba(219, 234, 254, 0.15) 0%, rgba(96, 165, 250, 0.1) 100%);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.stat-green {
+  background: linear-gradient(135deg, rgba(220, 252, 231, 0.15) 0%, rgba(74, 222, 128, 0.1) 100%);
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.stat-purple {
+  background: linear-gradient(135deg, rgba(224, 231, 255, 0.15) 0%, rgba(129, 140, 248, 0.1) 100%);
+  border-color: rgba(129, 140, 248, 0.3);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+
+.stat-yellow .stat-value {
+  color: #fbbf24;
+}
+
+.stat-blue .stat-value {
+  color: #60a5fa;
+}
+
+.stat-green .stat-value {
+  color: #4ade80;
+}
+
+.stat-purple .stat-value {
+  color: #818cf8;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+/* 按类型统计区域 */
+.type-stats-section {
+  margin-top: 25px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #00ffff;
+  margin-bottom: 15px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.type-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.type-stat-item {
+  text-align: center;
+  padding: 12px 10px;
+  background: rgba(243, 244, 246, 0.05);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 255, 255, 0.15);
+  transition: all 0.3s ease;
+}
+
+.type-stat-item:hover {
+  background: rgba(243, 244, 246, 0.1);
+  border-color: rgba(0, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.type-stat-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.95);
+  margin-bottom: 5px;
+}
+
+.type-stat-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 科技感按钮 */
+.tech-button-sm {
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  background: rgba(0, 255, 255, 0.1) !important;
+  color: #00ffff !important;
+  border-radius: 6px !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
+}
+
+.tech-button-sm:hover {
+  background: rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
+  transform: translateY(-1px) !important;
 }
 
 /* 自定义滚动条样式 - 科技感 */
@@ -867,938 +1641,135 @@ export default {
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
 }
 
-.tech-page-container::-webkit-scrollbar-thumb:active {
-  background: linear-gradient(180deg, 
-    rgba(0, 255, 255, 0.7) 0%, 
-    rgba(0, 200, 255, 0.9) 50%, 
-    rgba(0, 255, 255, 0.7) 100%);
-  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+/* 科技感对话框 - 完整样式 */
+:deep(.el-dialog) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  border-radius: 15px !important;
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.5),
+    0 0 30px rgba(0, 255, 255, 0.15),
+    inset 0 0 50px rgba(0, 255, 255, 0.08) !important;
 }
 
-/* 科技感背景 */
-.tech-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
+:deep(.el-dialog__header) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.3) !important;
+  border-radius: 15px 15px 0 0 !important;
 }
 
-.data-collection {
-  padding: 20px;
-  height: calc(100vh - 120px);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+:deep(.el-dialog__title) {
+  color: #00ffff !important;
+  text-shadow: 0 0 10px rgba(0, 255, 255, 0.5) !important;
+  font-weight: bold !important;
 }
 
-/* 科技感卡片样式 */
-.tech-card {
-  position: relative;
-  z-index: 10;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  margin-bottom: 20px;
+:deep(.el-dialog__body) {
+  background: rgba(45, 55, 75, 0.92) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
-.tech-card :deep(.el-card__body) {
-  padding: 20px;
-  background: transparent !important;
-  border: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  border-left: none !important;
-  border-right: none !important;
+:deep(.el-dialog__close) {
+  color: rgba(255, 255, 255, 0.6) !important;
 }
 
-.tech-card :deep(.el-card__header) {
-  background: transparent !important;
-  border: none !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  padding: 16px 20px;
+:deep(.el-dialog__close:hover) {
+  color: #00ffff !important;
 }
 
-.sample-list-card {
-  position: relative;
-  z-index: 10;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  margin-bottom: 20px;
-}
-
-.sample-list-card :deep(.el-card__body) {
-  padding: 20px;
-  background: transparent !important;
-  border: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  border-left: none !important;
-  border-right: none !important;
-}
-
-.sample-list-card :deep(.el-card__header) {
-  background: transparent !important;
-  border: none !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  padding: 16px 20px;
-}
-
-.content-area {
-  flex: 1;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  background: transparent !important;
-  border: none !important;
-}
-
-.button-group {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-  justify-content: flex-end;
-}
-
-/* 科技感按钮 */
-.tech-button-sm {
+/* 对话框按钮 */
+:deep(.el-dialog .el-button) {
   border: 1px solid rgba(0, 255, 255, 0.4) !important;
   background: rgba(0, 255, 255, 0.1) !important;
   color: #00ffff !important;
-  border-radius: 6px !important;
   transition: all 0.3s ease !important;
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.2) !important;
 }
 
-.tech-button-sm:hover {
+:deep(.el-dialog .el-button:hover) {
   background: rgba(0, 255, 255, 0.2) !important;
   box-shadow: 0 0 20px rgba(0, 255, 255, 0.4) !important;
   transform: translateY(-1px) !important;
 }
 
-.sample-preview {
-  padding: 20px;
-}
-
-.preview-item {
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-}
-
-.preview-item .label {
-  width: 80px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.preview-images {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.sample-image {
-  width: 200px;
-  height: 150px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.upload-progress {
-  padding: 20px;
-  text-align: center;
-}
-
-.progress-text {
-  margin-top: 10px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* Element Plus 组件深色主题样式 */
-:deep(.el-form-item__label) {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-:deep(.el-input__wrapper) {
-  background: rgba(20, 30, 50, 0.85) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  border-radius: 6px !important;
-  box-shadow: 
-    inset 0 0 10px rgba(0, 255, 255, 0.05),
-    0 2px 4px rgba(0, 0, 0, 0.2) !important;
-  backdrop-filter: blur(5px) !important;
-}
-
-:deep(.el-input__wrapper:hover) {
-  background: rgba(25, 35, 55, 0.9) !important;
-  border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 
-    inset 0 0 15px rgba(0, 255, 255, 0.08),
-    0 0 8px rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-input__wrapper.is-focus) {
-  background: rgba(25, 35, 55, 0.95) !important;
+:deep(.el-dialog .el-button--primary) {
+  background: rgba(0, 255, 255, 0.3) !important;
   border-color: #00ffff !important;
-  box-shadow: 
-    inset 0 0 20px rgba(0, 255, 255, 0.1),
-    0 0 0 2px rgba(0, 255, 255, 0.3),
-    0 0 15px rgba(0, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
 }
 
-:deep(.el-input__inner) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  font-weight: 500 !important;
+:deep(.el-dialog .el-button--primary:hover) {
+  background: rgba(0, 255, 255, 0.4) !important;
+  box-shadow: 0 0 25px rgba(0, 255, 255, 0.5) !important;
 }
 
-:deep(.el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.5) !important;
-  font-style: italic !important;
-}
-
-:deep(.el-select .el-input__wrapper) {
-  background: rgba(20, 30, 50, 0.8) !important;
+/* 表单输入框样式 */
+:deep(.el-dialog .el-input__wrapper) {
+  background: rgba(35, 45, 65, 0.9) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.05) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 255, 0.1) !important;
 }
 
-:deep(.el-select .el-input__wrapper:hover) {
-  background: rgba(25, 35, 55, 0.9) !important;
+:deep(.el-dialog .el-input__wrapper:hover) {
   border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 
-    inset 0 0 15px rgba(0, 255, 255, 0.08),
-    0 0 8px rgba(0, 255, 255, 0.2) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.2) !important;
 }
 
-:deep(.el-select-dropdown) {
-  background: rgba(15, 25, 45, 0.98) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  backdrop-filter: blur(15px) !important;
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(0, 255, 255, 0.1) !important;
-  border-radius: 8px !important;
-}
-
-:deep(.el-select-dropdown .el-select-dropdown__item) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 0.85) !important;
-  padding: 8px 16px !important;
-  transition: all 0.3s ease !important;
-  border-radius: 4px !important;
-  margin: 2px 4px !important;
-}
-
-:deep(.el-select-dropdown .el-select-dropdown__item:hover) {
-  background: rgba(0, 255, 255, 0.15) !important;
-  color: #00ffff !important;
-  transform: translateX(2px) !important;
-  box-shadow: 0 2px 8px rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-select-dropdown .el-select-dropdown__item.selected) {
-  background: rgba(0, 255, 255, 0.25) !important;
-  color: #00ffff !important;
-  font-weight: 600 !important;
-  box-shadow: 
-    0 2px 8px rgba(0, 255, 255, 0.3),
-    inset 0 0 10px rgba(0, 255, 255, 0.1) !important;
-}
-
-/* 科技感表格 - 彻底解决白线问题 */
-.tech-table.el-table {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
-  border: 0 !important;
-  border-width: 0 !important;
-  border-style: none !important;
-  border-color: transparent !important;
-}
-
-/* 强制移除表格的所有边框 - 最高优先级 */
-.tech-table.el-table,
-.tech-table.el-table.el-table--border,
-.tech-table.el-table.el-table--striped {
-  border: 0 !important;
-  border-width: 0 !important;
-  border-style: none !important;
-  border-color: transparent !important;
-  border-left: 0 !important;
-  border-right: 0 !important;
-  border-top: 0 !important;
-  border-bottom: 0 !important;
-}
-
-/* 强制移除表格外层的所有可能白色边框 */
-.tech-table,
-.tech-table *,
-.tech-table::before,
-.tech-table::after,
-.tech-table *::before,
-.tech-table *::after {
-  box-sizing: border-box !important;
-}
-
-/* 移除表格外层的div容器边框 */
-.sample-list-card .el-table,
-.sample-list-card > .el-table {
-  margin: 0 !important;
-  border: 0 !important;
-}
-
-/* 表格整体容器 - 彻底移除所有边框 */
-.tech-table :deep(.el-table) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  border: none !important;
-  border-collapse: separate !important;
-}
-
-.tech-table :deep(.el-table::before) {
-  display: none !important;
-}
-
-.tech-table :deep(.el-table::after) {
-  display: none !important;
-}
-
-/* 移除所有可能的白色边框和分隔线 */
-.tech-table :deep(.el-table__inner-wrapper) {
-  border: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-}
-
-.tech-table :deep(.el-table__inner-wrapper::after) {
-  display: none !important;
-}
-
-.tech-table :deep(.el-table__inner-wrapper::before) {
-  display: none !important;
-}
-
-/* 移除表格外层的所有边框元素 */
-.tech-table :deep(.el-table__border-left-patch) {
-  display: none !important;
-}
-
-.tech-table :deep(.el-table__border-right-patch) {
-  display: none !important;
-}
-
-.tech-table :deep(.el-table__border-bottom-patch) {
-  display: none !important;
-}
-
-.tech-table :deep(.el-table__border-top-patch) {
-  display: none !important;
-}
-
-/* 强制移除Element Plus的默认边框样式 */
-.tech-table :deep(.el-table--border) {
-  border: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-}
-
-.tech-table :deep(.el-table--border::before) {
-  display: none !important;
-}
-
-.tech-table :deep(.el-table--border::after) {
-  display: none !important;
-}
-
-/* 表格头部样式 - 参考联动规则管理的头部设计 */
-.tech-table :deep(.el-table__header-wrapper) {
-  background: linear-gradient(135deg, 
-    rgba(20, 35, 60, 1) 0%, 
-    rgba(25, 40, 65, 1) 100%) !important;
-  border-radius: 12px 12px 0 0 !important;
-  border: none !important;
-}
-
-.tech-table :deep(.el-table__header-wrapper .el-table__header) {
-  background: linear-gradient(135deg, 
-    rgba(20, 35, 60, 1) 0%, 
-    rgba(25, 40, 65, 1) 100%) !important;
-  border: none !important;
-}
-
-.tech-table :deep(.el-table__header-wrapper .el-table__header th) {
-  background: linear-gradient(135deg, 
-    rgba(20, 35, 60, 1) 0%, 
-    rgba(25, 40, 65, 1) 100%) !important;
-  color: #00d4ff !important;
-  font-weight: 600 !important;
-  font-size: 14px !important;
-  padding: 16px 12px !important;
-  border: none !important;
-  border-bottom: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.6) !important;
-  letter-spacing: 0.5px !important;
-  position: relative !important;
-}
-
-.tech-table :deep(.el-table__header-wrapper .el-table__header th:last-child) {
-  border-right: none !important;
-}
-
-/* 表格头部发光效果 */
-.tech-table :deep(.el-table__header-wrapper .el-table__header th::after) {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(0, 255, 255, 0.6) 50%, 
-    transparent 100%);
-  opacity: 0.8;
-}
-
-/* 表格主体样式 - 参考联动规则管理的行设计 */
-.tech-table :deep(.el-table__body-wrapper) {
-  background: transparent !important;
-}
-
-.tech-table :deep(.el-table__body) {
-  background: transparent !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr) {
-  background: rgba(25, 35, 55, 0.6) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.08) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  position: relative !important;
-}
-
-/* 交替行颜色 - 创建微妙的斑马纹效果 */
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(even)) {
-  background: rgba(20, 30, 50, 0.7) !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:nth-child(odd)) {
-  background: rgba(25, 35, 55, 0.6) !important;
-}
-
-/* 悬停效果 - 参考联动规则管理的交互效果 */
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover) {
-  background: linear-gradient(90deg, 
-    rgba(0, 255, 255, 0.08) 0%, 
-    rgba(0, 255, 255, 0.12) 50%, 
-    rgba(0, 255, 255, 0.08) 100%) !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 
-    0 4px 20px rgba(0, 255, 255, 0.15),
-    inset 0 1px 0 rgba(0, 255, 255, 0.2) !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body tr:hover td) {
-  background: transparent !important;
-  color: rgba(255, 255, 255, 1) !important;
-}
-
-/* 单元格样式 - 参考联动规则管理的单元格设计 */
-.tech-table :deep(.el-table__body-wrapper .el-table__body td) {
-  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
-  background: transparent !important;
-  padding: 14px 12px !important;
-  font-size: 13px !important;
-  line-height: 1.5 !important;
-  position: relative !important;
-}
-
-.tech-table :deep(.el-table__body-wrapper .el-table__body td:last-child) {
-  border-right: none !important;
-}
-
-/* 彻底移除所有表格边框 - 最终解决方案 */
-.tech-table :deep(.el-table--border) {
-  border: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table--border .el-table__inner-wrapper) {
-  border: none !important;
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table--border .el-table__inner-wrapper::after) {
-  display: none !important;
-  content: none !important;
-}
-
-.tech-table :deep(.el-table--border .el-table__inner-wrapper::before) {
-  display: none !important;
-  content: none !important;
-}
-
-/* 单元格边框控制 */
-.tech-table :deep(.el-table--border td) {
-  border-left: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table--border th) {
-  border: none !important;
-  border-left: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
-  border-top: none !important;
-  border-bottom: none !important;
-  outline: none !important;
-}
-
-/* 移除表格外围的所有可能边框 */
-.tech-table :deep(.el-table__body-wrapper) {
-  border: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table__header-wrapper) {
-  border: none !important;
-  outline: none !important;
-}
-
-.tech-table :deep(.el-table__footer-wrapper) {
-  border: none !important;
-  outline: none !important;
-}
-
-/* 最强力的边框移除 - 覆盖所有可能的边框样式 */
-.tech-table :deep(*) {
-  border-left: none !important;
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
-}
-
-.tech-table :deep(td) {
-  border: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.06) !important;
-}
-
-.tech-table :deep(th) {
-  border: none !important;
-  border-right: 1px solid rgba(0, 255, 255, 0.1) !important;
-}
-
-.tech-table :deep(td:last-child),
-.tech-table :deep(th:last-child) {
-  border-right: none !important;
-}
-
-/* 移除所有边框补丁元素 */
-.tech-table :deep(.el-table__border-left-patch) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-.tech-table :deep(.el-table__border-right-patch) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-.tech-table :deep(.el-table__border-bottom-patch) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-.tech-table :deep(.el-table__border-top-patch) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-/* 移除表格容器本身的边框 */
-.tech-table,
-.tech-table :deep(.el-table),
-.tech-table :deep(.el-table__inner-wrapper) {
-  border: none !important;
-  outline: none !important;
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(0, 255, 255, 0.2) !important;
-}
-
-/* 空状态样式 */
-.tech-table :deep(.el-table__empty-block) {
-  background: transparent !important;
-  border: none !important;
-}
-
-.tech-table :deep(.el-table__empty-text) {
-  color: rgba(255, 255, 255, 0.6) !important;
-  text-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
-}
-
-:deep(.el-checkbox) {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-:deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
-  background: rgba(0, 255, 255, 0.8) !important;
-  border-color: #00ffff !important;
-}
-
-:deep(.el-checkbox__inner) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-}
-
-:deep(.el-checkbox__inner:hover) {
+:deep(.el-dialog .el-input__wrapper.is-focus) {
   border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 0 0 16px rgba(0, 255, 255, 0.3) !important;
 }
 
-:deep(.el-tag) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-:deep(.el-tag--primary) {
-  background: rgba(0, 150, 200, 0.6) !important;
-  border-color: rgba(0, 200, 255, 0.5) !important;
-  color: #ffffff !important;
-}
-
-:deep(.el-tag--success) {
-  background: rgba(103, 194, 58, 0.6) !important;
-  border-color: rgba(103, 194, 58, 0.5) !important;
-  color: #ffffff !important;
-}
-
-:deep(.el-tag--warning) {
-  background: rgba(230, 162, 60, 0.6) !important;
-  border-color: rgba(230, 162, 60, 0.5) !important;
-  color: #ffffff !important;
-}
-
-:deep(.el-tag--danger) {
-  background: rgba(245, 108, 108, 0.6) !important;
-  border-color: rgba(245, 108, 108, 0.5) !important;
-  color: #ffffff !important;
-}
-
-:deep(.el-tag--info) {
-  background: rgba(144, 147, 153, 0.6) !important;
-  border-color: rgba(144, 147, 153, 0.5) !important;
-  color: #ffffff !important;
-}
-
-:deep(.el-pagination) {
-  background: rgba(15, 25, 45, 0.8) !important;
-  padding: 12px 16px !important;
-  border-radius: 8px !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  backdrop-filter: blur(10px) !important;
-  box-shadow: 
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    0 0 10px rgba(0, 255, 255, 0.1) !important;
-}
-
-:deep(.el-pagination .btn-prev),
-:deep(.el-pagination .btn-next),
-:deep(.el-pagination .el-pager li) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-}
-
-:deep(.el-pagination .btn-prev:hover),
-:deep(.el-pagination .btn-next:hover),
-:deep(.el-pagination .el-pager li:hover) {
-  background: rgba(0, 255, 255, 0.1) !important;
-  color: #00ffff !important;
-}
-
-:deep(.el-pagination .el-pager li.is-active) {
-  background: rgba(0, 255, 255, 0.2) !important;
-  color: #00ffff !important;
-  border-color: #00ffff !important;
-}
-
-:deep(.el-pagination .el-pagination__sizes .el-select .el-input__wrapper) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-}
-
-:deep(.el-pagination .el-pagination__jump .el-input__wrapper) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-}
-
-/* 增强型分页样式 */
-.tech-pagination {
-  margin-top: 20px;
-  margin-bottom: 20px;
-}
-
-.pagination-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px;
-  background: rgba(0, 255, 255, 0.03);
-  border: 1px solid rgba(0, 255, 255, 0.2);
-  border-radius: 8px;
-  position: relative;
-  z-index: 1;
-}
-
-.pagination-info {
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 14px;
-}
-
-.pagination-info .total-count {
-  color: #00ffff;
-  font-weight: bold;
-  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-}
-
-.page-size-select {
-  margin: 0 5px;
-  width: 80px;
-}
-
-.page-size-select :deep(.el-select__wrapper) {
-  background-color: rgba(65, 75, 95, 0.85) !important;
-  border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  border-radius: 4px !important;
-  height: 28px !important;
-}
-
-.page-size-select :deep(.el-select__input) {
+:deep(.el-dialog .el-input__inner) {
   color: rgba(255, 255, 255, 0.95) !important;
-  font-size: 12px !important;
 }
 
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.pagination-btn {
+:deep(.el-dialog .el-textarea__inner) {
+  background: rgba(35, 45, 65, 0.9) !important;
   border: 1px solid rgba(0, 255, 255, 0.3) !important;
-  background: rgba(0, 255, 255, 0.1) !important;
-  color: #00ffff !important;
-  border-radius: 4px !important;
-  transition: all 0.3s ease !important;
-  font-size: 12px !important;
-  padding: 6px 12px !important;
+  color: rgba(255, 255, 255, 0.95) !important;
 }
 
-.pagination-btn:hover:not(:disabled) {
-  background: rgba(0, 255, 255, 0.2) !important;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
-  transform: translateY(-1px) !important;
-}
-
-.pagination-btn:disabled {
-  background: rgba(0, 255, 255, 0.05) !important;
-  color: rgba(255, 255, 255, 0.3) !important;
-  border-color: rgba(0, 255, 255, 0.1) !important;
-  cursor: not-allowed !important;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.pagination-pages {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0 10px;
-}
-
-.page-btn {
-  padding: 6px 10px;
-  border: 1px solid rgba(0, 255, 255, 0.3);
-  background: rgba(0, 255, 255, 0.1);
-  color: #00ffff;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-size: 12px;
-  min-width: 32px;
-  text-align: center;
-}
-
-.page-btn:hover:not(:disabled) {
-  background: rgba(0, 255, 255, 0.2);
-  box-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
-}
-
-.page-btn.active {
-  background: rgba(0, 255, 255, 0.3);
-  color: white;
-  border-color: #00ffff;
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
-}
-
-.page-btn:disabled {
-  background: rgba(0, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.3);
-  border-color: rgba(0, 255, 255, 0.1);
-  cursor: not-allowed;
-}
-
-:deep(.el-dialog) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px !important;
-  backdrop-filter: blur(10px) !important;
-}
-
-:deep(.el-dialog__header) {
-  background: rgba(20, 30, 50, 0.8) !important;
-  border-bottom: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 12px 12px 0 0 !important;
-}
-
-:deep(.el-dialog__title) {
-  color: #00ffff !important;
-}
-
-:deep(.el-dialog__body) {
-  background: rgba(15, 25, 45, 0.95) !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-:deep(.el-progress) {
-  background: transparent !important;
-}
-
-:deep(.el-progress-bar) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  border-radius: 10px !important;
-}
-
-:deep(.el-progress-bar__outer) {
-  background: rgba(20, 30, 50, 0.6) !important;
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 10px !important;
-}
-
-:deep(.el-progress-bar__inner) {
-  background: linear-gradient(90deg, #00ffff 0%, rgba(0, 255, 255, 0.8) 100%) !important;
-  border-radius: 10px !important;
-}
-
-:deep(.el-image) {
-  border: 1px solid rgba(0, 255, 255, 0.2) !important;
-  border-radius: 8px !important;
-  overflow: hidden !important;
-}
-
-:deep(.el-image:hover) {
+:deep(.el-dialog .el-textarea__inner:hover) {
   border-color: rgba(0, 255, 255, 0.5) !important;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3) !important;
 }
 
-/* ==================== 超强力移除表格左右白线 ==================== */
-/* 这是最终的强制覆盖，确保表格左右没有任何边框 */
-.tech-table,
-.tech-table :deep(.el-table),
-.tech-table :deep(.el-table__inner-wrapper),
-.tech-table :deep(.el-table__header-wrapper),
-.tech-table :deep(.el-table__body-wrapper),
-.tech-table :deep(.el-table__footer-wrapper) {
-  border-left: 0 !important;
-  border-right: 0 !important;
-  border-left-width: 0 !important;
-  border-right-width: 0 !important;
-  border-left-style: none !important;
-  border-right-style: none !important;
-  border-left-color: transparent !important;
-  border-right-color: transparent !important;
+:deep(.el-dialog .el-textarea__inner:focus) {
+  border-color: rgba(0, 255, 255, 0.6) !important;
+  box-shadow: 0 0 16px rgba(0, 255, 255, 0.3) !important;
 }
 
-/* 移除所有可能的左右边框伪元素 */
-.tech-table::before,
-.tech-table::after,
-.tech-table :deep(.el-table)::before,
-.tech-table :deep(.el-table)::after,
-.tech-table :deep(.el-table__inner-wrapper)::before,
-.tech-table :deep(.el-table__inner-wrapper)::after,
-.tech-table :deep(.el-table__header-wrapper)::before,
-.tech-table :deep(.el-table__header-wrapper)::after,
-.tech-table :deep(.el-table__body-wrapper)::before,
-.tech-table :deep(.el-table__body-wrapper)::after {
-  display: none !important;
-  content: none !important;
-  border: 0 !important;
-  border-left: 0 !important;
-  border-right: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
+:deep(.el-dialog .el-form-item__label) {
+  color: rgba(255, 255, 255, 0.85) !important;
 }
 
-/* 强制表格容器没有左右边框 */
-.tech-table {
-  border-left: 0 !important;
-  border-right: 0 !important;
-  box-sizing: border-box !important;
-  overflow: hidden !important;
+:deep(.el-dialog .el-select) {
+  width: 100%;
 }
 
-/* 确保表格的第一列和最后一列没有额外边框 */
-.tech-table :deep(.el-table th:first-child),
-.tech-table :deep(.el-table td:first-child) {
-  border-left: 0 !important;
+:deep(.el-dialog .el-input-number) {
+  width: 100%;
 }
 
-.tech-table :deep(.el-table th:last-child),
-.tech-table :deep(.el-table td:last-child) {
-  border-right: 0 !important;
+/* Alert样式 */
+:deep(.el-dialog .el-alert) {
+  background: rgba(35, 45, 65, 0.6) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
 }
 
-/* 移除所有 border-patch 元素（Element Plus 添加的边框修复元素） */
-.tech-table :deep([class*="border-left"]),
-.tech-table :deep([class*="border-right"]) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-  border: 0 !important;
+:deep(.el-dialog .el-alert--success) {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
 }
 
-/* 最终的全局覆盖 */
-.tech-table :deep(*[class*="el-table"]) {
-  border-left: 0 !important;
-  border-right: 0 !important;
+:deep(.el-dialog .el-alert--info) {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+:deep(.el-dialog .el-alert__title) {
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 </style>

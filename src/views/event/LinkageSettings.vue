@@ -1133,28 +1133,39 @@ export default {
     const handleSaveRuleItem = async () => {
       if (!ruleItemFormRef.value) return
       
-      ruleItemFormRef.value.validate((valid) => {
+      await ruleItemFormRef.value.validate(async (valid) => {
         if (!valid) return
         
         const ruleItem = {
           name: ruleItemForm.name,
           trigger_condition: {
             alarm_type: ruleItemForm.alarm_type,
-            alarm_level: ruleItemForm.alarm_level
+            alarm_level: ruleItemForm.alarm_level,
+            additional_conditions: []
           },
           linkage_actions: [
             {
               action_type: ruleItemForm.action_type,
               action_params: {},
-              delay_seconds: ruleItemForm.delay_seconds
+              delay_seconds: ruleItemForm.delay_seconds || 0
             }
           ]
         }
         
         if (isEditRuleItem.value) {
-          ruleItems.value[currentRuleItemIndex.value] = ruleItem
+          // 编辑模式
+          if (currentRuleItemIndex.value >= 0) {
+            ruleItems.value[currentRuleItemIndex.value] = ruleItem
+          } else if (currentBoardRuleItemIndex.value >= 0) {
+            boardRuleItems.value[currentBoardRuleItemIndex.value] = ruleItem
+          }
         } else {
-          ruleItems.value.push(ruleItem)
+          // 新增模式
+          if (ruleConfigDialogVisible.value) {
+            ruleItems.value.push(ruleItem)
+          } else if (boardRulesDialogVisible.value) {
+            boardRuleItems.value.push(ruleItem)
+          }
         }
         
         ruleItemDialogVisible.value = false
@@ -1265,7 +1276,16 @@ export default {
     // 编辑板卡规则
     const handleEditBoardRules = (row) => {
       currentBoard.value = row
-      boardRuleItems.value = JSON.parse(JSON.stringify(row.rules || []))
+      // 从后端RuleResponse格式转换为前端编辑格式
+      boardRuleItems.value = (row.rules || []).map(rule => ({
+        name: rule.rule_name,
+        trigger_condition: {
+          alarm_type: rule.trigger_condition?.alarm_type,
+          alarm_level: rule.trigger_condition?.alarm_level,
+          additional_conditions: rule.trigger_condition?.additional_conditions || []
+        },
+        linkage_actions: rule.linkage_actions || []
+      }))
       boardRulesDialogVisible.value = true
     }
     
@@ -1312,9 +1332,24 @@ export default {
     // 保存板卡规则
     const handleSaveBoardRules = async () => {
       try {
+        // 清理数据，只保留后端需要的字段
+        const cleanedRuleItems = boardRuleItems.value.map(item => ({
+          name: item.name || item.rule_name,
+          trigger_condition: {
+            alarm_type: item.trigger_condition?.alarm_type,
+            alarm_level: item.trigger_condition?.alarm_level,
+            additional_conditions: item.trigger_condition?.additional_conditions || []
+          },
+          linkage_actions: (item.linkage_actions || []).map(action => ({
+            action_type: action.action_type,
+            action_params: action.action_params || {},
+            delay_seconds: action.delay_seconds || 0
+          }))
+        }))
+        
         const data = {
           board_id: currentBoard.value.board_id,
-          rule_items: boardRuleItems.value
+          rule_items: cleanedRuleItems
         }
         
         console.log('保存板卡规则请求:', data)

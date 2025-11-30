@@ -88,8 +88,8 @@ const authStore = useAuthStore()
 const loginError = ref('')
 
 const loginForm = reactive({
-  username: '',
-  password: ''
+  username: 'root',
+  password: 'admin123'
 })
 
 const loginRules = computed(() => ({

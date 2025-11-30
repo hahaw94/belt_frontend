@@ -33,10 +33,9 @@
       <div class="search-filters-content">
         <div class="filter-row">
           <div class="filter-item filter-item-wide">
-            <label for="timeRange">时间范围</label>
+            <label>时间范围</label>
             <el-date-picker
               v-model="searchForm.timeRange"
-              id="timeRange"
               type="datetimerange"
               range-separator="至"
               start-placeholder="开始时间"
@@ -47,28 +46,43 @@
             />
           </div>
           <div class="filter-item">
-            <label for="alarmType">告警类型</label>
+            <label>告警类型</label>
             <el-select
               v-model="searchForm.alarmType"
-              id="alarmType"
               placeholder="全部"
               class="tech-select"
               clearable
             >
               <el-option label="全部" value="" />
-              <el-option label="人员入侵" value="person_intrusion" />
-              <el-option label="异常行为" value="behavior" />
-              <el-option label="可疑物品" value="object" />
-              <el-option label="区域入侵" value="intrusion" />
-              <el-option label="烟雾检测" value="smoke_detection" />
-              <el-option label="火灾检测" value="fire_detection" />
+              <el-option 
+                v-for="type in alarmTypes" 
+                :key="type.id" 
+                :label="type.name" 
+                :value="type.id" 
+              />
             </el-select>
           </div>
           <div class="filter-item">
-            <label for="alarmLevel">告警级别</label>
+            <label>板卡</label>
+            <el-select
+              v-model="searchForm.boardId"
+              placeholder="全部"
+              class="tech-select"
+              clearable
+            >
+              <el-option label="全部" value="" />
+              <el-option 
+                v-for="board in boardList" 
+                :key="board" 
+                :label="board" 
+                :value="board" 
+              />
+            </el-select>
+          </div>
+          <div class="filter-item">
+            <label>告警级别</label>
             <el-select
               v-model="searchForm.alarmLevel"
-              id="alarmLevel"
               placeholder="全部"
               class="tech-select"
               clearable
@@ -80,10 +94,9 @@
             </el-select>
           </div>
           <div class="filter-item">
-            <label for="status">状态</label>
+            <label>处理状态</label>
             <el-select
               v-model="searchForm.status"
-              id="status"
               placeholder="全部"
               class="tech-select"
               clearable
@@ -94,8 +107,15 @@
             </el-select>
           </div>
           <div class="filter-actions">
-            <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">搜索</el-button>
-            <el-button :icon="Refresh" class="tech-button-sm" @click="handleReset">重置</el-button>
+            <el-button type="primary" :icon="Search" @click="handleSearch" class="tech-button">
+              搜索
+            </el-button>
+            <el-button :icon="Refresh" @click="handleReset" class="tech-button">
+              重置
+            </el-button>
+            <el-button type="warning" @click="showBatchMarkDialog" class="tech-button">
+              批量标记误报
+            </el-button>
           </div>
         </div>
       </div>
@@ -103,6 +123,21 @@
 
     <!-- 表格和分页 -->
     <div class="content-area tech-card">
+      <!-- 批量操作栏 -->
+      <div v-if="viewMode === 'list' && selectedAlarms.length > 0" class="batch-operation-bar">
+        <div class="batch-info">
+          <strong>📋 已选择: <span class="count">{{ selectedAlarms.length }}</span> 条</strong>
+        </div>
+        <div class="batch-actions">
+          <el-button type="warning" size="small" @click="batchMarkFalsePositive">
+            📦 标记为误报
+          </el-button>
+          <el-button size="small" @click="clearSelection">
+            ✖ 清空选择
+          </el-button>
+        </div>
+      </div>
+
       <!-- 列表视图 -->
       <el-table
         v-if="viewMode === 'list'"
@@ -113,13 +148,26 @@
         class="tech-table"
         style="width: 100%"
         @row-click="handleRowClick"
+        @selection-change="handleSelectionChange"
+        ref="alarmTableRef"
       >
+        <el-table-column type="selection" width="50" align="center" :selectable="checkSelectable" />
         <el-table-column type="index" label="序号" width="80" align="center" header-align="center" />
-        <el-table-column prop="time" label="时间" width="180" header-align="center" />
-        <el-table-column prop="type" label="告警类型" width="120" header-align="center" />
-        <el-table-column prop="level" label="级别" width="80" align="center" header-align="center" />
-        <el-table-column prop="location" label="点位" width="150" header-align="center" />
-        <el-table-column prop="description" label="描述" min-width="200" header-align="center" />
+        <el-table-column prop="alarm_code" label="告警编码" min-width="150" header-align="center">
+          <template #default="{ row }">
+            <code style="font-size: 12px; color: #00ffff;">{{ row.alarm_code || '-' }}</code>
+          </template>
+        </el-table-column>
+        <el-table-column prop="type" label="告警类型" min-width="120" header-align="center" />
+        <el-table-column prop="level" label="级别" width="80" align="center" header-align="center">
+          <template #default="{ row }">
+            <el-tag :type="getLevelType(row.level)" size="small">
+              {{ row.level }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="board_id" label="板卡" min-width="100" header-align="center" />
+        <el-table-column prop="time" label="时间" min-width="140" header-align="center" />
         <el-table-column prop="status" label="状态" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
@@ -127,7 +175,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column fixed="right" label="操作" width="180" align="center" header-align="center">
+        <el-table-column fixed="right" label="操作" width="200" align="center" header-align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" class="tech-button-xs" @click.stop="handleView(row)">
               查看
@@ -146,27 +194,78 @@
             v-for="alarm in displayAlarmList" 
             :key="alarm.id" 
             class="thumbnail-card"
-            @click="handleView(alarm)"
+            :class="getThumbnailCardClass(alarm)"
           >
-            <div class="thumbnail-image">
-              <el-image 
-                :src="alarm.images && alarm.images.length > 0 ? alarm.images[0] : getDefaultImage(alarm.type)"
-                fit="contain"
-                class="alarm-thumbnail"
-              >
-                <template #error>
-                  <div class="image-slot">
-                    <el-icon><Picture /></el-icon>
-                  </div>
-                </template>
-              </el-image>
-              <div class="thumbnail-badge" :class="getLevelClass(alarm.level)">
-                {{ alarm.level }}
+            <!-- 卡片头部 -->
+            <div class="thumbnail-header" :class="getLevelClass(alarm.level)">
+              <div class="thumbnail-header-content">
+                <strong class="thumbnail-type">{{ alarm.type }}</strong>
+                <el-tag :type="getLevelType(alarm.level)" size="small">{{ alarm.level }}</el-tag>
               </div>
             </div>
-            <div class="thumbnail-info">
-              <div class="thumbnail-title">{{ alarm.type }}</div>
-              <div class="thumbnail-desc">{{ alarm.location }} - {{ alarm.time }}</div>
+            
+            <!-- 卡片主体 -->
+            <div class="thumbnail-body" @click="handleView(alarm)">
+              <!-- 缩略图 -->
+              <div class="thumbnail-image">
+                <el-image 
+                  v-if="alarm.images && alarm.images.length > 0"
+                  :src="alarm.images[0]"
+                  fit="cover"
+                  class="alarm-thumbnail"
+                  :preview-src-list="alarm.images"
+                >
+                  <template #error>
+                    <div class="image-slot">
+                      <el-icon><Picture /></el-icon>
+                      <div>暂无截图</div>
+                    </div>
+                  </template>
+                </el-image>
+                <div v-else class="image-slot">
+                  <el-icon><Picture /></el-icon>
+                  <div>暂无截图</div>
+                </div>
+              </div>
+              
+              <!-- 信息区 -->
+              <div class="thumbnail-info">
+                <div class="info-item">
+                  <span class="info-label">编码:</span>
+                  <code class="info-value">{{ alarm.alarm_code || '-' }}</code>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">时间:</span>
+                  <span class="info-value">{{ alarm.time }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">板卡:</span>
+                  <span class="info-value">{{ alarm.board_id }}</span>
+                </div>
+                <div class="info-item" v-if="alarm.cameraName">
+                  <span class="info-label">摄像头:</span>
+                  <span class="info-value">{{ alarm.cameraName }}</span>
+                </div>
+                <div class="info-item">
+                  <span class="info-label">状态:</span>
+                  <el-tag :type="getStatusType(alarm.status)" size="small">{{ alarm.status }}</el-tag>
+                </div>
+              </div>
+              
+              <!-- 操作按钮 -->
+              <div class="thumbnail-actions">
+                <el-button type="primary" size="small" @click.stop="handleView(alarm)">
+                  查看详情
+                </el-button>
+                <el-button 
+                  v-if="alarm.statusRaw === 0"
+                  type="success" 
+                  size="small" 
+                  @click.stop="handleProcess(alarm)"
+                >
+                  处理
+                </el-button>
+              </div>
             </div>
           </div>
         </div>
@@ -270,9 +369,13 @@
                 </el-tag>
               </span>
             </div>
-            <div class="detail-item">
-              <span class="label">点位位置：</span>
-              <span class="value">{{ selectedAlarm.location }}</span>
+            <div class="detail-item" v-if="selectedAlarm.cameraName">
+              <span class="label">摄像头：</span>
+              <span class="value">{{ selectedAlarm.cameraName }}</span>
+            </div>
+            <div class="detail-item" v-if="selectedAlarm.boardId">
+              <span class="label">板卡ID：</span>
+              <span class="value">{{ selectedAlarm.boardId }}</span>
             </div>
             <div class="detail-item">
               <span class="label">状态：</span>
@@ -327,6 +430,163 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 批量标记误报弹窗 -->
+    <el-dialog
+      v-model="batchMarkDialogVisible"
+      title="📦 批量标记误报"
+      width="650px"
+      class="tech-dialog"
+      :close-on-click-modal="false"
+    >
+      <div class="batch-mark-content">
+        <!-- 筛选条件摘要 -->
+        <div class="filter-summary">
+          <h4>📋 筛选条件</h4>
+          <div class="summary-content">
+            <div v-if="searchForm.timeRange && searchForm.timeRange.length === 2">
+              <strong>时间范围:</strong> {{ searchForm.timeRange[0] }} ~ {{ searchForm.timeRange[1] }}
+            </div>
+            <div v-if="searchForm.alarmType">
+              <strong>告警类型:</strong> {{ getAlarmTypeName(searchForm.alarmType) }}
+            </div>
+            <div v-if="searchForm.boardId">
+              <strong>板卡:</strong> {{ searchForm.boardId }}
+            </div>
+            <div v-if="searchForm.alarmLevel">
+              <strong>告警级别:</strong> {{ alarmLevelMap[searchForm.alarmLevel] }}
+            </div>
+            <div v-if="searchForm.status !== ''">
+              <strong>处理状态:</strong> {{ searchForm.status === 0 ? '未处理' : '已处理' }}
+            </div>
+            <div v-if="!hasFilters">
+              <span style="color: #6b7280;">未设置筛选条件（将标记所有未处理告警）</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 预览结果 -->
+        <div class="batch-preview">
+          <div class="preview-item">
+            <div class="preview-count">{{ batchMarkPreview.total }}</div>
+            <div class="preview-label">符合条件</div>
+          </div>
+          <div class="preview-item danger">
+            <div class="preview-count">{{ batchMarkPreview.unhandled }}</div>
+            <div class="preview-label">将被标记</div>
+          </div>
+          <div class="preview-item gray">
+            <div class="preview-count">{{ batchMarkPreview.handled }}</div>
+            <div class="preview-label">已处理(跳过)</div>
+          </div>
+        </div>
+
+        <!-- 待标记告警列表 -->
+        <div v-if="batchMarkPreview.alarmList.length > 0" class="batch-alarm-list-container">
+          <div class="list-header">
+            <h4>📋 待标记告警列表 <span class="list-count">(最多显示100条)</span></h4>
+            <div class="list-actions">
+              <el-checkbox v-model="selectAllPreview" @change="toggleSelectAllPreview">全选</el-checkbox>
+              <span class="selected-count">已选: <strong>{{ selectedPreviewCount }}</strong> 条</span>
+            </div>
+          </div>
+          <div class="alarm-list-table">
+            <table>
+              <thead>
+                <tr>
+                  <th width="50">
+                    <el-checkbox v-model="selectAllPreview" @change="toggleSelectAllPreview" />
+                  </th>
+                  <th width="80">ID</th>
+                  <th width="180">告警编码</th>
+                  <th width="120">类型</th>
+                  <th width="80">级别</th>
+                  <th width="120">板卡</th>
+                  <th>时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="alarm in batchMarkPreview.alarmList" :key="alarm.id">
+                  <td>
+                    <el-checkbox v-model="alarm.selected" @change="updatePreviewSelection" />
+                  </td>
+                  <td>{{ alarm.id }}</td>
+                  <td><code style="font-size: 12px; color: #00ffff;">{{ alarm.alarm_code }}</code></td>
+                  <td>{{ alarm.alarm_type_name }}</td>
+                  <td>
+                    <el-tag :type="alarm.alarm_level === 3 ? 'danger' : alarm.alarm_level === 2 ? 'warning' : 'info'" size="small">
+                      {{ alarmLevelMap[alarm.alarm_level] }}
+                    </el-tag>
+                  </td>
+                  <td>{{ alarm.board_id || '-' }}</td>
+                  <td>{{ alarm.alarm_time }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 处理说明 -->
+        <el-form :model="batchMarkForm" ref="batchMarkFormRef">
+          <el-form-item label="处理说明（必填）" required>
+            <el-input
+              v-model="batchMarkForm.remark"
+              type="textarea"
+              :rows="3"
+              placeholder="请说明批量标记的原因，如：算法误报率高、光线问题导致误报等..."
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="batchMarkDialogVisible = false">取消</el-button>
+          <el-button type="warning" @click="confirmBatchMark" :loading="batchMarkLoading">
+            ⚠️ 确认批量标记
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 处理告警对话框 -->
+    <el-dialog
+      v-model="processDialogVisible"
+      title="处理告警"
+      width="500px"
+      class="tech-dialog"
+      :close-on-click-modal="false"
+    >
+      <el-form :model="processForm" label-width="100px">
+        <el-form-item label="处理结果" required>
+          <el-radio-group v-model="processForm.result">
+            <el-radio label="confirmed">
+              <span style="margin-left: 5px;">✅ 确认告警 - 需要人工处理，上传报修信息</span>
+            </el-radio>
+            <el-radio label="false_positive">
+              <span style="margin-left: 5px;">❌ 误报 - 将作为负样本分类封禁训练使用</span>
+            </el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="处理备注">
+          <el-input
+            v-model="processForm.remark"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入处理备注..."
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="processDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmProcess">
+            确认处理
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -343,6 +603,7 @@ export default {
     const searchForm = reactive({
       timeRange: [],
       alarmType: '',
+      boardId: '', // 板卡ID
       alarmLevel: '', // 告警级别
       status: '', // 处理状态
       location: ''
@@ -363,99 +624,38 @@ export default {
     // 视图模式：list 或 thumbnail（默认为缩略图）
     const viewMode = ref('thumbnail')
 
-    // 假数据用于缩略图展示
-    const mockAlarmData = [
-      {
-        id: 'mock-1',
-        time: '2024-11-16 14:30:25',
-        type: '人员入侵',
-        level: '高',
-        location: '东门入口',
-        description: '东门入口检测到人员入侵',
-        status: '未处理',
-        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=人员入侵']
-      },
-      {
-        id: 'mock-2',
-        time: '2024-11-16 14:25:18',
-        type: '异常行为',
-        level: '中',
-        location: '停车场A区',
-        description: '停车场A区检测到异常行为',
-        status: '未处理',
-        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=异常行为']
-      },
-      {
-        id: 'mock-3',
-        time: '2024-11-16 14:20:42',
-        type: '可疑物品',
-        level: '高',
-        location: '大厅中央',
-        description: '大厅中央检测到可疑物品',
-        status: '已处理',
-        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=可疑物品']
-      },
-      {
-        id: 'mock-4',
-        time: '2024-11-16 14:15:33',
-        type: '区域入侵',
-        level: '中',
-        location: '仓库3号',
-        description: '仓库3号检测到区域入侵',
-        status: '未处理',
-        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=区域入侵']
-      },
-      {
-        id: 'mock-5',
-        time: '2024-11-16 14:10:15',
-        type: '烟雾检测',
-        level: '高',
-        location: '办公室201',
-        description: '办公室201检测到烟雾检测',
-        status: '已确认',
-        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=烟雾检测']
-      },
-      {
-        id: 'mock-6',
-        time: '2024-11-16 14:05:08',
-        type: '火灾检测',
-        level: '高',
-        location: '配电房',
-        description: '配电房检测到火灾检测',
-        status: '已处理',
-        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=火灾检测']
-      },
-      {
-        id: 'mock-7',
-        time: '2024-11-16 14:00:52',
-        type: '人员入侵',
-        level: '低',
-        location: '后门通道',
-        description: '后门通道检测到人员入侵',
-        status: '误报',
-        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=人员入侵']
-      },
-      {
-        id: 'mock-8',
-        time: '2024-11-16 13:55:30',
-        type: '异常行为',
-        level: '中',
-        location: '电梯间B',
-        description: '电梯间B检测到异常行为',
-        status: '未处理',
-        images: ['https://via.placeholder.com/300x200/1a2a4a/00ffff?text=异常行为']
-      }
-    ]
+    // 表格引用
+    const alarmTableRef = ref(null)
+
+    // 选中的告警
+    const selectedAlarms = ref([])
+
+    // 板卡列表
+    const boardList = ref([])
+
+    // 批量标记误报相关
+    const batchMarkDialogVisible = ref(false)
+    const batchMarkLoading = ref(false)
+    const batchMarkPreview = reactive({
+      total: 0,
+      unhandled: 0,
+      handled: 0,
+      alarmList: []  // 待标记的告警列表
+    })
+    const batchMarkForm = reactive({
+      remark: ''
+    })
+    const batchMarkFormRef = ref(null)
+    const selectAllPreview = ref(false)
+    
+    // 选中的预览告警数量
+    const selectedPreviewCount = computed(() => {
+      return batchMarkPreview.alarmList.filter(a => a.selected).length
+    })
 
     // 告警类型映射
-    const alarmTypeMap = {
-      'person_intrusion': '人员入侵',
-      'behavior': '异常行为',
-      'object': '可疑物品',
-      'intrusion': '区域入侵',
-      'smoke_detection': '烟雾检测',
-      'fire_detection': '火灾检测'
-    }
+    // 告警类型列表（从后端加载）
+    const alarmTypes = ref([])
 
     // 告警级别映射
     const alarmLevelMap = {
@@ -490,11 +690,8 @@ export default {
     const dialogVisible = ref(false)
     const selectedAlarm = ref(null)
 
-    // 计算显示的告警列表（缩略图模式下如果没有真实数据则使用假数据）
+    // 计算显示的告警列表
     const displayAlarmList = computed(() => {
-      if (viewMode.value === 'thumbnail' && alarmList.value.length === 0) {
-        return mockAlarmData
-      }
       return alarmList.value
     })
 
@@ -533,15 +730,24 @@ export default {
           page_size: pageSize.value
         }
 
-        // 时间范围（日期选择器已设置value-format，直接使用）
+        // 时间范围（需要转换为ISO8601格式）
         if (searchForm.timeRange && searchForm.timeRange.length === 2) {
-          params.start_time = searchForm.timeRange[0]
-          params.end_time = searchForm.timeRange[1]
+          // 将 "YYYY-MM-DD HH:mm:ss" 格式转换为 ISO8601 格式
+          // 替换空格为T，然后转换为Date对象再调用toISOString()
+          const startDateTime = new Date(searchForm.timeRange[0].replace(' ', 'T'))
+          const endDateTime = new Date(searchForm.timeRange[1].replace(' ', 'T'))
+          params.start_time = startDateTime.toISOString()
+          params.end_time = endDateTime.toISOString()
         }
 
         // 告警类型（后端使用复数形式 alarm_types）
         if (searchForm.alarmType) {
           params.alarm_types = searchForm.alarmType
+        }
+
+        // 板卡（后端使用复数形式 board_ids）
+        if (searchForm.boardId) {
+          params.board_ids = searchForm.boardId
         }
 
         // 告警级别（后端使用复数形式 alarm_levels）
@@ -554,22 +760,29 @@ export default {
           params.status = searchForm.status
         }
 
+        console.log('请求参数:', params)
         const response = await eventApi.getAlarmList(params)
         console.log('API响应:', response)
         
-        // 后端响应格式: { data: [...], total: 100, page: 1, page_size: 20 }
-        if (response) {
-          const alarmData = response.data || []
+        // 后端响应格式: { code: 200, data: {data: [...], total: 2, page: 1, page_size: 10} }
+        // 经过 api/index.js 处理后，结构为: { code: 200, data: {...}, total: 2 }
+        if (response && response.data) {
+          // response.data 是对象 {data: [...], total: 2, ...}
+          const alarmData = response.data.data || []
           
           // 确保 alarmData 是数组
           if (Array.isArray(alarmData)) {
             alarmList.value = alarmData.map(alarm => ({
               id: alarm.id,
+              alarm_code: alarm.alarm_code,
               time: alarm.alarm_time,
-              type: alarmTypeMap[alarm.alarm_type] || alarm.alarm_type,
+              // 直接使用后端返回的alarm_type_name
+              type: alarm.alarm_type_name || '未知类型',
               typeRaw: alarm.alarm_type,
-              level: alarmLevelMap[alarm.alarm_level] || alarm.alarm_level,
-              location: alarm.location || alarm.camera_name || '-',
+              level: alarmLevelMap[alarm.alarm_level] || '未知',
+              levelRaw: alarm.alarm_level,
+              board_id: alarm.board_id || '-',
+              // location字段已删除，后端不返回此字段
               description: getAlarmDescription(alarm),
               status: getAlarmStatus(alarm),
               statusRaw: alarm.status,
@@ -577,18 +790,28 @@ export default {
               isFalsePositive: alarm.is_false_positive,
               snapshotPath: alarm.snapshot_path,
               videoPath: alarm.video_path,
-              alarmCode: alarm.alarm_code,
               handleRemark: alarm.handle_remark,
               handleTime: alarm.handle_time,
-              images: alarm.snapshot_url ? [alarm.snapshot_url] : 
-                       (alarm.snapshot_path ? [getImageUrl(alarm.snapshot_path)] : [])
+              cameraName: alarm.camera_name,
+              // 直接使用后端返回的snapshot_url
+              images: alarm.snapshot_url ? [alarm.snapshot_url] : []
             }))
+            
+            // 提取板卡列表（去重）
+            const boards = new Set()
+            alarmData.forEach(alarm => {
+              if (alarm.board_id && alarm.board_id !== '-') {
+                boards.add(alarm.board_id)
+              }
+            })
+            boardList.value = Array.from(boards).sort()
           } else {
             console.error('API返回的data不是数组:', alarmData)
             alarmList.value = []
           }
           
-          total.value = response.total || 0
+          console.log('解析后的告警数据条数:', alarmData.length)
+          total.value = response.data.total || 0
         } else {
           alarmList.value = []
           total.value = 0
@@ -614,6 +837,7 @@ export default {
     const handleReset = () => {
       searchForm.timeRange = []
       searchForm.alarmType = ''
+      searchForm.boardId = ''
       searchForm.alarmLevel = ''
       searchForm.status = ''
       searchForm.location = ''
@@ -621,21 +845,313 @@ export default {
       loadAlarmList()
     }
 
+    // 判断是否有筛选条件
+    const hasFilters = computed(() => {
+      return !!(searchForm.timeRange && searchForm.timeRange.length === 2) ||
+             !!searchForm.alarmType ||
+             !!searchForm.boardId ||
+             !!searchForm.alarmLevel ||
+             searchForm.status !== ''
+    })
+
+    // 判断行是否可选（只有未处理的可选）
+    const checkSelectable = (row) => {
+      return row.statusRaw === 0 && !row.isFalsePositive
+    }
+
+    // 处理选择变化
+    const handleSelectionChange = (selection) => {
+      selectedAlarms.value = selection
+    }
+
+    // 清空选择
+    const clearSelection = () => {
+      alarmTableRef.value?.clearSelection()
+      selectedAlarms.value = []
+    }
+
+    // 切换预览列表全选
+    const toggleSelectAllPreview = () => {
+      batchMarkPreview.alarmList.forEach(alarm => {
+        alarm.selected = selectAllPreview.value
+      })
+    }
+
+    // 更新预览选择状态
+    const updatePreviewSelection = () => {
+      // 检查是否全部选中
+      const allSelected = batchMarkPreview.alarmList.length > 0 && 
+                          batchMarkPreview.alarmList.every(a => a.selected)
+      selectAllPreview.value = allSelected
+    }
+
+    // 通过选中的告警批量标记误报
+    const batchMarkFalsePositive = async () => {
+      if (selectedAlarms.value.length === 0) {
+        ElMessage.warning('请先选择要标记的告警')
+        return
+      }
+
+      try {
+        await ElMessageBox.confirm(
+          `确定将选中的 ${selectedAlarms.value.length} 条告警标记为误报吗？`,
+          '批量标记确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        )
+
+        batchMarkLoading.value = true
+        const ids = selectedAlarms.value.map(alarm => alarm.id)
+        
+        // 后端可能没有批量API，使用循环调用单个API
+        let successCount = 0
+        let failCount = 0
+        
+        for (const id of ids) {
+          try {
+            await eventApi.handleAlarm(id, {
+              result: 'false_positive',
+              remark: '批量标记为误报'
+            })
+            successCount++
+          } catch (error) {
+            console.error(`标记告警${id}失败:`, error)
+            failCount++
+          }
+        }
+
+        if (successCount > 0) {
+          ElMessage.success(`批量标记成功：${successCount}条, 失败：${failCount}条`)
+        } else {
+          ElMessage.error('批量标记全部失败')
+        }
+        
+        clearSelection()
+        loadAlarmList()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('批量标记失败：', error)
+          ElMessage.error('批量标记失败：' + (error.message || '未知错误'))
+        }
+      } finally {
+        batchMarkLoading.value = false
+      }
+    }
+
+    // 打开批量标记对话框（通过筛选条件）
+    const showBatchMarkDialog = async () => {
+      batchMarkDialogVisible.value = true
+      batchMarkForm.remark = ''
+      
+      // 获取预览数据
+      try {
+        const params = {
+          page: 1,
+          page_size: 100  // 后端有最大值限制，不能设置太大
+        }
+
+        // 时间范围处理
+        if (searchForm.timeRange && searchForm.timeRange.length === 2) {
+          try {
+            // 确保时间字符串有效
+            if (searchForm.timeRange[0] && searchForm.timeRange[1]) {
+              const startDateTime = new Date(searchForm.timeRange[0].replace(' ', 'T'))
+              const endDateTime = new Date(searchForm.timeRange[1].replace(' ', 'T'))
+              
+              // 验证日期是否有效
+              if (!isNaN(startDateTime.getTime()) && !isNaN(endDateTime.getTime())) {
+                params.start_time = startDateTime.toISOString()
+                params.end_time = endDateTime.toISOString()
+              } else {
+                console.warn('时间范围无效，跳过时间筛选')
+              }
+            }
+          } catch (dateError) {
+            console.error('时间转换失败:', dateError)
+          }
+        }
+        
+        // 告警类型
+        if (searchForm.alarmType) {
+          params.alarm_types = searchForm.alarmType
+        }
+        
+        // 板卡
+        if (searchForm.boardId) {
+          params.board_ids = searchForm.boardId
+        }
+        
+        // 告警级别
+        if (searchForm.alarmLevel) {
+          params.alarm_levels = searchForm.alarmLevel
+        }
+        
+        // 状态
+        if (searchForm.status !== '') {
+          params.status = searchForm.status
+        }
+
+        console.log('=== 批量标记预览 ===')
+        console.log('筛选条件:', { 
+          timeRange: searchForm.timeRange,
+          alarmType: searchForm.alarmType, 
+          boardId: searchForm.boardId,
+          alarmLevel: searchForm.alarmLevel,
+          status: searchForm.status
+        })
+        console.log('请求参数:', params)
+        
+        const response = await eventApi.getAlarmList(params)
+        console.log('API响应:', response)
+        
+        const alarmData = response.data?.data || []
+        const totalCount = response.data?.total || alarmData.length
+        console.log('告警数据条数:', alarmData.length, '总数:', totalCount)
+        
+        // 筛选出未处理的告警
+        const unhandledAlarms = alarmData.filter(a => a.status === 0 && !a.is_false_positive)
+        
+        batchMarkPreview.total = alarmData.length
+        batchMarkPreview.unhandled = unhandledAlarms.length
+        batchMarkPreview.handled = alarmData.filter(a => a.status !== 0 || a.is_false_positive).length
+        
+        // 保存告警列表，添加selected属性
+        batchMarkPreview.alarmList = unhandledAlarms.map(alarm => ({
+          ...alarm,
+          selected: false
+        }))
+        
+        // 重置全选状态
+        selectAllPreview.value = false
+        
+        console.log('预览统计:', {
+          total: batchMarkPreview.total,
+          unhandled: batchMarkPreview.unhandled,
+          handled: batchMarkPreview.handled
+        })
+        
+        // 如果实际总数超过100，给出提示
+        if (totalCount > 100) {
+          ElMessage.warning(`符合条件的告警共${totalCount}条，预览仅显示前100条`)
+        }
+      } catch (error) {
+        console.error('=== 获取预览数据失败 ===')
+        console.error('错误详情:', error)
+        console.error('错误响应:', error.response?.data)
+        
+        let errorMsg = '获取预览数据失败'
+        if (error.response?.data?.message) {
+          errorMsg += ': ' + error.response.data.message
+        } else if (error.message) {
+          errorMsg += ': ' + error.message
+        }
+        
+        ElMessage.error(errorMsg)
+        
+        // 重置预览数据
+        batchMarkPreview.total = 0
+        batchMarkPreview.unhandled = 0
+        batchMarkPreview.handled = 0
+      }
+    }
+
+    // 确认批量标记
+    const confirmBatchMark = async () => {
+      if (!batchMarkForm.remark.trim()) {
+        ElMessage.warning('请填写处理说明')
+        return
+      }
+
+      // 获取要标记的告警列表（优先使用选中的，否则使用全部）
+      const selectedAlarms = batchMarkPreview.alarmList.filter(a => a.selected)
+      const alarmsToMark = selectedAlarms.length > 0 ? selectedAlarms : batchMarkPreview.alarmList
+      
+      if (alarmsToMark.length === 0) {
+        ElMessage.warning('没有可标记的告警')
+        return
+      }
+
+      try {
+        const confirmMsg = selectedAlarms.length > 0
+          ? `确定将选中的 ${alarmsToMark.length} 条告警标记为误报吗？`
+          : `确定将全部 ${alarmsToMark.length} 条未处理告警标记为误报吗？`
+          
+        await ElMessageBox.confirm(
+          confirmMsg,
+          '批量标记确认',
+          {
+            confirmButtonText: '确定',
+            cancelButtonText: '取消',
+            type: 'warning'
+          }
+        )
+
+        batchMarkLoading.value = true
+
+        // 循环调用单个API进行批量标记
+        let successCount = 0
+        let failCount = 0
+        
+        for (const alarm of alarmsToMark) {
+          try {
+            await eventApi.handleAlarm(alarm.id, {
+              result: 'false_positive',
+              remark: batchMarkForm.remark
+            })
+            successCount++
+          } catch (error) {
+            console.error(`标记告警${alarm.id}失败:`, error)
+            failCount++
+          }
+        }
+
+        if (successCount > 0) {
+          ElMessage.success(`批量标记成功：${successCount}条, 失败：${failCount}条`)
+        } else {
+          ElMessage.error('批量标记全部失败')
+        }
+        
+        batchMarkDialogVisible.value = false
+        loadAlarmList()
+      } catch (error) {
+        if (error !== 'cancel') {
+          console.error('批量标记失败：', error)
+          ElMessage.error('批量标记失败：' + (error.message || '未知错误'))
+        }
+      } finally {
+        batchMarkLoading.value = false
+      }
+    }
+
+    // 获取告警类型名称
+    const getAlarmTypeName = (typeId) => {
+      const type = alarmTypes.value.find(t => t.id === typeId)
+      return type ? type.name : typeId
+    }
+
     // 获取告警描述
     const getAlarmDescription = (alarm) => {
-      const typeText = alarmTypeMap[alarm.alarm_type] || alarm.alarm_type
-      const location = alarm.location || alarm.camera_name || '未知位置'
-      return `${location}检测到${typeText}`
+      // 直接使用后端返回的alarm_type_name
+      const typeText = alarm.alarm_type_name || '未知类型'
+      const cameraInfo = alarm.camera_name ? `${alarm.camera_name} - ` : ''
+      const boardInfo = alarm.board_id ? `板卡${alarm.board_id} - ` : ''
+      return `${boardInfo}${cameraInfo}检测到${typeText}`
     }
 
     // 获取告警状态
     const getAlarmStatus = (alarm) => {
+      // 优先判断是否误报
+      if (alarm.is_false_positive) {
+        return '误报'
+      }
+      // 判断处理状态
       if (alarm.status === 0) {
         return '未处理'
       } else if (alarm.status === 1) {
-        if (alarm.is_false_positive || alarm.handle_result === 'false_positive') {
-          return '误报'
-        } else if (alarm.handle_result === 'confirmed') {
+        if (alarm.handle_result === 'confirmed') {
           return '已确认'
         } else {
           return '已处理'
@@ -655,32 +1171,20 @@ export default {
       return typeMap[status] || 'info'
     }
 
-    // 获取图片URL
-    const getImageUrl = (path) => {
-      if (!path) return ''
-      // 如果是完整URL，直接返回
-      if (path.startsWith('http://') || path.startsWith('https://')) {
-        return path
+    // 获取级别标签类型
+    const getLevelType = (level) => {
+      const typeMap = {
+        '低': 'info',
+        '中': 'warning',
+        '高': 'danger'
       }
-      // 否则拼接后端地址（与api/index.js保持一致）
-      const baseURL = process.env.NODE_ENV === 'development' 
-        ? '' // 开发环境使用代理
-        : (process.env.VUE_APP_API_BASE_URL || window.location.origin)
-      return `${baseURL}${path}`
+      return typeMap[level] || 'info'
     }
 
     // 获取默认图片（根据告警类型）
-    const getDefaultImage = (type) => {
-      // 这里使用占位图片，实际项目中可以根据类型返回不同的默认图
-      const images = {
-        '人员入侵': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=人员入侵',
-        '异常行为': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=异常行为',
-        '可疑物品': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=可疑物品',
-        '区域入侵': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=区域入侵',
-        '烟雾检测': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=烟雾检测',
-        '火灾检测': 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=火灾检测'
-      }
-      return images[type] || 'https://via.placeholder.com/300x200/1a2a4a/00ffff?text=告警图片'
+    const getDefaultImage = () => {
+      // 返回空字符串，由el-image的error插槽处理
+      return ''
     }
 
     // 获取级别样式类
@@ -691,6 +1195,26 @@ export default {
         '高': 'level-high'
       }
       return classMap[level] || 'level-low'
+    }
+
+    // 获取缩略图卡片样式类
+    const getThumbnailCardClass = (alarm) => {
+      const classes = []
+      // 根据告警级别添加边框颜色类
+      if (alarm.level === '高') {
+        classes.push('border-danger')
+      } else if (alarm.level === '中') {
+        classes.push('border-warning')
+      } else {
+        classes.push('border-info')
+      }
+      // 根据状态添加背景色类
+      if (alarm.isFalsePositive) {
+        classes.push('bg-false-positive')
+      } else if (alarm.statusRaw === 1) {
+        classes.push('bg-handled')
+      }
+      return classes.join(' ')
     }
 
     // 查看告警详情
@@ -706,17 +1230,19 @@ export default {
         if (alarm && alarm.id) {
           selectedAlarm.value = {
             id: alarm.id,
+            alarmCode: alarm.alarm_code,
             time: alarm.alarm_time,
-            type: alarmTypeMap[alarm.alarm_type] || alarm.alarm_type,
-            location: alarm.location || alarm.camera_name || '-',
+            // 直接使用后端返回的alarm_type_name
+            type: alarm.alarm_type_name || '未知类型',
             description: getAlarmDescription(alarm),
             status: getAlarmStatus(alarm),
-            alarmCode: alarm.alarm_code,
-            level: alarmLevelMap[alarm.alarm_level] || alarm.alarm_level,
+            level: alarmLevelMap[alarm.alarm_level] || '未知',
             handleRemark: alarm.handle_remark,
             handleTime: alarm.handle_time,
-            images: alarm.snapshot_url ? [alarm.snapshot_url] : 
-                   (alarm.snapshot_path ? [getImageUrl(alarm.snapshot_path)] : [])
+            boardId: alarm.board_id,
+            cameraName: alarm.camera_name,
+            // 直接使用后端返回的snapshot_url
+            images: alarm.snapshot_url ? [alarm.snapshot_url] : []
           }
           dialogVisible.value = true
         } else {
@@ -728,51 +1254,32 @@ export default {
       }
     }
 
+    // 处理表单数据
+    const processForm = reactive({
+      result: 'confirmed',
+      remark: ''
+    })
+    const processDialogVisible = ref(false)
+    const currentProcessAlarm = ref(null)
+
     // 处理告警
     const handleProcess = async (row) => {
       console.log('处理告警：', row)
+      currentProcessAlarm.value = row
+      processForm.result = 'confirmed'
+      processForm.remark = ''
+      processDialogVisible.value = true
+    }
+
+    // 确认处理
+    const confirmProcess = async () => {
+      if (!currentProcessAlarm.value) return
+      
       try {
-        const { value } = await ElMessageBox.prompt(
-          '请选择处理结果并填写备注',
-          '处理告警',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            inputPlaceholder: '请输入处理备注（可选）',
-            beforeClose: (action, instance, done) => {
-              if (action === 'confirm') {
-                // 可以在这里添加验证逻辑
-                done()
-              } else {
-                done()
-              }
-            }
-          }
-        )
-
-        // 弹出选择处理结果的对话框
-        const { value: result } = await ElMessageBox.confirm(
-          '请选择处理结果',
-          '确认',
-          {
-            confirmButtonText: '已确认',
-            cancelButtonText: '误报',
-            distinguishCancelAndClose: true,
-            type: 'warning'
-          }
-        ).then(() => {
-          return { value: 'confirmed' }
-        }).catch((action) => {
-          if (action === 'cancel') {
-            return { value: 'false_positive' }
-          }
-          throw new Error('取消操作')
-        })
-
         // 调用API处理告警
-        await eventApi.handleAlarm(row.id, {
-          result: result,
-          remark: value || ''
+        await eventApi.handleAlarm(currentProcessAlarm.value.id, {
+          result: processForm.result,
+          remark: processForm.remark || ''
         })
 
         ElMessage({
@@ -780,59 +1287,25 @@ export default {
           message: '告警处理成功'
         })
 
+        processDialogVisible.value = false
         // 重新加载列表
         loadAlarmList()
       } catch (error) {
-        if (error !== 'cancel' && error.message !== '取消操作') {
-          console.error('处理告警失败：', error)
-          ElMessage.error('处理告警失败：' + (error.message || '未知错误'))
-        }
+        console.error('处理告警失败：', error)
+        ElMessage.error('处理告警失败：' + (error.message || '未知错误'))
       }
     }
 
     // 确认处理告警（从详情对话框）
     const handleConfirm = async () => {
       if (!selectedAlarm.value) return
-
-      try {
-        const { value: result } = await ElMessageBox.confirm(
-          '请选择处理结果',
-          '确认',
-          {
-            confirmButtonText: '已确认',
-            cancelButtonText: '误报',
-            distinguishCancelAndClose: true,
-            type: 'warning'
-          }
-        ).then(() => {
-          return { value: 'confirmed' }
-        }).catch((action) => {
-          if (action === 'cancel') {
-            return { value: 'false_positive' }
-          }
-          throw new Error('取消操作')
-        })
-
-        // 调用API处理告警
-        await eventApi.handleAlarm(selectedAlarm.value.id, {
-          result: result,
-          remark: ''
-        })
-
-        dialogVisible.value = false
-        ElMessage({
-          type: 'success',
-          message: '告警处理成功'
-        })
-
-        // 重新加载列表
-        loadAlarmList()
-      } catch (error) {
-        if (error !== 'cancel' && error.message !== '取消操作') {
-          console.error('处理告警失败：', error)
-          ElMessage.error('处理告警失败：' + (error.message || '未知错误'))
-        }
-      }
+      
+      // 复用处理表单
+      currentProcessAlarm.value = selectedAlarm.value
+      processForm.result = 'confirmed'
+      processForm.remark = ''
+      dialogVisible.value = false
+      processDialogVisible.value = true
     }
 
     // 分页处理
@@ -863,8 +1336,22 @@ export default {
       handleView(row)
     }
 
+    // 加载告警类型列表
+    const loadAlarmTypes = async () => {
+      try {
+        const response = await eventApi.getAlarmTypes()
+        console.log('告警类型响应:', response)
+        if (response && response.data) {
+          alarmTypes.value = response.data
+        }
+      } catch (error) {
+        console.error('加载告警类型失败：', error)
+      }
+    }
+
     // 组件挂载时加载数据
     onMounted(() => {
+      loadAlarmTypes()
       loadAlarmList()
     })
 
@@ -872,6 +1359,8 @@ export default {
       loading,
       searchForm,
       alarmList,
+      alarmTypes,
+      boardList,
       displayAlarmList,
       currentPage,
       pageSize,
@@ -882,9 +1371,33 @@ export default {
       dialogVisible,
       selectedAlarm,
       viewMode,
+      alarmTableRef,
+      selectedAlarms,
+      batchMarkDialogVisible,
+      batchMarkLoading,
+      batchMarkPreview,
+      batchMarkForm,
+      batchMarkFormRef,
+      selectAllPreview,
+      selectedPreviewCount,
+      toggleSelectAllPreview,
+      updatePreviewSelection,
+      processForm,
+      processDialogVisible,
+      confirmProcess,
+      alarmLevelMap,
+      hasFilters,
+      checkSelectable,
+      handleSelectionChange,
+      clearSelection,
+      batchMarkFalsePositive,
+      showBatchMarkDialog,
+      confirmBatchMark,
+      getAlarmTypeName,
       handleSearch,
       handleReset,
       getStatusType,
+      getLevelType,
       handleView,
       handleProcess,
       handleConfirm,
@@ -894,6 +1407,7 @@ export default {
       goToPage,
       getDefaultImage,
       getLevelClass,
+      getThumbnailCardClass,
       Search,
       Refresh,
       List,
@@ -1072,13 +1586,39 @@ export default {
 
 .filter-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr auto;
-  gap: 15px;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+  gap: 12px;
   align-items: end;
 }
 
 .filter-item-wide {
   grid-column: span 1;
+}
+
+.filter-item {
+  min-width: 0;
+}
+
+/* 1920px以下改为两行布局 */
+@media (max-width: 1920px) {
+  .filter-row {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 10px;
+  }
+  
+  .filter-item:nth-child(5),
+  .filter-actions {
+    grid-row: 2;
+  }
+  
+  .filter-item:nth-child(5) {
+    grid-column: 1;
+  }
+  
+  .filter-actions {
+    grid-column: 2 / -1;
+    justify-self: end;
+  }
 }
 
 @media (max-width: 1600px) {
@@ -1088,11 +1628,17 @@ export default {
   
   .filter-item:nth-child(4) {
     grid-column: 1;
+    grid-row: 2;
+  }
+  
+  .filter-item:nth-child(5) {
+    grid-column: 2;
+    grid-row: 2;
   }
   
   .filter-actions {
-    grid-column: 2 / -1;
-    justify-content: flex-end;
+    grid-column: 3;
+    grid-row: 2;
   }
 }
 
@@ -2354,21 +2900,80 @@ export default {
 
 .thumbnail-card {
   background: rgba(25, 35, 55, 0.8);
-  border: 1px solid rgba(0, 255, 255, 0.2);
+  border: 2px solid rgba(0, 255, 255, 0.2);
   border-radius: 10px;
   overflow: hidden;
-  cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .thumbnail-card:hover {
   transform: translateY(-5px);
-  border-color: #00ffff;
   box-shadow: 
     0 8px 25px rgba(0, 0, 0, 0.3),
     0 0 20px rgba(0, 255, 255, 0.3);
   background: rgba(30, 40, 60, 0.9);
+}
+
+/* 卡片边框颜色 */
+.thumbnail-card.border-danger {
+  border-color: rgba(245, 108, 108, 0.5);
+}
+
+.thumbnail-card.border-warning {
+  border-color: rgba(230, 162, 60, 0.5);
+}
+
+.thumbnail-card.border-info {
+  border-color: rgba(144, 202, 249, 0.5);
+}
+
+/* 卡片背景色 */
+.thumbnail-card.bg-false-positive {
+  background: rgba(120, 120, 120, 0.2);
+}
+
+.thumbnail-card.bg-handled {
+  background: rgba(76, 175, 80, 0.1);
+}
+
+/* 卡片头部 */
+.thumbnail-header {
+  padding: 10px 15px;
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.thumbnail-header.level-low {
+  background: linear-gradient(135deg, rgba(144, 147, 153, 0.2), rgba(144, 147, 153, 0.1));
+}
+
+.thumbnail-header.level-medium {
+  background: linear-gradient(135deg, rgba(230, 162, 60, 0.2), rgba(230, 162, 60, 0.1));
+}
+
+.thumbnail-header.level-high {
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.2), rgba(245, 108, 108, 0.1));
+}
+
+.thumbnail-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.thumbnail-type {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  margin-right: 8px;
+}
+
+/* 卡片主体 */
+.thumbnail-body {
+  cursor: pointer;
 }
 
 .thumbnail-image {
@@ -2391,13 +2996,23 @@ export default {
 
 .image-slot {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
   background: rgba(20, 30, 50, 0.9);
   color: rgba(0, 255, 255, 0.5);
+  gap: 8px;
+}
+
+.image-slot .el-icon {
   font-size: 48px;
+}
+
+.image-slot div {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
 }
 
 .thumbnail-badge {
@@ -2446,6 +3061,56 @@ export default {
   background: rgba(20, 30, 50, 0.6);
 }
 
+.info-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+  min-width: 45px;
+}
+
+.info-value {
+  color: rgba(255, 255, 255, 0.9);
+  flex: 1;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11px;
+}
+
+.info-value code {
+  background: rgba(0, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: rgba(0, 255, 255, 0.9);
+  font-size: 10px;
+}
+
+/* 操作按钮 */
+.thumbnail-actions {
+  padding: 10px 15px;
+  display: flex;
+  gap: 8px;
+  border-top: 1px solid rgba(0, 255, 255, 0.1);
+  background: rgba(15, 25, 45, 0.6);
+}
+
+.thumbnail-actions .el-button {
+  flex: 1;
+  font-size: 12px;
+}
+
 .thumbnail-title {
   color: #00ffff;
   font-size: 14px;
@@ -2464,6 +3129,256 @@ export default {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 批量操作栏 */
+.batch-operation-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  margin-bottom: 15px;
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(99, 102, 241, 0.05));
+  border: 1px solid rgba(79, 70, 229, 0.3);
+  border-radius: 8px;
+  backdrop-filter: blur(5px);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.batch-info {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.batch-info .count {
+  color: #6366f1;
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0 5px;
+}
+
+.batch-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* 批量标记弹窗内容 */
+.batch-mark-content {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.filter-summary {
+  padding: 15px;
+  background: rgba(248, 250, 252, 0.05);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.filter-summary h4 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  color: #00ffff;
+  font-size: 16px;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+.summary-content {
+  color: rgba(255, 255, 255, 0.7);
+  line-height: 1.8;
+}
+
+.summary-content div {
+  margin-bottom: 6px;
+}
+
+.summary-content strong {
+  color: rgba(255, 255, 255, 0.9);
+  margin-right: 8px;
+}
+
+.batch-preview {
+  display: flex;
+  justify-content: space-around;
+  padding: 15px;
+  background: rgba(254, 243, 199, 0.1);
+  border: 2px solid rgba(251, 191, 36, 0.3);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.preview-item {
+  flex: 1;
+}
+
+.preview-count {
+  font-size: 24px;
+  font-weight: bold;
+  color: rgba(146, 64, 14, 0.9);
+  margin-bottom: 5px;
+}
+
+.preview-item.danger .preview-count {
+  color: #ef4444;
+}
+
+.preview-item.gray .preview-count {
+  color: #6b7280;
+}
+
+.preview-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.preview-item.danger .preview-label {
+  color: #fca5a5;
+}
+
+.preview-item.gray .preview-label {
+  color: #9ca3af;
+}
+
+/* 处理对话框样式 */
+.tech-dialog :deep(.el-radio-group) {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.tech-dialog :deep(.el-radio) {
+  margin-right: 0;
+  white-space: normal;
+  align-items: flex-start;
+  height: auto;
+  padding: 10px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 6px;
+  transition: all 0.3s;
+}
+
+.tech-dialog :deep(.el-radio:hover) {
+  border-color: rgba(0, 255, 255, 0.5);
+  background: rgba(0, 255, 255, 0.05);
+}
+
+.tech-dialog :deep(.el-radio.is-checked) {
+  border-color: #00ffff;
+  background: rgba(0, 255, 255, 0.1);
+}
+
+.tech-dialog :deep(.el-radio__label) {
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+}
+
+/* 批量标记告警列表样式 */
+.batch-alarm-list-container {
+  margin-bottom: 20px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.batch-alarm-list-container .list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: rgba(0, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.batch-alarm-list-container .list-header h4 {
+  margin: 0;
+  color: #00ffff;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.batch-alarm-list-container .list-count {
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: normal;
+}
+
+.batch-alarm-list-container .list-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.batch-alarm-list-container .selected-count {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+}
+
+.batch-alarm-list-container .selected-count strong {
+  color: #3b82f6;
+  font-size: 16px;
+  margin: 0 3px;
+}
+
+.alarm-list-table {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.alarm-list-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.alarm-list-table thead {
+  position: sticky;
+  top: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 1;
+}
+
+.alarm-list-table th {
+  padding: 10px 8px;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  font-size: 13px;
+  border-bottom: 2px solid rgba(0, 255, 255, 0.3);
+}
+
+.alarm-list-table tbody tr {
+  border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+  transition: background 0.2s;
+}
+
+.alarm-list-table tbody tr:hover {
+  background: rgba(0, 255, 255, 0.05);
+}
+
+.alarm-list-table td {
+  padding: 10px 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+}
+
+.alarm-list-table td code {
+  background: rgba(0, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
 }
 
 /* 响应式布局 */

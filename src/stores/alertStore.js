@@ -1,13 +1,22 @@
 import { defineStore } from 'pinia'
+import alarmWebSocket from '@/utils/websocket'
 
 export const useAlertStore = defineStore('alert', {
   state: () => ({
-    // 当前显示的告警列表
+    // 当前显示的告警列表（右下角冒泡）
     activeAlerts: [],
-    // 告警历史记录
+    // 告警历史记录（右上角铃铛）
     alertHistory: [],
+    // 实时告警消息列表（WarningPush弹窗）
+    realtimeMessages: [],
     // 告警ID计数器
-    alertIdCounter: 1
+    alertIdCounter: 1,
+    // WebSocket连接状态
+    wsConnected: false,
+    wsStatus: '未连接',
+    // WebSocket消息处理器引用
+    wsMessageHandler: null,
+    wsStatusHandler: null
   }),
 
   getters: {
@@ -30,6 +39,161 @@ export const useAlertStore = defineStore('alert', {
   },
 
   actions: {
+    // 初始化WebSocket连接
+    initWebSocket() {
+      if (this.wsMessageHandler) {
+        console.log('WebSocket已初始化')
+        return
+      }
+
+      // 创建消息处理器
+      this.wsMessageHandler = (message) => {
+        console.log('alertStore收到WebSocket消息:', message)
+        this.handleWebSocketMessage(message)
+      }
+
+      // 创建状态处理器
+      this.wsStatusHandler = (status) => {
+        this.wsStatus = status
+        this.wsConnected = status === '已连接'
+      }
+
+      // 注册处理器
+      alarmWebSocket.onMessage(this.wsMessageHandler)
+      alarmWebSocket.onStatusChange(this.wsStatusHandler)
+
+      // 自动连接
+      if (!alarmWebSocket.isConnected()) {
+        alarmWebSocket.connect()
+      }
+
+      console.log('WebSocket已初始化并连接')
+    },
+
+    // 断开WebSocket连接
+    disconnectWebSocket() {
+      if (this.wsMessageHandler) {
+        alarmWebSocket.offMessage(this.wsMessageHandler)
+        this.wsMessageHandler = null
+      }
+      if (this.wsStatusHandler) {
+        alarmWebSocket.offStatusChange(this.wsStatusHandler)
+        this.wsStatusHandler = null
+      }
+      alarmWebSocket.disconnect()
+      this.wsConnected = false
+      this.wsStatus = '未连接'
+    },
+
+    // 处理WebSocket消息
+    handleWebSocketMessage(message) {
+      const time = new Date().toLocaleTimeString()
+      
+      console.log('=== WebSocket消息 ===')
+      console.log('消息类型:', message.type)
+      console.log('消息数据:', message.data)
+      
+      // 判断消息类型
+      if (message.type === 'alarm' && message.data) {
+        // 后端发送的告警消息
+        const alarmData = message.data
+        console.log('告警数据字段:', Object.keys(alarmData))
+        console.log('snapshot_base64存在:', !!alarmData.snapshot_base64)
+        console.log('snapshot_url存在:', !!alarmData.snapshot_url)
+        
+        // 映射后端字段
+        const mappedAlarm = {
+          alarm_id: alarmData.alarm_id,
+          type_name: alarmData.alarm_type_name,
+          level: alarmData.alarm_level,
+          device_name: alarmData.camera_name,
+          device_id: alarmData.alarm_id,
+          content: alarmData.message,
+          location: alarmData.location,
+          alarm_time: alarmData.alarm_time,
+          snapshot_url: alarmData.snapshot_url,
+          snapshot_base64: alarmData.snapshot_base64
+        }
+        
+        // 处理图片：优先使用Base64，其次使用URL
+        let imageUrl = '/api/placeholder/300/200?text=告警'
+        if (alarmData.snapshot_base64) {
+          // Base64图片需要添加data URI前缀
+          imageUrl = `data:image/jpeg;base64,${alarmData.snapshot_base64}`
+          console.log('使用Base64图片，长度:', alarmData.snapshot_base64.length)
+        } else if (alarmData.snapshot_url) {
+          // 使用fetch加载图片（可以设置Authorization请求头）
+          const token = localStorage.getItem('token')
+          
+          // 异步加载图片并转换为Blob URL
+          this.loadImageWithAuth(alarmData.snapshot_url, token).then(blobUrl => {
+            // 更新已添加的告警的图片URL
+            const alert = this.activeAlerts.find(a => a.rawData?.alarm_id === alarmData.alarm_id)
+            if (alert) {
+              alert.image = blobUrl
+            }
+            const historyAlert = this.alertHistory.find(a => a.rawData?.alarm_id === alarmData.alarm_id)
+            if (historyAlert) {
+              historyAlert.image = blobUrl
+            }
+          }).catch(err => {
+            console.error('加载图片失败:', err)
+          })
+          
+          // 先使用占位图
+          imageUrl = '/api/placeholder/300/200?text=加载中'
+          console.log('异步加载图片:', alarmData.snapshot_url)
+        } else {
+          console.log('使用默认占位图')
+        }
+        console.log('最终图片URL:', imageUrl.substring(0, 100) + '...')
+        
+        // 1. 添加到实时消息列表（WarningPush弹窗）
+        this.realtimeMessages.unshift({
+          time,
+          type: 'alarm',
+          alarm: mappedAlarm,
+          text: null
+        })
+        
+        // 限制实时消息数量
+        if (this.realtimeMessages.length > 100) {
+          this.realtimeMessages = this.realtimeMessages.slice(0, 100)
+        }
+        
+        // 2. 添加到活动告警（右下角冒泡）
+        const alertType = this.getAlertType(alarmData.alarm_level)
+        console.log('添加告警，图片URL:', imageUrl.substring(0, 100) + '...')
+        this.addAlert({
+          type: alertType,
+          message: `${alarmData.camera_name || '设备'}: ${alarmData.message}`,
+          image: imageUrl,
+          rawData: mappedAlarm
+        })
+        
+      } else if (message.text) {
+        // 系统消息
+        this.realtimeMessages.unshift({
+          time,
+          type: message.type || 'info',
+          alarm: null,
+          text: message.text
+        })
+        
+        if (this.realtimeMessages.length > 100) {
+          this.realtimeMessages = this.realtimeMessages.slice(0, 100)
+        }
+      }
+    },
+
+    // 根据告警级别获取告警类型
+    getAlertType(level) {
+      if (level >= 4) return 'error'
+      if (level >= 3) return 'warning'
+      if (level >= 2) return 'info'
+      return 'success'
+    },
+
     // 添加新告警
     addAlert(alertData) {
       const alert = {
@@ -38,13 +202,14 @@ export const useAlertStore = defineStore('alert', {
         message: alertData.message || '未知告警',
         image: alertData.image || '/api/placeholder/300/200?text=默认告警',
         timestamp: Date.now(),
-        read: false
+        read: false,
+        rawData: alertData.rawData || null // 保存原始告警数据
       }
 
-      // 添加到活动告警列表
+      // 添加到活动告警列表（右下角冒泡）
       this.activeAlerts.push(alert)
 
-      // 添加到历史记录
+      // 添加到历史记录（右上角铃铛）
       this.alertHistory.unshift(alert)
 
       // 限制历史记录数量，避免内存溢出
@@ -84,130 +249,6 @@ export const useAlertStore = defineStore('alert', {
       this.activeAlerts = []
     },
 
-    // 创建测试告警
-    createTestAlert() {
-      const testAlerts = [
-        {
-          type: 'error',
-          message: '检测到异常行为：人员进入危险区域',
-          image: 'data:image/svg+xml;base64,' + btoa(`
-            <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
-                  <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
-                </linearGradient>
-              </defs>
-              <rect width="300" height="200" fill="url(#grad1)" stroke="#ff4d4f" stroke-width="2"/>
-              <text x="150" y="100" font-family="Arial" font-size="16" font-weight="bold" fill="#ff4d4f" text-anchor="middle">危险区域告警</text>
-              <text x="150" y="130" font-family="Arial" font-size="12" fill="#ffffff" text-anchor="middle">${new Date().toLocaleString()}</text>
-            </svg>
-          `)
-        },
-        {
-          type: 'warning',
-          message: '设备温度过高，请及时检查维护',
-          image: 'data:image/svg+xml;base64,' + btoa(`
-            <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
-                  <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
-                </linearGradient>
-              </defs>
-              <rect width="300" height="200" fill="url(#grad2)" stroke="#ffc107" stroke-width="2"/>
-              <text x="150" y="100" font-family="Arial" font-size="16" font-weight="bold" fill="#ffc107" text-anchor="middle">温度告警</text>
-              <text x="150" y="130" font-family="Arial" font-size="12" fill="#ffffff" text-anchor="middle">${new Date().toLocaleString()}</text>
-            </svg>
-          `)
-        },
-        {
-          type: 'info',
-          message: '新的AI检测任务已开始执行',
-          image: 'data:image/svg+xml;base64,' + btoa(`
-            <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="grad3" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
-                  <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
-                </linearGradient>
-              </defs>
-              <rect width="300" height="200" fill="url(#grad3)" stroke="#00ffff" stroke-width="2"/>
-              <text x="150" y="100" font-family="Arial" font-size="16" font-weight="bold" fill="#00ffff" text-anchor="middle">任务通知</text>
-              <text x="150" y="130" font-family="Arial" font-size="12" fill="#ffffff" text-anchor="middle">${new Date().toLocaleString()}</text>
-            </svg>
-          `)
-        },
-        {
-          type: 'success',
-          message: '系统自检完成，所有设备运行正常',
-          image: 'data:image/svg+xml;base64,' + btoa(`
-            <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
-                  <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
-                </linearGradient>
-              </defs>
-              <rect width="300" height="200" fill="url(#grad4)" stroke="#67c23a" stroke-width="2"/>
-              <text x="150" y="100" font-family="Arial" font-size="16" font-weight="bold" fill="#67c23a" text-anchor="middle">系统正常</text>
-              <text x="150" y="130" font-family="Arial" font-size="12" fill="#ffffff" text-anchor="middle">${new Date().toLocaleString()}</text>
-            </svg>
-          `)
-        },
-        {
-          type: 'error',
-          message: '摄像头连接异常，请检查网络连接',
-          image: 'data:image/svg+xml;base64,' + btoa(`
-            <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="grad5" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
-                  <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
-                </linearGradient>
-              </defs>
-              <rect width="300" height="200" fill="url(#grad5)" stroke="#ff4d4f" stroke-width="2"/>
-              <text x="150" y="100" font-family="Arial" font-size="16" font-weight="bold" fill="#ff4d4f" text-anchor="middle">网络异常</text>
-              <text x="150" y="130" font-family="Arial" font-size="12" fill="#ffffff" text-anchor="middle">${new Date().toLocaleString()}</text>
-            </svg>
-          `)
-        },
-        {
-          type: 'warning',
-          message: '存储空间不足，建议清理历史数据',
-          image: 'data:image/svg+xml;base64,' + btoa(`
-            <svg width="300" height="200" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="grad6" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:1" />
-                  <stop offset="100%" style="stop-color:#16213e;stop-opacity:1" />
-                </linearGradient>
-              </defs>
-              <rect width="300" height="200" fill="url(#grad6)" stroke="#ffc107" stroke-width="2"/>
-              <text x="150" y="100" font-family="Arial" font-size="16" font-weight="bold" fill="#ffc107" text-anchor="middle">存储告警</text>
-              <text x="150" y="130" font-family="Arial" font-size="12" fill="#ffffff" text-anchor="middle">${new Date().toLocaleString()}</text>
-            </svg>
-          `)
-        }
-      ]
-
-      const randomAlert = testAlerts[Math.floor(Math.random() * testAlerts.length)]
-      return this.addAlert(randomAlert)
-    },
-
-
-    // 批量添加告警（用于模拟多个告警）
-    addMultipleAlerts(count = 3) {
-      const alertIds = []
-      for (let i = 0; i < count; i++) {
-        setTimeout(() => {
-          const alertId = this.createTestAlert()
-          alertIds.push(alertId)
-        }, i * 500) // 每500ms添加一个告警
-      }
-      return alertIds
-    },
-
     // 获取指定类型的告警数量
     getAlertCountByType(type) {
       return this.alertHistory.filter(alert => alert.type === type).length
@@ -220,6 +261,53 @@ export const useAlertStore = defineStore('alert', {
       const todayTimestamp = today.getTime()
       
       return this.alertHistory.filter(alert => alert.timestamp >= todayTimestamp).length
+    },
+
+    // 清空实时消息
+    clearRealtimeMessages() {
+      this.realtimeMessages = []
+    },
+
+    // 移除单个实时消息
+    removeRealtimeMessage(index) {
+      if (index >= 0 && index < this.realtimeMessages.length) {
+        this.realtimeMessages.splice(index, 1)
+      }
+    },
+
+    // 使用Authorization请求头加载图片
+    async loadImageWithAuth(url, token) {
+      try {
+        // 处理URL：开发环境使用相对路径（代理），生产环境使用完整URL
+        let fetchUrl = url
+        if (process.env.NODE_ENV === 'production' && url.startsWith('/')) {
+          // 生产环境：转换为完整URL
+          fetchUrl = `${window.location.origin}${url}`
+        }
+        // 开发环境：直接使用相对路径，利用vue.config.js的代理配置
+        
+        console.log('加载图片URL:', fetchUrl)
+        
+        const response = await fetch(fetchUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          mode: 'cors', // 支持跨域
+          credentials: 'include' // 包含cookies
+        })
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        }
+        
+        const blob = await response.blob()
+        const blobUrl = URL.createObjectURL(blob)
+        console.log('图片加载成功，Blob URL:', blobUrl)
+        return blobUrl
+      } catch (error) {
+        console.error('加载图片失败:', error)
+        throw error
+      }
     }
   }
 })

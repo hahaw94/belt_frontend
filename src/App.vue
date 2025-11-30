@@ -16,6 +16,7 @@
 </template>
 
 <script>
+import { onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAlertStore } from './stores/alertStore'
 import { useAuthStore } from './stores/auth'
@@ -43,6 +44,31 @@ export default {
       // 移除该告警
       alertStore.removeActiveAlert(alert.id)
     }
+
+    // 监听登录状态，自动连接/断开WebSocket
+    watch(() => authStore.isAuthenticated, (isAuthenticated) => {
+      if (isAuthenticated) {
+        console.log('用户已登录，初始化WebSocket连接')
+        alertStore.initWebSocket()
+      } else {
+        console.log('用户已登出，断开WebSocket连接')
+        alertStore.disconnectWebSocket()
+      }
+    }, { immediate: true })
+
+    // 组件挂载时检查登录状态
+    onMounted(() => {
+      if (authStore.isAuthenticated) {
+        console.log('App挂载：用户已登录，初始化WebSocket')
+        alertStore.initWebSocket()
+      }
+    })
+
+    // 组件卸载时断开连接
+    onBeforeUnmount(() => {
+      console.log('App卸载：断开WebSocket连接')
+      alertStore.disconnectWebSocket()
+    })
 
     return {
       alertStore,
