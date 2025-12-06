@@ -26,6 +26,43 @@
         <el-button :type="statusFilter === 'offline' ? 'primary' : ''" size="small" @click="statusFilter = 'offline'">离线</el-button>
       </div>
 
+      <!-- 时间选择器（选中通道后显示） -->
+      <div v-if="selectedChannel" class="time-selector">
+        <div class="selector-header">
+          <el-icon><Calendar /></el-icon>
+          <span>录像时间</span>
+        </div>
+        <div class="date-inputs">
+          <el-date-picker
+            v-model="recordingStartDate"
+            type="date"
+            placeholder="开始日期"
+            size="small"
+            class="date-picker-single"
+            value-format="YYYY-MM-DD"
+          />
+          <span class="date-separator">至</span>
+          <el-date-picker
+            v-model="recordingEndDate"
+            type="date"
+            placeholder="结束日期"
+            size="small"
+            class="date-picker-single"
+            value-format="YYYY-MM-DD"
+          />
+        </div>
+        <el-button 
+          type="primary" 
+          size="small" 
+          @click="loadChannelRecordings"
+          :loading="loadingRecordings"
+          class="query-btn"
+        >
+          <el-icon><Search /></el-icon>
+          查询录像
+        </el-button>
+      </div>
+
       <div v-loading="loading" element-loading-text="正在加载设备和通道..." class="tree-loading-wrapper">
         <el-tree
           :data="deviceTree"
@@ -38,13 +75,20 @@
           @node-click="handleNodeClick"
         >
           <template #default="{ node, data }">
-            <span class="custom-tree-node">
+            <span class="custom-tree-node" :class="{'recording-node': data.type === 'recording'}">
               <el-icon v-if="data.type === 'group'"><Folder /></el-icon>
               <el-icon v-else-if="data.type === 'device'"><Monitor /></el-icon>
+              <el-icon v-else-if="data.type === 'recording'"><VideoPlay /></el-icon>
               <el-icon v-else><VideoCamera /></el-icon>
               <span class="node-label">{{ node.label }}</span>
               <span v-if="data.type === 'device'" class="device-indicator">
                 {{ getDeviceOnlineChannelCount(data.id) }}/{{ getDeviceTotalChannelCount(data.id) }}
+              </span>
+              <span v-if="data.type === 'channel' && data.recordingCount > 0" class="recording-count">
+                {{ data.recordingCount }}个录像
+              </span>
+              <span v-if="data.type === 'recording'" class="recording-info">
+                {{ formatFileSize(data.fileSize) }} | {{ data.duration }}s
               </span>
               <span v-if="data.online !== undefined" :class="['status-dot', data.online ? 'online' : 'offline']"></span>
             </span>
@@ -62,33 +106,40 @@
     <div class="main-content">
       <!-- 视频播放区域 -->
       <div class="video-grid-wrapper">
-        <div class="video-grid grid-1">
-          <div class="video-cell">
+        <div class="video-grid" :class="'grid-' + currentLayout">
+          <div 
+            v-for="n in currentLayout" 
+            :key="n" 
+            class="video-cell"
+            :class="{ 'active': selectedCell === n }"
+            @click="selectCell(n)"
+          >
             <div class="video-container">
               <!-- 停止播放按钮 -->
-              <div v-if="currentVideo" class="stop-btn-wrapper">
+              <div v-if="playbackPlayers[n - 1].videoUrl" class="stop-btn-wrapper">
                 <el-button 
+                  :size="currentLayout >= 9 ? 'small' : 'default'"
                   type="danger" 
-                  @click="stopPlayback"
+                  @click.stop="stopPlayback(n)"
                   class="stop-stream-btn"
                 >
                   <el-icon><VideoPause /></el-icon>
-                  停止
+                  <span v-if="currentLayout <= 4">停止</span>
                 </el-button>
               </div>
               
               <!-- 视频播放器 -->
               <div class="video-player-wrapper">
                 <video 
-                  v-if="currentVideo && currentVideoUrl"
-                  ref="videoPlayer"
+                  v-if="playbackPlayers[n - 1].videoUrl"
+                  :ref="el => setVideoRef(el, n)"
                   class="video-player"
-                  :src="currentVideoUrl"
+                  :src="playbackPlayers[n - 1].videoUrl"
                   controls
                   autoplay
-                  @loadedmetadata="onVideoLoaded"
-                  @timeupdate="onTimeUpdate"
-                  @ended="onVideoEnded"
+                  @loadedmetadata="() => onVideoLoaded(n)"
+                  @timeupdate="() => onTimeUpdate(n)"
+                  @ended="() => onVideoEnded(n)"
                 >
                   您的浏览器不支持视频播放。
                 </video>
@@ -96,15 +147,61 @@
                 <!-- 空闲状态提示 -->
                 <div v-else class="stream-input-panel">
                   <div class="empty-screen-hint">
-                    <el-icon :size="60" style="color: rgba(64, 158, 255, 0.3);"><VideoCamera /></el-icon>
+                    <el-icon :size="currentLayout <= 4 ? 60 : 40" style="color: rgba(64, 158, 255, 0.3);"><VideoCamera /></el-icon>
                     <p style="margin-top: 12px; color: rgba(255, 255, 255, 0.6); font-size: 14px;">
-                      请在左侧选择通道播放
+                      {{ selectedCell === n ? '请在左侧选择录像播放' : '点击选中此分屏' }}
                     </p>
                   </div>
                 </div>
               </div>
+
+              <div class="video-info-bar">
+                <span class="channel-name">
+                  {{ playbackPlayers[n - 1].recordingInfo ? playbackPlayers[n - 1].recordingInfo.title : `分屏 ${n}` }}
+                </span>
+                <span class="time-display">{{ currentTime }}</span>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- 底部控制栏 -->
+      <div class="control-bar">
+        <!-- 分屏切换按钮 -->
+        <div class="control-group layout-controls">
+          <el-tooltip content="1画面" placement="top">
+            <el-button :type="currentLayout === 1 ? 'primary' : ''" @click="setLayout(1)" class="layout-btn">
+              <svg class="grid-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </el-button>
+          </el-tooltip>
+          <el-tooltip content="4画面" placement="top">
+            <el-button :type="currentLayout === 4 ? 'primary' : ''" @click="setLayout(4)" class="layout-btn">
+              <svg class="grid-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor"/>
+                <rect x="13" y="3" width="8" height="8" rx="1" fill="currentColor"/>
+                <rect x="3" y="13" width="8" height="8" rx="1" fill="currentColor"/>
+                <rect x="13" y="13" width="8" height="8" rx="1" fill="currentColor"/>
+              </svg>
+            </el-button>
+          </el-tooltip>
+          <el-tooltip content="9画面" placement="top">
+            <el-button :type="currentLayout === 9 ? 'primary' : ''" @click="setLayout(9)" class="layout-btn">
+              <svg class="grid-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <rect x="2" y="2" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
+                <rect x="9.25" y="2" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
+                <rect x="16.5" y="2" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
+                <rect x="2" y="9.25" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
+                <rect x="9.25" y="9.25" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
+                <rect x="16.5" y="9.25" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
+                <rect x="2" y="16.5" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
+                <rect x="9.25" y="16.5" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
+                <rect x="16.5" y="16.5" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
+              </svg>
+            </el-button>
+          </el-tooltip>
         </div>
       </div>
     </div>
@@ -328,7 +425,7 @@
 
 <script>
 import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElTooltip } from 'element-plus'
 import { gb28181API } from '@/api/system'
 import {
   Upload as UploadIcon,
@@ -339,7 +436,9 @@ import {
   Coin,
   VideoPause,
   Search,
-  Monitor
+  Monitor,
+  Calendar,
+  VideoPlay
 } from '@element-plus/icons-vue'
 import { detectionApi } from '@/api/detection'
 import { useRecordingStore } from '@/stores/recording'
@@ -354,7 +453,10 @@ export default {
     Coin,
     VideoPause,
     Search,
-    Monitor
+    Monitor,
+    Calendar,
+    VideoPlay,
+    ElTooltip
   },
   setup() {
     // 使用录像store
@@ -381,7 +483,34 @@ export default {
     const recordList = ref([])
     const loading = ref(false)
 
-    // 视频播放
+    // 分屏布局
+    const currentLayout = ref(4) // 默认4分屏
+    const selectedCell = ref(1) // 当前选中的分屏
+    const MAX_PLAYERS = 9 // 最大支持9个播放器
+    
+    // 每个分屏的播放器配置
+    const playbackPlayers = ref(Array.from({ length: MAX_PLAYERS }, () => ({
+      videoUrl: '',
+      recordingInfo: null,
+      isPlaying: false
+    })))
+    
+    // video元素引用
+    const videoRefs = {}
+    
+    // 设置video元素引用
+    const setVideoRef = (el, index) => {
+      if (el) {
+        videoRefs[index] = el
+      }
+    }
+    
+    // 获取video元素
+    const getVideoElement = (index) => {
+      return videoRefs[index]
+    }
+    
+    // 视频播放（保留兼容性）
     const videoPlayer = ref(null)
     const currentVideo = ref(null)
     const currentVideoUrl = ref('')
@@ -398,6 +527,12 @@ export default {
     const statusFilter = ref('all')
     const treeRef = ref(null)
     const rawDeviceTree = ref([])
+    
+    // 录像查询相关
+    const selectedChannel = ref(null) // 当前选中的通道
+    const recordingStartDate = ref('') // 录像开始日期
+    const recordingEndDate = ref('') // 录像结束日期
+    const loadingRecordings = ref(false) // 加载录像中
     
     // 树形结构配置
     const treeProps = {
@@ -743,27 +878,171 @@ export default {
       }
     }
 
+    // 设置分屏布局
+    const setLayout = (layout) => {
+      currentLayout.value = layout
+      selectedCell.value = 1
+    }
+
+    // 选择分屏
+    const selectCell = (n) => {
+      selectedCell.value = n
+    }
+
     // 处理节点点击
     const handleNodeClick = async (data) => {
       console.log('节点点击:', data)
       
       if (data.type === 'channel') {
-        // 检查通道是否在线
-        if (!data.online) {
-          ElMessage.warning(`通道 ${data.label} 离线，无法播放`)
-          return
-        }
-        
-        ElMessage.info('录像回放功能开发中，敬请期待')
-        // TODO: 实现录像回放功能
+        // 选中通道，显示时间选择器
+        selectedChannel.value = data
+        // 默认查询最近7天的录像
+        const endDate = new Date()
+        const startDate = new Date()
+        startDate.setDate(startDate.getDate() - 7)
+        recordingStartDate.value = startDate.toISOString().split('T')[0]
+        recordingEndDate.value = endDate.toISOString().split('T')[0]
+        // 自动加载录像
+        await loadChannelRecordings()
+      } else if (data.type === 'recording') {
+        // 点击录像节点，播放录像
+        await playRecording(data)
       } else if (data.type === 'device') {
         ElMessage.info(`选中设备: ${data.label}`)
       }
     }
 
-    // 播放录像
+    // 加载通道录像
+    const loadChannelRecordings = async () => {
+      if (!selectedChannel.value) {
+        return
+      }
+      
+      if (!recordingStartDate.value || !recordingEndDate.value) {
+        ElMessage.warning('请选择时间范围')
+        return
+      }
+      
+      loadingRecordings.value = true
+      try {
+        const params = {
+          wvp_channel_id: selectedChannel.value.channelId,
+          start_time: recordingStartDate.value,
+          end_time: recordingEndDate.value,
+          page: 1,
+          page_size: 100
+        }
+        
+        console.log('查询通道录像:', params)
+        const response = await detectionApi.getRecordingList(params)
+        console.log('录像查询响应:', response)
+        
+        if (response && response.code === 200 && response.data) {
+          const recordings = response.data.list || []
+          
+          // 找到当前通道节点并添加录像子节点
+          const updateChannelRecordings = (nodes) => {
+            for (const node of nodes) {
+              if (node.id === selectedChannel.value.id) {
+                // 清空旧的录像节点
+                node.children = node.children?.filter(child => child.type !== 'recording') || []
+                
+                // 添加新的录像节点
+                recordings.forEach((rec, index) => {
+                  node.children.push({
+                    id: `recording-${rec.id}`,
+                    label: `录像 ${index + 1} - ${rec.created_at?.split(' ')[1] || ''}`,
+                    type: 'recording',
+                    recordingData: rec,
+                    fileSize: rec.file_size,
+                    duration: rec.duration,
+                    playUrl: rec.play_url
+                  })
+                })
+                
+                // 更新录像数量
+                node.recordingCount = recordings.length
+                return true
+              }
+              
+              if (node.children && node.children.length > 0) {
+                if (updateChannelRecordings(node.children)) {
+                  return true
+                }
+              }
+            }
+            return false
+          }
+          
+          updateChannelRecordings(rawDeviceTree.value)
+          
+          if (recordings.length > 0) {
+            ElMessage.success(`找到 ${recordings.length} 个录像`)
+          } else {
+            ElMessage.info('该时间段内没有录像')
+          }
+        }
+      } catch (error) {
+        console.error('加载录像失败:', error)
+        ElMessage.error('加载录像失败: ' + (error.message || '未知错误'))
+      } finally {
+        loadingRecordings.value = false
+      }
+    }
+
+    // 播放录像（从树节点）
+    const playRecording = async (recordingNode) => {
+      if (!selectedCell.value) {
+        ElMessage.warning('请先选择一个分屏')
+        return
+      }
+      
+      const playerIndex = selectedCell.value
+      const player = playbackPlayers.value[playerIndex - 1]
+      const recording = recordingNode.recordingData
+      
+      if (!recording || !recording.play_url) {
+        ElMessage.error('录像数据异常')
+        return
+      }
+      
+      console.log('播放录像:', recording)
+      
+      // 设置分屏播放器
+      player.videoUrl = recording.play_url
+      player.recordingInfo = {
+        title: recordingNode.label,
+        ...recording
+      }
+      player.isPlaying = true
+      
+      ElMessage.success(`录像已开始播放到分屏 ${playerIndex}`)
+      
+      // 等待视频元素更新
+      setTimeout(() => {
+        const videoElement = getVideoElement(playerIndex)
+        if (videoElement) {
+          videoElement.load()
+          videoElement.play().catch(err => {
+            console.error('播放失败:', err)
+            ElMessage.warning('自动播放失败，请手动点击播放')
+          })
+        }
+      }, 100)
+    }
+
+    // 播放录像（支持多分屏）
     const playRecord = async (record) => {
       try {
+        // 检查是否有选中的分屏
+        if (!selectedCell.value) {
+          ElMessage.warning('请先选择一个分屏')
+          return
+        }
+        
+        const playerIndex = selectedCell.value
+        const player = playbackPlayers.value[playerIndex - 1]
+        
         playingId.value = record.id
         
         console.log('=== 开始播放录像 ===', record)
@@ -783,14 +1062,23 @@ export default {
           console.log('=== 解析播放URL ===', playUrl)
           
           if (playUrl) {
+            // 设置分屏播放器
+            player.videoUrl = playUrl
+            player.recordingInfo = record
+            player.isPlaying = true
+            
+            // 兼容旧的单播放器模式
             currentVideo.value = record
             currentVideoUrl.value = playUrl
             
+            ElMessage.success(`录像 ${record.title} 已开始播放到分屏 ${playerIndex}`)
+            
             // 等待视频元素更新
             setTimeout(() => {
-              if (videoPlayer.value) {
-                videoPlayer.value.load()
-                videoPlayer.value.play().catch(err => {
+              const videoElement = getVideoElement(playerIndex)
+              if (videoElement) {
+                videoElement.load()
+                videoElement.play().catch(err => {
                   console.error('播放失败:', err)
                   ElMessage.warning('自动播放失败，请手动点击播放')
                 })
@@ -812,14 +1100,32 @@ export default {
       }
     }
     
-    // 停止播放
-    const stopPlayback = () => {
-      if (videoPlayer.value) {
-        videoPlayer.value.pause()
-        videoPlayer.value.currentTime = 0
+    // 停止播放（支持多分屏）
+    const stopPlayback = (playerIndex) => {
+      if (playerIndex) {
+        // 停止指定分屏
+        const player = playbackPlayers.value[playerIndex - 1]
+        const videoElement = getVideoElement(playerIndex)
+        
+        if (videoElement) {
+          videoElement.pause()
+          videoElement.currentTime = 0
+        }
+        
+        player.videoUrl = ''
+        player.recordingInfo = null
+        player.isPlaying = false
+        
+        ElMessage.success(`分屏 ${playerIndex} 已停止播放`)
+      } else {
+        // 兼容旧的单播放器模式
+        if (videoPlayer.value) {
+          videoPlayer.value.pause()
+          videoPlayer.value.currentTime = 0
+        }
+        currentVideo.value = null
+        currentVideoUrl.value = ''
       }
-      currentVideo.value = null
-      currentVideoUrl.value = ''
     }
 
     // 下载录像（预留功能）
@@ -891,17 +1197,21 @@ export default {
 
     let timeInterval = null
 
-    // 视频事件处理
-    const onVideoLoaded = () => {
-      console.log('视频加载完成')
+    // 视频事件处理（支持多分屏）
+    const onVideoLoaded = (playerIndex) => {
+      console.log(`分屏 ${playerIndex} 视频加载完成`)
     }
 
-    const onTimeUpdate = () => {
+    // eslint-disable-next-line no-unused-vars
+    const onTimeUpdate = (playerIndex) => {
       // 可以在这里更新播放进度
     }
 
-    const onVideoEnded = () => {
-      ElMessage.success('播放完成')
+    const onVideoEnded = (playerIndex) => {
+      const player = playbackPlayers.value[playerIndex - 1]
+      if (player.recordingInfo) {
+        ElMessage.success(`分屏 ${playerIndex} 播放完成`)
+      }
     }
 
     // 统计数据
@@ -984,7 +1294,10 @@ export default {
     // 组件挂载时加载数据
     onMounted(() => {
       loadDevices()
-      recordingStore.fetchStatistics()
+      // 尝试获取统计信息，如果失败则忽略（后端接口可能未实现）
+      recordingStore.fetchStatistics().catch(err => {
+        console.warn('获取录像统计信息失败，使用默认值:', err)
+      })
       updateTime()
       timeInterval = setInterval(updateTime, 1000)
     })
@@ -1030,6 +1343,23 @@ export default {
       getTotalChannelCount,
       getDeviceOnlineChannelCount,
       getDeviceTotalChannelCount,
+      
+      // 录像查询相关
+      selectedChannel,
+      recordingStartDate,
+      recordingEndDate,
+      loadingRecordings,
+      loadChannelRecordings,
+      playRecording,
+      
+      // 分屏布局相关
+      currentLayout,
+      selectedCell,
+      playbackPlayers,
+      setLayout,
+      selectCell,
+      setVideoRef,
+      getVideoElement,
       
       // 播放相关
       videoPlayer,
@@ -1174,6 +1504,111 @@ export default {
   color: #fff;
 }
 
+/* 时间选择器 */
+.time-selector {
+  padding: 8px 10px;
+  background: rgba(24, 144, 255, 0.08);
+  border-radius: 6px;
+  margin: 8px 12px;
+  border: 1px solid rgba(24, 144, 255, 0.2);
+}
+
+.selector-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: #91caff;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.selector-header .el-icon {
+  font-size: 16px;
+}
+
+/* 日期输入容器 */
+.date-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.date-separator {
+  color: #91caff;
+  font-size: 12px;
+  text-align: center;
+  padding: 2px 0;
+}
+
+/* 单个日期选择器 */
+.date-picker-single {
+  width: 100%;
+}
+
+.date-picker-single :deep(.el-input__wrapper) {
+  background: rgba(10, 20, 35, 0.6);
+  border-color: rgba(24, 144, 255, 0.3);
+  box-shadow: none;
+}
+
+.date-picker-single :deep(.el-input__inner) {
+  color: #e8f4ff;
+  font-size: 12px;
+}
+
+.date-picker-single :deep(.el-input__inner::placeholder) {
+  color: rgba(145, 202, 255, 0.5);
+  font-size: 12px;
+}
+
+.date-picker-single :deep(.el-input__wrapper:hover) {
+  border-color: #1890ff;
+}
+
+.date-picker-single :deep(.el-input__wrapper.is-focus) {
+  border-color: #1890ff;
+  box-shadow: 0 0 8px rgba(24, 144, 255, 0.3);
+}
+
+.query-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #1890ff 0%, #0066cc 100%);
+  border-color: #1890ff;
+}
+
+.query-btn:hover {
+  background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
+}
+
+/* 录像节点样式 */
+.recording-node {
+  opacity: 0.9;
+}
+
+.recording-node:hover {
+  opacity: 1;
+  background: rgba(24, 144, 255, 0.15);
+}
+
+.recording-count {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #52c41a;
+  background: rgba(82, 196, 26, 0.1);
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.recording-info {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #91caff;
+  opacity: 0.8;
+}
+
 /* 树形加载容器 */
 .tree-loading-wrapper {
   flex: 1;
@@ -1310,6 +1745,16 @@ export default {
   grid-template-rows: 1fr;
 }
 
+.grid-4 {
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+}
+
+.grid-9 {
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
 .video-cell {
   background: linear-gradient(135deg, rgba(10, 20, 35, 0.8) 0%, rgba(15, 25, 40, 0.9) 100%);
   border: 2px solid rgba(64, 158, 255, 0.25);
@@ -1326,6 +1771,23 @@ export default {
   content-visibility: auto;
   transform: translateZ(0);
   will-change: auto;
+}
+
+.video-cell:hover {
+  border-color: rgba(64, 158, 255, 0.5);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(64, 158, 255, 0.2),
+    inset 0 0 30px rgba(64, 158, 255, 0.1);
+}
+
+.video-cell.active {
+  border-color: #1890ff;
+  box-shadow: 
+    0 4px 16px rgba(24, 144, 255, 0.4),
+    0 0 30px rgba(24, 144, 255, 0.3),
+    inset 0 0 40px rgba(24, 144, 255, 0.15);
+  background: linear-gradient(135deg, rgba(15, 25, 40, 0.9) 0%, rgba(20, 30, 45, 1) 100%);
 }
 
 .video-container {
@@ -1383,6 +1845,97 @@ export default {
 .empty-screen-hint {
   text-align: center;
   color: rgba(255, 255, 255, 0.5);
+}
+
+.video-info-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 6px 10px;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.7) 100%);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #e8f4ff;
+  backdrop-filter: blur(5px);
+  z-index: 5;
+}
+
+.channel-name {
+  font-weight: 500;
+  color: #91caff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.time-display {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 11px;
+  margin-left: 8px;
+}
+
+/* ==================== 底部控制栏 ==================== */
+.control-bar {
+  height: 60px;
+  background: linear-gradient(180deg, rgba(10, 20, 35, 0.95) 0%, rgba(15, 25, 40, 0.98) 100%);
+  border-top: 1px solid rgba(64, 158, 255, 0.2);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 20px;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layout-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.layout-btn {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: rgba(24, 144, 255, 0.1) !important;
+  border: 1px solid rgba(64, 158, 255, 0.3) !important;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.layout-btn:hover {
+  background: rgba(24, 144, 255, 0.2) !important;
+  border-color: #1890ff !important;
+  box-shadow: 0 0 12px rgba(24, 144, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.layout-btn.el-button--primary {
+  background: linear-gradient(135deg, #1890ff 0%, #0066cc 100%) !important;
+  border-color: #1890ff !important;
+  box-shadow: 0 0 15px rgba(24, 144, 255, 0.4);
+}
+
+.grid-icon {
+  width: 20px;
+  height: 20px;
+  color: #91caff;
+}
+
+.layout-btn.el-button--primary .grid-icon {
+  color: #fff;
 }
 
 /* ==================== Element Plus 组件样式覆盖 ==================== */

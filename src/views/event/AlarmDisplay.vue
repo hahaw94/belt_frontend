@@ -407,17 +407,71 @@
           <p class="detail-description">{{ selectedAlarm.description }}</p>
         </div>
 
-        <div class="detail-section" v-if="selectedAlarm.images && selectedAlarm.images.length > 0">
-          <h4 class="section-title">现场截图</h4>
-          <div class="detail-images">
-            <el-image
-              v-for="(image, index) in selectedAlarm.images"
-              :key="index"
-              :src="image"
-              :preview-src-list="selectedAlarm.images"
-              fit="cover"
-              class="alarm-image"
-            />
+        <!-- 截图和视频 -->
+        <div class="detail-section">
+          <h4 class="section-title">截图和视频</h4>
+          <div class="media-section">
+            <!-- 截图 -->
+            <div class="media-item" v-if="selectedAlarm.images && selectedAlarm.images.length > 0">
+              <div class="media-label">告警截图</div>
+              <div class="detail-images">
+                <!-- 使用Canvas绘制检测框 -->
+                <div v-for="(image, index) in selectedAlarm.images" :key="index" class="image-wrapper">
+                  <canvas 
+                    :ref="el => setCanvasRef(el, index)"
+                    class="alarm-image detection-canvas"
+                    @click="previewImage(index)"
+                  ></canvas>
+                </div>
+              </div>
+              <el-button size="small" type="primary" @click="downloadSnapshot" v-if="selectedAlarm.images[0]">
+                下载截图
+              </el-button>
+            </div>
+            <!-- 视频 -->
+            <div class="media-item">
+              <div class="media-label">告警录像</div>
+              <!-- 加载中 -->
+              <div v-if="selectedAlarm.videoLoading" class="video-loading">
+                <el-icon class="is-loading"><Loading /></el-icon>
+                <span>正在加载录像...</span>
+              </div>
+              <!-- 有录像 -->
+              <div v-else-if="selectedAlarm.videoUrl" class="video-container">
+                <video 
+                  :src="selectedAlarm.videoUrl" 
+                  controls 
+                  class="alarm-video"
+                  preload="metadata"
+                >
+                  您的浏览器不支持视频播放
+                </video>
+                <div class="video-actions">
+                  <el-button size="small" type="success" @click="downloadVideo">
+                    下载录像
+                  </el-button>
+                  <el-button size="small" @click="openVideoInNewTab">
+                    在新窗口打开
+                  </el-button>
+                </div>
+              </div>
+              <!-- 无录像 -->
+              <div v-else class="video-info no-video">
+                <el-icon><VideoCamera /></el-icon>
+                <span>暂无录像</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 原始数据 -->
+        <div class="detail-section" v-if="selectedAlarm.rawData && Object.keys(selectedAlarm.rawData).length > 0">
+          <h4 class="section-title">原始数据</h4>
+          <div class="raw-data-container">
+            <el-button size="small" @click="toggleRawData" class="toggle-btn">
+              {{ showRawData ? '收起' : '展开' }}
+            </el-button>
+            <pre v-show="showRawData" class="raw-data">{{ JSON.stringify(selectedAlarm.rawData, null, 2) }}</pre>
           </div>
         </div>
       </div>
@@ -591,10 +645,11 @@
 </template>
 
 <script>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Search, Refresh, List, Grid, Picture } from '@element-plus/icons-vue'
+import { Search, Refresh, List, Grid, Picture, VideoCamera, Loading } from '@element-plus/icons-vue'
 import { eventApi } from '@/api/event'
+import { detectionApi } from '@/api/detection'
 
 export default {
   name: 'AlarmDisplay',
@@ -689,6 +744,10 @@ export default {
     // 对话框相关
     const dialogVisible = ref(false)
     const selectedAlarm = ref(null)
+    const showRawData = ref(false)
+    
+    // Canvas相关
+    const canvasRefs = ref([])
 
     // 计算显示的告警列表
     const displayAlarmList = computed(() => {
@@ -782,14 +841,14 @@ export default {
               level: alarmLevelMap[alarm.alarm_level] || '未知',
               levelRaw: alarm.alarm_level,
               board_id: alarm.board_id || '-',
-              // location字段已删除，后端不返回此字段
               description: getAlarmDescription(alarm),
               status: getAlarmStatus(alarm),
               statusRaw: alarm.status,
               handleResult: alarm.handle_result,
               isFalsePositive: alarm.is_false_positive,
-              snapshotPath: alarm.snapshot_path,
-              videoPath: alarm.video_path,
+              // 使用snapshot_url和video_url(完整URL)
+              snapshotUrl: alarm.snapshot_url,
+              videoUrl: alarm.video_url,
               handleRemark: alarm.handle_remark,
               handleTime: alarm.handle_time,
               cameraName: alarm.camera_name,
@@ -1236,15 +1295,34 @@ export default {
             type: alarm.alarm_type_name || '未知类型',
             description: getAlarmDescription(alarm),
             status: getAlarmStatus(alarm),
+            statusRaw: alarm.status,
             level: alarmLevelMap[alarm.alarm_level] || '未知',
             handleRemark: alarm.handle_remark,
             handleTime: alarm.handle_time,
             boardId: alarm.board_id,
             cameraName: alarm.camera_name,
+            isFalsePositive: alarm.is_false_positive,
             // 直接使用后端返回的snapshot_url
-            images: alarm.snapshot_url ? [alarm.snapshot_url] : []
+            images: alarm.snapshot_url ? [alarm.snapshot_url] : [],
+            videoUrl: null, // 先设为null，稍后从录像API加载
+            videoLoading: false,
+            // MongoDB详细数据
+            confidence: alarm.confidence,
+            detectionBoxes: alarm.detection_boxes,
+            trackingData: alarm.tracking_data,
+            algorithmData: alarm.algorithm_data,
+            rawData: alarm.raw_data
           }
+          
           dialogVisible.value = true
+          
+          // 异步加载录像
+          loadAlarmRecording(alarm.alarm_code)
+          
+          // 绘制检测框到截图上
+          nextTick(() => {
+            drawDetectionBoxes()
+          })
         } else {
           ElMessage.error('获取告警详情失败：数据格式错误')
         }
@@ -1252,6 +1330,163 @@ export default {
         console.error('获取告警详情失败：', error)
         ElMessage.error('获取告警详情失败：' + (error.message || '未知错误'))
       }
+    }
+
+    // 加载告警录像
+    const loadAlarmRecording = async (alarmCode) => {
+      if (!alarmCode || !selectedAlarm.value) return
+      
+      try {
+        selectedAlarm.value.videoLoading = true
+        console.log('查询告警录像:', alarmCode)
+        
+        const response = await detectionApi.getRecordingByAlarmId(alarmCode)
+        console.log('录像查询响应:', response)
+        
+        if (response && response.code === 200 && response.data) {
+          const recording = response.data
+          if (recording.play_url) {
+            selectedAlarm.value.videoUrl = recording.play_url
+            selectedAlarm.value.recordingInfo = recording
+            console.log('录像加载成功:', recording.play_url)
+          } else {
+            console.log('录像数据中没有play_url')
+          }
+        }
+      } catch (error) {
+        console.log('该告警暂无关联录像:', error.message)
+      } finally {
+        if (selectedAlarm.value) {
+          selectedAlarm.value.videoLoading = false
+        }
+      }
+    }
+
+    // 设置Canvas引用
+    const setCanvasRef = (el, index) => {
+      if (el) {
+        canvasRefs.value[index] = el
+      }
+    }
+
+    // 绘制检测框到截图上
+    const drawDetectionBoxes = () => {
+      if (!selectedAlarm.value || !selectedAlarm.value.images || selectedAlarm.value.images.length === 0) {
+        return
+      }
+
+      const detectionBoxes = selectedAlarm.value.detectionBoxes || []
+      
+      selectedAlarm.value.images.forEach((imageUrl, index) => {
+        const canvas = canvasRefs.value[index]
+        if (!canvas) return
+
+        const img = new Image()
+        img.crossOrigin = 'anonymous' // 处理跨域问题
+        
+        img.onload = () => {
+          // 设置canvas尺寸为图片尺寸
+          canvas.width = img.width
+          canvas.height = img.height
+          
+          const ctx = canvas.getContext('2d')
+          
+          // 绘制原始图片
+          ctx.drawImage(img, 0, 0)
+          
+          // 绘制检测框
+          if (detectionBoxes && detectionBoxes.length > 0) {
+            detectionBoxes.forEach((box) => {
+              const { x, y, width, height, confidence, label } = box
+              
+              // 计算框的左上角坐标（x,y是中心点）
+              const left = x - width / 2
+              const top = y - height / 2
+              
+              // 设置绘制样式
+              ctx.strokeStyle = '#00ffff' // 青色边框
+              ctx.lineWidth = 3
+              ctx.fillStyle = 'rgba(0, 255, 255, 0.2)' // 半透明填充
+              
+              // 绘制矩形框
+              ctx.fillRect(left, top, width, height)
+              ctx.strokeRect(left, top, width, height)
+              
+              // 绘制标签背景
+              const labelText = `${label || '未知'} ${(confidence * 100).toFixed(1)}%`
+              ctx.font = 'bold 24px Arial'
+              const textMetrics = ctx.measureText(labelText)
+              const textWidth = textMetrics.width
+              const textHeight = 30
+              const padding = 8
+              
+              // 智能计算标签位置
+              let labelX, labelY, textX, textY
+              
+              // 检查上侧是否有足够空间
+              if (top - textHeight - 6 >= 0) {
+                // 上侧有空间，放在上侧
+                labelX = left
+                labelY = top - textHeight - 6
+                textX = left + padding
+                textY = top - 10
+              } 
+              // 检查下侧是否有足够空间
+              else if (top + height + textHeight + 6 <= img.height) {
+                // 下侧有空间，放在下侧
+                labelX = left
+                labelY = top + height + 2
+                textX = left + padding
+                textY = top + height + textHeight - 4
+              }
+              // 检查右侧是否有足够空间
+              else if (left + width + textWidth + 16 <= img.width) {
+                // 右侧有空间，放在右侧
+                labelX = left + width + 2
+                labelY = top
+                textX = left + width + 2 + padding
+                textY = top + textHeight - 6
+              }
+              // 检查左侧是否有足够空间
+              else if (left - textWidth - 16 >= 0) {
+                // 左侧有空间，放在左侧
+                labelX = left - textWidth - 16
+                labelY = top
+                textX = left - textWidth - 16 + padding
+                textY = top + textHeight - 6
+              }
+              // 如果都没有空间，强制放在框内上方
+              else {
+                labelX = left
+                labelY = top + 2
+                textX = left + padding
+                textY = top + textHeight - 4
+              }
+              
+              // 标签背景
+              ctx.fillStyle = 'rgba(0, 255, 255, 0.9)'
+              ctx.fillRect(labelX, labelY, textWidth + 16, textHeight + 6)
+              
+              // 标签文字
+              ctx.fillStyle = '#000'
+              ctx.fillText(labelText, textX, textY)
+            })
+          }
+        }
+        
+        img.onerror = () => {
+          console.error('图片加载失败:', imageUrl)
+        }
+        
+        img.src = imageUrl
+      })
+    }
+
+    // 预览图片
+    const previewImage = (index) => {
+      // 可以使用Element Plus的图片预览功能
+      // 这里暂时留空，后续可以实现
+      console.log('预览图片:', index)
     }
 
     // 处理表单数据
@@ -1306,6 +1541,70 @@ export default {
       processForm.remark = ''
       dialogVisible.value = false
       processDialogVisible.value = true
+    }
+
+    // 切换原始数据显示
+    const toggleRawData = () => {
+      showRawData.value = !showRawData.value
+    }
+
+    // 下载截图
+    const downloadSnapshot = () => {
+      if (selectedAlarm.value && selectedAlarm.value.images && selectedAlarm.value.images[0]) {
+        window.open(selectedAlarm.value.images[0], '_blank')
+      }
+    }
+
+    // 播放/下载视频
+    const playVideo = () => {
+      if (selectedAlarm.value && selectedAlarm.value.videoUrl) {
+        window.open(selectedAlarm.value.videoUrl, '_blank')
+      }
+    }
+
+    // 下载视频
+    const downloadVideo = async () => {
+      if (!selectedAlarm.value || !selectedAlarm.value.videoUrl) {
+        ElMessage.warning('没有可下载的录像')
+        return
+      }
+
+      try {
+        ElMessage.info('正在准备下载录像...')
+        
+        // 使用fetch下载视频
+        const response = await fetch(selectedAlarm.value.videoUrl)
+        if (!response.ok) {
+          throw new Error('下载失败')
+        }
+        
+        // 获取blob数据
+        const blob = await response.blob()
+        
+        // 创建下载链接
+        const url = window.URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `alarm_${selectedAlarm.value.alarmCode}_${Date.now()}.mp4`
+        document.body.appendChild(link)
+        link.click()
+        
+        // 清理
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+        
+        ElMessage.success('录像下载成功')
+      } catch (error) {
+        console.error('下载录像失败:', error)
+        ElMessage.error('下载录像失败，请尝试在新窗口打开')
+      }
+    }
+
+    // 在新窗口打开视频
+    const openVideoInNewTab = () => {
+      if (selectedAlarm.value && selectedAlarm.value.videoUrl) {
+        window.open(selectedAlarm.value.videoUrl, '_blank')
+      }
     }
 
     // 分页处理
@@ -1408,11 +1707,23 @@ export default {
       getDefaultImage,
       getLevelClass,
       getThumbnailCardClass,
+      showRawData,
+      toggleRawData,
+      downloadSnapshot,
+      playVideo,
+      downloadVideo,
+      openVideoInNewTab,
+      loadAlarmRecording,
+      setCanvasRef,
+      drawDetectionBoxes,
+      previewImage,
       Search,
       Refresh,
       List,
       Grid,
-      Picture
+      Picture,
+      VideoCamera,
+      Loading
     }
   }
 }
@@ -1784,11 +2095,27 @@ export default {
   flex-wrap: wrap;
 }
 
+.image-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .alarm-image {
-  width: 200px;
-  height: 150px;
-  border-radius: 4px;
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  border-radius: 8px;
   cursor: pointer;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.detection-canvas {
+  display: block;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 /* Element Plus 组件深色主题样式 */
@@ -3407,5 +3734,206 @@ export default {
   .thumbnail-info {
     padding: 10px 12px;
   }
+}
+
+/* 媒体区域样式 */
+.media-section {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.media-item {
+  flex: 1;
+  padding: 15px;
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.2);
+}
+
+.media-label {
+  color: #00ffff;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+/* 视频容器 */
+.video-container {
+  width: 100%;
+}
+
+.alarm-video {
+  width: 100%;
+  max-height: 400px;
+  background: #000;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.video-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  justify-content: flex-start;
+}
+
+/* 媒体区域按钮统一样式 */
+.media-item .el-button {
+  background: rgba(0, 150, 200, 0.8) !important;
+  border: 1px solid rgba(0, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+}
+
+.media-item .el-button:hover {
+  background: rgba(0, 180, 220, 0.9) !important;
+  border-color: #00ffff !important;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3) !important;
+  transform: translateY(-1px);
+}
+
+.media-item .el-button--primary {
+  background: rgba(0, 150, 200, 0.8) !important;
+  border-color: rgba(0, 255, 255, 0.4) !important;
+}
+
+.media-item .el-button--success {
+  background: rgba(0, 150, 200, 0.8) !important;
+  border-color: rgba(0, 255, 255, 0.4) !important;
+}
+
+.video-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 30px;
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 1px dashed rgba(0, 255, 255, 0.2);
+}
+
+.video-info.no-video {
+  opacity: 0.6;
+  flex-direction: column;
+}
+
+.video-info.no-video .el-icon {
+  font-size: 48px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-bottom: 10px;
+}
+
+.video-info span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+/* 视频加载状态 */
+.video-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 6px;
+  border: 1px dashed rgba(0, 255, 255, 0.2);
+}
+
+.video-loading .el-icon {
+  font-size: 32px;
+  color: #00ffff;
+}
+
+.video-loading span {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+}
+
+.image-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+}
+
+/* 置信度样式 */
+.confidence-value {
+  color: #00ffff;
+  font-weight: 600;
+  text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+}
+
+/* 检测框样式 */
+.detection-boxes {
+  margin-top: 15px;
+}
+
+.box-label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.box-data {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  max-height: 300px;
+}
+
+/* 原始数据样式 */
+.raw-data-container {
+  position: relative;
+}
+
+.toggle-btn {
+  margin-bottom: 10px;
+}
+
+.raw-data {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  max-height: 400px;
+  margin: 0;
+}
+
+.raw-data::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.raw-data::-webkit-scrollbar-track {
+  background: rgba(0, 255, 255, 0.05);
+  border-radius: 3px;
+}
+
+.raw-data::-webkit-scrollbar-thumb {
+  background: rgba(0, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.raw-data::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 255, 255, 0.5);
 }
 </style>

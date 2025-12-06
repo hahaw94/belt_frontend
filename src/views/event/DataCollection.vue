@@ -5,6 +5,130 @@
     
     <h2>误报数据收集</h2>
 
+    <!-- 样本统计卡片（包含筛选和统计） -->
+    <el-card class="stats-card tech-card mb-20" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span>样本统计</span>
+          <el-button 
+            type="primary" 
+            :icon="Refresh" 
+            size="small" 
+            class="tech-button-sm" 
+            @click="loadStats"
+            :loading="statsLoading"
+          >
+            刷新
+          </el-button>
+        </div>
+      </template>
+
+      <div class="stats-wrapper">
+        <!-- 统计数据区域 -->
+        <div v-loading="statsLoading" class="stats-content">
+          <div class="stats-grid">
+            <!-- 总误报数 -->
+            <div class="stat-item stat-yellow">
+              <div class="stat-value">{{ stats.total || 0 }}</div>
+              <div class="stat-label">总误报数</div>
+            </div>
+            
+            <!-- 未导出 -->
+            <div class="stat-item stat-blue">
+              <div class="stat-value">{{ stats.unexported || 0 }}</div>
+              <div class="stat-label">未导出</div>
+            </div>
+            
+            <!-- 已导出 -->
+            <div class="stat-item stat-green">
+              <div class="stat-value">{{ stats.exported || 0 }}</div>
+              <div class="stat-label">已导出</div>
+            </div>
+            
+            <!-- 今日新增 -->
+            <div class="stat-item stat-purple">
+              <div class="stat-value">{{ stats.today || 0 }}</div>
+              <div class="stat-label">今日新增</div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- 统计筛选区域 -->
+        <div class="filter-section">
+          <div class="filter-header">
+            <span class="filter-title">筛选条件</span>
+          </div>
+          
+          <div class="filter-content">
+            <div class="filter-row">
+              <!-- 时间范围 -->
+              <div class="filter-item">
+                <label>开始日期</label>
+                <el-date-picker
+                  v-model="filterForm.startDate"
+                  type="date"
+                  placeholder="选择开始日期"
+                  class="tech-input"
+                  value-format="YYYY-MM-DD"
+                  style="width: 100%"
+                />
+              </div>
+              
+              <div class="filter-item">
+                <label>结束日期</label>
+                <el-date-picker
+                  v-model="filterForm.endDate"
+                  type="date"
+                  placeholder="选择结束日期"
+                  class="tech-input"
+                  value-format="YYYY-MM-DD"
+                  style="width: 100%"
+                />
+              </div>
+
+              <!-- 操作按钮 -->
+              <div class="filter-actions">
+                <el-button 
+                  type="primary" 
+                  :icon="Search" 
+                  class="tech-button-sm" 
+                  @click="handleFilter"
+                  :loading="statsLoading"
+                >
+                  筛选
+                </el-button>
+                <el-button 
+                  :icon="Refresh" 
+                  class="tech-button-sm" 
+                  @click="handleReset"
+                >
+                  重置
+                </el-button>
+              </div>
+            </div>
+
+            <!-- 告警类型选择 -->
+            <div class="alarm-type-section">
+              <label>告警类型（可多选，不选则统计所有）</label>
+              <div class="alarm-type-list">
+                <el-checkbox-group v-model="filterForm.alarmTypes">
+                  <el-checkbox 
+                    v-for="type in alarmTypeList" 
+                    :key="type.id" 
+                    :label="type.id"
+                    class="alarm-type-checkbox"
+                  >
+                    {{ type.name }}
+                  </el-checkbox>
+                </el-checkbox-group>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </el-card>
+
     <!-- 数据收集操作卡片 -->
     <el-card class="operation-card tech-card mb-20" shadow="never">
       <template #header>
@@ -135,147 +259,6 @@
       </div>
     </el-card>
 
-    <!-- 样本统计卡片（包含筛选和统计） -->
-    <el-card class="stats-card tech-card mb-20" shadow="never">
-      <template #header>
-        <div class="card-header">
-          <span>样本统计</span>
-          <el-button 
-            type="primary" 
-            :icon="Refresh" 
-            size="small" 
-            class="tech-button-sm" 
-            @click="loadStats"
-            :loading="statsLoading"
-          >
-            刷新
-          </el-button>
-        </div>
-      </template>
-
-      <div class="stats-wrapper">
-        <!-- 统计筛选区域 -->
-        <div class="filter-section">
-          <div class="filter-header">
-            <span class="filter-title">筛选条件</span>
-          </div>
-          
-          <div class="filter-content">
-            <div class="filter-row">
-              <!-- 时间范围 -->
-              <div class="filter-item">
-                <label>开始日期</label>
-                <el-date-picker
-                  v-model="filterForm.startDate"
-                  type="date"
-                  placeholder="选择开始日期"
-                  class="tech-input"
-                  value-format="YYYY-MM-DD"
-                  style="width: 100%"
-                />
-              </div>
-              
-              <div class="filter-item">
-                <label>结束日期</label>
-                <el-date-picker
-                  v-model="filterForm.endDate"
-                  type="date"
-                  placeholder="选择结束日期"
-                  class="tech-input"
-                  value-format="YYYY-MM-DD"
-                  style="width: 100%"
-                />
-              </div>
-
-              <!-- 操作按钮 -->
-              <div class="filter-actions">
-                <el-button 
-                  type="primary" 
-                  :icon="Search" 
-                  class="tech-button-sm" 
-                  @click="handleFilter"
-                  :loading="statsLoading"
-                >
-                  筛选
-                </el-button>
-                <el-button 
-                  :icon="Refresh" 
-                  class="tech-button-sm" 
-                  @click="handleReset"
-                >
-                  重置
-                </el-button>
-              </div>
-            </div>
-
-            <!-- 告警类型选择 -->
-            <div class="alarm-type-section">
-              <label>告警类型（可多选，不选则统计所有）</label>
-              <div class="alarm-type-list">
-                <el-checkbox-group v-model="filterForm.alarmTypes">
-                  <el-checkbox 
-                    v-for="type in alarmTypeList" 
-                    :key="type.id" 
-                    :label="type.id"
-                    class="alarm-type-checkbox"
-                  >
-                    {{ type.name }}
-                  </el-checkbox>
-                </el-checkbox-group>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 分隔线 -->
-        <div class="stats-divider"></div>
-
-        <!-- 统计数据区域 -->
-        <div v-loading="statsLoading" class="stats-content">
-          <div class="stats-grid">
-            <!-- 总误报数 -->
-            <div class="stat-item stat-yellow">
-              <div class="stat-value">{{ stats.total || 0 }}</div>
-              <div class="stat-label">总误报数</div>
-            </div>
-            
-            <!-- 未导出 -->
-            <div class="stat-item stat-blue">
-              <div class="stat-value">{{ stats.unexported || 0 }}</div>
-              <div class="stat-label">未导出</div>
-            </div>
-            
-            <!-- 已导出 -->
-            <div class="stat-item stat-green">
-              <div class="stat-value">{{ stats.exported || 0 }}</div>
-              <div class="stat-label">已导出</div>
-            </div>
-            
-            <!-- 今日新增 -->
-            <div class="stat-item stat-purple">
-              <div class="stat-value">{{ stats.today || 0 }}</div>
-              <div class="stat-label">今日新增</div>
-            </div>
-          </div>
-
-          <!-- 按类型统计 -->
-          <div class="type-stats-section" v-if="stats.by_type && stats.by_type.length > 0">
-            <h4 class="section-title">按类型统计</h4>
-            <div class="type-stats-grid">
-              <div 
-                v-for="item in stats.by_type" 
-                :key="item.type_id" 
-                class="type-stat-item"
-              >
-                <div class="type-stat-value">{{ item.count }}</div>
-                <div class="type-stat-label">{{ item.type_name }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </el-card>
-
     <!-- 训练平台配置对话框 -->
     <el-dialog
       v-model="configDialog.visible"
@@ -370,6 +353,7 @@ import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Search, Download, Upload, View, Setting, Hide } from '@element-plus/icons-vue'
 import { eventApi } from '@/api/event'
+import request from '@/api/index'
 
 export default {
   name: 'DataCollection',
@@ -450,8 +434,7 @@ export default {
       total: 0,
       unexported: 0,
       exported: 0,
-      today: 0,
-      by_type: []
+      today: 0
     })
     
     // 加载状态
@@ -487,8 +470,10 @@ export default {
         }
         params.alarm_types = operationForm.value.selectedTypes
         params.only_unexported = operationForm.value.onlyUnexported
+      } else if (operationForm.value.rangeType === 'all') {
+        // 全部模式下，也需要根据复选框决定是否只导出未导出的
+        params.only_unexported = operationForm.value.onlyUnexported
       }
-      // rangeType === 'all' 时不需要额外参数，默认导出所有未导出的
       
       return params
     }
@@ -543,24 +528,61 @@ export default {
         exportLoading.value = true
         console.log('导出参数:', params)
         
+        // 立即清空预览数据（在请求之前）
+        previewData.value.visible = false
+        previewData.value.count = 0
+        
         const response = await eventApi.exportFalsePositives(params)
-        console.log('导出响应:', response)
+        console.log('导出响应完整数据:', response)
+        console.log('导出响应data字段:', response.data)
         
         if (response && response.data) {
           const data = response.data.data || response.data
+          console.log('解析后的data:', data)
+          console.log('download_url:', data.download_url)
+          console.log('file_name:', data.file_name)
+          console.log('alarm_count:', data.alarm_count)
           
           // 自动下载
           if (data.download_url) {
-            const link = document.createElement('a')
-            link.href = data.download_url
-            link.download = data.file_name || 'false_positives.zip'
-            link.click()
-            
-            ElMessage.success(`导出成功！共 ${data.alarm_count || 0} 条数据`)
-            
-            // 刷新统计
-            loadStats()
+            try {
+              // 使用项目的axios实例下载文件，这样可以带上token和代理配置
+              const fileResponse = await request({
+                url: data.download_url,
+                method: 'GET',
+                responseType: 'blob',
+                timeout: 60000 // 60秒超时
+              })
+              
+              console.log('文件下载响应:', fileResponse)
+              
+              // 创建blob URL并下载
+              const blob = new Blob([fileResponse.data])
+              const url = window.URL.createObjectURL(blob)
+              const link = document.createElement('a')
+              link.style.display = 'none'
+              link.href = url
+              link.download = data.file_name || 'false_positives.zip'
+              document.body.appendChild(link)
+              link.click()
+              
+              // 清理
+              setTimeout(() => {
+                document.body.removeChild(link)
+                window.URL.revokeObjectURL(url)
+              }, 100)
+              
+              ElMessage.success(`导出成功！共 ${data.alarm_count || 0} 条数据`)
+              
+              // 刷新统计
+              await loadStats()
+            } catch (downloadError) {
+              console.error('下载文件失败:', downloadError)
+              console.error('错误详情:', downloadError.response)
+              ElMessage.error(`下载文件失败: ${downloadError.message}`)
+            }
           } else {
+            console.error('未找到download_url字段')
             ElMessage.error('导出失败：未返回下载链接')
           }
         }
@@ -606,15 +628,23 @@ export default {
         uploadLoading.value = true
         console.log('打包上传参数:', params)
         
+        // 立即清空预览数据（在请求之前）
+        previewData.value.visible = false
+        previewData.value.count = 0
+        
         const response = await eventApi.packageFalsePositives(params)
-        console.log('打包上传响应:', response)
+        console.log('打包上传响应完整数据:', response)
+        console.log('打包上传响应data字段:', response.data)
         
         if (response && response.data) {
           const data = response.data.data || response.data
+          console.log('解析后的data:', data)
+          console.log('alarm_count:', data.alarm_count)
+          
           ElMessage.success(`打包上传成功！共 ${data.alarm_count || 0} 条数据`)
           
           // 刷新统计
-          loadStats()
+          await loadStats()
         }
       } catch (error) {
         if (error !== 'cancel') {
@@ -1545,54 +1575,6 @@ export default {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.7);
   font-weight: 500;
-}
-
-/* 按类型统计区域 */
-.type-stats-section {
-  margin-top: 25px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(0, 255, 255, 0.2);
-}
-
-.section-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #00ffff;
-  margin-bottom: 15px;
-  text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
-}
-
-.type-stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
-}
-
-.type-stat-item {
-  text-align: center;
-  padding: 12px 10px;
-  background: rgba(243, 244, 246, 0.05);
-  border-radius: 6px;
-  border: 1px solid rgba(0, 255, 255, 0.15);
-  transition: all 0.3s ease;
-}
-
-.type-stat-item:hover {
-  background: rgba(243, 244, 246, 0.1);
-  border-color: rgba(0, 255, 255, 0.3);
-  transform: translateY(-1px);
-}
-
-.type-stat-value {
-  font-size: 20px;
-  font-weight: bold;
-  color: rgba(255, 255, 255, 0.95);
-  margin-bottom: 5px;
-}
-
-.type-stat-label {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
 }
 
 /* 科技感按钮 */

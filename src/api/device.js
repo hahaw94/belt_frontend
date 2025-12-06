@@ -125,9 +125,12 @@ export const deviceApi = {
   },
 
   // 板卡固件升级
-  upgradeBoardFirmware(boardId, firmwareFile) {
+  upgradeBoardFirmware(boardId, firmwareFile, version) {
     const formData = new FormData()
-    formData.append('firmware', firmwareFile)
+    formData.append('file', firmwareFile)
+    if (version) {
+      formData.append('version', version)
+    }
     return api.upload(`/api/v1/access/boards/${boardId}/upgrade`, formData)
   },
 

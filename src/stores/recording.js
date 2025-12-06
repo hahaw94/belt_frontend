@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { recordingApi } from '@/api/recording'
+import { detectionApi as recordingApi } from '@/api/detection'
 
 /**
  * 录像管理Store

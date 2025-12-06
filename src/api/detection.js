@@ -75,5 +75,15 @@ export const detectionApi = {
   // 获取录像播放地址
   getRecordingPlayUrl(id) {
     return api.get(`/api/v1/recordings/${id}/play`)
+  },
+
+  // 根据告警ID获取录像
+  getRecordingByAlarmId(alarmId) {
+    return api.get(`/api/v1/recordings/by-alarm/${alarmId}`)
+  },
+
+  // 获取录像统计信息
+  getStatistics() {
+    return api.get('/api/v1/recordings/statistics')
   }
 } 

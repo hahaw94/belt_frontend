@@ -152,7 +152,7 @@
                     @click="stopBoardStreaming(row)"
                     :disabled="streamOperationLoading"
                   >
-                    暂停推流
+                    停止转码
                   </button>
                   <button 
                     v-else
@@ -160,10 +160,30 @@
                     @click="startBoardStreaming(row)"
                     :disabled="streamOperationLoading"
                   >
-                    开始推流
+                    开始转码
                   </button>
-                  <button class="action-btn stream-btn" @click="showStreamInfo(row)">
+                  <button 
+                    v-if="(row.StreamStatus || row.stream_status) === 'streaming'"
+                    class="action-btn stream-btn" 
+                    @click="showStreamInfo(row)"
+                  >
                     流信息
+                  </button>
+                  <!-- 原始流播放按钮 -->
+                  <button 
+                    v-if="row.BoundWVPChannelID || row.bound_wvp_channel_id"
+                    class="action-btn play-btn" 
+                    @click="playOriginalStream(row)"
+                  >
+                    原始流
+                  </button>
+                  <!-- 固件升级按钮 -->
+                  <button 
+                    v-if="(row.DeviceStatus || row.device_status) === 'online'"
+                    class="action-btn upgrade-btn" 
+                    @click="showUpgradeDialog(row)"
+                  >
+                    升级
                   </button>
                   <button class="action-btn delete-btn" @click="deleteBoard(row)">
                     删除
@@ -483,11 +503,99 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 固件升级对话框 -->
+    <el-dialog 
+      v-model="upgradeDialogVisible" 
+      title="板卡固件升级" 
+      width="600px"
+      class="tech-dialog"
+      :modal-class="'tech-modal'"
+      destroy-on-close>
+      <div class="dialog-content">
+        <div class="upgrade-info">
+          <div class="info-row">
+            <span class="label">设备名称:</span>
+            <span class="value">{{ currentUpgradeBoard?.device_name || currentUpgradeBoard?.DeviceName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">当前版本:</span>
+            <span class="value">{{ currentUpgradeBoard?.firmware_version || currentUpgradeBoard?.FirmwareVersion || '未知' }}</span>
+          </div>
+        </div>
+
+        <el-form :model="upgradeForm" label-width="100px" class="upgrade-form">
+          <el-form-item label="新版本号">
+            <el-input 
+              v-model="upgradeForm.version" 
+              placeholder="例如: v2.0.0（可选）"
+              class="tech-input"
+            />
+          </el-form-item>
+          <el-form-item label="固件文件">
+            <el-upload
+              ref="uploadRef"
+              :auto-upload="false"
+              :on-change="handleFirmwareFileChange"
+              :show-file-list="false"
+              accept=".zip,.tar,.gz,.tar.gz"
+              drag
+            >
+              <div class="upload-area">
+                <el-icon class="upload-icon"><Upload /></el-icon>
+                <div class="upload-text">
+                  <p>点击或拖拽文件到此处上传</p>
+                  <p class="upload-hint">支持 .zip, .tar, .gz 格式</p>
+                </div>
+              </div>
+            </el-upload>
+            <div v-if="upgradeForm.file" class="file-info">
+              <span class="file-name">{{ upgradeForm.file.name }}</span>
+              <span class="file-size">({{ formatFileSize(upgradeForm.file.size) }})</span>
+              <el-button 
+                type="danger" 
+                size="small" 
+                text
+                @click="clearFirmwareFile"
+              >
+                移除
+              </el-button>
+            </div>
+          </el-form-item>
+          
+          <!-- 升级进度 -->
+          <el-form-item v-if="upgrading" label="升级进度">
+            <el-progress 
+              :percentage="upgradeProgress" 
+              :status="upgradeStatus"
+              :stroke-width="20"
+            />
+            <div class="progress-text">{{ upgradeMessage }}</div>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="upgradeDialogVisible = false" :disabled="upgrading">
+            取消
+          </el-button>
+          <el-button 
+            type="primary" 
+            @click="startUpgrade"
+            :loading="upgrading"
+            :disabled="!upgradeForm.file"
+          >
+            {{ upgrading ? '升级中...' : '开始升级' }}
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Refresh, Plus, Upload, Search, RefreshRight
@@ -516,6 +624,22 @@ const currentBoardForStream = ref(null)
 const deviceDetailDialogVisible = ref(false)
 const deviceDetailLoading = ref(false)
 const currentBoardForDetail = ref(null)
+
+// 固件升级对话框状态
+const upgradeDialogVisible = ref(false)
+const currentUpgradeBoard = ref(null)
+const upgrading = ref(false)
+const upgradeProgress = ref(0)
+const upgradeStatus = ref('')
+const upgradeMessage = ref('')
+const uploadRef = ref(null)
+let upgradePollingTimer = null
+
+// 固件升级表单
+const upgradeForm = reactive({
+  version: '',
+  file: null
+})
 
 // 摄像机列表
 const cameraList = ref([])
@@ -567,24 +691,25 @@ const boardSearchForm = reactive({
 
 // 板卡表单
 const boardForm = reactive({
-  deviceName: '',
-  deviceCode: '',
-  ipAddress: '',
-  port: 554,
-  rtspUsername: '',
-  rtspPassword: '',
-  rtspPath: '',
-  manufacturer: '',
-  model: '',
-  location: '',
-  serialNumber: '',
-  firmwareVersion: '',
-  cameraId: '',
-  cameraName: '',
-  algorithmModelType: '',
-  algorithmModelVersion: '',
+  device_name: '',
+  device_number: '',
+  device_ip: '',
+  analyzed_stream_url: '', // 检测流地址（板卡提供）
+  bound_camera_id: null,
+  bound_camera_name: '',
+  bound_wvp_channel_id: '', // WVP通道ID
+  algorithms: [], // 多算法配置数组
+  firmware_version: '',
   description: ''
 })
+
+// 算法表单（用于添加算法）- 暂未使用，后续实现算法配置功能时启用
+// const algorithmForm = reactive({
+//   algorithm_id: '',
+//   algorithm_name: '',
+//   model_type: '',
+//   model_version: ''
+// })
 
 
 // 板卡分页
@@ -650,17 +775,45 @@ const offlineBoardCount = computed(() => {
   }).length
 })
 
-// 表单验证规则
-const boardRules = {
-  deviceName: [{ required: true, message: '请输入设备名称', trigger: 'blur' }],
-  deviceCode: [{ required: true, message: '请输入设备编号', trigger: 'blur' }],
-  ipAddress: [
-    { required: true, message: '请输入设备IP地址', trigger: 'blur' },
-    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: '请输入正确的IP地址', trigger: 'blur' }
-  ],
-  port: [{ required: true, message: '请输入通信端口', trigger: 'blur' }]
-}
+// 表单验证规则 - 暂未使用，后续添加表单验证时启用
+// const boardFormRules = {
+//   device_name: [
+//     { required: true, message: '请输入设备名称', trigger: 'blur' },
+//     { max: 100, message: '设备名称不能超过100个字符', trigger: 'blur' }
+//   ],
+//   device_number: [
+//     { required: true, message: '请输入设备编号', trigger: 'blur' },
+//     { max: 50, message: '设备编号不能超过50个字符', trigger: 'blur' }
+//   ],
+//   device_ip: [
+//     { required: true, message: '请输入设备IP地址', trigger: 'blur' },
+//     { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: '请输入正确的IP地址', trigger: 'blur' }
+//   ],
+//   analyzed_stream_url: [
+//     { max: 500, message: '检测流地址不能超过500个字符', trigger: 'blur' }
+//   ],
+//   bound_camera_name: [
+//     { max: 100, message: '摄像机名称不能超过100个字符', trigger: 'blur' }
+//   ],
+//   bound_wvp_channel_id: [
+//     { max: 64, message: 'WVP通道ID不能超过64个字符', trigger: 'blur' }
+//   ],
+//   firmware_version: [
+//     { max: 20, message: '固件版本不能超过20个字符', trigger: 'blur' }
+//   ],
+//   description: [
+//     { max: 1000, message: '描述不能超过1000个字符', trigger: 'blur' }
+//   ]
+// }
 
+
+// 监听升级对话框关闭，清理定时器
+watch(upgradeDialogVisible, (newVal) => {
+  if (!newVal && upgradePollingTimer) {
+    clearTimeout(upgradePollingTimer)
+    upgradePollingTimer = null
+  }
+})
 
 // 生命周期
 onMounted(() => {
@@ -786,22 +939,15 @@ const showAddBoard = () => {
   boardDialogTitle.value = '添加设备'
   editingBoardId.value = null
   Object.assign(boardForm, {
-    deviceName: '',
-    deviceCode: '',
-    ipAddress: '',
-    port: 554,
-    rtspUsername: '',
-    rtspPassword: '',
-    rtspPath: '',
-    manufacturer: '',
-    model: '',
-    location: '',
-    serialNumber: '',
-    firmwareVersion: '',
-    cameraId: '',
-    cameraName: '',
-    algorithmModelType: '',
-    algorithmModelVersion: '',
+    device_name: '',
+    device_number: '',
+    device_ip: '',
+    analyzed_stream_url: '',
+    bound_camera_id: null,
+    bound_camera_name: '',
+    bound_wvp_channel_id: '',
+    algorithms: [],
+    firmware_version: '',
     description: ''
   })
   // 获取摄像机列表
@@ -916,8 +1062,9 @@ const copyToClipboard = async (text) => {
       ElMessage.success('已复制到剪贴板')
     } catch (fallbackError) {
       ElMessage.error('复制失败')
+    } finally {
+      document.body.removeChild(textArea)
     }
-    document.body.removeChild(textArea)
   }
 }
 
@@ -927,22 +1074,15 @@ const editBoard = (board) => {
   boardDialogTitle.value = '编辑设备'
   editingBoardId.value = board.ID || board.id
   Object.assign(boardForm, {
-    deviceName: board.DeviceName || board.device_name || '',
-    deviceCode: board.DeviceNumber || board.device_number || '',
-    ipAddress: board.DeviceIP || board.device_ip || '',
-    port: board.RtspPort || board.rtsp_port || 554,
-    rtspUsername: board.RtspUsername || board.rtsp_username || '',
-    rtspPassword: board.RtspPassword || board.rtsp_password || '',
-    rtspPath: board.RtspPath || board.rtsp_path || '',
-    manufacturer: board.manufacturer || board.vendor || '',
-    model: board.model || board.device_model || '',
-    location: board.location || board.install_location || '',
-    serialNumber: board.serialNumber || board.serial_number || board.sn || '',
-    firmwareVersion: board.FirmwareVersion || board.firmware_version || '',
-    cameraId: board.BoundCameraID || board.bound_camera_id || '',
-    cameraName: board.BoundCameraName || board.bound_camera_name || '',
-    algorithmModelType: board.AlgorithmModelType || board.algorithm_model_type || '',
-    algorithmModelVersion: board.AlgorithmModelVersion || board.algorithm_model_version || '',
+    device_name: board.DeviceName || board.device_name || '',
+    device_number: board.DeviceNumber || board.device_number || '',
+    device_ip: board.DeviceIP || board.device_ip || '',
+    analyzed_stream_url: board.AnalyzedStreamURL || board.analyzed_stream_url || '',
+    bound_camera_id: board.BoundCameraID || board.bound_camera_id || null,
+    bound_camera_name: board.BoundCameraName || board.bound_camera_name || '',
+    bound_wvp_channel_id: board.BoundWVPChannelID || board.bound_wvp_channel_id || '',
+    algorithms: board.Algorithms || board.algorithms || [],
+    firmware_version: board.FirmwareVersion || board.firmware_version || '',
     description: board.Description || board.description || ''
   })
   // 获取摄像机列表
@@ -952,15 +1092,9 @@ const editBoard = (board) => {
 // 保存板卡
 const saveBoard = async () => {
   try {
-    // 表单验证
-    if (!boardFormRef.value) {
-      ElMessage.error('表单引用未找到')
-      return
-    }
-    
-    const isValid = await boardFormRef.value.validate()
-    if (!isValid) {
-      ElMessage.error('请填写完整的板卡信息')
+    // 基本验证
+    if (!boardForm.device_name || !boardForm.device_number || !boardForm.device_ip) {
+      ElMessage.error('请填写设备名称、设备编号和设备IP')
       return
     }
 
@@ -975,17 +1109,15 @@ const saveBoard = async () => {
 
     // 将前端表单数据映射为后端期望的格式
     const apiData = {
-      device_name: boardForm.deviceName,
-      device_number: boardForm.deviceCode,
-      device_ip: boardForm.ipAddress,
-      rtsp_port: boardForm.port || 554,
-      rtsp_username: boardForm.rtspUsername || '',
-      rtsp_password: boardForm.rtspPassword || '',
-      rtsp_path: boardForm.rtspPath || '',
-      bound_camera_id: boardForm.cameraId ? parseInt(boardForm.cameraId) : null,
-      bound_camera_name: boardForm.cameraName || '',
-      algorithm_model_type: boardForm.algorithmModelType || '',
-      algorithm_model_version: boardForm.algorithmModelVersion || '',
+      device_name: boardForm.device_name,
+      device_number: boardForm.device_number,
+      device_ip: boardForm.device_ip,
+      analyzed_stream_url: boardForm.analyzed_stream_url || '',
+      bound_camera_id: boardForm.bound_camera_id,
+      bound_camera_name: boardForm.bound_camera_name || '',
+      bound_wvp_channel_id: boardForm.bound_wvp_channel_id || '',
+      algorithms: boardForm.algorithms || [],
+      firmware_version: boardForm.firmware_version || '',
       description: boardForm.description || ''
     }
 
@@ -1065,6 +1197,148 @@ const deleteBoard = async (board) => {
       ElMessage.error('删除板卡失败：' + error.message)
     }
   }
+}
+
+// 显示固件升级对话框
+const showUpgradeDialog = (board) => {
+  // 清理之前的定时器
+  if (upgradePollingTimer) {
+    clearTimeout(upgradePollingTimer)
+    upgradePollingTimer = null
+  }
+  
+  currentUpgradeBoard.value = board
+  upgradeForm.version = ''
+  upgradeForm.file = null
+  upgrading.value = false
+  upgradeProgress.value = 0
+  upgradeStatus.value = ''
+  upgradeMessage.value = ''
+  upgradeDialogVisible.value = true
+}
+
+// 处理固件文件选择
+const handleFirmwareFileChange = (file) => {
+  upgradeForm.file = file.raw
+}
+
+// 清除固件文件
+const clearFirmwareFile = () => {
+  upgradeForm.file = null
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles()
+  }
+}
+
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (!bytes) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return (bytes / Math.pow(k, i)).toFixed(2) + ' ' + sizes[i]
+}
+
+// 开始升级
+const startUpgrade = async () => {
+  if (!upgradeForm.file) {
+    ElMessage.warning('请选择固件文件')
+    return
+  }
+
+  try {
+    upgrading.value = true
+    upgradeProgress.value = 0
+    upgradeStatus.value = ''
+    upgradeMessage.value = '正在上传固件文件...'
+
+    const boardId = currentUpgradeBoard.value.ID || currentUpgradeBoard.value.id
+    const formData = new FormData()
+    formData.append('file', upgradeForm.file)
+    if (upgradeForm.version) {
+      formData.append('version', upgradeForm.version)
+    }
+
+    // 上传固件文件
+    upgradeProgress.value = 30
+    upgradeMessage.value = '固件上传中...'
+
+    const response = await deviceApi.upgradeBoardFirmware(boardId, upgradeForm.file, upgradeForm.version)
+    
+    if (response && response.code === 200) {
+      upgradeProgress.value = 50
+      upgradeMessage.value = '固件安装中，请稍候...'
+      
+      // 开始轮询升级状态
+      pollUpgradeStatus(boardId)
+    } else {
+      throw new Error(response?.message || '升级失败')
+    }
+  } catch (error) {
+    console.error('固件升级失败:', error)
+    upgrading.value = false
+    upgradeStatus.value = 'exception'
+    upgradeMessage.value = '升级失败: ' + error.message
+    ElMessage.error('固件升级失败: ' + error.message)
+  }
+}
+
+// 轮询升级状态
+const pollUpgradeStatus = async (boardId) => {
+  try {
+    const response = await deviceApi.getBoardUpgradeStatus(boardId)
+    
+    if (response && response.code === 200) {
+      const status = response.data
+      
+      upgradeProgress.value = status.progress || 50
+      upgradeMessage.value = status.message || status.status
+      
+      if (status.status === 'success') {
+        upgradeProgress.value = 100
+        upgradeStatus.value = 'success'
+        upgradeMessage.value = '升级成功！'
+        upgrading.value = false
+        
+        ElMessage.success('固件升级成功！')
+        
+        // 2秒后关闭对话框并刷新列表
+        setTimeout(() => {
+          upgradeDialogVisible.value = false
+          getBoardList()
+        }, 2000)
+      } else if (status.status === 'failed' || status.status === 'error') {
+        upgradeStatus.value = 'exception'
+        upgradeMessage.value = '升级失败: ' + (status.message || status.error)
+        upgrading.value = false
+        ElMessage.error('固件升级失败')
+      } else {
+        // 继续轮询
+        upgradePollingTimer = setTimeout(() => {
+          pollUpgradeStatus(boardId)
+        }, 2000)
+      }
+    }
+  } catch (error) {
+    console.error('获取升级状态失败:', error)
+    upgradeStatus.value = 'exception'
+    upgradeMessage.value = '获取升级状态失败'
+    upgrading.value = false
+  }
+}
+
+// 播放原始流
+const playOriginalStream = (board) => {
+  const channelId = board.BoundWVPChannelID || board.bound_wvp_channel_id
+  if (!channelId) {
+    ElMessage.warning('该板卡未绑定WVP通道')
+    return
+  }
+  
+  // TODO: 实现原始流播放功能
+  ElMessage.info(`播放原始流功能开发中，通道ID: ${channelId}`)
+  // 可以打开一个新窗口或者在当前页面显示播放器
+  // window.open(`/play?channelId=${channelId}`, '_blank')
 }
 
 
@@ -1719,6 +1993,37 @@ const stopBoardStreaming = async (board) => {
   cursor: not-allowed;
 }
 
+.upgrade-btn {
+  color: #9b59b6;
+  border-color: rgba(155, 89, 182, 0.4);
+}
+
+.upgrade-btn:hover {
+  background: rgba(155, 89, 182, 0.1);
+  border-color: rgba(155, 89, 182, 0.6);
+}
+
+.play-btn {
+  color: #f39c12;
+  border-color: rgba(243, 156, 18, 0.4);
+}
+
+.play-btn:hover {
+  background: rgba(243, 156, 18, 0.1);
+  border-color: rgba(243, 156, 18, 0.6);
+}
+
+.pause-btn:hover {
+  background: rgba(255, 165, 0, 0.1);
+  border-color: rgba(255, 165, 0, 0.6);
+}
+
+.pause-btn:disabled {
+  color: rgba(255, 165, 0, 0.5);
+  border-color: rgba(255, 165, 0, 0.2);
+  cursor: not-allowed;
+}
+
 /* 分页 */
 .flex-center {
   display: flex;
@@ -2174,6 +2479,109 @@ const stopBoardStreaming = async (board) => {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
+}
+
+/* 固件升级对话框样式 */
+.upgrade-info {
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.upgrade-info .info-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.upgrade-info .info-row:last-child {
+  margin-bottom: 0;
+}
+
+.upgrade-info .label {
+  color: rgba(255, 255, 255, 0.7);
+  min-width: 100px;
+  font-size: 14px;
+}
+
+.upgrade-info .value {
+  color: #00ffff;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.upgrade-form {
+  margin-top: 20px;
+}
+
+.upload-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  border: 2px dashed rgba(0, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(0, 255, 255, 0.03);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.upload-area:hover {
+  border-color: rgba(0, 255, 255, 0.6);
+  background: rgba(0, 255, 255, 0.08);
+}
+
+.upload-icon {
+  font-size: 48px;
+  color: rgba(0, 255, 255, 0.6);
+  margin-bottom: 16px;
+}
+
+.upload-text p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+}
+
+.upload-hint {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(0, 255, 255, 0.05);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 6px;
+}
+
+.file-name {
+  flex: 1;
+  color: #00ffff;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-size {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 12px;
+}
+
+.progress-text {
+  margin-top: 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
 }
 
 /* 对话框样式优化 */
