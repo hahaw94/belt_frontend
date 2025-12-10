@@ -133,6 +133,11 @@ export const gb28181API = {
     return request.get('/api/v1/wvp/channels/stats')
   },
 
+  // 获取在线历史统计（周/月/年平均值）
+  getOnlineHistoryStats() {
+    return request.get('/api/v1/wvp/channels/online-history/stats')
+  },
+
   // 获取WVP设备列表
   getWVPDevices(params = {}) {
     return request.get('/api/v1/wvp/devices', { params })

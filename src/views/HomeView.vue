@@ -148,46 +148,6 @@
           </div>
         </div>
 
-        <!-- 任务统计 -->
-        <div class="widget widget-task">
-          <div class="widget-title">任务统计</div>
-          <div class="task-stats-container">
-            
-            <!-- 左上角数据 -->
-            <div class="corner-data top-left">
-              <div class="data-number">20240805985353</div>
-              <div class="data-label">暂无数据</div>
-            </div>
-            
-            <!-- 右上角数据 -->
-            <div class="corner-data top-right">
-              <div class="data-number">{{ dashboardData.task_stats?.online_tasks || 16 }}</div>
-              <div class="data-label">暂无数据</div>
-            </div>
-            
-            <!-- 中心圆圈 -->
-            <div class="center-circle">
-              <div class="circle-background"></div>
-              <div class="circle-content">
-                <div class="center-number">1</div>
-                <div class="center-label">在线任务</div>
-              </div>
-            </div>
-            
-            <!-- 左下角数据 -->
-            <div class="corner-data bottom-left">
-              <div class="data-number">0</div>
-              <div class="data-label">暂无数据</div>
-            </div>
-            
-            <!-- 右下角数据 -->
-            <div class="corner-data bottom-right">
-              <div class="data-number">0</div>
-              <div class="data-label">暂无数据</div>
-            </div>
-          </div>
-        </div>
-
         <!-- 事件通知 -->
         <div class="widget widget-event">
           <div class="widget-title">事件通知</div>
@@ -199,10 +159,10 @@
               @click="viewAlarmDetail(alarm)"
             >
               <div class="event-content">
-                <div class="event-type">{{ alarm.type }}</div>
-                <div class="event-device">{{ alarm.device_name }}</div>
+                <div class="event-type">{{ alarm.alarm_type_name || alarm.type }}</div>
+                <div class="event-location">{{ alarm.camera_name || alarm.location || alarm.device_name }}</div>
                 </div>
-              <div class="event-time">{{ formatEventTime(alarm.time) }}</div>
+              <div class="event-time">{{ formatAlarmTime(alarm.alarm_time || alarm.time) }}</div>
               </div>
             </div>
           </div>
@@ -271,6 +231,39 @@
                   </div>
                   <div class="detail-label">离线</div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 相机在线历史统计 -->
+        <div class="widget">
+          <div class="widget-title">相机在线历史统计</div>
+          <div class="online-history-container">
+            <!-- 三个卡片横向排列 -->
+            <div class="history-cards-row">
+              <!-- 周统计 -->
+              <div class="history-card week-card">
+                <div class="card-header">
+                  <span class="card-title">周</span>
+                </div>
+                <div class="card-rate">{{ onlineHistoryStats.week.avg_online_rate }}</div>
+              </div>
+
+              <!-- 月统计 -->
+              <div class="history-card month-card">
+                <div class="card-header">
+                  <span class="card-title">月</span>
+                </div>
+                <div class="card-rate">{{ onlineHistoryStats.month.avg_online_rate }}</div>
+              </div>
+
+              <!-- 年统计 -->
+              <div class="history-card year-card">
+                <div class="card-header">
+                  <span class="card-title">年</span>
+                </div>
+                <div class="card-rate">{{ onlineHistoryStats.year.avg_online_rate }}</div>
               </div>
             </div>
           </div>
@@ -361,78 +354,6 @@
             </div>
           </div>
         </div>
-
-        <!-- 告警趋势 -->
-        <div class="widget">
-          <div class="widget-title">告警趋势</div>
-          <div class="svg-chart-container">
-            <svg class="trend-chart" viewBox="0 0 320 180" preserveAspectRatio="xMidYMid meet">
-              <!-- 定义渐变和滤镜 -->
-              <defs>
-                <!-- 折线发光效果 -->
-                <filter id="glow">
-                  <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-                  <feMerge> 
-                    <feMergeNode in="coloredBlur"/>
-                    <feMergeNode in="SourceGraphic"/>
-                  </feMerge>
-                </filter>
-                
-                <!-- 填充渐变 -->
-                <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="0%" style="stop-color:#00d4ff;stop-opacity:0.3" />
-                  <stop offset="100%" style="stop-color:#00d4ff;stop-opacity:0.05" />
-                </linearGradient>
-              </defs>
-              
-              <!-- 网格线 -->
-              <g class="grid-lines">
-                <!-- 水平网格线 -->
-                <line v-for="i in 7" :key="'h-' + i"
-                      :x1="30" :y1="20 + (i-1) * 16.67"
-                      :x2="290" :y2="20 + (i-1) * 16.67"
-                      stroke="#00bfff" stroke-width="0.3"
-                      stroke-dasharray="3,3" opacity="0.6"/>
-                
-                <!-- 垂直网格线 -->
-                <line v-for="i in 12" :key="'v-' + i"
-                      :x1="30 + (i-1) * 24" :y1="20"
-                      :x2="30 + (i-1) * 24" :y2="120"
-                      stroke="#00bfff" stroke-width="0.3"
-                      stroke-dasharray="3,3" opacity="0.4"/>
-              </g>
-              
-              <!-- Y轴刻度标签 -->
-              <g class="y-axis-labels">
-                <text v-for="(value, index) in yAxisLabels" :key="'y-' + index"
-                      :x="25" :y="120 - index * 16.67"
-                      fill="#88ccff" font-size="10" text-anchor="end" dominant-baseline="central">{{ value }}</text>
-              </g>
-              
-              <!-- X轴刻度标签 -->
-              <g class="x-axis-labels">
-                <text v-for="(time, index) in xAxisLabels" :key="'x-' + index"
-                      :x="30 + index * 24" :y="140" 
-                      fill="#88ccff" font-size="10" text-anchor="middle">{{ time }}</text>
-              </g>
-              
-              <!-- 数据区域填充 -->
-              <path :d="areaPath" fill="url(#chartGradient)" opacity="0.6"/>
-              
-              <!-- 折线 -->
-              <path :d="linePath" fill="none" stroke="#00d4ff" 
-                    stroke-width="2" filter="url(#glow)" 
-                    class="trend-line"/>
-              
-              <!-- 数据点 -->
-              <circle v-for="(point, index) in chartPoints" :key="'point-' + index"
-                      :cx="point.x" :cy="point.y" r="3.5" 
-                      fill="#00d4ff" stroke="#ffffff" stroke-width="1.5"
-                      class="data-point" filter="url(#glow)"
-                      :style="{ animationDelay: index * 0.1 + 's' }"/>
-            </svg>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -471,22 +392,55 @@
     <el-dialog
       v-model="alarmDetailVisible"
       title="告警详情"
-      width="600px"
+      width="800px"
+      class="alarm-detail-dialog"
     >
       <div class="alarm-detail">
-        <div class="alarm-detail-image">
-          <img :src="selectedAlarm.image" :alt="selectedAlarm.type" />
-        </div>
-        <div class="alarm-detail-info">
+        <div class="alarm-detail-section">
+          <h4>基本信息</h4>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="告警类型">{{ selectedAlarm.type }}</el-descriptions-item>
-            <el-descriptions-item label="发生时间">{{ selectedAlarm.time }}</el-descriptions-item>
-            <el-descriptions-item label="告警位置">{{ selectedAlarm.location }}</el-descriptions-item>
-            <el-descriptions-item label="设备名称">{{ selectedAlarm.device_name }}</el-descriptions-item>
-            <el-descriptions-item label="告警ID" :span="2">{{ selectedAlarm.id }}</el-descriptions-item>
+            <el-descriptions-item label="告警编号">{{ selectedAlarm.alarm_code || selectedAlarm.id }}</el-descriptions-item>
+            <el-descriptions-item label="告警时间">{{ selectedAlarm.alarm_time || selectedAlarm.time }}</el-descriptions-item>
+            <el-descriptions-item label="告警类型">{{ selectedAlarm.alarm_type_name || selectedAlarm.type }}</el-descriptions-item>
+            <el-descriptions-item label="告警等级">
+              <el-tag :type="getAlarmLevelType(selectedAlarm.alarm_level)">{{ getAlarmLevelText(selectedAlarm.alarm_level) }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="摄像头">{{ selectedAlarm.camera_name || selectedAlarm.device_name }}</el-descriptions-item>
+            <el-descriptions-item label="板卡ID">{{ selectedAlarm.board_id || '-' }}</el-descriptions-item>
+            <el-descriptions-item label="状态" :span="2">
+              <el-tag :type="selectedAlarm.status === 1 ? 'success' : 'warning'">
+                {{ selectedAlarm.status === 1 ? '已处理' : '未处理' }}
+              </el-tag>
+            </el-descriptions-item>
           </el-descriptions>
         </div>
+
+        <div class="alarm-detail-section" v-if="selectedAlarm.description">
+          <h4>描述</h4>
+          <p>{{ selectedAlarm.description }}</p>
+        </div>
+
+        <div class="alarm-detail-section">
+          <h4>告警图片</h4>
+          <div class="alarm-images">
+            <img v-if="selectedAlarm.alarm_image" :src="selectedAlarm.alarm_image" alt="告警图片" class="alarm-image" @error="handleImageError" />
+            <img v-else-if="selectedAlarm.image" :src="selectedAlarm.image" alt="告警图片" class="alarm-image" @error="handleImageError" />
+            <img v-else-if="selectedAlarm.snapshot_url" :src="selectedAlarm.snapshot_url" alt="告警图片" class="alarm-image" @error="handleImageError" />
+            <p v-else>暂无图片</p>
+          </div>
+        </div>
+
+        <div class="alarm-detail-section" v-if="selectedAlarm.alarm_video">
+          <h4>告警视频</h4>
+          <video :src="selectedAlarm.alarm_video" controls class="alarm-video"></video>
+        </div>
       </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="alarmDetailVisible = false">关闭</el-button>
+          <el-button type="primary" @click="goToAlarmPage">更多</el-button>
+        </span>
+      </template>
     </el-dialog>
 
     <!-- 自定义摄像头弹窗 - 手动输入流地址播放 -->
@@ -771,14 +725,41 @@
 
 <script setup name="HomeView">
 import { ref, reactive, onMounted, onUnmounted, computed, nextTick } from 'vue'
+import { useRouter } from 'vue-router' // 导入路由
 import { dashboardApi } from '@/api/dashboard'
 import { deviceApi } from '@/api/device'
 import { getLayerCameras } from '@/api/map'
+import { eventApi } from '@/api/event'
+import { gb28181API } from '@/api/system'
 import { ElMessage } from 'element-plus'
 import { Loading, VideoCamera, VideoPlay, VideoPause } from '@element-plus/icons-vue'
 // eslint-disable-next-line no-unused-vars
 import H265Player from '@/components/H265Player.vue' // 保留但不使用
 import ZLKWebRTCPlayer from '@/components/ZLKWebRTCPlayer.vue' // 新增WebRTC播放器
+import { useAlertStore } from '@/stores/alertStore' // 导入告警存储
+
+// 初始化路由
+const router = useRouter()
+
+// 响应式显示数量
+const maxVisibleAlarms = ref(8)
+
+// 监听窗口大小变化，动态调整显示数量
+const updateMaxVisibleAlarms = () => {
+  const height = window.innerHeight
+  if (height >= 1440) {
+    maxVisibleAlarms.value = 8 // 2K及以上分辨率
+  } else if (height >= 1200) {
+    maxVisibleAlarms.value = 8 // 1080p+
+  } else if (height >= 1080) {
+    maxVisibleAlarms.value = 6 // 1080p
+  } else if (height >= 900) {
+    maxVisibleAlarms.value = 6 // 900p
+  } else {
+    maxVisibleAlarms.value = 4 // 更小分辨率
+  }
+  console.log('窗口高度:', height, '显示告警数量:', maxVisibleAlarms.value)
+}
 // import { useAuthStore } from '@/stores/auth'
 // const authStore = useAuthStore() // 暂时注释，如果需要可以取消注释
 const loading = ref(false)
@@ -840,149 +821,135 @@ let tooltipTimer = null
 // 数据看板数据
 const dashboardData = reactive({
   camera_stats: {
-    total_cameras: 30,
-    online_cameras: 28,
-    offline_cameras: 2,
-    online_rate: 0.933
+    total_cameras: 0,
+    online_cameras: 0,
+    offline_cameras: 0,
+    online_rate: 0
   },
   alarm_stats: {
-    week_total: 85,
-    today_total: 12,
-    unprocessed: 5,
-    processed: 7,
-    processing: 1
+    week_total: 0,
+    today_total: 0,
+    unprocessed: 0,
+    processed: 0,
+    processing: 0
   },
   device_stats: {
-    total_devices: 35,
-    online_devices: 32,
-    online_rate: 0.914
+    total_devices: 0,
+    online_devices: 0,
+    online_rate: 0
   },
   system_stats: {
-    detection_accuracy: 92.5,
-    uptime: '99.8%'
+    detection_accuracy: 0,
+    uptime: '0%'
   },
   task_stats: {
-    online_tasks: 16,
-    progress: 85
+    online_tasks: 0,
+    progress: 0
   },
-  alarm_ranking: [
-    { type: '异常行为', count: 35, percentage: 0.412 },
-    { type: '车辆违规', count: 28, percentage: 0.329 },
-    { type: '人员闯入', count: 22, percentage: 0.259 }
-  ],
-  latest_alarms: [
-    {
-      id: 101,
-      time: '2024-01-20 15:45:30',
-      type: '异常行为',
-      location: '前门',
-      image: '/uploads/alarms/20240120_1545_101.jpg',
-      device_name: '前门摄像头'
-    },
-    {
-      id: 102,
-      time: '2024-01-20 11:03:06',
-      type: '未戴安全帽',
-      location: '演示61摄像机',
-      image: '/uploads/alarms/20240120_1103_102.jpg',
-      device_name: '演示61摄像机'
-    },
-    {
-      id: 103,
-      time: '2024-01-20 11:01:23',
-      type: '烟火检测',
-      location: '演示253摄像机',
-      image: '/uploads/alarms/20240120_1101_103.jpg',
-      device_name: '演示253摄像机'
-    },
-    {
-      id: 104,
-      time: '2024-01-20 10:56:31',
-      type: '人员闯入',
-      location: '演示211摄像机',
-      image: '/uploads/alarms/20240120_1056_104.jpg',
-      device_name: '演示211摄像机'
-    }
-  ]
+  alarm_ranking: [],
+  latest_alarms: []
 })
 
-// 最近告警（用于事件通知）
+// 在线历史统计数据
+const onlineHistoryStats = reactive({
+  week: {
+    avg_online_rate: '0.00%',
+    avg_online_count: '0.0',
+    avg_total_count: '0.0',
+    sample_count: 0
+  },
+  month: {
+    avg_online_rate: '0.00%',
+    avg_online_count: '0.0',
+    avg_total_count: '0.0',
+    sample_count: 0
+  },
+  year: {
+    avg_online_rate: '0.00%',
+    avg_online_count: '0.0',
+    avg_total_count: '0.0',
+    sample_count: 0
+  }
+})
+
+// 最近告警（用于事件通知）- 合并API数据和WebSocket实时数据
 const recentAlarms = computed(() => {
-  return dashboardData.latest_alarms.slice(0, 3)
+  // 获取alertStore中的实时告警
+  const alertStore = useAlertStore()
+  
+  console.log('========== 事件通知数据源检查 ==========')
+  console.log('alertStore.alertHistory 数量:', alertStore.alertHistory.length)
+  console.log('alertStore.alertHistory 内容:', alertStore.alertHistory)
+  console.log('dashboardData.latest_alarms 数量:', dashboardData.latest_alarms.length)
+  console.log('dashboardData.latest_alarms 内容:', dashboardData.latest_alarms)
+  
+  const realtimeAlarms = alertStore.alertHistory.map(alert => ({
+    id: alert.id,
+    alarm_code: alert.id,
+    alarm_time: alert.timestamp,
+    time: alert.timestamp,
+    alarm_type_name: alert.type,
+    type: alert.type,
+    location: alert.device, // 使用摄像头名称作为点位
+    device_name: alert.device,
+    camera_name: alert.device,
+    alarm_level: alert.level || 2,
+    status: 0, // 实时告警默认未处理
+    alarm_image: alert.image,
+    image: alert.image,
+    description: alert.message
+  }))
+  
+  console.log('转换后的实时告警数量:', realtimeAlarms.length)
+  console.log('转换后的实时告警内容:', realtimeAlarms)
+  
+  // 合并API获取的告警和实时告警，按时间排序，取前3条
+  const allAlarms = [...realtimeAlarms, ...dashboardData.latest_alarms]
+  console.log('合并后总告警数量:', allAlarms.length)
+  
+  const sorted = allAlarms
+    .sort((a, b) => {
+      const timeA = new Date(a.alarm_time || a.time).getTime()
+      const timeB = new Date(b.alarm_time || b.time).getTime()
+      return timeB - timeA // 降序排列
+    })
+    .slice(0, maxVisibleAlarms.value)
+  
+  console.log('最终显示的告警数量:', sorted.length)
+  console.log('最终显示的告警内容:', sorted)
+  console.log('========================================')
+  
+  return sorted
 })
 
 // 排行榜图表数据
 const rankingChartData = computed(() => {
-  const deviceNames = ['演示253摄像机', '演示61摄像机', '演示211摄像机', '演示102摄像机', '演示178摄像机']
   const strokeColors = ['#ff6b35', '#ffa500', '#00bfff', '#1e90ff', '#4682b4']
   
-  // 扩展数据到5个项目，为后面两项添加固定假数据
-  const extendedRanking = [
-    ...dashboardData.alarm_ranking,
-    { type: '智能监控', count: 8 },
-    { type: '数据分析', count: 3 }
-  ].slice(0, 5)
+  // 确保至少有5个项目用于显示
+  const ranking = dashboardData.alarm_ranking || []
   
-  const maxCount = Math.max(...extendedRanking.map(item => item.count), 1)
+  // 如果数据不足5个，用空数据填充
+  const extendedRanking = [...ranking]
+  while (extendedRanking.length < 5) {
+    extendedRanking.push({ type: '-', count: 0 })
+  }
   
-  return extendedRanking.map((item, index) => ({
-    deviceName: deviceNames[index],
-    count: item.count,
-    percentage: item.count / maxCount,
+  // 只取前5个
+  const top5 = extendedRanking.slice(0, 5)
+  
+  // 计算最大值用于百分比计算
+  const maxCount = Math.max(...top5.map(item => item.count), 1)
+  
+  return top5.map((item, index) => ({
+    deviceName: item.type || '-', // 使用告警类型名称作为显示名称
+    count: item.count || 0,
+    percentage: maxCount > 0 ? (item.count || 0) / maxCount : 0,
     strokeColor: strokeColors[index]
   }))
 })
 
-// 趋势图表数据
-const trendChartData = ref([5, 15, 6, 13, 6, 2, 1, 0, 0, 1, 9, 18])
-const xAxisLabels = ref(['12', '14', '16', '18', '20', '22', '0', '2', '4', '6', '8', '10'])
-
-// Y轴标签 - 支持动态计算或手动设置
-const yAxisLabels = computed(() => {
-  // 方式1：固定标签（当前使用）
-  return [0, 3, 6, 9, 12, 15, 18]
-  
-  // 方式2：动态计算（后续可启用）
-  // const maxDataValue = Math.max(...trendChartData.value)
-  // const maxY = Math.ceil(maxDataValue * 1.2 / 5) * 5 // 向上取整到5的倍数，并留20%余量
-  // const step = maxY / 6
-  // return Array.from({length: 7}, (_, i) => Math.round(i * step))
-})
-
-// 图表点坐标计算
-const chartPoints = computed(() => {
-  const maxValue = Math.max(...yAxisLabels.value)
-  return trendChartData.value.map((value, index) => ({
-    x: 30 + index * 24, // 与垂直网格线对齐
-    y: 120 - (value / maxValue) * 100 // Y轴范围 20-120，总高度100
-  }))
-})
-
-// 折线路径
-const linePath = computed(() => {
-  if (chartPoints.value.length === 0) return ''
-  
-  let path = `M ${chartPoints.value[0].x} ${chartPoints.value[0].y}`
-  for (let i = 1; i < chartPoints.value.length; i++) {
-    path += ` L ${chartPoints.value[i].x} ${chartPoints.value[i].y}`
-  }
-  return path
-})
-
-// 区域填充路径
-const areaPath = computed(() => {
-  if (chartPoints.value.length === 0) return ''
-
-  let path = `M ${chartPoints.value[0].x} 120` // 与网格线底部对齐
-  path += ` L ${chartPoints.value[0].x} ${chartPoints.value[0].y}`
-
-  for (let i = 1; i < chartPoints.value.length; i++) {
-    path += ` L ${chartPoints.value[i].x} ${chartPoints.value[i].y}`
-  }
-
-  path += ` L ${chartPoints.value[chartPoints.value.length - 1].x} 120 Z` // 与网格线底部对齐
-  return path
-})
+// 折线图相关代码已删除，改为在线历史统计卡片
 
 // 环形图圆弧长度计算
 const totalCircumference = computed(() => {
@@ -1545,11 +1512,7 @@ const streamConfig = {
 //   return time.toLocaleTimeString('zh-CN', { hour12: false })
 // }
 
-// 格式化事件时间（仅显示时分秒）
-const formatEventTime = (timeStr) => {
-  const time = new Date(timeStr)
-  return time.toLocaleTimeString('zh-CN', { hour12: false }).slice(0, 8)
-}
+// formatEventTime函数已被formatAlarmTime替代
 
 
 // 获取设备名称（用于排行榜）- 已被rankingChartData计算属性替代
@@ -2277,12 +2240,248 @@ const loadDashboardData = async () => {
   }
 }
 
+// 加载告警统计数据
+const loadAlarmStatistics = async () => {
+  try {
+    // 获取最近7天的统计数据
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - 7)
+    
+    const params = {
+      start_time: startDate.toISOString().split('T')[0],
+      end_time: endDate.toISOString().split('T')[0]
+    }
+    
+    const response = await eventApi.getAlarmStatistics(params)
+    
+    console.log('========== 告警统计API响应 ==========')
+    console.log('完整响应:', response)
+    console.log('响应数据:', response.data)
+    
+    if (response && response.data) {
+      // 更新告警统计数据 - 从response.data中获取
+      const data = response.data
+      dashboardData.alarm_stats.today_total = data.today_count || 0
+      dashboardData.alarm_stats.processed = data.today_handled_count || 0
+      dashboardData.alarm_stats.unprocessed = data.today_unhandled_count || 0
+      
+      // 更新高频告警排行数据 - 使用周高频告警Top5
+      if (data.top_alarms_week && data.top_alarms_week.length > 0) {
+        dashboardData.alarm_ranking = data.top_alarms_week.map(item => ({
+          type: item.alarm_type_name || `类型${item.alarm_type_id}`,
+          count: item.count || 0,
+          alarm_type_id: item.alarm_type_id
+        }))
+        
+        console.log('高频告警排行已更新:', dashboardData.alarm_ranking)
+      }
+      
+      console.log('告警统计数据已更新:', {
+        今日总数: dashboardData.alarm_stats.today_total,
+        已处理: dashboardData.alarm_stats.processed,
+        未处理: dashboardData.alarm_stats.unprocessed,
+        高频告警数量: dashboardData.alarm_ranking.length
+      })
+    }
+  } catch (error) {
+    console.error('加载告警统计失败:', error)
+    // 不显示错误提示，使用默认数据
+  }
+}
+
+// 加载最新告警列表
+const loadLatestAlarms = async () => {
+  try {
+    const params = {
+      page: 1,
+      page_size: maxVisibleAlarms.value,
+      sort_by: 'alarm_time',
+      sort_order: 'desc'
+    }
+    
+    console.log('========== 开始加载最新告警列表 ==========')
+    console.log('请求参数:', params)
+    
+    const response = await eventApi.getAlarmList(params)
+    
+    console.log('========== 最新告警列表API响应 ==========')
+    console.log('完整响应:', response)
+    console.log('响应数据:', response?.data)
+    console.log('告警列表(data.list):', response?.data?.list)
+    console.log('告警列表(data.data):', response?.data?.data)
+    
+    // API返回的数据在 response.data.data 中，而不是 response.data.list
+    if (response && response.data && response.data.data) {
+      dashboardData.latest_alarms = response.data.data
+      console.log('✅ 最新告警列表已更新，数量:', dashboardData.latest_alarms.length)
+      console.log('更新后的数据:', dashboardData.latest_alarms)
+    } else {
+      console.warn('⚠️ API响应格式不正确或无数据')
+    }
+  } catch (error) {
+    console.error('❌ 加载最新告警列表失败:', error)
+    console.error('错误详情:', error.message)
+    // 不显示错误提示，使用默认数据
+  }
+}
+
+// 加载摄像机统计数据
+const loadCameraStatistics = async () => {
+  try {
+    const response = await gb28181API.getChannelStats()
+    
+    console.log('========== 摄像机统计API响应 ==========')
+    console.log('完整响应:', response)
+    console.log('响应数据:', response.data)
+    
+    if (response && response.data) {
+      // 更新摄像机统计数据 - 从response.data中获取
+      const data = response.data
+      dashboardData.camera_stats.total_cameras = data.total_channels || 0
+      dashboardData.camera_stats.online_cameras = data.online_channels || 0
+      dashboardData.camera_stats.offline_cameras = data.offline_channels || 0
+      
+      // 计算在线率
+      if (dashboardData.camera_stats.total_cameras > 0) {
+        dashboardData.camera_stats.online_rate = 
+          dashboardData.camera_stats.online_cameras / dashboardData.camera_stats.total_cameras
+      } else {
+        dashboardData.camera_stats.online_rate = 0
+      }
+      
+      console.log('摄像机统计数据已更新:', {
+        总数: dashboardData.camera_stats.total_cameras,
+        在线: dashboardData.camera_stats.online_cameras,
+        离线: dashboardData.camera_stats.offline_cameras,
+        在线率: (dashboardData.camera_stats.online_rate * 100).toFixed(2) + '%'
+      })
+    }
+  } catch (error) {
+    console.error('加载摄像机统计失败:', error)
+    // 不显示错误提示，使用默认数据
+  }
+}
+
+// 加载在线历史统计数据
+const loadOnlineHistoryStats = async () => {
+  try {
+    const response = await gb28181API.getOnlineHistoryStats()
+    
+    console.log('========== 在线历史统计API响应 ==========')
+    console.log('完整响应:', response)
+    console.log('响应数据:', response.data)
+    
+    if (response && response.data) {
+      const data = response.data
+      
+      // 更新周统计
+      if (data.week) {
+        onlineHistoryStats.week.avg_online_rate = data.week.avg_online_rate || '0.00%'
+        onlineHistoryStats.week.avg_online_count = data.week.avg_online_count || '0.0'
+        onlineHistoryStats.week.avg_total_count = data.week.avg_total_count || '0.0'
+        onlineHistoryStats.week.sample_count = data.week.sample_count || 0
+      }
+      
+      // 更新月统计
+      if (data.month) {
+        onlineHistoryStats.month.avg_online_rate = data.month.avg_online_rate || '0.00%'
+        onlineHistoryStats.month.avg_online_count = data.month.avg_online_count || '0.0'
+        onlineHistoryStats.month.avg_total_count = data.month.avg_total_count || '0.0'
+        onlineHistoryStats.month.sample_count = data.month.sample_count || 0
+      }
+      
+      // 更新年统计
+      if (data.year) {
+        onlineHistoryStats.year.avg_online_rate = data.year.avg_online_rate || '0.00%'
+        onlineHistoryStats.year.avg_online_count = data.year.avg_online_count || '0.0'
+        onlineHistoryStats.year.avg_total_count = data.year.avg_total_count || '0.0'
+        onlineHistoryStats.year.sample_count = data.year.sample_count || 0
+      }
+      
+      console.log('在线历史统计数据已更新:', onlineHistoryStats)
+    }
+  } catch (error) {
+    console.error('加载在线历史统计失败:', error)
+    // 不显示错误提示，使用默认数据
+  }
+}
+
 // 已删除loadCadMapData函数
 
 // 查看告警详情
 const viewAlarmDetail = (alarm) => {
+  console.log('========== 查看告警详情 ==========')
+  console.log('告警数据:', alarm)
+  console.log('alarm_image:', alarm.alarm_image)
+  console.log('image:', alarm.image)
+  console.log('snapshot_url:', alarm.snapshot_url)
+  
   selectedAlarm.value = alarm
   alarmDetailVisible.value = true
+}
+
+// 跳转到告警信息展示页面
+const goToAlarmPage = () => {
+  console.log('========== 跳转到告警信息页面 ==========')
+  console.log('当前路由:', router.currentRoute.value.path)
+  
+  alarmDetailVisible.value = false
+  
+  // 使用router.push跳转到告警信息展示页面
+  router.push('/event/alarm-display').then(() => {
+    console.log('✅ 跳转成功到告警信息展示页面')
+  }).catch(err => {
+    console.error('❌ 跳转失败:', err)
+    // 如果router.push失败，尝试使用window.location
+    window.location.hash = '#/event/alarm-display'
+  })
+}
+
+// 图片加载错误处理
+const handleImageError = (event) => {
+  console.error('图片加载失败:', event.target.src)
+  event.target.style.display = 'none'
+}
+
+// 格式化告警时间
+const formatAlarmTime = (time) => {
+  if (!time) return ''
+  const date = new Date(time)
+  const now = new Date()
+  const diff = now - date
+  
+  // 如果是今天，显示时分秒
+  if (diff < 24 * 60 * 60 * 1000 && date.getDate() === now.getDate()) {
+    return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  }
+  // 否则显示完整日期时间
+  return date.toLocaleString('zh-CN', { 
+    month: '2-digit', 
+    day: '2-digit', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  })
+}
+
+// 获取告警等级类型
+const getAlarmLevelType = (level) => {
+  const levelMap = {
+    1: 'danger',  // 高
+    2: 'warning', // 中
+    3: 'info'     // 低
+  }
+  return levelMap[level] || 'info'
+}
+
+// 获取告警等级文本
+const getAlarmLevelText = (level) => {
+  const levelMap = {
+    1: '高',
+    2: '中',
+    3: '低'
+  }
+  return levelMap[level] || '未知'
 }
 
 // 关闭视频弹窗
@@ -2339,7 +2538,14 @@ let refreshInterval = null
 // 3. 混合方式：可以设置最小显示范围，避免数据较小时图表过于扁平
 
 onMounted(async () => {
+  // 初始化响应式显示数量
+  updateMaxVisibleAlarms()
+  
   loadDashboardData()
+  loadAlarmStatistics() // 加载告警统计数据
+  loadLatestAlarms() // 加载最新告警列表
+  loadCameraStatistics() // 加载摄像机统计数据
+  loadOnlineHistoryStats() // 加载在线历史统计数据
 
   // 从localStorage加载自定义地图图层
   loadCustomMapLayer()
@@ -2350,8 +2556,9 @@ onMounted(async () => {
   // 监听地图更新事件
   window.addEventListener('homePageMapUpdate', handleMapUpdate)
   
-  // 监听窗口大小变化事件，更新地图尺寸
+  // 监听窗口大小变化事件，更新地图尺寸和告警显示数量
   window.addEventListener('resize', handleResize)
+  window.addEventListener('resize', updateMaxVisibleAlarms)
   
   // 初始化地图尺寸（如果图片已加载）
   nextTick(() => {
@@ -2361,6 +2568,10 @@ onMounted(async () => {
   // 每30秒刷新一次数据
   refreshInterval = setInterval(() => {
     loadDashboardData()
+    loadAlarmStatistics() // 刷新告警统计数据
+    loadLatestAlarms() // 刷新最新告警列表
+    loadCameraStatistics() // 刷新摄像机统计数据
+    loadOnlineHistoryStats() // 刷新在线历史统计数据
     updateRealTimeData()
   }, 30000)
   
@@ -2399,6 +2610,7 @@ onUnmounted(() => {
   
   // 移除窗口大小变化事件监听器
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('resize', updateMaxVisibleAlarms)
   
   // 清理地图拖拽事件监听器
   document.removeEventListener('mousemove', handleMouseMove)
@@ -2908,9 +3120,9 @@ onUnmounted(() => {
   flex: 1 1 0; /* 统一设置为1倍高度 */
 }
 
-/* 事件通知 - 统一高度 */
+/* 事件通知 - 占据两个框的高度 */
 .widget-event {
-  flex: 1 1 0; /* 调整为1倍高度，与其他数据框保持一致 */
+  flex: 2 1 0; /* 调整为2倍高度，占据原来告警统计+任务统计的空间 */
 }
 
 /* 小部件顶部图片 - 增强清晰度 */
@@ -3373,6 +3585,10 @@ onUnmounted(() => {
 /* 事件列表、排行榜列表容器 */
 .event-list, .ranking-list {
   margin-top: 10px;
+  overflow: hidden; /* 隐藏溢出内容，不显示滚动条 */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 /* 移除list-item悬停效果 */
@@ -3861,78 +4077,122 @@ onUnmounted(() => {
   text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
 }
 
-/* SVG图表容器 */
-.svg-chart-container {
-  height: 24vh; /* 调整高度适应紧凑布局 */
-  margin-top: 0.5%; /* 减少顶部边距 */
-  position: relative;
-  z-index: 2;
-  padding: 0.5% 2%; /* 减少内边距 */
+/* 在线历史统计容器 */
+.online-history-container {
+  padding: 5vh 0.5vw 1vh 0.5vw;
   display: flex;
+  flex-direction: column;
+  gap: 1vh;
+}
+
+/* 卡片行容器 */
+.history-cards-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1vw;
+}
+
+/* 历史统计卡片 */
+.history-card {
+  background: url('@/assets/images/main/main-container-box1.png') no-repeat center;
+  background-size: 100% 100%;
+  padding: 1vh 0.8vw;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  animation: slideInUp 0.6s ease-out;
+  min-height: 8vh;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  text-align: center;
 }
 
-.trend-chart {
-  width: 95%; /* 调整为95%宽度 */
-  height: 95%; /* 调整高度 */
-  background: transparent;
+.history-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0, 212, 255, 0.3);
 }
 
-.trend-line {
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0;
-  animation: drawLine 2s ease-in-out forwards;
+/* 周统计卡片 - 透明背景，无边框 */
+.week-card {
+  background-color: transparent;
+  border: none;
 }
 
-@keyframes drawLine {
-  from {
-    stroke-dasharray: 1000;
-    stroke-dashoffset: 1000;
-    opacity: 1;
-  }
-  to {
-    stroke-dasharray: 1000;
-    stroke-dashoffset: 0;
-    opacity: 1;
-  }
+/* 月统计卡片 - 透明背景，无边框 */
+.month-card {
+  background-color: transparent;
+  border: none;
 }
 
-.data-point {
-  opacity: 0;
-  animation: showPoint 0.5s ease-in-out forwards;
-  cursor: pointer;
-  transition: all 0.3s ease;
+/* 年统计卡片 - 透明背景，无边框 */
+.year-card {
+  background-color: transparent;
+  border: none;
 }
 
-.data-point:hover {
-  r: 5;
-  filter: drop-shadow(0 0 10px #00d4ff);
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3vw;
+  margin-bottom: 0.8vh;
+  width: 100%;
 }
 
-@keyframes showPoint {
+.card-icon {
+  font-size: 0.9rem;
+}
+
+.card-title {
+  font-size: 0.95rem;
+  color: #00d4ff;
+  font-weight: 600;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+}
+
+.card-rate {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #00d4ff;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+  font-family: 'Arial', sans-serif;
+  line-height: 1.2;
+}
+
+.card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3vh;
+}
+
+.detail-line {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.3;
+}
+
+.history-tip {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 0.8vh 0.8vw;
+  background: rgba(0, 212, 255, 0.05);
+  border-left: 2px solid rgba(0, 212, 255, 0.3);
+  border-radius: 3px;
+  line-height: 1.4;
+  margin-top: 0.5vh;
+}
+
+@keyframes slideInUp {
   from {
     opacity: 0;
-    transform: scale(0);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.grid-lines {
-  opacity: 0;
-  animation: fadeInGrid 1s ease-in-out 0.5s forwards;
-}
-
-@keyframes fadeInGrid {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -5538,6 +5798,48 @@ onUnmounted(() => {
 .stop-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* 告警详情弹窗样式 */
+.alarm-detail-dialog .alarm-detail {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.alarm-detail-section {
+  margin-bottom: 20px;
+}
+
+.alarm-detail-section h4 {
+  color: #409EFF;
+  margin-bottom: 10px;
+  font-size: 16px;
+  border-bottom: 2px solid #409EFF;
+  padding-bottom: 5px;
+}
+
+.alarm-images {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.alarm-image {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.alarm-video {
+  width: 100%;
+  max-height: 400px;
+  border-radius: 4px;
+}
+
+.event-location {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
 }
 
 
