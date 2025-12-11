@@ -117,4 +117,62 @@ html .el-popper,
   border: 1px solid rgba(0, 255, 255, 0.4) !important;
 }
 
+/* 系统告警弹窗样式 */
+.system-alert-dialog {
+  border-radius: 12px !important;
+  background: linear-gradient(135deg, rgba(15, 25, 45, 0.98) 0%, rgba(20, 30, 50, 0.98) 100%) !important;
+  border: 2px solid rgba(255, 193, 7, 0.6) !important;
+  box-shadow: 0 8px 32px rgba(255, 193, 7, 0.3), 0 0 60px rgba(255, 193, 7, 0.2) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+.system-alert-dialog .el-message-box__header {
+  background: linear-gradient(90deg, rgba(255, 193, 7, 0.15) 0%, transparent 100%) !important;
+  border-bottom: 1px solid rgba(255, 193, 7, 0.3) !important;
+  padding: 20px 24px !important;
+}
+
+.system-alert-dialog .el-message-box__title {
+  color: #ffc107 !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  text-shadow: 0 0 10px rgba(255, 193, 7, 0.5) !important;
+}
+
+.system-alert-dialog .el-message-box__content {
+  color: #e0e6ed !important;
+  padding: 24px !important;
+}
+
+.system-alert-dialog .el-message-box__message {
+  color: #e0e6ed !important;
+  line-height: 1.6 !important;
+}
+
+.system-alert-dialog .el-button--primary {
+  background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%) !important;
+  border: none !important;
+  color: #1a1a2e !important;
+  font-weight: 600 !important;
+  padding: 10px 24px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4) !important;
+  transition: all 0.3s ease !important;
+}
+
+.system-alert-dialog .el-button--primary:hover {
+  background: linear-gradient(135deg, #ffca28 0%, #ffa726 100%) !important;
+  box-shadow: 0 6px 16px rgba(255, 193, 7, 0.6) !important;
+  transform: translateY(-2px) !important;
+}
+
+.system-alert-dialog .el-message-box__close {
+  color: #ffc107 !important;
+  font-size: 20px !important;
+}
+
+.system-alert-dialog .el-message-box__close:hover {
+  color: #ffca28 !important;
+}
+
 </style>

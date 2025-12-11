@@ -94,7 +94,10 @@ export const useAlertStore = defineStore('alert', {
       console.log('消息数据:', message.data)
       
       // 判断消息类型
-      if (message.type === 'alarm' && message.data) {
+      if (message.type === 'system_alert') {
+        // 系统告警(IP冲突等)
+        this.handleSystemAlert(message.data)
+      } else if (message.type === 'alarm' && message.data) {
         // 后端发送的告警消息
         const alarmData = message.data
         console.log('告警数据字段:', Object.keys(alarmData))
@@ -184,6 +187,66 @@ export const useAlertStore = defineStore('alert', {
           this.realtimeMessages = this.realtimeMessages.slice(0, 100)
         }
       }
+    },
+
+    // 处理系统告警(IP冲突等) - 使用屏幕中心弹窗显示
+    handleSystemAlert(data) {
+      console.log('收到系统告警:', data)
+      
+      const alertType = data.type || 'unknown'
+      const level = data.level || 'info'
+      const message = data.message || '系统告警'
+      const details = data.details || {}
+      
+      // 映射告警级别到MessageBox类型
+      let messageBoxType = 'info'
+      if (level === 'error') messageBoxType = 'error'
+      else if (level === 'warning') messageBoxType = 'warning'
+      else if (level === 'success') messageBoxType = 'success'
+      
+      // 构建弹窗标题
+      let title = '系统通知'
+      if (alertType === 'ip_conflict') {
+        title = '⚠️ IP地址冲突警告'
+      } else if (level === 'error') {
+        title = '❌ 系统错误'
+      } else if (level === 'warning') {
+        title = '⚠️ 系统警告'
+      } else if (level === 'success') {
+        title = '✅ 系统成功'
+      }
+      
+      // 构建弹窗消息内容
+      let messageContent = message
+      if (alertType === 'ip_conflict' && details.ip && details.board1 && details.board2) {
+        messageContent = `
+          <div style="line-height: 1.8;">
+            <p style="margin: 0 0 10px 0; font-size: 14px;">${message}</p>
+            <div style="background: #f5f7fa; padding: 12px; border-radius: 4px; margin-top: 10px;">
+              <p style="margin: 5px 0; color: #606266;"><strong>冲突IP:</strong> ${details.ip}</p>
+              <p style="margin: 5px 0; color: #606266;"><strong>板卡1:</strong> ${details.board1}</p>
+              <p style="margin: 5px 0; color: #606266;"><strong>板卡2:</strong> ${details.board2}</p>
+            </div>
+            <p style="margin: 15px 0 0 0; color: #909399; font-size: 13px;">⚠️ 请立即检查网络配置，确保每个板卡使用唯一的IP地址</p>
+          </div>
+        `
+      }
+      
+      // 使用Element Plus的MessageBox显示屏幕中心弹窗
+      import('element-plus').then(({ ElMessageBox }) => {
+        ElMessageBox.alert(messageContent, title, {
+          confirmButtonText: '我知道了',
+          type: messageBoxType,
+          dangerouslyUseHTMLString: true,
+          center: true,
+          customClass: 'system-alert-dialog',
+          showClose: true,
+          closeOnClickModal: false,
+          closeOnPressEscape: true
+        }).catch(() => {
+          // 用户关闭弹窗
+        })
+      })
     },
 
     // 根据告警级别获取告警类型
