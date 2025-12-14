@@ -4,15 +4,15 @@
     <div class="tech-background">
     </div>
     
-    <h2>角色管理</h2>
+    <h2>{{ $t('user.role.title') }}</h2>
 
     <el-card class="role-list-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>角色列表</span>
+          <span>{{ $t('user.role.title') }}</span>
           <div>
-            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddRole">添加角色</el-button>
-            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getRoles">刷新列表</el-button>
+            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddRole">{{ $t('user.role.addRole') }}</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getRoles">{{ $t('common.refresh') }}</el-button>
           </div>
         </div>
       </template>
@@ -21,9 +21,9 @@
 
       <el-table :data="paginatedRoles" v-loading="loading" border stripe class="tech-table" style="width: 100%;">
         <el-table-column prop="id" label="ID" width="80" align="center" header-align="center"></el-table-column>
-        <el-table-column prop="name" label="角色名称" min-width="120" header-align="center"></el-table-column>
-        <el-table-column prop="description" label="角色描述" min-width="200" header-align="center"></el-table-column>
-        <el-table-column prop="permissions" label="权限模块" min-width="300" header-align="center">
+        <el-table-column prop="name" :label="$t('user.role.roleName')" min-width="120" header-align="center"></el-table-column>
+        <el-table-column prop="description" :label="$t('common.description')" min-width="200" header-align="center"></el-table-column>
+        <el-table-column prop="permissions" :label="$t('user.role.permissions')" min-width="300" header-align="center">
           <template #default="{ row }">
             <el-tag
               v-for="permission in row.permissions?.slice(0, 3)"
@@ -39,16 +39,16 @@
               type="info"
               style="margin-right: 5px;"
             >
-              +{{ row.permissions.length - 3 }}个权限
+              +{{ row.permissions.length - 3 }}
             </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="createTime" label="创建时间" width="180" header-align="center"></el-table-column>
-        <el-table-column label="操作" width="280" align="center" header-align="center">
+        <el-table-column prop="createTime" :label="$t('common.createTime')" width="180" header-align="center"></el-table-column>
+        <el-table-column :label="$t('common.operation')" width="280" align="center" header-align="center">
           <template #default="{ row }">
-            <el-button type="primary" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditRole(row)">编辑</el-button>
-            <el-button type="info" :icon="View" size="small" class="tech-button-xs" @click="handleViewPermissions(row)">权限</el-button>
+            <el-button type="primary" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditRole(row)">{{ $t('common.edit') }}</el-button>
+            <el-button type="info" :icon="View" size="small" class="tech-button-xs" @click="handleViewPermissions(row)">{{ $t('user.role.permissions') }}</el-button>
             <el-button 
               v-if="!row.is_default"
               type="danger" 
@@ -57,7 +57,7 @@
               class="tech-button-xs"
               @click="handleDeleteRole(row)"
             >
-              删除
+{{ $t('common.delete') }}
             </el-button>
           </template>
         </el-table-column>
@@ -66,7 +66,7 @@
       <!-- 增强型分页组件 -->
       <div class="pagination-container tech-pagination">
         <div class="pagination-info">
-          <span>共 <span class="total-count">{{ pagination.total }}</span> 条记录，每页显示 
+          <span>{{ $t('common.total') }} <span class="total-count">{{ pagination.total }}</span> {{ $t('common.records') }}，{{ $t('common.perPage') }} 
             <el-select 
               v-model="pagination.pageSize" 
               @change="handleSizeChange"
@@ -77,7 +77,7 @@
               <el-option label="10" :value="10" />
               <el-option label="20" :value="20" />
               <el-option label="50" :value="50" />
-            </el-select> 条
+            </el-select> {{ $t('common.items') }}
           </span>
         </div>
         <div class="pagination-controls">
@@ -87,7 +87,7 @@
             :disabled="pagination.page === 1 || loading"
             @click="goToRolePage(1)"
           >
-            首页
+            {{ $t('common.firstPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -95,7 +95,7 @@
             :disabled="pagination.page === 1 || loading"
             @click="goToRolePage(pagination.page - 1)"
           >
-            上一页
+            {{ $t('common.prevPage') }}
           </el-button>
           <div class="pagination-pages">
             <button 
@@ -115,7 +115,7 @@
             :disabled="pagination.page === totalRolePages || loading"
             @click="goToRolePage(pagination.page + 1)"
           >
-            下一页
+            {{ $t('common.nextPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -123,7 +123,7 @@
             :disabled="pagination.page === totalRolePages || loading"
             @click="goToRolePage(totalRolePages)"
           >
-            末页
+            {{ $t('common.lastPage') }}
           </el-button>
         </div>
       </div>
@@ -131,7 +131,7 @@
 
     <el-dialog
       v-model="roleDialogVisible"
-      :title="isEditMode ? '编辑角色' : '添加角色'"
+      :title="isEditMode ? $t('user.role.editRole') : $t('user.role.addRole')"
       width="600px"
       :close-on-click-modal="false"
       destroy-on-close
@@ -143,51 +143,51 @@
       }"
     >
       <el-form :model="currentRole" :rules="roleRules" ref="roleFormRef" label-width="100px">
-        <el-form-item label="角色名称" prop="name">
+        <el-form-item :label="$t('user.role.roleName')" prop="name">
           <el-input 
             v-model="currentRole.name" 
             :disabled="isEditMode"
-            placeholder="请输入角色名称"
+            :placeholder="$t('user.role.pleaseInputRoleName')"
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
           <div v-if="isEditMode" class="form-hint">
-            编辑模式下角色名称不可修改
+            {{ $t('user.role.roleNameNotEditable') }}
           </div>
         </el-form-item>
-        <el-form-item label="角色编码" prop="code">
+        <el-form-item :label="$t('user.role.roleCode')" prop="code">
           <el-input 
             v-model="currentRole.code" 
             :disabled="isEditMode"
-            placeholder="请输入角色编码（如：security）"
+            :placeholder="$t('user.role.pleaseInputRoleCode')"
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
           <div v-if="isEditMode" class="form-hint">
-            编辑模式下角色编码不可修改
+            {{ $t('user.role.roleCodeNotEditable') }}
           </div>
         </el-form-item>
-        <el-form-item label="角色描述" prop="description">
+        <el-form-item :label="$t('user.role.roleDescription')" prop="description">
           <el-input 
             v-model="currentRole.description"
             type="textarea" 
-            placeholder="请输入角色描述"
+            :placeholder="$t('user.role.pleaseInputRoleDescription')"
             :rows="3"
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
         </el-form-item>
 
-        <el-form-item label="权限模块">
+        <el-form-item :label="$t('user.role.permissionModules')">
           <el-checkbox-group v-model="currentRole.permissions" class="permission-checkbox-group">
             <el-checkbox v-for="permission in availablePermissions" :key="permission.id" :label="permission.id">
               {{ permission.permission_name }}
             </el-checkbox>
           </el-checkbox-group>
-          <div class="permission-tip">请勾选该角色可以访问的权限模块。</div>
+          <div class="permission-tip">{{ $t('user.role.permissionTip') }}</div>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="roleDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitRoleForm" :loading="loading">保存</el-button>
+          <el-button @click="roleDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" @click="submitRoleForm" :loading="loading">{{ $t('common.save') }}</el-button>
         </span>
       </template>
     </el-dialog>
@@ -195,7 +195,7 @@
     <!-- 权限详情对话框 -->
     <el-dialog 
       v-model="permissionDialogVisible" 
-      title="权限详情" 
+:title="$t('user.role.permissionDetail')" 
       width="500px" 
       class="tech-dialog permission-detail-dialog"
       :style="{
@@ -205,7 +205,7 @@
       }"
     >
       <div class="permission-detail">
-        <h4>{{ selectedRole.name }} - 权限模块</h4>
+        <h4>{{ selectedRole.name }} - {{ $t('user.role.permissionModules') }}</h4>
       <div class="permission-list">
           <el-tag
             v-for="permission in selectedRole.permissions"
@@ -217,7 +217,7 @@
         </el-tag>
         </div>
         <div v-if="!selectedRole.permissions || selectedRole.permissions.length === 0" class="empty-permission">
-          该角色暂无分配权限
+          {{ $t('user.role.noPermissions') }}
         </div>
       </div>
     </el-dialog>

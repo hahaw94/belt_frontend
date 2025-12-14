@@ -3,20 +3,20 @@
     <!-- 科技感背景 -->
     <div class="tech-background"></div>
     
-    <h2>联动规则管理</h2>
+    <h2>{{ $t('event.linkage.title') }}</h2>
     
     <!-- Tab切换 -->
     <el-tabs v-model="activeTab" class="linkage-tabs tech-tabs" @tab-change="handleTabChange">
       <!-- 联动预案Tab -->
-      <el-tab-pane label="联动预案" name="plans">
+      <el-tab-pane :label="$t('event.linkage.linkagePlan')" name="plans">
         <!-- 联动预案列表 -->
         <el-card class="tech-card mb-20" shadow="hover">
           <template #header>
             <div class="card-header">
-              <span>预案列表</span>
+              <span>{{ $t('event.linkage.linkagePlan') }}</span>
               <div>
-                <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddPlan">新增预案</el-button>
-                <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadPlans">刷新列表</el-button>
+                <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddPlan">{{ $t('event.linkage.createPlan') }}</el-button>
+                <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadPlans">{{ $t('common.refresh') }}</el-button>
               </div>
             </div>
           </template>
@@ -29,34 +29,34 @@
         class="tech-table"
         style="width: 100%;"
       >
-        <el-table-column prop="plan_code" label="预案编码" width="240" align="center" header-align="center" />
-        <el-table-column prop="plan_name" label="预案名称" min-width="150" header-align="center" show-overflow-tooltip />
-        <el-table-column prop="category" label="分类" width="120" header-align="center">
+        <el-table-column prop="plan_code" :label="$t('common.code')" width="240" align="center" header-align="center" />
+        <el-table-column prop="plan_name" :label="$t('event.linkage.planName')" min-width="150" header-align="center" show-overflow-tooltip />
+        <el-table-column prop="category" :label="$t('common.type')" width="120" header-align="center">
           <template #default="{ row }">
             <el-tag size="small">{{ getCategoryText(row.category) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="rule_items" label="规则数量" width="150" align="center" header-align="center">
+        <el-table-column prop="rule_items" :label="$t('event.linkage.ruleItem')" width="150" align="center" header-align="center">
           <template #default="{ row }">
             {{ row.rule_items ? row.rule_items.length : 0 }}
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center" header-align="center">
+        <el-table-column prop="status" :label="$t('common.status')" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
-              {{ row.status === 1 ? '启用' : '禁用' }}
+              {{ row.status === 1 ? $t('common.enable') : $t('common.disable') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="180" header-align="center">
+        <el-table-column prop="create_time" :label="$t('common.createTime')" width="180" header-align="center">
           <template #default="{ row }">
             {{ formatDate(row.create_time) }}
           </template>
         </el-table-column>
-        <el-table-column fixed="right" label="操作" width="280" align="center" header-align="center">
+        <el-table-column fixed="right" :label="$t('common.operation')" width="280" align="center" header-align="center">
           <template #default="{ row }">
             <el-button type="success" size="small" class="tech-button-xs" @click="handleViewPlanDetail(row)">
-              查看
+{{ $t('common.view') }}
             </el-button>
             <el-button type="primary" size="small" class="tech-button-xs" @click="handleConfigRules(row)">
               配置

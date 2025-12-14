@@ -5,8 +5,8 @@
 
     <div class="content-container">
       <div class="welcome-section">
-        <h1 class="main-title">功能列表</h1>
-        <p class="subtitle">请从左侧菜单选择相应功能模块</p>
+        <h1 class="main-title">{{ $t('menu.functionList') }}</h1>
+        <p class="subtitle">{{ $t('common.pleaseSelect') }}</p>
       </div>
 
       <div class="instruction-section">
@@ -15,8 +15,8 @@
             <i class="icon-arrow">→</i>
           </div>
           <div class="text-container">
-            <h3>选择功能模块</h3>
-            <p>在左侧菜单栏中选择您需要的功能模块，开始使用智能监控系统的各项功能。</p>
+            <h3>{{ $t('menu.functionList') }}</h3>
+            <p>{{ $t('common.selectModule') }}</p>
           </div>
         </div>
       </div>

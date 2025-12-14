@@ -4,20 +4,20 @@
     <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>录像存储策略</span>
+          <span>{{ $t('system.basic.videoStoragePolicy') }}</span>
         </div>
       </template>
     <el-form :model="videoStorageConfig" :rules="videoStorageRules" ref="videoStorageFormRef" label-width="150px" v-loading="storageLoading" class="config-form">
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="保存天数" prop="retention_days">
+            <el-form-item :label="$t('system.basic.retentionDays')" prop="retention_days">
               <el-input-number :model-value="videoStorageConfig.retention_days" @update:model-value="updateVideoRetentionDays" :min="1" :max="3650" :controls="false" style="width: 100%">
-                <template #suffix>天</template>
+                <template #suffix>{{ $t('system.basic.days') }}</template>
               </el-input-number>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="最大存储容量" prop="max_storage_gb">
+            <el-form-item :label="$t('system.basic.maxStorage')" prop="max_storage_gb">
               <el-input-number :model-value="videoStorageConfig.max_storage_gb" @update:model-value="updateVideoMaxStorage" :min="1" :max="100000" :controls="false" style="width: 100%">
                 <template #suffix>GB</template>
               </el-input-number>
@@ -26,17 +26,17 @@
         </el-row>
         <el-row>
           <el-col :span="24">
-            <el-form-item label="循环覆盖">
+            <el-form-item :label="$t('system.basic.cyclicOverwrite')">
               <el-switch :model-value="videoStorageConfig.cyclic_overwrite" @update:model-value="updateVideoCyclicOverwrite" />
-              <span style="margin-left: 10px; color: #909399;">启用后，存储空间不足时将自动删除最早的录像文件</span>
+              <span style="margin-left: 10px; color: #909399;">{{ $t('system.basic.cyclicOverwriteDesc') }}</span>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row style="margin-top: 24px;">
           <el-col :span="24">
             <el-form-item>
-              <el-button type="primary" class="tech-button" @click="saveVideoStorageConfig" :loading="storageLoading">保存配置</el-button>
-              <el-button class="tech-button-secondary" @click="loadVideoStorageConfig">重置</el-button>
+              <el-button type="primary" class="tech-button" @click="saveVideoStorageConfig" :loading="storageLoading">{{ $t('common.save') }}</el-button>
+              <el-button class="tech-button-secondary" @click="loadVideoStorageConfig">{{ $t('common.reset') }}</el-button>
             </el-form-item>
           </el-col>
         </el-row>
@@ -47,39 +47,39 @@
     <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>告警数据存储策略</span>
+          <span>{{ $t('system.basic.alarmStoragePolicy') }}</span>
         </div>
       </template>
     <el-form :model="alarmDataConfig" :rules="alarmDataRules" ref="alarmDataFormRef" label-width="150px" v-loading="storageLoading" class="config-form">
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="保存天数" prop="retention_days">
+            <el-form-item :label="$t('system.basic.retentionDays')" prop="retention_days">
               <el-input-number :model-value="alarmDataConfig.retention_days" @update:model-value="updateAlarmRetentionDays" :min="1" :max="3650" :controls="false" style="width: 100%">
-                <template #suffix>天</template>
+                <template #suffix>{{ $t('system.basic.days') }}</template>
               </el-input-number>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="最大记录数" prop="max_records">
+            <el-form-item :label="$t('system.basic.maxRecords')" prop="max_records">
               <el-input-number :model-value="alarmDataConfig.max_records" @update:model-value="updateAlarmMaxRecords" :min="1000" :max="10000000" :controls="false" style="width: 100%">
-                <template #suffix>条</template>
+                <template #suffix>{{ $t('system.basic.records') }}</template>
               </el-input-number>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row>
           <el-col :span="24">
-            <el-form-item label="循环清理">
+            <el-form-item :label="$t('system.basic.cyclicCleanup')">
               <el-switch :model-value="alarmDataConfig.cyclic_cleanup" @update:model-value="updateAlarmCyclicCleanup" />
-              <span style="margin-left: 10px; color: #909399;">启用后，达到最大记录数时将自动删除最早的告警数据</span>
+              <span style="margin-left: 10px; color: #909399;">{{ $t('system.basic.cyclicCleanupDesc') }}</span>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row style="margin-top: 24px;">
           <el-col :span="24">
             <el-form-item>
-              <el-button type="primary" class="tech-button" @click="saveAlarmDataConfig" :loading="storageLoading">保存配置</el-button>
-              <el-button class="tech-button-secondary" @click="loadAlarmDataConfig">重置</el-button>
+              <el-button type="primary" class="tech-button" @click="saveAlarmDataConfig" :loading="storageLoading">{{ $t('common.save') }}</el-button>
+              <el-button class="tech-button-secondary" @click="loadAlarmDataConfig">{{ $t('common.reset') }}</el-button>
             </el-form-item>
           </el-col>
         </el-row>

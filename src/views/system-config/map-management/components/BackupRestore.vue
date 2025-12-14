@@ -6,11 +6,11 @@
 
     <!-- 头部操作区域 -->
     <div class="header-section mb-20">
-          <span>备份文件列表</span>
+          <span>{{ $t('map.backupFileList') }}</span>
       <div>
-        <el-button type="primary" icon="Plus" size="small" class="tech-button-sm" @click="showCreateBackupDialog">创建备份</el-button>
-        <el-button type="warning" icon="Upload" size="small" class="tech-button-sm" @click="showUploadRestoreDialog">从文件恢复</el-button>
-        <el-button type="info" icon="Refresh" size="small" class="tech-button-sm" @click="loadBackupList">刷新列表</el-button>
+        <el-button type="primary" icon="Plus" size="small" class="tech-button-sm" @click="showCreateBackupDialog">{{ $t('version.createBackup') }}</el-button>
+        <el-button type="warning" icon="Upload" size="small" class="tech-button-sm" @click="showUploadRestoreDialog">{{ $t('map.restoreFromFile') }}</el-button>
+        <el-button type="info" icon="Refresh" size="small" class="tech-button-sm" @click="loadBackupList">{{ $t('map.refreshList') }}</el-button>
         </div>
     </div>
       
@@ -24,32 +24,32 @@
           class="backup-table"
           :show-overflow-tooltip="false"
         >
-        <el-table-column prop="file_name" label="备份文件名" min-width="250" />
-        <el-table-column label="备份类型" width="120">
+        <el-table-column prop="file_name" :label="$t('version.backupFileName')" min-width="250" />
+        <el-table-column :label="$t('version.backupType')" width="120">
           <template #default="scope">
             <el-tag :type="scope.row.type === 'all' ? 'success' : 'warning'">
-              {{ scope.row.type === 'all' ? '全量备份' : '选择备份' }}
+              {{ scope.row.type === 'all' ? $t('map.fullBackup') : $t('map.selectiveBackup') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="file_size" label="文件大小" width="120">
+        <el-table-column prop="file_size" :label="$t('version.size')" width="120">
           <template #default="scope">
             {{ formatFileSize(scope.row.file_size) }}
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="180">
+        <el-table-column prop="create_time" :label="$t('version.createTime')" width="180">
           <template #default="scope">
             {{ formatDate(scope.row.create_time) }}
           </template>
         </el-table-column>
-                <el-table-column label="操作" width="240">
+                <el-table-column :label="$t('version.operations')" width="240">
           <template #default="scope">
             <div class="action-buttons-row">
               <el-button type="text" size="small" class="tech-button-text" @click="downloadBackup(scope.row)">
-                下载
+                {{ $t('common.download') }}
               </el-button>
               <el-button type="text" size="small" class="tech-button-text tech-button-info" @click="showRestoreDialog(scope.row)">
-                恢复
+                {{ $t('version.restore') }}
               </el-button>
               <el-button 
                 type="text" 
@@ -57,19 +57,19 @@
                 class="tech-button-text tech-button-danger"
                 @click="deleteBackup(scope.row)"
               >
-                删除
+                {{ $t('common.delete') }}
               </el-button>
             </div>
           </template>
         </el-table-column>
         </el-table>
       
-      <el-empty v-if="!loading && backupList.length === 0" description="暂无备份文件" />
+      <el-empty v-if="!loading && backupList.length === 0" :description="$t('map.noBackupFiles')" />
     </div>
 
     <!-- 创建备份对话框 -->
     <el-dialog
-      title="创建地图备份"
+      :title="$t('map.createMapBackup')"
       v-model="createBackupVisible"
       width="500px"
       @close="resetCreateBackupForm"
@@ -80,24 +80,24 @@
         :rules="createBackupRules"
         label-width="100px"
       >
-        <el-form-item label="备份名称" prop="backup_name">
-          <el-input v-model="createBackupForm.backup_name" placeholder="请输入备份名称" />
+        <el-form-item :label="$t('map.backupName')" prop="backup_name">
+          <el-input v-model="createBackupForm.backup_name" :placeholder="$t('map.pleaseInputBackupName')" />
         </el-form-item>
-        <el-form-item label="备份类型" prop="backup_type">
+        <el-form-item :label="$t('version.backupType')" prop="backup_type">
           <el-radio-group v-model="createBackupForm.backup_type" @change="handleBackupTypeChange">
-            <el-radio label="all">全量备份（所有图层）</el-radio>
-            <el-radio label="selected">选择备份（指定图层）</el-radio>
+            <el-radio label="all">{{ $t('map.fullBackupAllLayers') }}</el-radio>
+            <el-radio label="selected">{{ $t('map.selectiveBackupSpecificLayers') }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item 
           v-if="createBackupForm.backup_type === 'selected'" 
-          label="选择图层" 
+:label="$t('map.selectLayers')" 
           prop="layer_ids"
         >
           <el-select
             v-model="createBackupForm.layer_ids"
             multiple
-            placeholder="请选择要备份的图层"
+            :placeholder="$t('map.pleaseSelectLayersToBackup')"
             style="width: 100%;"
           >
             <el-option
@@ -108,20 +108,20 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="备份描述" prop="description">
+        <el-form-item :label="$t('map.backupDescription')" prop="description">
           <el-input
             v-model="createBackupForm.description"
             type="textarea"
             :rows="3"
-            placeholder="请输入备份描述（可选）"
+            :placeholder="$t('map.pleaseInputBackupDescription')"
           />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button class="tech-button-secondary" @click="createBackupVisible = false">取消</el-button>
+          <el-button class="tech-button-secondary" @click="createBackupVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button type="primary" class="tech-button" @click="confirmCreateBackup" :loading="creating">
-            创建备份
+            {{ $t('version.createBackup') }}
           </el-button>
         </span>
       </template>
@@ -129,44 +129,44 @@
 
     <!-- 恢复确认对话框 -->
     <el-dialog
-      title="恢复备份确认"
+      :title="$t('map.restoreBackupConfirm')"
       v-model="restoreVisible"
       width="500px"
     >
       <div v-if="selectedBackup" class="restore-confirm">
         <el-alert
-          title="恢复操作确认"
+          :title="$t('map.restoreOperationConfirm')"
           type="warning"
           :closable="false"
           show-icon
           style="margin-bottom: 20px;"
         >
           <template #default>
-            <p>您即将恢复以下备份文件：</p>
+            <p>{{ $t('map.aboutToRestoreBackup') }}</p>
             <p><strong>{{ selectedBackup.file_name }}</strong></p>
-            <p>备份类型：{{ selectedBackup.type === 'all' ? '全量备份' : '选择备份' }}</p>
-            <p>创建时间：{{ formatDate(selectedBackup.create_time) }}</p>
+            <p>{{ $t('version.backupType') }}：{{ selectedBackup.type === 'all' ? $t('map.fullBackup') : $t('map.selectiveBackup') }}</p>
+            <p>{{ $t('version.createTime') }}：{{ formatDate(selectedBackup.create_time) }}</p>
           </template>
         </el-alert>
         
         <el-form label-width="120px">
-          <el-form-item label="强制覆盖：">
+          <el-form-item :label="$t('map.forceOverwrite') + '：'">
             <el-switch
               v-model="restoreForm.force_restore"
-              active-text="是"
-              inactive-text="否"
+              :active-text="$t('map.yes')"
+              :inactive-text="$t('map.no')"
             />
             <div style="font-size: 12px; color: #909399; margin-top: 4px;">
-              开启后将强制覆盖现有的同名图层配置
+              {{ $t('map.forceOverwriteDescription') }}
             </div>
           </el-form-item>
         </el-form>
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button class="tech-button-secondary" @click="restoreVisible = false">取消</el-button>
+          <el-button class="tech-button-secondary" @click="restoreVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button type="warning" class="tech-button-warning" @click="confirmRestore" :loading="restoring">
-            确认恢复
+            {{ $t('map.confirmRestore') }}
           </el-button>
         </span>
       </template>
@@ -174,13 +174,13 @@
 
     <!-- 上传恢复对话框 -->
     <el-dialog
-      title="上传备份文件恢复"
+      :title="$t('map.uploadBackupFileRestore')"
       v-model="uploadRestoreVisible"
       width="500px"
       @close="resetUploadForm"
     >
       <el-form label-width="120px">
-        <el-form-item label="备份文件：">
+        <el-form-item :label="$t('map.backupFile') + '：'">
           <el-upload
             ref="uploadRef"
             :auto-upload="false"
@@ -193,29 +193,29 @@
           >
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">
-              将地图备份文件拖到此处，或<em>点击上传</em>
+              {{ $t('map.dragMapBackupFile') }}<em>{{ $t('map.clickToUpload') }}</em>
             </div>
             <template #tip>
               <div class="el-upload__tip">
-                只能上传 .tar.gz 格式的地图备份文件
+                {{ $t('map.uploadBackupFileTip') }}
               </div>
             </template>
           </el-upload>
         </el-form-item>
-        <el-form-item label="强制覆盖：">
+        <el-form-item :label="$t('map.forceOverwrite') + '：'">
           <el-switch
             v-model="uploadRestoreForm.force_restore"
-            active-text="是"
-            inactive-text="否"
+            :active-text="$t('map.yes')"
+            :inactive-text="$t('map.no')"
           />
           <div style="font-size: 12px; color: #909399; margin-top: 4px;">
-            开启后将强制覆盖现有的同名图层配置
+            {{ $t('map.forceOverwriteDescription') }}
           </div>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button class="tech-button-secondary" @click="uploadRestoreVisible = false">取消</el-button>
+          <el-button class="tech-button-secondary" @click="uploadRestoreVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button 
             type="warning" 
             class="tech-button-warning"
@@ -223,7 +223,7 @@
             :loading="uploading"
             :disabled="!uploadRestoreForm.file"
           >
-            开始恢复
+            {{ $t('map.confirmRestore') }}
           </el-button>
         </span>
       </template>

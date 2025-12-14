@@ -3,12 +3,12 @@
     <!-- 科技感背景 -->
     <div class="tech-background"></div>
     
-    <h2>告警信息展示</h2>
+    <h2>{{ $t('event.alarm.title') }}</h2>
     
     <!-- 搜索筛选卡片 -->
     <div class="search-filters-card tech-card mb-20">
       <div class="search-filters-header">
-        <span class="filter-title">搜索筛选</span>
+        <span class="filter-title">{{ $t('common.search') }}{{ $t('common.filter') }}</span>
         <div class="view-toggle-buttons">
           <el-button 
             :type="viewMode === 'list' ? 'primary' : ''"
@@ -17,7 +17,7 @@
             size="small"
           >
             <el-icon><List /></el-icon>
-            列表
+{{ $t('common.list') }}
           </el-button>
           <el-button 
             :type="viewMode === 'thumbnail' ? 'primary' : ''"
@@ -26,30 +26,30 @@
             size="small"
           >
             <el-icon><Grid /></el-icon>
-            缩略图
+{{ $t('common.thumbnail') }}
           </el-button>
         </div>
       </div>
       <div class="search-filters-content">
         <div class="filter-row">
           <div class="filter-item filter-item-wide">
-            <label>时间范围</label>
+            <label>{{ $t('common.timeRange') }}</label>
             <el-date-picker
               v-model="searchForm.timeRange"
               type="datetimerange"
-              range-separator="至"
-              start-placeholder="开始时间"
-              end-placeholder="结束时间"
+              range-separator="-"
+              :start-placeholder="$t('common.startTime')"
+              :end-placeholder="$t('common.endTime')"
               :shortcuts="dateShortcuts"
               class="tech-input"
               value-format="YYYY-MM-DD HH:mm:ss"
             />
           </div>
           <div class="filter-item">
-            <label>告警类型</label>
+            <label>{{ $t('event.alarm.alarmType') }}</label>
             <el-select
               v-model="searchForm.alarmType"
-              placeholder="全部"
+              :placeholder="$t('common.all')"
               class="tech-select"
               clearable
             >

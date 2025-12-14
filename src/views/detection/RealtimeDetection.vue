@@ -4,13 +4,13 @@
     <div class="device-sidebar">
       <div class="sidebar-header">
         <el-icon><VideoCamera /></el-icon>
-        <span>显示所有通道</span>
+        <span>{{ $t('device.device.allChannels') }}</span>
         <span class="total-indicator">{{ getOnlineChannelCount() }}/{{ getTotalChannelCount() }}</span>
       </div>
       
       <el-input 
         v-model="searchText" 
-        placeholder="搜索设备..." 
+        :placeholder="$t('common.search') + $t('device.device.device') + '...'" 
         class="search-input"
         clearable
       >
@@ -20,13 +20,13 @@
       </el-input>
       
       <div class="status-filters">
-        <span class="filter-label">状态：</span>
-        <el-button :type="statusFilter === 'all' ? 'primary' : ''" size="small" @click="statusFilter = 'all'">不限</el-button>
-        <el-button :type="statusFilter === 'online' ? 'primary' : ''" size="small" @click="statusFilter = 'online'">在线</el-button>
-        <el-button :type="statusFilter === 'offline' ? 'primary' : ''" size="small" @click="statusFilter = 'offline'">离线</el-button>
+        <span class="filter-label">{{ $t('common.status') }}：</span>
+        <el-button :type="statusFilter === 'all' ? 'primary' : ''" size="small" @click="statusFilter = 'all'">{{ $t('common.all') }}</el-button>
+        <el-button :type="statusFilter === 'online' ? 'primary' : ''" size="small" @click="statusFilter = 'online'">{{ $t('common.online') }}</el-button>
+        <el-button :type="statusFilter === 'offline' ? 'primary' : ''" size="small" @click="statusFilter = 'offline'">{{ $t('common.offline') }}</el-button>
       </div>
 
-      <div v-loading="loading" element-loading-text="正在加载设备和通道..." class="tree-loading-wrapper">
+      <div v-loading="loading" :element-loading-text="$t('common.loading')" class="tree-loading-wrapper">
         <el-tree
           :data="deviceTree"
           :props="treeProps"
@@ -53,7 +53,7 @@
         
         <div v-if="!loading && deviceTree.length === 0" class="empty-state">
           <el-icon :size="40" style="color: rgba(255, 255, 255, 0.3);"><VideoCamera /></el-icon>
-          <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.5);">暂无设备数据</p>
+          <p style="margin-top: 10px; color: rgba(255, 255, 255, 0.5);">{{ $t('common.noData') }}</p>
         </div>
       </div>
     </div>
@@ -63,13 +63,13 @@
       <!-- 性能提示和GPU监控 -->
       <div v-if="getPlayingWebRTCCount() >= 9" class="performance-tip">
         <el-icon style="margin-right: 4px;"><Warning /></el-icon>
-        {{ getPlayingWebRTCCount() }}路播放中 - 已启用性能优化模式（禁用统计、降低渲染质量）
+        {{ getPlayingWebRTCCount() }}{{ $t('detection.performanceTip') }}
       </div>
       
       <!-- GPU使用提示 -->
       <div v-if="getPlayingWebRTCCount() >= 16" class="gpu-warning">
         <el-icon style="margin-right: 4px;"><Warning /></el-icon>
-        16路满载播放 - 如遇卡顿请减少播放路数或降低视频分辨率至2688×1520@30fps
+        {{ $t('detection.gpuWarning') }}
       </div>
       
       <!-- 视频网格区域 -->
@@ -92,7 +92,7 @@
                     class="stop-stream-btn"
                   >
                     <el-icon><VideoPause /></el-icon>
-                    <span v-if="currentLayout <= 4">停止</span>
+                    <span v-if="currentLayout <= 4">{{ $t('common.stop') }}</span>
                   </el-button>
                 </div>
                 
@@ -123,7 +123,7 @@
                   <div class="empty-screen-hint">
                     <el-icon :size="currentLayout <= 4 ? 60 : 40" style="color: rgba(64, 158, 255, 0.3);"><VideoCamera /></el-icon>
                     <p style="margin-top: 12px; color: rgba(255, 255, 255, 0.6); font-size: 14px;">
-                      {{ selectedCell === n ? '请在左侧选择通道播放' : '点击选中此分屏' }}
+                      {{ selectedCell === n ? $t('detection.selectChannelToPlay') : $t('detection.clickToSelectScreen') }}
                     </p>
                   </div>
                 </div>
@@ -131,7 +131,7 @@
 
               <div class="video-info-bar">
                 <span class="channel-name">
-                  {{ webrtcPlayers[n - 1].channelInfo ? webrtcPlayers[n - 1].channelInfo.channelName : `分屏 ${n}` }}
+                  {{ webrtcPlayers[n - 1].channelInfo ? webrtcPlayers[n - 1].channelInfo.channelName : `${$t('detection.screen')} ${n}` }}
                 </span>
                 <span class="time-display">{{ currentTime }}</span>
               </div>
@@ -144,14 +144,14 @@
       <div class="control-bar">
         <!-- 分屏切换按钮 -->
         <div class="control-group layout-controls">
-          <el-tooltip content="1画面" placement="top">
+          <el-tooltip :content="$t('detection.layout1')" placement="top">
             <el-button :type="currentLayout === 1 ? 'primary' : ''" @click="setLayout(1)" class="layout-btn">
               <svg class="grid-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
               </svg>
             </el-button>
           </el-tooltip>
-          <el-tooltip content="4画面" placement="top">
+          <el-tooltip :content="$t('detection.layout4')" placement="top">
             <el-button :type="currentLayout === 4 ? 'primary' : ''" @click="setLayout(4)" class="layout-btn">
               <svg class="grid-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <rect x="3" y="3" width="8" height="8" rx="1" fill="currentColor"/>
@@ -161,7 +161,7 @@
               </svg>
             </el-button>
           </el-tooltip>
-          <el-tooltip content="9画面" placement="top">
+          <el-tooltip :content="$t('detection.layout9')" placement="top">
             <el-button :type="currentLayout === 9 ? 'primary' : ''" @click="setLayout(9)" class="layout-btn">
               <svg class="grid-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <rect x="2" y="2" width="5.5" height="5.5" rx="0.5" fill="currentColor"/>
@@ -176,7 +176,7 @@
               </svg>
             </el-button>
           </el-tooltip>
-          <el-tooltip content="16画面" placement="top">
+          <el-tooltip :content="$t('detection.layout16')" placement="top">
             <el-button :type="currentLayout === 16 ? 'primary' : ''" @click="setLayout(16)" class="layout-btn">
               <svg class="grid-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <rect x="2" y="2" width="4" height="4" rx="0.5" fill="currentColor"/>
@@ -204,18 +204,18 @@
 
         <!-- 播放控制 -->
         <div class="control-group playback-controls">
-          <el-tooltip content="上一个" placement="top">
+          <el-tooltip :content="$t('detection.previous')" placement="top">
             <el-button @click="handlePrevious" class="func-btn">
               <el-icon><DArrowLeft /></el-icon>
             </el-button>
           </el-tooltip>
-          <el-tooltip content="播放/暂停" placement="top">
+          <el-tooltip :content="$t('detection.playPause')" placement="top">
             <el-button @click="handlePlayPause" type="primary" class="func-btn">
               <el-icon v-if="!isPlaying"><VideoPlay /></el-icon>
               <el-icon v-else><VideoPause /></el-icon>
             </el-button>
           </el-tooltip>
-          <el-tooltip content="下一个" placement="top">
+          <el-tooltip :content="$t('detection.next')" placement="top">
             <el-button @click="handleNext" class="func-btn">
               <el-icon><DArrowRight /></el-icon>
             </el-button>

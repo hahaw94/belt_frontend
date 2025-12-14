@@ -3,17 +3,17 @@
     <!-- 科技感背景 -->
     <div class="tech-background"></div>
     
-    <h2>设备管理</h2>
+    <h2>{{ $t('device.deviceManagement') }}</h2>
 
     <!-- Tab分页 -->
     <el-tabs v-model="activeTab" class="management-tabs tech-tabs" @tab-change="handleTabChange">
       <!-- 相机管理 Tab -->
-      <el-tab-pane label="相机管理" name="camera">
+      <el-tab-pane :label="$t('device.cameraManagement')" name="camera">
         <CameraManagement />
       </el-tab-pane>
 
       <!-- 板卡管理 Tab -->
-      <el-tab-pane label="板卡管理" name="board">
+      <el-tab-pane :label="$t('device.boardManagement')" name="board">
         <BoardManagement />
       </el-tab-pane>
     </el-tabs>

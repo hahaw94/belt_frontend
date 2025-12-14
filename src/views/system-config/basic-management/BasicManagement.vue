@@ -4,11 +4,11 @@
     <div class="tech-background">
     </div>
     
-    <h2>基础管理</h2>
+    <h2>{{ $t('system.basic.title') }}</h2>
 
     <!-- 选项卡导航 -->
     <el-tabs v-model="activeTab" class="management-tabs tech-tabs">
-      <el-tab-pane label="时间设置" name="time">
+      <el-tab-pane :label="$t('system.basic.timeSettings')" name="time">
         <TimeManagement
           :ntp-config="ntpConfig"
           :ntp-rules="ntpRules"
@@ -33,7 +33,7 @@
           @update-ntp-server="updateNtpServer"
         />
       </el-tab-pane>
-      <el-tab-pane label="网络设置" name="network">
+      <el-tab-pane :label="$t('system.basic.networkSettings')" name="network">
         <NetworkManagement
           :network-config="networkConfig"
           :current-network-config="currentNetworkConfig"
@@ -50,7 +50,7 @@
           @update-port="updatePort"
         />
       </el-tab-pane>
-      <el-tab-pane label="外观设置" name="appearance">
+      <el-tab-pane :label="$t('system.basic.appearanceSettings')" name="appearance">
         <LogoManagement
           ref="logoManagementRef"
           :current-logo="currentLogo"
@@ -65,7 +65,7 @@
           @clear-logo-preview="clearLogoPreview"
         />
       </el-tab-pane>
-      <el-tab-pane label="平台对接" name="platform">
+      <el-tab-pane :label="$t('system.basic.platformDocking')" name="platform">
         <PlatformManagement
           :gb28181-dialog-visible="gb28181DialogVisible"
           :gb28181-platforms="gb28181Platforms"
@@ -90,7 +90,7 @@
           @update-enabled="updateEnabled"
         />
       </el-tab-pane>
-      <el-tab-pane label="存储策略" name="storage">
+      <el-tab-pane :label="$t('system.basic.storageSettings')" name="storage">
         <StorageManagement
           :video-storage-config="videoStorageConfig"
           :alarm-data-config="alarmDataConfig"
@@ -109,7 +109,7 @@
           @update-alarm-cyclic-cleanup="updateAlarmCyclicCleanup"
         />
       </el-tab-pane>
-      <el-tab-pane label="系统维护" name="maintenance">
+      <el-tab-pane :label="$t('system.basic.systemMaintenanceTab')" name="maintenance">
         <MaintenanceManagement
           :maintenance-loading="maintenanceLoading"
           :restarting-service="restartingService"
@@ -124,7 +124,7 @@
     <!-- 网络配置修改确认对话框 -->
     <el-dialog
       v-model="networkChangeDialogVisible"
-      title="确认修改网络配置"
+      :title="$t('system.basic.confirmNetworkChange')"
       width="600px"
       :close-on-click-modal="false"
       :show-close="false"
@@ -132,49 +132,49 @@
       <div class="network-change-warning">
         <el-icon size="48" color="#E6A23C"><WarningFilled /></el-icon>
         <div class="warning-content">
-          <h3>警告：修改网络配置后，系统可能会暂时无法访问</h3>
+          <h3>{{ $t('system.basic.networkChangeWarning') }}</h3>
           <div class="network-change-details">
             <el-row :gutter="20">
               <el-col :span="12">
                 <div class="config-section">
-                  <h4>当前配置</h4>
-                  <p><strong>IP地址：</strong>{{ currentNetworkConfig.ip_address }}</p>
-                  <p><strong>子网掩码：</strong>{{ currentNetworkConfig.subnet_mask }}</p>
-                  <p><strong>网关：</strong>{{ currentNetworkConfig.gateway }}</p>
-                  <p><strong>端口：</strong>{{ currentNetworkConfig.port }}</p>
+                  <h4>{{ $t('system.basic.currentConfig') }}</h4>
+                  <p><strong>{{ $t('system.basic.ipAddress') }}：</strong>{{ currentNetworkConfig.ip_address }}</p>
+                  <p><strong>{{ $t('system.basic.subnetMask') }}：</strong>{{ currentNetworkConfig.subnet_mask }}</p>
+                  <p><strong>{{ $t('system.basic.gateway') }}：</strong>{{ currentNetworkConfig.gateway }}</p>
+                  <p><strong>{{ $t('system.basic.port') }}：</strong>{{ currentNetworkConfig.port }}</p>
                 </div>
               </el-col>
               <el-col :span="12">
                 <div class="config-section">
-                  <h4>修改为</h4>
-                  <p><strong>IP地址：</strong>{{ networkConfig.ip_address }}</p>
-                  <p><strong>子网掩码：</strong>{{ networkConfig.subnet_mask }}</p>
-                  <p><strong>网关：</strong>{{ networkConfig.gateway }}</p>
-                  <p><strong>端口：</strong>{{ networkConfig.port }}</p>
+                  <h4>{{ $t('system.basic.changeTo') }}</h4>
+                  <p><strong>{{ $t('system.basic.ipAddress') }}：</strong>{{ networkConfig.ip_address }}</p>
+                  <p><strong>{{ $t('system.basic.subnetMask') }}：</strong>{{ networkConfig.subnet_mask }}</p>
+                  <p><strong>{{ $t('system.basic.gateway') }}：</strong>{{ networkConfig.gateway }}</p>
+                  <p><strong>{{ $t('system.basic.port') }}：</strong>{{ networkConfig.port }}</p>
                 </div>
               </el-col>
             </el-row>
             <div style="margin-top: 15px; text-align: center;">
-              <p><strong>新访问地址：</strong><span style="color: #409EFF; font-size: 16px;">{{ getPreviewAccessUrl() }}</span></p>
+              <p><strong>{{ $t('system.basic.newAccessUrl') }}：</strong><span style="color: #409EFF; font-size: 16px;">{{ getPreviewAccessUrl() }}</span></p>
             </div>
           </div>
           <div class="network-change-tips">
-            <p>1. 修改后请使用新地址访问系统</p>
-            <p>2. 如果无法访问，请检查网络连接和端口是否被占用</p>
-            <p>3. 修改过程约需30-60秒</p>
+            <p>{{ $t('system.basic.networkChangeTip1') }}</p>
+            <p>{{ $t('system.basic.networkChangeTip2') }}</p>
+            <p>{{ $t('system.basic.networkChangeTip3') }}</p>
           </div>
         </div>
       </div>
       
       <div style="margin-top: 20px; text-align: center;">
-        <el-checkbox v-model="networkChangeConfirm">我已了解风险，确认修改网络配置</el-checkbox>
+        <el-checkbox v-model="networkChangeConfirm">{{ $t('system.basic.confirmNetworkRisk') }}</el-checkbox>
       </div>
       
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="networkChangeDialogVisible = false">取消</el-button>
+          <el-button @click="networkChangeDialogVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button type="danger" @click="changeNetworkConfig" :disabled="!networkChangeConfirm" :loading="networkChanging">
-            确认修改
+            {{ $t('common.confirmChange') }}
           </el-button>
         </span>
       </template>
@@ -183,7 +183,7 @@
     <!-- 网络配置修改进度对话框 -->
     <el-dialog
       v-model="networkChangeProgressVisible"
-      title="正在修改网络配置"
+      :title="$t('system.basic.changingNetwork')"
       width="500px"
       :close-on-click-modal="false"
       :show-close="false"
@@ -194,17 +194,17 @@
         
         <div v-if="networkChangeProgress === 100" style="text-align: center; margin-top: 20px;">
           <el-alert 
-            title="网络配置修改完成" 
+            :title="$t('system.basic.networkChangeComplete')" 
             type="success" 
             :closable="false"
             style="margin-bottom: 15px;"
           >
             <template #default>
-              <p>请使用新地址访问系统：</p>
+              <p>{{ $t('system.basic.useNewUrl') }}</p>
               <p style="font-weight: bold; color: #409EFF;">{{ getPreviewAccessUrl() }}</p>
             </template>
           </el-alert>
-          <p>页面将在 {{ countdown }} 秒后自动跳转...</p>
+          <p>{{ $t('system.basic.pageWillRedirect', { seconds: countdown }) }}</p>
         </div>
       </div>
     </el-dialog>
@@ -224,23 +224,23 @@
           <h3>{{ restartDialogTitle }}</h3>
           <p>{{ restartDialogMessage }}</p>
           <div v-if="restartType === 'service'" class="restart-tips">
-            <p>• 服务重启期间系统将暂时不可用</p>
-            <p>• 预计用时：30-60秒</p>
-            <p>• 重启后页面将自动刷新</p>
+            <p>{{ $t('system.basic.serviceRestartTip1') }}</p>
+            <p>{{ $t('system.basic.serviceRestartTip2') }}</p>
+            <p>{{ $t('system.basic.serviceRestartTip3') }}</p>
           </div>
           <div v-else class="restart-tips">
-            <p>• 服务器重启期间系统将完全不可用</p>
-            <p>• 预计用时：2-5分钟</p>
-            <p>• 重启后需要重新访问系统</p>
+            <p>{{ $t('system.basic.serverRestartTip1') }}</p>
+            <p>{{ $t('system.basic.serverRestartTip2') }}</p>
+            <p>{{ $t('system.basic.serverRestartTip3') }}</p>
           </div>
         </div>
       </div>
       
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="restartDialogVisible = false">取消</el-button>
+          <el-button @click="restartDialogVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button type="danger" @click="performRestart" :loading="performingRestart">
-            确认{{ restartType === 'service' ? '重启服务' : '重启服务器' }}
+            {{ restartType === 'service' ? $t('system.basic.confirmRestartService') : $t('system.basic.confirmRebootServer') }}
           </el-button>
         </span>
       </template>
@@ -260,8 +260,8 @@
         
         <!-- 服务重启完成后的倒计时 -->
         <div v-if="restartProgress === 100 && restartType === 'service'" style="text-align: center; margin-top: 20px;">
-          <el-alert title="服务重启完成" type="success" :closable="false">
-            页面将在 {{ serviceRestartCountdown }} 秒后自动刷新
+          <el-alert :title="$t('system.basic.serviceRestartComplete')" type="success" :closable="false">
+            {{ $t('system.basic.pageWillRefresh', { seconds: serviceRestartCountdown }) }}
           </el-alert>
         </div>
         
@@ -271,7 +271,7 @@
     <!-- 端口修改对话框 -->
     <el-dialog
       v-model="portChangeDialogVisible"
-      title="修改服务端口"
+      :title="$t('system.basic.changePort')"
       width="400px"
       :close-on-click-modal="false"
     >
@@ -282,25 +282,25 @@
           style="margin-bottom: 20px;"
         >
           <template #default>
-            <p>修改端口后，系统将使用新端口提供服务，可能需要重新访问。</p>
+            <p>{{ $t('system.basic.changePortTip') }}</p>
           </template>
         </el-alert>
         
         <el-form :model="{ port: newPort }" :rules="portRules" ref="portFormRef" label-width="100px">
-          <el-form-item label="当前端口">
+          <el-form-item :label="$t('system.basic.currentPort')">
             <span>{{ currentNetworkConfig.port || '8080' }}</span>
           </el-form-item>
-          <el-form-item label="新端口" prop="port">
-            <el-input v-model="newPort" placeholder="请输入新端口号"></el-input>
+          <el-form-item :label="$t('system.basic.newPort')" prop="port">
+            <el-input v-model="newPort" :placeholder="$t('system.basic.pleaseInputPort')"></el-input>
           </el-form-item>
         </el-form>
       </div>
       
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="portChangeDialogVisible = false">取消</el-button>
+          <el-button @click="portChangeDialogVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button type="primary" @click="changePort" :loading="portChanging" :disabled="!isPortChanged">
-            确认修改
+            {{ $t('common.confirmChange') }}
           </el-button>
         </span>
       </template>
@@ -315,6 +315,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { WarningFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
 import { updateBaseURL } from '@/api/index'
+import { useI18n } from 'vue-i18n'
+
+// 初始化 i18n
+const { t } = useI18n()
 
 // 导入子组件
 import TimeManagement from './components/TimeManagement.vue'
@@ -610,7 +614,7 @@ const loadNTPConfig = async () => {
     }
   } catch (error) {
     console.error('加载NTP配置失败:', error)
-    ElMessage.error('加载NTP配置失败')
+    ElMessage.error(t('system.basic.loadNtpConfigFailed'))
   } finally {
     ntpLoading.value = false
   }
@@ -619,12 +623,12 @@ const loadNTPConfig = async () => {
 const syncNTP = async () => {
   // 检查前置条件
   if (ntpConfig.mode !== 'ntp_client') {
-    ElMessage.error('只有NTP客户端模式才能执行时间同步')
+    ElMessage.error(t('system.basic.onlyNtpClientCanSync'))
     return
   }
   
   if (!ntpConfig.server || ntpConfig.server.trim() === '') {
-    ElMessage.error('请先配置NTP服务器地址')
+    ElMessage.error(t('system.basic.pleaseConfigNtpServer'))
     return
   }
   
@@ -647,7 +651,7 @@ const syncNTP = async () => {
     const saveResponse = await systemAPI.setNTPConfig(configToSend)
     if (!(saveResponse.code === 200 || saveResponse.success)) {
       console.error('保存配置失败:', saveResponse)
-      ElMessage.error('保存配置失败，无法执行同步')
+      ElMessage.error(t('system.basic.saveConfigFailed'))
       return
     }
     
@@ -658,7 +662,7 @@ const syncNTP = async () => {
     console.log('同步响应:', response)
     
     if (response.success) {
-      ElMessage.success('NTP同步成功')
+      ElMessage.success(t('system.basic.ntpSyncSuccess'))
       
       // 保存当前前端模式
       const currentFrontendMode = ntpConfig.mode
@@ -677,7 +681,7 @@ const syncNTP = async () => {
       updateCurrentTime()
     } else {
       console.error('同步失败响应:', response)
-      ElMessage.error(response.message || 'NTP同步失败')
+      ElMessage.error(response.message || t('system.basic.ntpSyncFailed'))
     }
   } catch (error) {
     console.error('NTP同步失败:', error)
@@ -704,7 +708,7 @@ const syncNTP = async () => {
 
 const setManualTime = async () => {
   if (!manualTime.value) {
-    ElMessage.warning('请选择要设置的时间')
+    ElMessage.warning(t('system.basic.pleaseSelectTime'))
     return
   }
   
@@ -720,7 +724,7 @@ const setManualTime = async () => {
     console.log('设置时间响应:', response)
     
     if (response.code === 200 || response.success) {
-      ElMessage.success('时间设置成功')
+      ElMessage.success(t('system.basic.timeSetSuccess'))
       
       // 保存当前前端模式
       const currentFrontendMode = ntpConfig.mode
@@ -737,7 +741,7 @@ const setManualTime = async () => {
       updateCurrentTime()
     } else {
       console.error('设置时间失败响应:', response)
-      ElMessage.error(response.message || response.data?.message || '时间设置失败')
+      ElMessage.error(response.message || response.data?.message || t('system.basic.timeSetFailed'))
     }
   } catch (error) {
     console.error('设置时间失败:', error)
@@ -777,7 +781,7 @@ const syncPCTime = async () => {
     console.log('PC时间同步响应:', response)
     
     if (response.code === 200 || response.success) {
-      ElMessage.success('PC时间同步成功')
+      ElMessage.success(t('system.basic.pcTimeSyncSuccess'))
       
       // 保存当前前端模式
       const currentFrontendMode = ntpConfig.mode
@@ -797,7 +801,7 @@ const syncPCTime = async () => {
       updateCurrentTime()
     } else {
       console.error('PC时间同步失败响应:', response)
-      ElMessage.error(response.message || response.data?.message || 'PC时间同步失败')
+      ElMessage.error(response.message || response.data?.message || t('system.basic.pcTimeSyncFailed'))
     }
   } catch (error) {
     console.error('PC时间同步失败:', error)
@@ -837,14 +841,14 @@ const saveNTPConfig = async () => {
     
     const response = await systemAPI.setNTPConfig(configToSend)
     if (response.code === 200 || response.success) {
-      ElMessage.success('NTP配置保存成功')
+      ElMessage.success(t('system.basic.ntpConfigSaveSuccess'))
       // 重新加载配置但保持前端模式
       await loadNTPConfig()
       // 确保模式保持不变
       ntpConfig.mode = currentFrontendMode
     } else {
       console.error('保存失败响应:', response)
-      ElMessage.error(response.message || response.data?.message || 'NTP配置保存失败')
+      ElMessage.error(response.message || response.data?.message || t('system.basic.ntpConfigSaveFailed'))
     }
   } catch (error) {
     console.error('保存NTP配置失败:', error)
@@ -876,7 +880,7 @@ const loadNetworkConfig = async () => {
     }
   } catch (error) {
     console.error('加载网络配置失败:', error)
-    ElMessage.error('加载网络配置失败')
+    ElMessage.error(t('system.basic.loadNetworkConfigFailed'))
   } finally {
     networkLoading.value = false
   }
@@ -888,7 +892,7 @@ const showNetworkChangeDialog = () => {
       networkConfig.subnet_mask === currentNetworkConfig.subnet_mask &&
       networkConfig.gateway === currentNetworkConfig.gateway &&
       networkConfig.port === currentNetworkConfig.port) {
-    ElMessage.warning('请先修改网络配置')
+    ElMessage.warning(t('system.basic.pleaseModifyNetworkConfig'))
     return
   }
   networkChangeDialogVisible.value = true
@@ -913,7 +917,7 @@ const loadCurrentLogo = async () => {
     }
   } catch (error) {
     console.error('加载LOGO失败:', error)
-    ElMessage.error('加载当前LOGO失败')
+    ElMessage.error(t('system.basic.loadLogoFailed'))
   } finally {
     logoLoading.value = false
   }
@@ -921,22 +925,22 @@ const loadCurrentLogo = async () => {
 
 const deleteLogo = async () => {
   try {
-    await ElMessageBox.confirm('确定要恢复默认LOGO吗？', '确认删除', {
+    await ElMessageBox.confirm(t('system.basic.confirmRestoreDefaultLogo'), t('common.confirm'), {
       type: 'warning'
     })
     
     logoLoading.value = true
     const response = await systemAPI.deleteLogo()
     if (response.success) {
-      ElMessage.success('已恢复默认LOGO')
+      ElMessage.success(t('system.basic.restoreDefaultLogoSuccess'))
       await loadCurrentLogo()
     } else {
-      ElMessage.error(response.message || '恢复默认LOGO失败')
+      ElMessage.error(response.message || t('system.basic.restoreDefaultLogoFailed'))
     }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除LOGO失败:', error)
-      ElMessage.error('删除LOGO失败')
+      ElMessage.error(t('system.basic.deleteLogoFailed'))
     }
   } finally {
     logoLoading.value = false
@@ -964,7 +968,7 @@ const triggerReselect = () => {
 
 const uploadLogo = async () => {
   if (!logoFile.value) {
-    ElMessage.warning('请先选择LOGO文件')
+    ElMessage.warning(t('system.basic.pleaseSelectLogoFile'))
     return
   }
 
@@ -975,15 +979,15 @@ const uploadLogo = async () => {
     
     const response = await systemAPI.uploadLogo(formData)
     if (response.success) {
-      ElMessage.success('LOGO更换成功')
+      ElMessage.success(t('system.basic.logoChangeSuccess'))
       clearLogoPreview()
       await loadCurrentLogo()
     } else {
-      ElMessage.error(response.message || 'LOGO更换失败')
+      ElMessage.error(response.message || t('system.basic.logoChangeFailed'))
     }
   } catch (error) {
     console.error('上传LOGO失败:', error)
-    ElMessage.error('上传LOGO失败')
+    ElMessage.error(t('system.basic.uploadLogoFailed'))
   } finally {
     uploading.value = false
   }

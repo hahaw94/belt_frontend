@@ -11,19 +11,19 @@
         <div class="header-left">
           <!-- 首页/总览按钮 -->
           <button class="nav-button home-button" @click="goToHome">
-            <span>首页/总览</span>
+            <span>{{ $t('common.home') }}</span>
           </button>
         </div>
 
         <!-- 居中的标题 -->
         <div class="header-center">
-          <span class="app-title">智能监控系统</span>
+          <span class="app-title">{{ $t('common.systemTitle') }}</span>
         </div>
 
         <div class="header-right">
           <!-- 功能列表按钮 -->
           <button class="nav-button function-button" @click="goToFunctionList">
-            <span>功能列表</span>
+            <span>{{ $t('common.functionList') }}</span>
           </button>
         </div>
 
@@ -42,7 +42,7 @@
           </div>
           
           <!-- 用户下拉菜单 -->
-          <el-dropdown>
+          <el-dropdown @command="handleDropdownCommand">
             <span class="el-dropdown-link">
               <el-avatar :size="30" :src="userAvatarUrl"></el-avatar>
               <span style="margin-left: 8px;">{{ displayUsername }}</span>
@@ -50,8 +50,16 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="showProfileModal">个人资料</el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+                <el-dropdown-item command="profile">{{ $t('user.profile') }}</el-dropdown-item>
+                <el-dropdown-item divided command="zh-CN" :disabled="localeStore.currentLocale === 'zh-CN'">
+                  <el-icon><Globe /></el-icon>
+                  <span style="margin-left: 8px;">中文</span>
+                </el-dropdown-item>
+                <el-dropdown-item command="en-US" :disabled="localeStore.currentLocale === 'en-US'">
+                  <el-icon><Globe /></el-icon>
+                  <span style="margin-left: 8px;">English</span>
+                </el-dropdown-item>
+                <el-dropdown-item divided command="logout">{{ $t('user.logout') }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -79,17 +87,19 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
 import { useSystemStore } from '@/stores/system';
 import { useAlertStore } from '@/stores/alertStore';
+import { useLocaleStore } from '@/stores/locale';
 import ProfileModal from '@/components/ProfileModal.vue';
 import AlertNotification from '@/components/AlertNotification.vue';
 import { usePermissions } from '@/composables/usePermissions';
-import { ArrowDown } from '@element-plus/icons-vue';
+import { ArrowDown, Globe } from '@element-plus/icons-vue';
 
 export default {
   name: 'HomeLayout',
   components: {
     ProfileModal,
     AlertNotification,
-    ArrowDown
+    ArrowDown,
+    Globe
   },
   setup() {
     const router = useRouter();
@@ -97,6 +107,7 @@ export default {
     const authStore = useAuthStore();
     const systemStore = useSystemStore();
     const alertStore = useAlertStore();
+    const localeStore = useLocaleStore();
     const { checkMenuPermission, checkChildPermission } = usePermissions();
     
     const userAvatarUrl = ref(require('@/assets/images/main/main-head.png'));
@@ -178,6 +189,23 @@ export default {
       alertStore.clearHistory();
     };
 
+    // 统一处理下拉菜单命令
+    const handleDropdownCommand = (command) => {
+      if (command === 'profile') {
+        showProfileModal();
+      } else if (command === 'logout') {
+        handleLogout();
+      } else if (command === 'zh-CN' || command === 'en-US') {
+        // 语言切换
+        localeStore.setLocale(command);
+        ElMessage.success(command === 'zh-CN' ? '已切换到中文' : 'Switched to English');
+        // 刷新页面以确保所有组件都使用新语言
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+      }
+    };
+
     // 处理点击告警历史，跳转到告警展示页面
     // eslint-disable-next-line no-unused-vars
     const handleAlertClick = (alert) => {
@@ -211,6 +239,7 @@ export default {
       displayUsername,
       currentLogoUrl,
       alertStore,
+      localeStore,
       checkMenuPermission,
       checkChildPermission,
       goToHome,
@@ -224,6 +253,7 @@ export default {
       handleMarkAllAsRead,
       handleClearHistory,
       handleAlertClick,
+      handleDropdownCommand,
     };
   },
 };

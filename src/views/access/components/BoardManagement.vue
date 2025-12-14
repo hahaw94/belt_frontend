@@ -4,11 +4,11 @@
     <el-card class="board-list-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>板卡管理</span>
+          <span>{{ $t('board.title') }}</span>
           <div>
-            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="showAddBoard">添加设备</el-button>
-            <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="getBoardStats" :loading="boardStatsLoading">获取统计</el-button>
-            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getBoardList" :loading="boardLoading">刷新列表</el-button>
+            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="showAddBoard">{{ $t('board.addDevice') }}</el-button>
+            <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="getBoardStats" :loading="boardStatsLoading">{{ $t('board.getStats') }}</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getBoardList" :loading="boardLoading">{{ $t('board.refreshList') }}</el-button>
           </div>
         </div>
       </template>
@@ -16,26 +16,26 @@
       <!-- 设备搜索和筛选 -->
       <div class="search-filters-card tech-card mb-20">
         <div class="search-filters-header">
-          <span class="filter-title">搜索筛选</span>
+          <span class="filter-title">{{ $t('board.searchFilter') }}</span>
           <div class="header-stats">
             <el-tag class="stat-tag online" size="small">
               <i class="status-dot online"></i>
-              在线: {{ onlineBoardCount }}
+              {{ $t('board.online') }}: {{ onlineBoardCount }}
             </el-tag>
             <el-tag class="stat-tag offline" size="small">
               <i class="status-dot offline"></i>
-              离线: {{ offlineBoardCount }}
+              {{ $t('board.offline') }}: {{ offlineBoardCount }}
             </el-tag>
           </div>
         </div>
         <div class="search-filters-content">
           <div class="filter-row">
             <div class="filter-item">
-              <label for="deviceNameFilter">设备名称</label>
+              <label for="deviceNameFilter">{{ $t('board.deviceName') }}</label>
               <el-input
                 v-model="boardSearchForm.deviceName"
                 id="deviceNameFilter"
-                placeholder="搜索设备名称"
+                :placeholder="$t('board.searchDeviceName')"
                 class="tech-input"
                 clearable
                 @keyup.enter="handleBoardSearch"
@@ -43,11 +43,11 @@
               />
             </div>
             <div class="filter-item">
-              <label for="deviceCodeFilter">设备编号</label>
+              <label for="deviceCodeFilter">{{ $t('board.deviceCode') }}</label>
               <el-input
                 v-model="boardSearchForm.deviceCode"
                 id="deviceCodeFilter"
-                placeholder="搜索设备编号"
+                :placeholder="$t('board.searchDeviceCode')"
                 class="tech-input"
                 clearable
                 @keyup.enter="handleBoardSearch"
@@ -55,40 +55,40 @@
               />
             </div>
             <div class="filter-item">
-              <label for="deviceStatusFilter">设备状态</label>
+              <label for="deviceStatusFilter">{{ $t('board.deviceStatus') }}</label>
               <el-select
                 v-model="boardSearchForm.status"
                 id="deviceStatusFilter"
-                placeholder="全部"
+                :placeholder="$t('common.all')"
                 class="tech-select"
                 clearable
                 @change="handleBoardSearch"
               >
-                <el-option label="全部" value="" />
-                <el-option label="在线" value="online" />
-                <el-option label="离线" value="offline" />
-                <el-option label="错误" value="error" />
+                <el-option :label="$t('common.all')" value="" />
+                <el-option :label="$t('board.online')" value="online" />
+                <el-option :label="$t('board.offline')" value="offline" />
+                <el-option :label="$t('board.error')" value="error" />
               </el-select>
             </div>
             <div class="filter-item">
-              <label for="manufacturerFilter">设备厂商</label>
+              <label for="manufacturerFilter">{{ $t('board.manufacturer') }}</label>
               <el-select
                 v-model="boardSearchForm.manufacturer"
                 id="manufacturerFilter"
-                placeholder="全部"
+                :placeholder="$t('common.all')"
                 class="tech-select"
                 clearable
                 @change="handleBoardSearch"
               >
-                <el-option label="全部" value="" />
-                <el-option label="海康威视" value="海康威视" />
-                <el-option label="大华" value="大华" />
-                <el-option label="华为" value="华为" />
+                <el-option :label="$t('common.all')" value="" />
+                <el-option :label="$t('board.hikvision')" value="海康威视" />
+                <el-option :label="$t('board.dahua')" value="大华" />
+                <el-option :label="$t('board.huawei')" value="华为" />
               </el-select>
             </div>
             <div class="filter-actions">
-              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleBoardSearch">搜索</el-button>
-              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetBoardSearch">重置</el-button>
+              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleBoardSearch">{{ $t('common.search') }}</el-button>
+              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetBoardSearch">{{ $t('common.reset') }}</el-button>
             </div>
           </div>
         </div>
@@ -99,14 +99,14 @@
           <div class="custom-table" v-loading="boardLoading">
           <!-- 表格头部 -->
           <div class="table-header">
-            <div class="header-cell id-cell">设备ID</div>
-            <div class="header-cell name-cell">设备名称</div>
-            <div class="header-cell number-cell">设备编号</div>
-            <div class="header-cell ip-cell">设备IP</div>
-            <div class="header-cell status-cell">设备状态</div>
-            <div class="header-cell stream-status-cell">推流状态</div>
-            <div class="header-cell camera-cell">绑定摄像机</div>
-            <div class="header-cell action-cell">操作</div>
+            <div class="header-cell id-cell">{{ $t('board.deviceId') }}</div>
+            <div class="header-cell name-cell">{{ $t('board.deviceName') }}</div>
+            <div class="header-cell number-cell">{{ $t('board.deviceCode') }}</div>
+            <div class="header-cell ip-cell">{{ $t('board.deviceIp') }}</div>
+            <div class="header-cell status-cell">{{ $t('board.deviceStatus') }}</div>
+            <div class="header-cell stream-status-cell">{{ $t('board.streamStatus') }}</div>
+            <div class="header-cell camera-cell">{{ $t('board.boundCamera') }}</div>
+            <div class="header-cell action-cell">{{ $t('common.operation') }}</div>
           </div>
 
           <!-- 表格内容 -->
@@ -136,14 +136,14 @@
                   <span v-if="row.BoundCameraName || row.bound_camera_name" class="camera-tag bound">
                     {{ row.BoundCameraName || row.bound_camera_name }}
                   </span>
-                  <span v-else class="camera-tag unbound">未绑定</span>
+                  <span v-else class="camera-tag unbound">{{ $t('board.unbound') }}</span>
                 </div>
                 <div class="body-cell action-cell">
                   <button class="action-btn view-btn" @click="viewBoardDetail(row)">
-                    详情
+                    {{ $t('board.detail') }}
                   </button>
                   <button class="action-btn edit-btn" @click="editBoard(row)">
-                    编辑
+                    {{ $t('common.edit') }}
                   </button>
                   <!-- 推流控制按钮 -->
                   <button 
@@ -152,7 +152,7 @@
                     @click="stopBoardStreaming(row)"
                     :disabled="streamOperationLoading"
                   >
-                    停止转码
+                    {{ $t('board.stopTranscode') }}
                   </button>
                   <button 
                     v-else
@@ -160,14 +160,14 @@
                     @click="startBoardStreaming(row)"
                     :disabled="streamOperationLoading"
                   >
-                    开始转码
+                    {{ $t('board.startTranscode') }}
                   </button>
                   <button 
                     v-if="(row.StreamStatus || row.stream_status) === 'streaming'"
                     class="action-btn stream-btn" 
                     @click="showStreamInfo(row)"
                   >
-                    流信息
+                    {{ $t('board.streamInfo') }}
                   </button>
                   <!-- 原始流播放按钮 -->
                   <button 
@@ -175,7 +175,7 @@
                     class="action-btn play-btn" 
                     @click="playOriginalStream(row)"
                   >
-                    原始流
+                    {{ $t('board.originalStream') }}
                   </button>
                   <!-- 固件升级按钮 -->
                   <button 
@@ -183,10 +183,10 @@
                     class="action-btn upgrade-btn" 
                     @click="showUpgradeDialog(row)"
                   >
-                    升级
+                    {{ $t('board.upgrade') }}
                   </button>
                   <button class="action-btn delete-btn" @click="deleteBoard(row)">
-                    删除
+                    {{ $t('common.delete') }}
                   </button>
                 </div>
               </div>

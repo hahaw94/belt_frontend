@@ -2,24 +2,24 @@
   <el-card class="config-card tech-card mb-20" shadow="hover">
     <template #header>
       <div class="card-header">
-        <span>NTP时间设置</span>
+        <span>{{ $t('system.basic.ntpTimeSettings') }}</span>
         <div>
-          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadNTPConfig" :loading="ntpLoading">刷新配置</el-button>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadNTPConfig" :loading="ntpLoading">{{ $t('common.refresh') }}</el-button>
         </div>
       </div>
     </template>
     <el-form :model="ntpConfig" :rules="ntpRules" ref="ntpFormRef" label-width="150px" class="config-form" v-loading="ntpLoading">
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="工作模式" prop="mode">
+            <el-form-item :label="$t('system.basic.workMode')" prop="mode">
               <el-radio-group :model-value="ntpConfig.mode" @update:model-value="updateNtpMode">
-                <el-radio label="ntp_client">NTP客户端</el-radio>
-                <el-radio label="ntp_server">NTP服务器</el-radio>
+                <el-radio label="ntp_client">{{ $t('system.basic.ntpClient') }}</el-radio>
+                <el-radio label="ntp_server">{{ $t('system.basic.ntpServer') }}</el-radio>
               </el-radio-group>
             </el-form-item>
           </el-col>
           <el-col :span="12" v-if="ntpConfig.mode === 'ntp_client'">
-            <el-form-item label="时区设置" prop="timezone">
+            <el-form-item :label="$t('system.basic.timezone')" prop="timezone">
               <div class="custom-select-container">
                 <div 
                   class="custom-select-trigger"
@@ -50,24 +50,24 @@
         </el-row>
         <el-row :gutter="20" v-if="ntpConfig.mode === 'ntp_client'">
           <el-col :span="12">
-            <el-form-item label="NTP服务器" prop="server">
-              <el-input :model-value="ntpConfig.server" @update:model-value="updateNtpServer" placeholder="请输入NTP服务器地址"></el-input>
+            <el-form-item :label="$t('system.basic.ntpServerAddress')" prop="server">
+              <el-input :model-value="ntpConfig.server" @update:model-value="updateNtpServer" :placeholder="$t('system.basic.addNtpServer')"></el-input>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item>
-              <el-button type="primary" class="tech-button" @click="syncNTP" :loading="syncLoading">立即同步</el-button>
+              <el-button type="primary" class="tech-button" @click="syncNTP" :loading="syncLoading">{{ $t('system.basic.syncNow') }}</el-button>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20" v-if="ntpConfig.mode === 'ntp_server'">
           <el-col :span="12">
-            <el-form-item label="手动时间" prop="manual_time">
+            <el-form-item :label="$t('system.basic.manualTime')" prop="manual_time">
               <el-date-picker
                 :model-value="manualTime"
                 @update:model-value="updateManualTime"
                 type="datetime"
-                placeholder="选择日期时间"
+                :placeholder="$t('system.basic.selectDateTime')"
                 format="YYYY-MM-DD HH:mm:ss"
                 value-format="YYYY-MM-DD HH:mm:ss"
                 style="width: 100%"
@@ -78,26 +78,26 @@
         <el-row :gutter="20" v-if="ntpConfig.mode === 'ntp_server'">
           <el-col :span="24">
             <el-form-item>
-              <el-button type="primary" class="tech-button" @click="setManualTime" :loading="setTimeLoading">手动设置时间</el-button>
-              <el-button class="tech-button-secondary" @click="syncPCTime">同步PC时间</el-button>
+              <el-button type="primary" class="tech-button" @click="setManualTime" :loading="setTimeLoading">{{ $t('system.basic.setManualTime') }}</el-button>
+              <el-button class="tech-button-secondary" @click="syncPCTime">{{ $t('system.basic.syncPCTime') }}</el-button>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row :gutter="20">
           <el-col :span="24">
-            <el-form-item label="当前状态">
+            <el-form-item :label="$t('system.basic.currentStatus')">
               <el-tag :type="(ntpConfig.status === 'synced' || ntpConfig.status === 'active') ? 'success' : 'warning'">
                 {{ getStatusText(ntpConfig.status) }}
               </el-tag>
-              <span style="margin-left: 10px;">当前时间：{{ currentTime }}</span>
+              <span style="margin-left: 10px;">{{ $t('system.basic.currentTime') }}：{{ currentTime }}</span>
             </el-form-item>
           </el-col>
         </el-row>
         <el-row style="margin-top: 24px;">
           <el-col :span="24">
             <el-form-item>
-              <el-button type="primary" class="tech-button" @click="saveNTPConfig" :loading="ntpLoading">保存配置</el-button>
-              <el-button class="tech-button-secondary" @click="resetNTPForm">重置</el-button>
+              <el-button type="primary" class="tech-button" @click="saveNTPConfig" :loading="ntpLoading">{{ $t('common.save') }}</el-button>
+              <el-button class="tech-button-secondary" @click="resetNTPForm">{{ $t('common.reset') }}</el-button>
             </el-form-item>
           </el-col>
         </el-row>
@@ -191,20 +191,20 @@ export default {
     },
     getSelectedTimezoneLabel() {
       const selected = this.timezoneOptions.find(option => option.value === this.ntpConfig.timezone)
-      return selected ? selected.label : '请选择时区'
+      return selected ? selected.label : this.$t('system.basic.pleaseSelectTimezone')
     },
     getStatusText(status) {
       switch (status) {
         case 'synced':
-          return '已同步'
+          return this.$t('system.basic.statusSynced')
         case 'active':
-          return '正常运行'
+          return this.$t('system.basic.statusActive')
         case 'sync_required':
-          return '需要同步'
+          return this.$t('system.basic.statusSyncRequired')
         case 'unknown':
-          return '状态未知'
+          return this.$t('system.basic.statusUnknown')
         default:
-          return '未同步'
+          return this.$t('system.basic.statusNotSynced')
       }
     }
   }

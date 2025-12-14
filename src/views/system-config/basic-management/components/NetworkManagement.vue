@@ -2,41 +2,41 @@
   <el-card class="config-card tech-card mb-20" shadow="hover">
     <template #header>
       <div class="card-header">
-        <span>IP地址设置</span>
+        <span>{{ $t('system.basic.ipAddress') }}</span>
         <div>
-          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadNetworkConfig" :loading="networkLoading">刷新配置</el-button>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadNetworkConfig" :loading="networkLoading">{{ $t('common.refresh') }}</el-button>
         </div>
       </div>
     </template>
     <!-- 当前网络信息显示 -->
       <div v-loading="networkLoading" style="margin-bottom: 20px;">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="当前IP地址">
-            <span class="network-value">{{ currentNetworkConfig.ip_address || '获取中...' }}</span>
+          <el-descriptions-item :label="$t('system.basic.ipAddress')">
+            <span class="network-value">{{ currentNetworkConfig.ip_address || $t('common.loading') }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="子网掩码">
-            <span class="network-value">{{ currentNetworkConfig.subnet_mask || '获取中...' }}</span>
+          <el-descriptions-item :label="$t('system.basic.subnetMask')">
+            <span class="network-value">{{ currentNetworkConfig.subnet_mask || $t('common.loading') }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="网关地址">
-            <span class="network-value">{{ currentNetworkConfig.gateway || '获取中...' }}</span>
+          <el-descriptions-item :label="$t('system.basic.gateway')">
+            <span class="network-value">{{ currentNetworkConfig.gateway || $t('common.loading') }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="服务端口">
-            <span class="network-value">{{ currentNetworkConfig.port || '获取中...' }}</span>
-            <el-button type="primary" size="small" class="tech-button-sm ml-10" @click="showPortChangeDialog" :loading="networkLoading">修改端口</el-button>
+          <el-descriptions-item :label="$t('system.basic.port')">
+            <span class="network-value">{{ currentNetworkConfig.port || $t('common.loading') }}</span>
+            <el-button type="primary" size="small" class="tech-button-sm ml-10" @click="showPortChangeDialog" :loading="networkLoading">{{ $t('common.edit') }}</el-button>
           </el-descriptions-item>
-          <el-descriptions-item label="当前访问地址">
+          <el-descriptions-item :label="$t('system.basic.currentAccessUrl')">
             <span class="network-value link-value" @click="copyToClipboard(getCurrentAccessUrl())">
               {{ getCurrentAccessUrl() }}
               <el-icon class="copy-icon"><CopyDocument /></el-icon>
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="系统配置地址">
+          <el-descriptions-item :label="$t('system.basic.systemConfigUrl')">
             <span class="network-value link-value" @click="copyToClipboard(getBackendConfigUrl())">
               {{ getBackendConfigUrl() }}
               <el-icon class="copy-icon"><CopyDocument /></el-icon>
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="修改后地址" v-if="hasNetworkChanges()">
+          <el-descriptions-item :label="$t('system.basic.modifiedUrl')" v-if="hasNetworkChanges()">
             <span class="network-value preview-url" @click="copyToClipboard(getPreviewAccessUrl())">
               {{ getPreviewAccessUrl() }}
               <el-icon class="copy-icon"><CopyDocument /></el-icon>
@@ -48,18 +48,18 @@
       <el-form :model="networkConfig" :rules="networkRules" ref="networkFormRef" label-width="120px" class="config-form" v-loading="networkLoading">
         <el-row :gutter="16">
           <el-col :span="8">
-            <el-form-item label="IP地址" prop="ip_address">
-              <el-input :model-value="networkConfig.ip_address" @update:model-value="updateIpAddress" placeholder="请输入IP地址"></el-input>
+            <el-form-item :label="$t('system.basic.ipAddress')" prop="ip_address">
+              <el-input :model-value="networkConfig.ip_address" @update:model-value="updateIpAddress" :placeholder="$t('common.pleaseInput') + $t('system.basic.ipAddress')"></el-input>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="子网掩码" prop="subnet_mask">
-              <el-input :model-value="networkConfig.subnet_mask" @update:model-value="updateSubnetMask" placeholder="请输入子网掩码"></el-input>
+            <el-form-item :label="$t('system.basic.subnetMask')" prop="subnet_mask">
+              <el-input :model-value="networkConfig.subnet_mask" @update:model-value="updateSubnetMask" :placeholder="$t('common.pleaseInput') + $t('system.basic.subnetMask')"></el-input>
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="网关" prop="gateway">
-              <el-input :model-value="networkConfig.gateway" @update:model-value="updateGateway" placeholder="请输入网关地址"></el-input>
+            <el-form-item :label="$t('system.basic.gateway')" prop="gateway">
+              <el-input :model-value="networkConfig.gateway" @update:model-value="updateGateway" :placeholder="$t('common.pleaseInput') + $t('system.basic.gateway')"></el-input>
             </el-form-item>
           </el-col>
         </el-row>
@@ -67,8 +67,8 @@
         <el-row style="margin-top: 20px;">
           <el-col :span="24">
             <el-form-item>
-              <el-button type="danger" class="tech-button-danger" @click="showNetworkChangeDialog" :loading="networkLoading">修改网络配置</el-button>
-              <el-button class="tech-button-secondary" @click="resetNetworkForm">重置</el-button>
+              <el-button type="danger" class="tech-button-danger" @click="showNetworkChangeDialog" :loading="networkLoading">{{ $t('system.basic.modifyNetworkConfig') }}</el-button>
+              <el-button class="tech-button-secondary" @click="resetNetworkForm">{{ $t('common.reset') }}</el-button>
             </el-form-item>
           </el-col>
         </el-row>

@@ -22,7 +22,7 @@
           <el-form-item prop="username" class="form-item-wrapper">
             <TechInput 
               v-model="loginForm.username" 
-              placeholder="用户名 / Username"
+              :placeholder="$t('user.login.username')"
               size="large"
               autocomplete="username"
               @keyup.enter="handleLogin"
@@ -37,7 +37,7 @@
             <TechInput 
               v-model="loginForm.password" 
               type="password" 
-              placeholder="密码 / Password"
+              :placeholder="$t('user.login.password')"
               size="large"
               autocomplete="current-password"
               @keyup.enter="handleLogin"
@@ -56,8 +56,8 @@
               class="tech-button"
               size="large"
             >
-              <span v-if="!loading">登录系统</span>
-              <span v-else>正在验证...</span>
+              <span v-if="!loading">{{ $t('user.login.login') }}</span>
+              <span v-else>{{ $t('common.processing') }}</span>
             </el-button>
           </el-form-item>
         </el-form>

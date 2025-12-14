@@ -3,17 +3,17 @@
     <!-- 科技感背景 -->
     <div class="tech-background"></div>
     
-    <h2>预警推送管理</h2>
+    <h2>{{ $t('event.warningPush.title') }}</h2>
     
     <!-- 告警类型管理 -->
     <el-card class="role-list-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>告警类型管理</span>
+          <span>{{ $t('event.warningPush.alarmTypeManagement') }}</span>
           <div>
-            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddType">添加类型</el-button>
-            <el-button type="warning" :icon="Setting" size="small" class="tech-button-sm" @click="showSubscriptionDialog">订阅配置</el-button>
-            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadAlarmTypes">刷新列表</el-button>
+            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddType">{{ $t('event.warningPush.addType') }}</el-button>
+            <el-button type="warning" :icon="Setting" size="small" class="tech-button-sm" @click="showSubscriptionDialog">{{ $t('event.warningPush.subscriptionConfig') }}</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadAlarmTypes">{{ $t('common.refresh') }}</el-button>
           </div>
         </div>
       </template>
@@ -21,26 +21,26 @@
       <!-- 类型列表 -->
       <el-table :data="paginatedTypes" v-loading="typeLoading" border stripe class="tech-table" style="width: 100%">
         <el-table-column prop="id" label="ID" width="80" align="center" header-align="center" />
-        <el-table-column prop="type_name" label="类型名称" min-width="150" header-align="center" />
-        <el-table-column prop="type_code" label="类型编码" min-width="200" header-align="center">
+        <el-table-column prop="type_name" :label="$t('event.warningPush.typeName')" min-width="150" header-align="center" />
+        <el-table-column prop="type_code" :label="$t('common.code')" min-width="200" header-align="center">
           <template #default="{ row }">
             <code class="type-code">{{ row.type_code }}</code>
           </template>
         </el-table-column>
-        <el-table-column prop="is_active" label="状态" width="100" align="center" header-align="center">
+        <el-table-column prop="is_active" :label="$t('common.status')" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="row.is_active ? 'success' : 'info'">
-              {{ row.is_active ? '启用' : '禁用' }}
+              {{ row.is_active ? $t('common.enable') : $t('common.disable') }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="sort_order" label="排序" width="100" align="center" header-align="center" />
-        <el-table-column prop="create_time" label="创建时间" width="180" header-align="center">
+        <el-table-column prop="sort_order" :label="$t('common.sort')" width="100" align="center" header-align="center" />
+        <el-table-column prop="create_time" :label="$t('common.createTime')" width="180" header-align="center">
           <template #default="{ row }">
             {{ formatDate(row.create_time) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="100" align="center" header-align="center">
+        <el-table-column :label="$t('common.operation')" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <el-button 
               type="danger"
@@ -50,7 +50,7 @@
               @click="handleDeleteType(row)"
               :disabled="row.id <= 9"
             >
-              删除
+{{ $t('common.delete') }}
             </el-button>
           </template>
         </el-table-column>

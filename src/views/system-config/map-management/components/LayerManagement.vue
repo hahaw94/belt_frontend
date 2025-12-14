@@ -6,7 +6,7 @@
       <div class="search-box">
         <el-input
           v-model="searchForm.layer_name"
-          placeholder="搜索图层名称"
+          :placeholder="$t('map.searchLayerName')"
           clearable
           style="width: 250px;"
           class="tech-input"
@@ -19,21 +19,21 @@
         
         <el-select
           v-model="searchForm.status"
-          placeholder="状态"
+          :placeholder="$t('map.status')"
           clearable
           style="width: 120px; margin-left: 10px;"
           class="tech-select"
           @change="handleSearch"
         >
-          <el-option label="启用" :value="1" />
-          <el-option label="禁用" :value="0" />
+          <el-option :label="$t('map.enabled')" :value="1" />
+          <el-option :label="$t('map.disabled')" :value="0" />
         </el-select>
       </div>
 
       <!-- 操作按钮 -->
       <div class="action-buttons">
-        <el-button type="primary" class="tech-button" :icon="Plus" @click="showCreateDialog">新建图层</el-button>
-        <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshLayers">刷新</el-button>
+        <el-button type="primary" class="tech-button" :icon="Plus" @click="showCreateDialog">{{ $t('map.createLayer') }}</el-button>
+        <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshLayers">{{ $t('common.refresh') }}</el-button>
       </div>
     </div>
 
@@ -48,9 +48,9 @@
         :scroll-x="true"
       >
       <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="layer_name" label="图层名称" min-width="150" />
-      <el-table-column prop="layer_description" label="描述" min-width="200" show-overflow-tooltip />
-      <el-table-column label="图层预览" width="120">
+      <el-table-column prop="layer_name" :label="$t('map.layerName')" min-width="150" />
+      <el-table-column prop="layer_description" :label="$t('map.description')" min-width="200" show-overflow-tooltip />
+      <el-table-column :label="$t('map.layerPreview')" width="120">
         <template #default="scope">
           <el-image
             :src="scope.row.image_url"
@@ -67,31 +67,31 @@
           </el-image>
         </template>
       </el-table-column>
-      <el-table-column label="尺寸" width="120">
+      <el-table-column :label="$t('map.dimensions')" width="120">
         <template #default="scope">
           {{ scope.row.image_width }}×{{ scope.row.image_height }}
         </template>
       </el-table-column>
-      <el-table-column prop="camera_count" label="相机数量" width="100" />
-      <el-table-column label="状态" width="100">
+      <el-table-column prop="camera_count" :label="$t('map.cameraCount')" width="100" />
+      <el-table-column :label="$t('map.status')" width="100">
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
-            {{ scope.row.status === 1 ? '启用' : '禁用' }}
+            {{ scope.row.status === 1 ? $t('map.enabled') : $t('map.disabled') }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="create_time" label="创建时间" width="180">
+      <el-table-column prop="create_time" :label="$t('map.createTime')" width="180">
         <template #default="scope">
           {{ formatDate(scope.row.create_time) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="300">
+      <el-table-column :label="$t('map.operations')" width="300">
         <template #default="scope">
           <div class="action-buttons-container">
-            <el-button type="text" size="small" class="tech-button-text" @click="viewLayer(scope.row)">查看</el-button>
-            <el-button type="text" size="small" class="tech-button-text" @click="editLayer(scope.row)">编辑</el-button>
-            <el-button type="text" size="small" class="tech-button-text tech-button-success" @click="applyToHomePage(scope.row)">应用于首页</el-button>
-            <el-button type="text" size="small" class="tech-button-text tech-button-danger" @click="deleteLayer(scope.row)">删除</el-button>
+            <el-button type="text" size="small" class="tech-button-text" @click="viewLayer(scope.row)">{{ $t('common.view') }}</el-button>
+            <el-button type="text" size="small" class="tech-button-text" @click="editLayer(scope.row)">{{ $t('common.edit') }}</el-button>
+            <el-button type="text" size="small" class="tech-button-text tech-button-success" @click="applyToHomePage(scope.row)">{{ $t('map.applyToHomePage') }}</el-button>
+            <el-button type="text" size="small" class="tech-button-text tech-button-danger" @click="deleteLayer(scope.row)">{{ $t('common.delete') }}</el-button>
           </div>
         </template>
       </el-table-column>
@@ -113,7 +113,7 @@
 
     <!-- 新建/编辑图层对话框 -->
     <el-dialog
-      :title="dialogForm.id ? '编辑图层' : '新建图层'"
+      :title="dialogForm.id ? $t('map.editLayer') : $t('map.createLayer')"
       v-model="dialogVisible"
       width="600px"
       @close="resetDialog"
@@ -124,18 +124,18 @@
         :rules="dialogRules"
         label-width="100px"
       >
-        <el-form-item label="图层名称" prop="layer_name">
-          <el-input v-model="dialogForm.layer_name" placeholder="请输入图层名称" />
+        <el-form-item :label="$t('map.layerName')" prop="layer_name">
+          <el-input v-model="dialogForm.layer_name" :placeholder="$t('map.pleaseInputLayerName')" />
         </el-form-item>
-        <el-form-item label="图层描述" prop="layer_description">
+        <el-form-item :label="$t('map.layerDescription')" prop="layer_description">
           <el-input
             v-model="dialogForm.layer_description"
             type="textarea"
             :rows="3"
-            placeholder="请输入图层描述"
+            :placeholder="$t('map.pleaseInputLayerDescription')"
           />
         </el-form-item>
-        <el-form-item v-if="!dialogForm.id" label="图层图片" prop="file">
+        <el-form-item v-if="!dialogForm.id" :label="$t('map.layerImage')" prop="file">
           <el-upload
             ref="uploadRef"
             :auto-upload="false"
@@ -148,54 +148,54 @@
           >
             <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
             <div class="el-upload__text">
-              将文件拖到此处，或<em>点击上传</em>
+              {{ $t('map.dragFileHere') }}<em>{{ $t('map.clickToUpload') }}</em>
             </div>
             <template #tip>
               <div class="el-upload__tip">
-                支持PNG、JPG、JPEG、GIF格式，文件大小不超过10MB
+                {{ $t('map.uploadTip') }}
               </div>
             </template>
           </el-upload>
         </el-form-item>
-        <el-form-item v-if="dialogForm.id" label="状态" prop="status">
+        <el-form-item v-if="dialogForm.id" :label="$t('map.status')" prop="status">
           <el-radio-group v-model="dialogForm.status">
-            <el-radio :label="1">启用</el-radio>
-            <el-radio :label="0">禁用</el-radio>
+            <el-radio :label="1">{{ $t('map.enabled') }}</el-radio>
+            <el-radio :label="0">{{ $t('map.disabled') }}</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button class="tech-button-secondary" @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" class="tech-button" @click="submitDialog" :loading="submitting">确认</el-button>
+          <el-button class="tech-button-secondary" @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" class="tech-button" @click="submitDialog" :loading="submitting">{{ $t('common.confirm') }}</el-button>
         </span>
       </template>
     </el-dialog>
 
     <!-- 图层详情对话框 -->
     <el-dialog
-      title="图层详情"
+      :title="$t('map.layerDetail')"
       v-model="detailVisible"
       width="800px"
     >
       <div v-if="currentLayer" class="layer-detail">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="图层名称">{{ currentLayer.layer_name }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label="$t('map.layerName')">{{ currentLayer.layer_name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.status')">
             <el-tag :type="currentLayer.status === 1 ? 'success' : 'danger'">
-              {{ currentLayer.status === 1 ? '启用' : '禁用' }}
+              {{ currentLayer.status === 1 ? $t('map.enabled') : $t('map.disabled') }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="图片尺寸">{{ currentLayer.image_width }}×{{ currentLayer.image_height }}</el-descriptions-item>
-          <el-descriptions-item label="相机数量">{{ currentLayer.camera_count }}</el-descriptions-item>
-          <el-descriptions-item label="文件大小">{{ formatFileSize(currentLayer.file_size) }}</el-descriptions-item>
-          <el-descriptions-item label="文件类型">{{ currentLayer.file_type }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间" :span="2">{{ formatDate(currentLayer.create_time) }}</el-descriptions-item>
-          <el-descriptions-item label="描述" :span="2">{{ currentLayer.layer_description || '暂无描述' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.imageDimensions')">{{ currentLayer.image_width }}×{{ currentLayer.image_height }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.cameraCount')">{{ currentLayer.camera_count }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.fileSize')">{{ formatFileSize(currentLayer.file_size) }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.fileType')">{{ currentLayer.file_type }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.createTime')" :span="2">{{ formatDate(currentLayer.create_time) }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.description')" :span="2">{{ currentLayer.layer_description || $t('map.noDescription') }}</el-descriptions-item>
         </el-descriptions>
         
         <div class="layer-image">
-          <h4>图层预览</h4>
+          <h4>{{ $t('map.layerPreview') }}</h4>
           <el-image
             :src="currentLayer.image_url"
             fit="none"
@@ -206,7 +206,7 @@
             <template #error>
               <div class="image-slot">
                 <el-icon><Picture /></el-icon>
-                <div>加载失败</div>
+                <div>{{ $t('map.loadFailed') }}</div>
               </div>
             </template>
           </el-image>

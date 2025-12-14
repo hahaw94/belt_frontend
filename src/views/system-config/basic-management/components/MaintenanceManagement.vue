@@ -2,14 +2,14 @@
   <el-card class="config-card tech-card mb-20" shadow="hover">
     <template #header>
       <div class="card-header">
-        <span>系统维护</span>
+        <span>{{ $t('system.basic.systemMaintenance') }}</span>
       </div>
     </template>
     <div v-loading="maintenanceLoading" class="config-form">
         <!-- 系统重启管理 -->
         <el-row class="maintenance-section">
           <el-col :span="24">
-            <h4>系统重启管理</h4>
+            <h4>{{ $t('system.basic.systemRestart') }}</h4>
             <div class="restart-actions">
               <el-row :gutter="20">
                 <el-col :span="12">
@@ -19,10 +19,10 @@
                         <el-icon size="24"><Refresh /></el-icon>
                       </div>
                       <div class="restart-content">
-                        <h5>服务重启</h5>
-                        <p>重启应用服务，保持服务器运行</p>
+                        <h5>{{ $t('system.basic.restartService') }}</h5>
+                        <p>{{ $t('system.basic.restartServiceDesc') }}</p>
                         <el-button type="primary" class="tech-button" @click="confirmRestartService" :loading="restartingService">
-                          重启服务
+{{ $t('system.basic.restartService') }}
                         </el-button>
                       </div>
                     </div>
@@ -35,10 +35,10 @@
                         <el-icon size="24"><PowerOff /></el-icon>
                       </div>
                       <div class="restart-content">
-                        <h5>服务器重启</h5>
-                        <p>重启整个服务器系统</p>
+                        <h5>{{ $t('system.basic.rebootServer') }}</h5>
+                        <p>{{ $t('system.basic.rebootServerDesc') }}</p>
                         <el-button type="danger" class="tech-button-danger" @click="confirmRebootServer" :loading="rebootingServer">
-                          重启服务器
+{{ $t('system.basic.rebootServer') }}
                         </el-button>
                       </div>
                     </div>

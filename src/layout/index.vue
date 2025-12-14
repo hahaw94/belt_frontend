@@ -10,7 +10,7 @@
         <div class="header-left">
           <!-- 首页/总览按钮 -->
           <button class="nav-button home-button" @click="goToHome">
-            <span>首页/总览</span>
+            <span>{{ $t('menu.home') }}</span>
           </button>
         </div>
 
@@ -22,7 +22,7 @@
         <div class="header-right">
           <!-- 功能列表按钮 -->
           <button class="nav-button function-button" @click="goToFunctionList">
-            <span>功能列表</span>
+            <span>{{ $t('menu.functionList') }}</span>
           </button>
         </div>
 
@@ -48,8 +48,8 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item @click="showProfileModal">个人资料</el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout">退出登录</el-dropdown-item>
+                <el-dropdown-item @click="showProfileModal">{{ $t('menu.profile') }}</el-dropdown-item>
+                <el-dropdown-item divided @click="handleLogout">{{ $t('menu.logout') }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -77,67 +77,67 @@
             <el-sub-menu v-if="checkChildPermission('/system-config')" index="/system-config">
               <template #title>
                 <el-icon><Setting /></el-icon>
-                <span>系统配置</span>
+                <span>{{ $t('menu.systemConfig') }}</span>
               </template>
-              <el-menu-item v-if="checkMenuPermission('/system-config/basic-management')" index="/system-config/basic-management">基础管理</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/system-config/version-management')" index="/system-config/version-management">版本管理</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/system-config/map-management')" index="/system-config/map-management">地图管理</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/system-config/basic-management')" index="/system-config/basic-management">{{ $t('menu.basicManagement') }}</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/system-config/version-management')" index="/system-config/version-management">{{ $t('menu.versionManagement') }}</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/system-config/map-management')" index="/system-config/map-management">{{ $t('menu.mapManagement') }}</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu v-if="checkChildPermission('/algorithm')" index="/algorithm">
               <template #title>
                 <el-icon><Cpu /></el-icon>
-                <span>算法管理</span>
+                <span>{{ $t('menu.algorithmManagement') }}</span>
               </template>
-              <el-menu-item v-if="checkMenuPermission('/algorithm/upload')" index="/algorithm/upload">算法仓</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/algorithm/config')" index="/algorithm/config">算法配置</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/algorithm/upload')" index="/algorithm/upload">{{ $t('menu.algorithmWarehouse') }}</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/algorithm/config')" index="/algorithm/config">{{ $t('menu.algorithmConfig') }}</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu v-if="checkChildPermission('/usermanagement')" index="/usermanagement">
               <template #title>
                 <el-icon><User /></el-icon>
-                <span>用户管理</span>
+                <span>{{ $t('menu.userManagement') }}</span>
               </template>
-              <el-menu-item v-if="checkMenuPermission('/usermanagement/user-management-manage')" index="/usermanagement/user-management-manage">用户列表</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/usermanagement/role-management')" index="/usermanagement/role-management">角色列表</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/usermanagement/user-management-manage')" index="/usermanagement/user-management-manage">{{ $t('menu.userManage') }}</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/usermanagement/role-management')" index="/usermanagement/role-management">{{ $t('menu.roleManagement') }}</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu v-if="checkChildPermission('/access')" index="/access">
               <template #title>
                 <el-icon><Connection /></el-icon>
-                <span>接入管理</span>
+                <span>{{ $t('menu.accessManagement') }}</span>
               </template>
-              <el-menu-item v-if="checkMenuPermission('/access/device')" index="/access/device">设备管理</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/access/device')" index="/access/device">{{ $t('menu.deviceManagement') }}</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu v-if="checkChildPermission('/detection')" index="/detection">
               <template #title>
                 <el-icon><Monitor /></el-icon>
-                <span>实时检测</span>
+                <span>{{ $t('menu.detection') }}</span>
               </template>
-              <el-menu-item v-if="checkMenuPermission('/detection/realtime')" index="/detection/realtime">实时画面</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/detection/playback')" index="/detection/playback">录像回放</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/detection/realtime')" index="/detection/realtime">{{ $t('menu.realtimeDetection') }}</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/detection/playback')" index="/detection/playback">{{ $t('menu.videoPlayback') }}</el-menu-item>
             </el-sub-menu>
 
             <el-sub-menu v-if="checkChildPermission('/event')" index="/event">
               <template #title>
                 <el-icon><Bell /></el-icon>
-                <span>事件中心</span>
+                <span>{{ $t('menu.eventCenter') }}</span>
               </template>
-              <el-menu-item v-if="checkMenuPermission('/event/alarm-display')" index="/event/alarm-display">告警信息展示</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/event/data-collection')" index="/event/data-collection">告警数据收集</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/event/linkage-settings')" index="/event/linkage-settings">告警联动设置</el-menu-item>
-              <el-menu-item v-if="checkMenuPermission('/event/warning-push')" index="/event/warning-push">预警推送</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/event/alarm-display')" index="/event/alarm-display">{{ $t('menu.alarmDisplay') }}</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/event/data-collection')" index="/event/data-collection">{{ $t('menu.dataCollection') }}</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/event/linkage-settings')" index="/event/linkage-settings">{{ $t('menu.linkageSettings') }}</el-menu-item>
+              <el-menu-item v-if="checkMenuPermission('/event/warning-push')" index="/event/warning-push">{{ $t('menu.warningPush') }}</el-menu-item>
             </el-sub-menu>
 
             <el-menu-item v-if="checkMenuPermission('/log')" index="/log">
               <el-icon><Document /></el-icon>
-              <template #title>日志中心</template>
+              <template #title>{{ $t('menu.logCenter') }}</template>
             </el-menu-item>
 
             <el-menu-item v-if="checkMenuPermission('/statistics')" index="/statistics">
               <el-icon><TrendCharts /></el-icon>
-              <template #title>统计分析</template>
+              <template #title>{{ $t('menu.statisticsAnalysis') }}</template>
             </el-menu-item>
 
             </el-menu>
@@ -612,6 +612,47 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* 语言切换器样式 */
+.language-selector-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+.language-selector {
+  cursor: pointer;
+  color: #00d4ff;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  transition: all 0.3s ease;
+  text-shadow: 0 0 8px rgba(0, 255, 255, 0.3);
+}
+
+.language-selector:hover {
+  color: #ffffff;
+  background: rgba(0, 212, 255, 0.2);
+  border-color: rgba(0, 212, 255, 0.5);
+  text-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+}
+
+.language-selector .el-icon {
+  font-size: 18px;
+}
+
+.language-text {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .header-user .el-dropdown {

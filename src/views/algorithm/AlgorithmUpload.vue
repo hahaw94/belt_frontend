@@ -4,20 +4,20 @@
     <div class="tech-background">
     </div>
     
-    <h2>算法仓</h2>
+    <h2>{{ $t('algorithm.warehouse.title') }}</h2>
 
     <!-- 算法上传 -->
     <el-card class="upload-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>算法模型上传</span>
+          <span>{{ $t('algorithm.warehouse.uploadAlgorithm') }}</span>
         </div>
       </template>
       <div class="upload-content">
         <el-alert
-          title="上传说明"
+          :title="$t('algorithm.warehouse.uploadNote')"
           type="info"
-          description="支持手动上传算法模型文件，也支持训练平台自动下发。算法模型文件支持 .zip、.tar、.gz 等压缩包格式。"
+          :description="$t('algorithm.warehouse.uploadDesc')"
           show-icon
           :closable="false"
           class="mb-20">
@@ -37,11 +37,11 @@
           :disabled="uploading">
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">
-            将算法文件拖拽至此 或 <em>点击上传</em>
+{{ $t('common.dragFileHere') }} <em>{{ $t('common.clickUpload') }}</em>
         </div>
         <template #tip>
           <div class="el-upload__tip">
-              支持 .zip、.tar、.gz 压缩包或 .py、.sh、.bin 脚本文件，单文件大小不超过 500MB
+{{ $t('algorithm.warehouse.uploadTip') }}
           </div>
         </template>
       </el-upload>
@@ -49,22 +49,22 @@
         <el-form :model="uploadForm" label-width="120px" class="upload-form mt-20">
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="算法名称">
-                <el-input v-model="uploadForm.algorithm_name" placeholder="请输入算法名称"></el-input>
+              <el-form-item :label="$t('algorithm.warehouse.algorithmName')">
+                <el-input v-model="uploadForm.algorithm_name" :placeholder="$t('algorithm.warehouse.pleaseInputAlgorithmName')"></el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="算法版本">
-                <el-input v-model="uploadForm.algorithm_version" placeholder="请输入版本号"></el-input>
+              <el-form-item :label="$t('algorithm.warehouse.algorithmVersion')">
+                <el-input v-model="uploadForm.algorithm_version" :placeholder="$t('common.pleaseInput') + $t('algorithm.warehouse.algorithmVersion')"></el-input>
               </el-form-item>
             </el-col>
           </el-row>
-          <el-form-item label="算法描述">
+          <el-form-item :label="$t('algorithm.warehouse.description')">
             <el-input 
               v-model="uploadForm.description" 
               type="textarea" 
               :rows="3" 
-              placeholder="请输入算法功能描述">
+              :placeholder="$t('common.pleaseInput') + $t('algorithm.warehouse.description')">
             </el-input>
           </el-form-item>
         </el-form>
@@ -75,9 +75,9 @@
     <el-card class="algorithm-list-card tech-card" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>算法版本列表</span>
+          <span>{{ $t('algorithm.algorithm.versionList') }}</span>
           <div>
-            <el-button type="primary" :icon="Refresh" size="small" @click="getAlgorithmList" :loading="loading">刷新列表</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" @click="getAlgorithmList" :loading="loading">{{ $t('common.refresh') }}</el-button>
           </div>
         </div>
       </template>

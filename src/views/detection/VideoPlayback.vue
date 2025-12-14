@@ -4,13 +4,13 @@
     <div class="device-sidebar">
       <div class="sidebar-header">
         <el-icon><VideoCamera /></el-icon>
-        <span>显示所有通道</span>
+        <span>{{ $t('device.device.allChannels') }}</span>
         <span class="total-indicator">{{ getOnlineChannelCount() }}/{{ getTotalChannelCount() }}</span>
       </div>
       
       <el-input 
         v-model="searchText" 
-        placeholder="搜索设备..." 
+        :placeholder="$t('common.search') + $t('device.device.device') + '...'" 
         class="search-input"
         clearable
       >
@@ -20,32 +20,32 @@
       </el-input>
       
       <div class="status-filters">
-        <span class="filter-label">状态：</span>
-        <el-button :type="statusFilter === 'all' ? 'primary' : ''" size="small" @click="statusFilter = 'all'">不限</el-button>
-        <el-button :type="statusFilter === 'online' ? 'primary' : ''" size="small" @click="statusFilter = 'online'">在线</el-button>
-        <el-button :type="statusFilter === 'offline' ? 'primary' : ''" size="small" @click="statusFilter = 'offline'">离线</el-button>
+        <span class="filter-label">{{ $t('common.status') }}：</span>
+        <el-button :type="statusFilter === 'all' ? 'primary' : ''" size="small" @click="statusFilter = 'all'">{{ $t('common.all') }}</el-button>
+        <el-button :type="statusFilter === 'online' ? 'primary' : ''" size="small" @click="statusFilter = 'online'">{{ $t('common.online') }}</el-button>
+        <el-button :type="statusFilter === 'offline' ? 'primary' : ''" size="small" @click="statusFilter = 'offline'">{{ $t('common.offline') }}</el-button>
       </div>
 
       <!-- 时间选择器（选中通道后显示） -->
       <div v-if="selectedChannel" class="time-selector">
         <div class="selector-header">
           <el-icon><Calendar /></el-icon>
-          <span>录像时间</span>
+          <span>{{ $t('common.recordingTime') }}</span>
         </div>
         <div class="date-inputs">
           <el-date-picker
             v-model="recordingStartDate"
             type="date"
-            placeholder="开始日期"
+            :placeholder="$t('common.startDate')"
             size="small"
             class="date-picker-single"
             value-format="YYYY-MM-DD"
           />
-          <span class="date-separator">至</span>
+          <span class="date-separator">-</span>
           <el-date-picker
             v-model="recordingEndDate"
             type="date"
-            placeholder="结束日期"
+            :placeholder="$t('common.endDate')"
             size="small"
             class="date-picker-single"
             value-format="YYYY-MM-DD"
@@ -59,11 +59,11 @@
           class="query-btn"
         >
           <el-icon><Search /></el-icon>
-          查询录像
+{{ $t('common.query') }}
         </el-button>
       </div>
 
-      <div v-loading="loading" element-loading-text="正在加载设备和通道..." class="tree-loading-wrapper">
+      <div v-loading="loading" :element-loading-text="$t('common.loading')" class="tree-loading-wrapper">
         <el-tree
           :data="deviceTree"
           :props="treeProps"

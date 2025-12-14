@@ -4,21 +4,21 @@
     <div class="tech-background">
     </div>
     
-    <h2>算法配置</h2>
+    <h2>{{ $t('algorithm.algorithm.title') }}</h2>
 
     <!-- 算法下发 -->
     <el-card class="dispatch-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>算法下发</span>
-          <el-button type="primary" :icon="Promotion" size="small" @click="showBatchDispatch">批量下发</el-button>
+          <span>{{ $t('algorithm.algorithm.dispatch') }}</span>
+          <el-button type="primary" :icon="Promotion" size="small" @click="showBatchDispatch">{{ $t('common.batch') }}{{ $t('algorithm.algorithm.dispatch') }}</el-button>
         </div>
       </template>
       <div class="dispatch-content">
         <el-alert
-          title="下发说明"
+          :title="$t('algorithm.algorithm.dispatchNote')"
           type="info"
-          description="选择算法模型和目标智能分析板卡，将算法下发到指定设备进行智能分析。下发过程可能需要几分钟时间。"
+          :description="$t('algorithm.algorithm.dispatchDesc')"
           show-icon
           :closable="false"
           class="mb-20">
@@ -27,7 +27,7 @@
         <el-form :model="dispatchForm" :rules="dispatchRules" ref="dispatchFormRef" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">
-              <el-form-item label="选择算法" prop="algorithm_version_id">
+              <el-form-item :label="$t('algorithm.algorithm.selectAlgorithm')" prop="algorithm_version_id">
                 <div class="custom-select" ref="algorithmSelectRef">
                   <div class="custom-select-input" @click="toggleAlgorithmDropdown">
                     <span class="custom-select-value">{{ getAlgorithmDisplayText(dispatchForm.algorithm_version_id) }}</span>
@@ -39,7 +39,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-              <el-form-item label="目标板卡" prop="target_card">
+              <el-form-item :label="$t('algorithm.algorithm.targetBoard')" prop="target_card">
                 <div class="custom-select" ref="targetCardSelectRef">
                   <div class="custom-select-input" @click="toggleTargetCardDropdown">
                     <span class="custom-select-value">{{ getTargetCardDisplayText(dispatchForm.target_card) }}</span>
@@ -53,21 +53,21 @@
         </el-row>
         <el-row :gutter="20">
           <el-col :span="12">
-              <el-form-item label="同步规则">
-                <el-switch v-model="dispatchForm.sync_rules" active-text="下发后同步配置规则"></el-switch>
+              <el-form-item :label="$t('algorithm.algorithm.syncRules')">
+                <el-switch v-model="dispatchForm.sync_rules" :active-text="$t('algorithm.algorithm.syncRulesDesc')"></el-switch>
             </el-form-item>
           </el-col>
           <el-col :span="12">
-              <el-form-item label="自动重启">
-                <el-switch v-model="dispatchForm.auto_restart" active-text="下发后自动重启板卡"></el-switch>
+              <el-form-item :label="$t('algorithm.algorithm.autoRestart')">
+                <el-switch v-model="dispatchForm.auto_restart" :active-text="$t('algorithm.algorithm.autoRestartDesc')"></el-switch>
             </el-form-item>
           </el-col>
         </el-row>
         <el-form-item>
             <el-button type="primary" :icon="Promotion" @click="dispatchAlgorithm" :loading="dispatchLoading" :disabled="!canDispatch">
-              下发算法
+{{ $t('algorithm.algorithm.dispatch') }}
             </el-button>
-            <el-button :icon="Refresh" @click="resetDispatchForm">重置</el-button>
+            <el-button :icon="Refresh" @click="resetDispatchForm">{{ $t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
       </div>
@@ -77,11 +77,11 @@
     <el-card class="algorithm-list-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>算法版本列表</span>
+          <span>{{ $t('algorithm.algorithm.versionList') }}</span>
           <div>
-            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddAlgorithm">添加算法</el-button>
-            <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="handleBatchImport">批量导入</el-button>
-            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getAlgorithmList">刷新列表</el-button>
+            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddAlgorithm">{{ $t('algorithm.algorithm.addAlgorithm') }}</el-button>
+            <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="handleBatchImport">{{ $t('algorithm.algorithm.batchImport') }}</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getAlgorithmList">{{ $t('common.refresh') }}</el-button>
           </div>
         </div>
       </template>
@@ -92,17 +92,17 @@
           <div class="search-filters">
             <div class="search-row">
               <div class="search-item">
-                <label>算法名称</label>
+                <label>{{ $t('algorithm.warehouse.algorithmName') }}</label>
                 <el-input
                   v-model="algorithmFilters.name"
-                  placeholder="请输入算法名称"
+                  :placeholder="$t('algorithm.warehouse.pleaseInputAlgorithmName')"
                   :prefix-icon="Search"
                   clearable
                   class="search-input"
                 />
               </div>
               <div class="search-item">
-                <label>算法状态</label>
+                <label>{{ $t('common.status') }}</label>
                 <div class="custom-select" ref="statusSelectRef">
                   <div class="custom-select-input" @click="toggleStatusDropdown">
                     <span class="custom-select-value">{{ getStatusDisplayText(algorithmFilters.status) }}</span>
@@ -113,18 +113,18 @@
                 </div>
               </div>
               <div class="search-item">
-                <label>版本范围</label>
+                <label>{{ $t('algorithm.warehouse.algorithmVersion') }}</label>
                 <el-input
                   v-model="algorithmFilters.version"
-                  placeholder="请输入版本号"
+                  :placeholder="$t('common.pleaseInput') + $t('algorithm.warehouse.algorithmVersion')"
                   clearable
                   class="search-input"
                 />
               </div>
             </div>
             <div class="filter-actions">
-              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="searchAlgorithms">搜索</el-button>
-              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetAlgorithmFilters">重置</el-button>
+              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="searchAlgorithms">{{ $t('common.search') }}</el-button>
+              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetAlgorithmFilters">{{ $t('common.reset') }}</el-button>
             </div>
           </div>
         </div>
@@ -132,33 +132,33 @@
 
       <el-table :data="paginatedAlgorithms" v-loading="loading" stripe class="tech-table" style="width: 100%;">
         <el-table-column prop="id" label="ID" width="80" align="center" header-align="center"></el-table-column>
-        <el-table-column prop="name" label="算法名称" min-width="150" header-align="center"></el-table-column>
-        <el-table-column prop="version" label="版本号" width="120" align="center" header-align="center"></el-table-column>
-        <el-table-column prop="description" label="描述" min-width="200" header-align="center"></el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center" header-align="center">
+        <el-table-column prop="name" :label="$t('algorithm.warehouse.algorithmName')" min-width="150" header-align="center"></el-table-column>
+        <el-table-column prop="version" :label="$t('algorithm.warehouse.algorithmVersion')" width="120" align="center" header-align="center"></el-table-column>
+        <el-table-column prop="description" :label="$t('common.description')" min-width="200" header-align="center"></el-table-column>
+        <el-table-column prop="status" :label="$t('common.status')" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
               {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="model_size" label="模型大小" width="120" align="center" header-align="center">
+        <el-table-column prop="model_size" :label="$t('algorithm.warehouse.fileSize')" width="120" align="center" header-align="center">
           <template #default="{ row }">
             {{ formatFileSize(row.model_size) }}
           </template>
         </el-table-column>
-        <el-table-column prop="accuracy" label="准确率" width="100" align="center" header-align="center">
+        <el-table-column prop="accuracy" :label="$t('algorithm.config.confidence')" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <span v-if="row.accuracy">{{ (row.accuracy * 100).toFixed(1) }}%</span>
             <span v-else>-</span>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="180" header-align="center"></el-table-column>
-        <el-table-column label="操作" width="280" align="center" header-align="center">
+        <el-table-column prop="create_time" :label="$t('common.createTime')" width="180" header-align="center"></el-table-column>
+        <el-table-column :label="$t('common.operation')" width="280" align="center" header-align="center">
           <template #default="{ row }">
-            <el-button type="primary" :icon="View" size="small" class="tech-button-xs" @click="handleViewAlgorithm(row)">查看</el-button>
-            <el-button type="warning" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditAlgorithm(row)">编辑</el-button>
-            <el-button type="success" :icon="Download" size="small" class="tech-button-xs" @click="handleDownloadAlgorithm(row)">下载</el-button>
+            <el-button type="primary" :icon="View" size="small" class="tech-button-xs" @click="handleViewAlgorithm(row)">{{ $t('common.view') }}</el-button>
+            <el-button type="warning" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditAlgorithm(row)">{{ $t('common.edit') }}</el-button>
+            <el-button type="success" :icon="Download" size="small" class="tech-button-xs" @click="handleDownloadAlgorithm(row)">{{ $t('common.download') }}</el-button>
             <el-button 
               v-if="row.status !== 'published'" 
               type="info" 

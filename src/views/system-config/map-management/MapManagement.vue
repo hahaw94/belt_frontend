@@ -4,17 +4,17 @@
     <div class="tech-background">
     </div>
     
-    <h2>地图管理</h2>
+    <h2>{{ $t('map.title') }}</h2>
 
     <!-- 选项卡导航 -->
     <el-tabs v-model="activeTab" class="management-tabs tech-tabs">
-      <el-tab-pane label="图层管理" name="layers">
+      <el-tab-pane :label="$t('map.layerManagement')" name="layers">
         <LayerManagement />
       </el-tab-pane>
-      <el-tab-pane label="地图配置" name="config">
+      <el-tab-pane :label="$t('map.mapConfiguration')" name="config">
         <MapConfiguration />
       </el-tab-pane>
-      <el-tab-pane label="备份恢复" name="backup">
+      <el-tab-pane :label="$t('map.backupRestore')" name="backup">
         <BackupRestore />
       </el-tab-pane>
     </el-tabs>

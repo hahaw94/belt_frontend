@@ -4,40 +4,40 @@
     <div class="tech-background">
     </div>
     
-    <h2>版本管理</h2>
+    <h2>{{ $t('version.title') }}</h2>
 
     <!-- 版本信息显示 -->
     <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>当前版本信息</span>
-          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadVersionInfo" :loading="versionLoading">刷新信息</el-button>
+          <span>{{ $t('version.currentVersionInfo') }}</span>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadVersionInfo" :loading="versionLoading">{{ $t('version.refreshInfo') }}</el-button>
         </div>
       </template>
       <div v-loading="versionLoading">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="应用版本">
+          <el-descriptions-item :label="$t('version.appVersion')">
             <el-tag type="primary" size="large">{{ versionInfo.version || 'N/A' }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="构建时间">
+          <el-descriptions-item :label="$t('version.buildTime')">
             {{ formatBuildTime(versionInfo.build_time) || 'N/A' }}
           </el-descriptions-item>
-          <el-descriptions-item label="Go版本">
+          <el-descriptions-item :label="$t('version.goVersion')">
             {{ versionInfo.go_version || 'N/A' }}
           </el-descriptions-item>
-          <el-descriptions-item label="操作系统">
+          <el-descriptions-item :label="$t('version.operatingSystem')">
             {{ formatOSInfo(versionInfo.os, versionInfo.arch) || 'N/A' }}
           </el-descriptions-item>
-          <el-descriptions-item label="MySQL版本">
+          <el-descriptions-item :label="$t('version.mysqlVersion')">
             {{ versionInfo.mysql || 'N/A' }}
           </el-descriptions-item>
-          <el-descriptions-item label="MongoDB版本">
+          <el-descriptions-item :label="$t('version.mongodbVersion')">
             {{ versionInfo.mongodb || 'N/A' }}
           </el-descriptions-item>
-          <el-descriptions-item label="Redis版本">
+          <el-descriptions-item :label="$t('version.redisVersion')">
             {{ versionInfo.redis || 'N/A' }}
           </el-descriptions-item>
-          <el-descriptions-item label="MinIO状态">
+          <el-descriptions-item :label="$t('version.minioStatus')">
             {{ versionInfo.minio || 'N/A' }}
           </el-descriptions-item>
         </el-descriptions>
@@ -48,38 +48,38 @@
     <el-card class="config-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>系统备份</span>
-          <el-button type="primary" :icon="Plus" size="small" class="tech-button-sm" @click="showCreateBackupDialog">创建备份</el-button>
+          <span>{{ $t('version.systemBackup') }}</span>
+          <el-button type="primary" :icon="Plus" size="small" class="tech-button-sm" @click="showCreateBackupDialog">{{ $t('version.createBackup') }}</el-button>
           </div>
       </template>
       <div v-loading="backupLoading">
         <!-- 备份列表 -->
         <div class="backup-list">
           <el-table :data="safeBackupList" class="tech-table" style="width: 100%" v-loading="backupListLoading">
-            <el-table-column prop="file_name" label="备份文件名" min-width="250"></el-table-column>
-            <el-table-column prop="type" label="备份类型" width="120">
+            <el-table-column prop="file_name" :label="$t('version.backupFileName')" min-width="250"></el-table-column>
+            <el-table-column prop="type" :label="$t('version.backupType')" width="120">
               <template #default="scope">
                 <el-tag :type="getBackupTypeTag(scope.row.type)">
                   {{ getBackupTypeName(scope.row.type) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="file_size" label="大小" width="120">
+            <el-table-column prop="file_size" :label="$t('version.size')" width="120">
               <template #default="scope">
                 {{ formatFileSize(scope.row.file_size) }}
               </template>
             </el-table-column>
-            <el-table-column prop="create_time" label="创建时间" width="180">
+            <el-table-column prop="create_time" :label="$t('version.createTime')" width="180">
               <template #default="scope">
                 {{ formatDateTime(scope.row.create_time) }}
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="240">
+            <el-table-column :label="$t('version.operations')" width="240">
               <template #default="scope">
                 <div class="operation-buttons">
-                  <el-button type="primary" size="small" class="tech-button-sm" @click="downloadBackup(scope.row)">下载</el-button>
-                  <el-button type="success" size="small" class="tech-button-success tech-button-sm" @click="oneClickRestore(scope.row)">恢复</el-button>
-                  <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="deleteBackup(scope.row)">删除</el-button>
+                  <el-button type="primary" size="small" class="tech-button-sm" @click="downloadBackup(scope.row)">{{ $t('common.download') }}</el-button>
+                  <el-button type="success" size="small" class="tech-button-success tech-button-sm" @click="oneClickRestore(scope.row)">{{ $t('version.restore') }}</el-button>
+                  <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="deleteBackup(scope.row)">{{ $t('common.delete') }}</el-button>
                 </div>
               </template>
             </el-table-column>
@@ -93,7 +93,7 @@
       <template #header>
         <div class="card-header">
           <div class="header-title-with-help">
-            <span>系统恢复</span>
+            <span>{{ $t('version.systemRestore') }}</span>
             <el-tooltip
               effect="dark"
               placement="right"
@@ -102,30 +102,14 @@
             >
               <template #content>
                 <div class="version-check-info">
-                  <div class="tooltip-title">备份恢复中的版本检查</div>
+                  <div class="tooltip-title">{{ $t('version.backupVersionCheck') }}</div>
                   <div class="tooltip-section">
-                    <div class="section-title">1. 备份时记录版本信息</div>
-                    <div class="section-content">
-                      • 每个备份都会记录创建时的系统版本号<br/>
-                      • 版本信息存储在备份的元数据文件中<br/>
-                      • 包含系统版本、创建时间、创建者等信息
-                    </div>
+                    <div class="section-title">{{ $t('version.recordVersionInfoTitle') }}</div>
+                    <div class="section-content" v-html="$t('version.recordVersionInfoContent')"></div>
                   </div>
                   <div class="tooltip-section">
-                    <div class="section-title">2. 恢复时的版本兼容性检查</div>
-                    <div class="section-content">
-                      恢复过程中会进行以下检查：<br/>
-                      <strong>检查流程：</strong><br/>
-                      • 读取备份文件中的版本信息<br/>
-                      • 获取当前系统版本<br/>
-                      • 进行版本兼容性分析<br/>
-                      • 根据检查结果决定是否允许恢复<br/><br/>
-                      <strong>检查规则：</strong><br/>
-                      <span style="color: #67C23A;">完全相同版本：直接允许，最安全</span><br/>
-                      <span style="color: #E6A23C;">备份版本更高：警告但允许，可能需要后续升级</span><br/>
-                      <span style="color: #E6A23C;">同主版本内：警告但允许，通常安全</span><br/>
-                      <span style="color: #F56C6C;">跨主版本：错误级别，但可通过强制恢复</span>
-                    </div>
+                    <div class="section-title">{{ $t('version.versionCompatibilityCheckTitle') }}</div>
+                    <div class="section-content" v-html="$t('version.versionCompatibilityCheckContent')"></div>
                   </div>
                 </div>
               </template>
@@ -149,19 +133,19 @@
         >
           <el-icon class="el-icon--upload"><upload-filled /></el-icon>
           <div class="el-upload__text">
-            将备份文件拖拽至此 或 <em>点击选择文件</em>
+            {{ $t('version.dragOrClick') }} <em>{{ $t('version.clickToSelect') }}</em>
           </div>
           <template #tip>
             <div class="el-upload__tip">
-              支持 .tar.gz、.zip、.sql 格式的备份文件
+              {{ $t('version.supportedFormats') }}
             </div>
           </template>
         </el-upload>
         <div class="restore-actions" style="margin-top: 20px;">
           <el-button type="danger" class="tech-button-danger" @click="executeRestore" :loading="restoreLoading" :disabled="!selectedRestoreFile">
-            执行恢复
+            {{ $t('version.executeRestore') }}
             </el-button>
-          <el-button class="tech-button-secondary" @click="clearRestoreFile">清除文件</el-button>
+          <el-button class="tech-button-secondary" @click="clearRestoreFile">{{ $t('version.clearFile') }}</el-button>
         </div>
       </div>
     </el-card>
@@ -171,7 +155,7 @@
       <template #header>
         <div class="card-header">
           <div class="header-title-with-help">
-            <span>系统升级</span>
+            <span>{{ $t('version.systemUpgrade') }}</span>
             <el-tooltip
               effect="dark"
               placement="right"
@@ -180,34 +164,18 @@
             >
               <template #content>
                 <div class="version-check-info">
-                  <div class="tooltip-title">版本号管理规则</div>
+                  <div class="tooltip-title">{{ $t('version.versionManagementRules') }}</div>
                   <div class="tooltip-section">
-                    <div class="section-title">版本号格式</div>
-                    <div class="section-content">
-                      系统采用标准的三段式版本号格式：主版本.次版本.补丁版本（如2.0.1），<br/>
-                      支持带v前缀的格式但会自动清理。
-                    </div>
+                    <div class="section-title">{{ $t('version.versionNumberFormat') }}</div>
+                    <div class="section-content" v-html="$t('version.versionNumberFormatContent')"></div>
                   </div>
                   <div class="tooltip-section">
-                    <div class="section-title">升级规则</div>
-                    <div class="section-content">
-                      <strong>绝对禁止：</strong><br/>
-                      • 跨主版本升级（如1.x.x到2.x.x）<br/>
-                      • 任何形式的降级<br/><br/>
-                      <strong>允许的升级：</strong><br/>
-                      • 补丁版本升级最安全，可直接进行<br/>
-                      • 次版本升级需要谨慎，最多允许跳跃2个版本（如1.2.x到1.4.x）<br/>
-                      • 超过2个版本跳跃会被拒绝，需要分步升级
-                    </div>
+                    <div class="section-title">{{ $t('version.upgradeRules') }}</div>
+                    <div class="section-content" v-html="$t('version.upgradeRulesContent')"></div>
                   </div>
                   <div class="tooltip-section">
-                    <div class="section-title">安全机制</div>
-                    <div class="section-content">
-                      • 升级前会自动检查版本兼容性<br/>
-                      • 根据风险等级给出不同的处理建议（信息、警告、错误）<br/>
-                      • 默认在升级前创建系统备份<br/>
-                      • 支持升级失败时的自动回滚
-                    </div>
+                    <div class="section-title">{{ $t('version.securityMechanism') }}</div>
+                    <div class="section-content" v-html="$t('version.securityMechanismContent')"></div>
                   </div>
                 </div>
               </template>
@@ -231,19 +199,19 @@
         >
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
         <div class="el-upload__text">
-                将升级包拖拽至此 或 <em>点击选择文件</em>
+                {{ $t('version.dragUpgradePackage') }} <em>{{ $t('version.clickToSelect') }}</em>
         </div>
         <template #tip>
           <div class="el-upload__tip">
-              支持 .tar.gz、.zip 格式的升级包文件，文件大小不超过500MB
+              {{ $t('version.upgradePackageFormats') }}
           </div>
         </template>
       </el-upload>
         <div class="upgrade-actions" style="margin-top: 20px;">
           <el-button type="danger" class="tech-button-danger" @click="executeUpgrade" :loading="upgradeLoading" :disabled="!selectedUpgradeFile">
-            执行升级
+            {{ $t('version.executeUpgrade') }}
           </el-button>
-          <el-button class="tech-button-secondary" @click="clearUpgradeFile">清除文件</el-button>
+          <el-button class="tech-button-secondary" @click="clearUpgradeFile">{{ $t('version.clearFile') }}</el-button>
         </div>
       </div>
     </el-card>

@@ -4,7 +4,7 @@
     <div class="toolbar">
       <el-select
         v-model="selectedLayerId"
-        placeholder="选择图层"
+        :placeholder="$t('map.selectLayer')"
         style="width: 250px;"
         class="tech-select"
         @change="handleLayerChange"
@@ -19,12 +19,12 @@
       
       <div class="toolbar-right">
         <el-button type="primary" class="tech-button" :icon="Plus" @click="showAddCameraDialog" :disabled="!selectedLayerId">
-          添加相机
+          {{ $t('map.addCamera') }}
         </el-button>
         <el-button type="warning" class="tech-button-warning" @click="resetBackgroundPosition" :disabled="!currentLayer">
-          重置背景
+          {{ $t('map.resetBackground') }}
         </el-button>
-        <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshData">刷新</el-button>
+        <el-button type="info" class="tech-button-info" :icon="Refresh" @click="refreshData">{{ $t('common.refresh') }}</el-button>
       </div>
     </div>
 
@@ -33,8 +33,8 @@
       <div class="map-info">
         <span>{{ currentLayer.layer_name }}</span>
         <span>{{ currentLayer.image_width }}×{{ currentLayer.image_height }}</span>
-        <span>相机数量: {{ layerCameras.length }}</span>
-        <span>背景位置: ({{ backgroundDragState.currentX }}, {{ backgroundDragState.currentY }})</span>
+        <span>{{ $t('map.cameraCount') }}: {{ layerCameras.length }}</span>
+        <span>{{ $t('map.backgroundPosition') }}: ({{ backgroundDragState.currentX }}, {{ backgroundDragState.currentY }})</span>
       </div>
       
       <div class="map-wrapper" ref="mapWrapper">
@@ -53,7 +53,7 @@
           <!-- 背景图片 -->
           <img
             :src="currentLayer.image_url"
-            alt="地图背景"
+            :alt="$t('map.mapBackground')"
             class="map-background"
             :class="{ 'dragging': backgroundDragState.isDragging }"
             @load="onImageLoad"
@@ -96,7 +96,7 @@
             
             <!-- 显示主相机名称或聚合提示 -->
             <div class="camera-label">
-              {{ cluster.cameras.length > 1 ? `${cluster.cameras[0].camera_name} 等${cluster.cameras.length}个` : cluster.cameras[0].camera_name }}
+              {{ cluster.cameras.length > 1 ? `${cluster.cameras[0].camera_name} ${$t('map.andOthers', {count: cluster.cameras.length})}` : cluster.cameras[0].camera_name }}
             </div>
             
             <!-- 在线状态指示器 -->
@@ -133,7 +133,7 @@
     </div>
 
     <!-- 空状态 -->
-    <el-empty v-else description="请选择图层查看地图配置" />
+    <el-empty v-else :description="$t('map.pleaseSelectLayer')" />
 
     <!-- 聚合相机悬停提示 -->
     <teleport to="body">
@@ -160,7 +160,7 @@
     <!-- 相机信息面板 -->
     <div v-if="selectedCamera" class="camera-panel">
       <div class="panel-header">
-        <h4>相机信息</h4>
+        <h4>{{ $t('map.cameraInfo') }}</h4>
         <el-button type="text" class="tech-button-text" @click="clearSelection">
           <el-icon><Close /></el-icon>
         </el-button>
@@ -191,7 +191,7 @@
                     :type="camera.is_online === 1 ? 'success' : 'danger'" 
                     size="small"
                   >
-                    {{ camera.is_online === 1 ? '在线' : '离线' }}
+                    {{ camera.is_online === 1 ? $t('map.online') : $t('map.offline') }}
                   </el-tag>
                 </div>
               </div>
@@ -201,36 +201,36 @@
         
         <!-- 选中相机的详细信息 -->
         <el-descriptions :column="1" size="small" border>
-          <el-descriptions-item label="名称">{{ selectedCamera.camera_name }}</el-descriptions-item>
-          <el-descriptions-item label="编码">{{ selectedCamera.camera_code }}</el-descriptions-item>
-          <el-descriptions-item label="IP地址">{{ selectedCamera.ip_address }}</el-descriptions-item>
-          <el-descriptions-item label="位置">
+          <el-descriptions-item :label="$t('map.name')">{{ selectedCamera.camera_name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.code')">{{ selectedCamera.camera_code }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.ipAddress')">{{ selectedCamera.ip_address }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('map.position')">
             ({{ selectedCamera.position_x }}, {{ selectedCamera.position_y }})
           </el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label="$t('map.status')">
             <el-tag :type="selectedCamera.is_online === 1 ? 'success' : 'danger'">
-              {{ selectedCamera.is_online === 1 ? '在线' : '离线' }}
+              {{ selectedCamera.is_online === 1 ? $t('map.online') : $t('map.offline') }}
             </el-tag>
           </el-descriptions-item>
         </el-descriptions>
         
         <div class="panel-actions">
-          <el-button type="primary" size="small" class="tech-button-sm" @click="editCameraPosition">编辑位置</el-button>
-          <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="removeCameraFromLayerAction">移除相机</el-button>
+          <el-button type="primary" size="small" class="tech-button-sm" @click="editCameraPosition">{{ $t('map.editPosition') }}</el-button>
+          <el-button type="danger" size="small" class="tech-button-danger tech-button-sm" @click="removeCameraFromLayerAction">{{ $t('map.removeCamera') }}</el-button>
         </div>
       </div>
     </div>
 
     <!-- 添加相机对话框 -->
     <el-dialog
-      title="添加相机到图层"
+      :title="$t('map.addCameraToLayer')"
       v-model="addCameraVisible"
       width="500px"
     >
       <div style="margin-bottom: 20px;">
         <el-input
           v-model="cameraSearchKeyword"
-          placeholder="搜索相机名称或编码"
+          :placeholder="$t('map.searchCameraNameOrCode')"
           clearable
           @input="filterUnboundCameras"
         >
@@ -247,13 +247,13 @@
         ref="cameraTableRef"
       >
         <el-table-column type="selection" width="55" />
-        <el-table-column prop="camera_name" label="相机名称" />
-        <el-table-column prop="camera_code" label="编码" />
-        <el-table-column prop="ip_address" label="IP地址" />
-        <el-table-column label="状态" width="80">
+        <el-table-column prop="camera_name" :label="$t('map.cameraName')" />
+        <el-table-column prop="camera_code" :label="$t('map.code')" />
+        <el-table-column prop="ip_address" :label="$t('map.ipAddress')" />
+        <el-table-column :label="$t('map.status')" width="80">
           <template #default="scope">
             <el-tag :type="scope.row.is_online === 1 ? 'success' : 'danger'" size="small">
-              {{ scope.row.is_online === 1 ? '在线' : '离线' }}
+              {{ scope.row.is_online === 1 ? $t('map.online') : $t('map.offline') }}
             </el-tag>
           </template>
         </el-table-column>
@@ -261,14 +261,14 @@
       
       <template #footer>
         <span class="dialog-footer">
-          <el-button class="tech-button-secondary" @click="addCameraVisible = false">取消</el-button>
+          <el-button class="tech-button-secondary" @click="addCameraVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button 
             type="primary" 
             class="tech-button"
             @click="confirmAddCamera"
             :disabled="!selectedUnboundCameras || selectedUnboundCameras.length === 0"
           >
-            确认添加 {{ selectedUnboundCameras && selectedUnboundCameras.length > 0 ? `(${selectedUnboundCameras.length})` : '' }}
+            {{ $t('map.confirmAdd') }} {{ selectedUnboundCameras && selectedUnboundCameras.length > 0 ? `(${selectedUnboundCameras.length})` : '' }}
           </el-button>
         </span>
       </template>
@@ -276,12 +276,12 @@
 
     <!-- 编辑位置对话框 -->
     <el-dialog
-      title="编辑相机位置"
+      :title="$t('map.editCameraPosition')"
       v-model="editPositionVisible"
       width="400px"
     >
       <el-form :model="positionForm" label-width="80px">
-        <el-form-item label="X坐标">
+        <el-form-item :label="$t('map.xCoordinate')">
           <el-input-number
             v-model="positionForm.position_x"
             :min="0"
@@ -289,7 +289,7 @@
             style="width: 100%;"
           />
         </el-form-item>
-        <el-form-item label="Y坐标">
+        <el-form-item :label="$t('map.yCoordinate')">
           <el-input-number
             v-model="positionForm.position_y"
             :min="0"
@@ -297,7 +297,7 @@
             style="width: 100%;"
           />
         </el-form-item>
-        <el-form-item label="角度">
+        <el-form-item :label="$t('map.angle')">
           <el-input-number
             v-model="positionForm.camera_angle"
             :min="0"
@@ -305,14 +305,14 @@
             style="width: 100%;"
           />
           <div style="font-size: 12px; color: #909399; margin-top: 4px;">
-            0° = 向右，90° = 向下，180° = 向左，270° = 向上
+            {{ $t('map.angleDescription') }}
           </div>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button class="tech-button-secondary" @click="editPositionVisible = false">取消</el-button>
-          <el-button type="primary" class="tech-button" @click="confirmEditPosition">确认</el-button>
+          <el-button class="tech-button-secondary" @click="editPositionVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" class="tech-button" @click="confirmEditPosition">{{ $t('common.confirm') }}</el-button>
         </span>
       </template>
     </el-dialog>

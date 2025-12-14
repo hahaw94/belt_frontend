@@ -3,13 +3,13 @@
     <!-- 科技感背景 -->
     <div class="tech-background"></div>
     
-    <h2>误报数据收集</h2>
+    <h2>{{ $t('event.dataCollection.title') }}</h2>
 
     <!-- 样本统计卡片（包含筛选和统计） -->
     <el-card class="stats-card tech-card mb-20" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>样本统计</span>
+          <span>{{ $t('event.dataCollection.sampleCount') }}</span>
           <el-button 
             type="primary" 
             :icon="Refresh" 
@@ -18,7 +18,7 @@
             @click="loadStats"
             :loading="statsLoading"
           >
-            刷新
+{{ $t('common.refresh') }}
           </el-button>
         </div>
       </template>
@@ -30,25 +30,25 @@
             <!-- 总误报数 -->
             <div class="stat-item stat-yellow">
               <div class="stat-value">{{ stats.total || 0 }}</div>
-              <div class="stat-label">总误报数</div>
+              <div class="stat-label">{{ $t('event.dataCollection.total') }}</div>
             </div>
             
             <!-- 未导出 -->
             <div class="stat-item stat-blue">
               <div class="stat-value">{{ stats.unexported || 0 }}</div>
-              <div class="stat-label">未导出</div>
+              <div class="stat-label">{{ $t('event.dataCollection.unexported') }}</div>
             </div>
             
             <!-- 已导出 -->
             <div class="stat-item stat-green">
               <div class="stat-value">{{ stats.exported || 0 }}</div>
-              <div class="stat-label">已导出</div>
+              <div class="stat-label">{{ $t('event.dataCollection.exported') }}</div>
             </div>
             
             <!-- 今日新增 -->
             <div class="stat-item stat-purple">
               <div class="stat-value">{{ stats.today || 0 }}</div>
-              <div class="stat-label">今日新增</div>
+              <div class="stat-label">{{ $t('common.today') }}</div>
             </div>
           </div>
 
@@ -57,7 +57,7 @@
         <!-- 统计筛选区域 -->
         <div class="filter-section">
           <div class="filter-header">
-            <span class="filter-title">筛选条件</span>
+            <span class="filter-title">{{ $t('common.filter') }}</span>
           </div>
           
           <div class="filter-content">

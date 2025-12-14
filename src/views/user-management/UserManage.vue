@@ -4,16 +4,16 @@
     <div class="tech-background">
     </div>
     
-    <h2>用户管理</h2>
+    <h2>{{ $t('user.user.title') }}</h2>
 
     <el-card class="user-list-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>用户列表</span>
+          <span>{{ $t('user.user.title') }}</span>
           <div>
-            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddUser">添加用户</el-button>
-            <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="handleBatchCreateUser">批量创建用户</el-button>
-            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getUsers">刷新列表</el-button>
+            <el-button type="success" :icon="Plus" size="small" class="tech-button-sm" @click="handleAddUser">{{ $t('user.user.addUser') }}</el-button>
+            <el-button type="warning" :icon="Upload" size="small" class="tech-button-sm" @click="handleBatchCreateUser">{{ $t('common.batch') }}{{ $t('user.user.addUser') }}</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="getUsers">{{ $t('common.refresh') }}</el-button>
           </div>
         </div>
       </template>
@@ -21,16 +21,16 @@
       <!-- 用户搜索和筛选 -->
       <div class="search-filters-card tech-card mb-20">
         <div class="search-filters-header">
-          <span class="filter-title">搜索筛选</span>
+          <span class="filter-title">{{ $t('common.search') }}{{ $t('common.filter') }}</span>
         </div>
         <div class="search-filters-content">
           <div class="filter-row">
             <div class="filter-item">
-              <label for="userNameFilter">用户名</label>
+              <label for="userNameFilter">{{ $t('user.user.username') }}</label>
               <el-input
                 v-model="searchFilters.username"
                 id="userNameFilter"
-                placeholder="搜索用户名"
+                :placeholder="$t('common.search') + $t('user.user.username')"
                 class="tech-input"
                 clearable
                 @keyup.enter="searchUsers"
@@ -38,11 +38,11 @@
               />
             </div>
             <div class="filter-item">
-              <label for="userEmailFilter">邮箱</label>
+              <label for="userEmailFilter">{{ $t('user.user.email') }}</label>
               <el-input
                 v-model="searchFilters.email"
                 id="userEmailFilter"
-                placeholder="搜索邮箱"
+                :placeholder="$t('common.search') + $t('user.user.email')"
                 class="tech-input"
                 clearable
                 @keyup.enter="searchUsers"
@@ -50,23 +50,23 @@
               />
             </div>
             <div class="filter-item">
-              <label for="userStatusFilter">状态</label>
+              <label for="userStatusFilter">{{ $t('user.user.status') }}</label>
               <el-select
                 v-model="searchFilters.status"
                 id="userStatusFilter"
-                placeholder="全部"
+                :placeholder="$t('common.all')"
                 class="tech-select"
                 clearable
                 @change="searchUsers"
               >
-                <el-option label="全部" value="" />
-                <el-option label="正常" value="1" />
-                <el-option label="锁定" value="2" />
+                <el-option :label="$t('common.all')" value="" />
+                <el-option :label="$t('user.user.normal')" value="1" />
+                <el-option :label="$t('user.user.locked')" value="2" />
               </el-select>
             </div>
             <div class="filter-actions">
-              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="searchUsers">搜索</el-button>
-              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetUserFilters">重置</el-button>
+              <el-button type="primary" :icon="Search" class="tech-button-sm" @click="searchUsers">{{ $t('common.search') }}</el-button>
+              <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetUserFilters">{{ $t('common.reset') }}</el-button>
             </div>
           </div>
         </div>
@@ -74,9 +74,9 @@
 
       <el-table :data="paginatedUsers" v-loading="loading" border stripe class="tech-table" style="width: 100%;">
         <el-table-column prop="id" label="ID" width="80" align="center" header-align="center"></el-table-column>
-        <el-table-column prop="username" label="用户名" min-width="120" header-align="center"></el-table-column>
-        <el-table-column prop="email" label="邮箱" min-width="150" header-align="center"></el-table-column>
-        <el-table-column prop="roles" label="角色" min-width="200" header-align="center">
+        <el-table-column prop="username" :label="$t('user.user.username')" min-width="120" header-align="center"></el-table-column>
+        <el-table-column prop="email" :label="$t('user.user.email')" min-width="150" header-align="center"></el-table-column>
+        <el-table-column prop="roles" :label="$t('user.user.roles')" min-width="200" header-align="center">
           <template #default="{ row }">
             <el-tag
               v-for="role in row.roles"
@@ -88,18 +88,18 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="status" label="状态" width="100" align="center" header-align="center">
+        <el-table-column prop="status" :label="$t('user.user.status')" width="100" align="center" header-align="center">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)">
               {{ getStatusText(row.status) }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="180" header-align="center"></el-table-column>
-        <el-table-column prop="lastLogin" label="上次登录" width="180" header-align="center"></el-table-column>
-        <el-table-column label="操作" width="240" align="center" header-align="center">
+        <el-table-column prop="createTime" :label="$t('user.user.createTime')" width="180" header-align="center"></el-table-column>
+        <el-table-column prop="lastLogin" :label="$t('user.user.lastLogin')" width="180" header-align="center"></el-table-column>
+        <el-table-column :label="$t('common.operations')" width="240" align="center" header-align="center">
           <template #default="{ row }">
-            <el-button type="primary" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditUser(row)">编辑</el-button>
+            <el-button type="primary" :icon="Edit" size="small" class="tech-button-xs" @click="handleEditUser(row)">{{ $t('common.edit') }}</el-button>
             <el-button 
               :type="row.status === 1 ? 'warning' : 'success'" 
               :icon="row.status === 1 ? CircleClose : Select" 
@@ -110,7 +110,7 @@
             >
               {{ getStatusActionText(row.status) }}
             </el-button>
-            <el-button type="danger" :icon="Delete" size="small" class="tech-button-xs" @click="handleDeleteUser(row)">删除</el-button>
+            <el-button type="danger" :icon="Delete" size="small" class="tech-button-xs" @click="handleDeleteUser(row)">{{ $t('common.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -118,7 +118,7 @@
       <!-- 增强型分页组件 -->
       <div class="pagination-container tech-pagination">
         <div class="pagination-info">
-          <span>共 <span class="total-count">{{ pagination.total }}</span> 条记录，每页显示 
+          <span>{{ $t('common.total') }} <span class="total-count">{{ pagination.total }}</span> {{ $t('common.records') }}，{{ $t('common.perPage') }} 
             <el-select 
               v-model="pagination.pageSize" 
               @change="handleSizeChange"
@@ -128,7 +128,7 @@
               <el-option label="10" :value="10" />
               <el-option label="20" :value="20" />
               <el-option label="50" :value="50" />
-            </el-select> 条
+            </el-select> {{ $t('common.items') }}
           </span>
         </div>
         <div class="pagination-controls">
@@ -138,7 +138,7 @@
             :disabled="pagination.page === 1 || loading"
             @click="goToUserPage(1)"
           >
-            首页
+            {{ $t('common.firstPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -146,7 +146,7 @@
             :disabled="pagination.page === 1 || loading"
             @click="goToUserPage(pagination.page - 1)"
           >
-            上一页
+            {{ $t('common.prevPage') }}
           </el-button>
           <div class="pagination-pages">
             <button 
@@ -166,7 +166,7 @@
             :disabled="pagination.page === totalUserPages || loading"
             @click="goToUserPage(pagination.page + 1)"
           >
-            下一页
+            {{ $t('common.nextPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -174,7 +174,7 @@
             :disabled="pagination.page === totalUserPages || loading"
             @click="goToUserPage(totalUserPages)"
           >
-            末页
+            {{ $t('common.lastPage') }}
           </el-button>
         </div>
       </div>
@@ -182,7 +182,7 @@
 
     <el-dialog
         v-model="userDialogVisible"
-        :title="isEditMode ? '编辑用户' : '添加用户'"
+        :title="isEditMode ? $t('user.user.editUser') : $t('user.user.addUser')"
         width="600px"
         :close-on-click-modal="false"
         destroy-on-close
@@ -194,51 +194,51 @@
         }"
     >
       <el-form :model="currentUser" :rules="userRules" ref="userFormRef" label-width="100px">
-        <el-form-item label="用户名" prop="username">
+        <el-form-item :label="$t('user.user.username')" prop="username">
           <el-input 
             v-model="currentUser.username" 
             :disabled="isEditMode" 
-            placeholder="请输入用户名"
+            :placeholder="$t('user.user.pleaseInputUsername')"
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
         </el-form-item>
-        <el-form-item label="邮箱" prop="email">
+        <el-form-item :label="$t('user.user.email')" prop="email">
           <el-input 
             v-model="currentUser.email" 
-            placeholder="请输入邮箱"
+            :placeholder="$t('user.user.pleaseInputEmail')"
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
         </el-form-item>
-        <el-form-item label="电话" prop="phone">
+        <el-form-item :label="$t('user.user.phone')" prop="phone">
           <el-input 
             v-model="currentUser.phone" 
-            placeholder="请输入电话号码（11位手机号）"
+            :placeholder="$t('user.user.pleaseInputPhone')"
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
         </el-form-item>
         <!-- 编辑模式下的密码重置选项 -->
-        <el-form-item v-if="isEditMode" label="密码重置">
+        <el-form-item v-if="isEditMode" :label="$t('user.user.passwordReset')">
           <el-checkbox v-model="passwordResetMode" @change="onPasswordResetModeChange">
-            重置为原始密码
+            {{ $t('user.user.resetToOriginalPassword') }}
           </el-checkbox>
           <div class="form-hint" v-if="passwordResetMode">
-            勾选后将重置用户密码为系统初始密码，用户需要重新登录
+            {{ $t('user.user.resetPasswordHint') }}
           </div>
         </el-form-item>
         <div v-if="!isEditMode" class="password-notice">
           <el-alert
-            title="密码说明"
-            description="系统将自动为新用户生成初始密码，创建成功后会显示初始密码"
+            :title="$t('user.user.passwordNotice')"
+            :description="$t('user.user.passwordNoticeDesc')"
             type="info"
             :closable="false"
             show-icon
           />
         </div>
-        <el-form-item label="分配角色" prop="roleIds">
+        <el-form-item :label="$t('user.user.assignRoles')" prop="roleIds">
           <el-select
             v-model="currentUser.roleIds"
             multiple
-            placeholder="请选择用户角色"
+            :placeholder="$t('user.user.pleaseSelectRoles')"
             style="width: 100%; --el-select-input-bg-color: rgba(45, 55, 75, 0.8); --el-border-color: rgba(0, 255, 255, 0.3); --el-text-color-regular: rgba(255, 255, 255, 0.95);"
           >
             <el-option
@@ -251,23 +251,23 @@
             </el-option>
           </el-select>
           <div class="form-hint">
-            {{ isEditMode ? '可以修改用户的角色分配' : '添加用户时必须分配至少一个角色' }}
+            {{ isEditMode ? $t('user.user.canModifyRoles') : $t('user.user.mustAssignRole') }}
           </div>
         </el-form-item>
-        <el-form-item label="备注" prop="description">
+        <el-form-item :label="$t('user.user.remark')" prop="description">
           <el-input 
             v-model="currentUser.description" 
             type="textarea" 
             :rows="3"
-            placeholder="请输入用户备注信息"
+            :placeholder="$t('user.user.pleaseInputRemark')"
             style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
           ></el-input>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="userDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitUserForm" :loading="loading">保存</el-button>
+          <el-button @click="userDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" @click="submitUserForm" :loading="loading">{{ $t('common.save') }}</el-button>
         </span>
       </template>
     </el-dialog>

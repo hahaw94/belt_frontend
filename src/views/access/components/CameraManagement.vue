@@ -4,9 +4,9 @@
     <el-card class="camera-list-card tech-card mb-20" shadow="hover">
       <template #header>
         <div class="card-header">
-          <span>相机管理</span>
+          <span>{{ $t('camera.title') }}</span>
           <div>
-            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="syncWVPCameras" :loading="syncing">同步WVP摄像头</el-button>
+            <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="syncWVPCameras" :loading="syncing">{{ $t('camera.syncWVPCameras') }}</el-button>
           </div>
         </div>
       </template>
@@ -14,26 +14,26 @@
     <!-- 搜索筛选卡片 -->
     <div class="search-filters-card mb-20">
       <div class="search-filters-header">
-        <span class="filter-title">搜索筛选</span>
+        <span class="filter-title">{{ $t('camera.searchFilter') }}</span>
         <div class="header-stats">
           <el-tag class="stat-tag online" size="small">
             <i class="status-dot online"></i>
-            在线: {{ onlineCameraCount }}
+            {{ $t('common.online') }}: {{ onlineCameraCount }}
           </el-tag>
           <el-tag class="stat-tag offline" size="small">
             <i class="status-dot offline"></i>
-            离线: {{ offlineCameraCount }}
+            {{ $t('common.offline') }}: {{ offlineCameraCount }}
           </el-tag>
         </div>
       </div>
       <div class="search-filters-content">
         <div class="filter-row">
           <div class="filter-item">
-            <label for="cameraNameFilter">相机名称</label>
+            <label for="cameraNameFilter">{{ $t('camera.cameraName') }}</label>
             <el-input
               v-model="searchForm.camera_name"
               id="cameraNameFilter"
-              placeholder="搜索相机名称"
+              :placeholder="$t('camera.searchCameraName')"
               class="tech-input"
               clearable
               @keyup.enter="handleSearch"
@@ -41,11 +41,11 @@
             />
           </div>
           <div class="filter-item">
-            <label for="cameraCodeFilter">相机编码</label>
+            <label for="cameraCodeFilter">{{ $t('camera.cameraCode') }}</label>
             <el-input
               v-model="searchForm.camera_code"
               id="cameraCodeFilter"
-              placeholder="搜索相机编码"
+              :placeholder="$t('camera.searchCameraCode')"
               class="tech-input"
               clearable
               @keyup.enter="handleSearch"
@@ -53,38 +53,38 @@
             />
           </div>
           <div class="filter-item">
-            <label for="statusFilter">状态</label>
+            <label for="statusFilter">{{ $t('common.status') }}</label>
             <el-select
               v-model="searchForm.status"
               id="statusFilter"
-              placeholder="全部"
+              :placeholder="$t('common.all')"
               class="tech-select"
               clearable
               @change="handleSearch"
             >
-              <el-option label="全部" value="" />
-              <el-option label="启用" :value="1" />
-              <el-option label="禁用" :value="0" />
+              <el-option :label="$t('common.all')" value="" />
+              <el-option :label="$t('common.enable')" :value="1" />
+              <el-option :label="$t('common.disable')" :value="0" />
             </el-select>
           </div>
           <div class="filter-item">
-            <label for="bindStatusFilter">绑定状态</label>
+            <label for="bindStatusFilter">{{ $t('camera.bindStatus') }}</label>
             <el-select
               v-model="searchForm.is_bound"
               id="bindStatusFilter"
-              placeholder="全部"
+              :placeholder="$t('common.all')"
               class="tech-select"
               clearable
               @change="handleSearch"
             >
-              <el-option label="全部" value="" />
-              <el-option label="已绑定" :value="1" />
-              <el-option label="未绑定" :value="0" />
+              <el-option :label="$t('common.all')" value="" />
+              <el-option :label="$t('camera.bound')" :value="1" />
+              <el-option :label="$t('camera.unbound')" :value="0" />
             </el-select>
           </div>
           <div class="filter-actions">
-            <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">搜索</el-button>
-            <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetSearch">重置</el-button>
+            <el-button type="primary" :icon="Search" class="tech-button-sm" @click="handleSearch">{{ $t('common.search') }}</el-button>
+            <el-button :icon="RefreshRight" class="tech-button-sm" @click="resetSearch">{{ $t('common.reset') }}</el-button>
           </div>
         </div>
       </div>
@@ -103,35 +103,35 @@
       <template #empty>
         <div class="empty-state">
           <div class="empty-icon">📹</div>
-          <div class="empty-text">暂无摄像头数据</div>
-          <div class="empty-hint">请点击上方"同步WVP摄像头"按钮同步数据</div>
+          <div class="empty-text">{{ $t('camera.noCameraData') }}</div>
+          <div class="empty-hint">{{ $t('camera.syncCameraHint') }}</div>
         </div>
       </template>
       <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column prop="camera_code" label="相机编码" min-width="120" />
-      <el-table-column prop="camera_name" label="相机名称" min-width="150" />
-      <el-table-column label="网络信息" min-width="200">
+      <el-table-column prop="camera_code" :label="$t('camera.cameraCode')" min-width="120" />
+      <el-table-column prop="camera_name" :label="$t('camera.cameraName')" min-width="150" />
+      <el-table-column :label="$t('camera.networkInfo')" min-width="200">
         <template #default="scope">
           <div>{{ scope.row.ip_address }}:{{ scope.row.port }}</div>
           <div style="color: #909399; font-size: 12px;">{{ scope.row.protocol }}</div>
         </template>
       </el-table-column>
-      <el-table-column prop="location" label="位置" min-width="150" show-overflow-tooltip />
-      <el-table-column label="在线状态" width="100">
+      <el-table-column prop="location" :label="$t('camera.location')" min-width="150" show-overflow-tooltip />
+      <el-table-column :label="$t('camera.onlineStatus')" width="100">
         <template #default="scope">
           <el-tag :type="scope.row.is_online === 1 ? 'success' : 'danger'">
-            {{ scope.row.is_online === 1 ? '在线' : '离线' }}
+            {{ scope.row.is_online === 1 ? $t('common.online') : $t('common.offline') }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="绑定状态" width="100">
+      <el-table-column :label="$t('camera.bindStatusColumn')" width="100">
         <template #default="scope">
           <el-tag :type="scope.row.is_bound === 1 ? 'warning' : 'info'">
-            {{ scope.row.is_bound === 1 ? '已绑定' : '未绑定' }}
+            {{ scope.row.is_bound === 1 ? $t('camera.bound') : $t('camera.unbound') }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="绑定图层" min-width="150" show-overflow-tooltip>
+      <el-table-column :label="$t('camera.boundLayers')" min-width="150" show-overflow-tooltip>
         <template #default="scope">
           <span v-if="scope.row.bound_layers && scope.row.bound_layers.length > 0">
             {{ scope.row.bound_layers.map(l => l.layer_name).join(', ') }}
@@ -139,22 +139,22 @@
           <span v-else style="color: #909399;">-</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" width="80">
+      <el-table-column :label="$t('common.status')" width="80">
         <template #default="scope">
           <el-tag :type="scope.row.status === 1 ? 'success' : 'danger'">
-            {{ scope.row.status === 1 ? '启用' : '禁用' }}
+            {{ scope.row.status === 1 ? $t('common.enable') : $t('common.disable') }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="create_time" label="创建时间" width="180">
+      <el-table-column prop="create_time" :label="$t('camera.createTime')" width="180">
         <template #default="scope">
           {{ formatDate(scope.row.create_time) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180">
+      <el-table-column :label="$t('common.operation')" width="180">
         <template #default="scope">
           <div class="action-buttons-container">
-            <el-button type="text" size="small" class="tech-button-text" @click="viewCamera(scope.row)">查看</el-button>
+            <el-button type="text" size="small" class="tech-button-text" @click="viewCamera(scope.row)">{{ $t('camera.view') }}</el-button>
             <el-button 
               v-if="scope.row.is_bound === 1"
               type="text" 
@@ -162,7 +162,7 @@
               class="tech-button-text tech-button-warning"
               @click="showUnbindDialog(scope.row)"
             >
-              解绑
+              {{ $t('camera.unbind') }}
             </el-button>
             <el-button 
               v-else
@@ -171,7 +171,7 @@
               class="tech-button-text"
               @click="showBindDialog(scope.row)"
             >
-              绑定
+              {{ $t('camera.bind') }}
             </el-button>
           </div>
         </template>
@@ -195,40 +195,40 @@
 
     <!-- 相机详情对话框 -->
     <el-dialog
-      title="相机详情"
+      :title="$t('camera.cameraDetail')"
       v-model="detailVisible"
       width="600px"
     >
       <div v-if="currentCamera" class="camera-detail">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="通道编码">{{ currentCamera.camera_code }}</el-descriptions-item>
-          <el-descriptions-item label="通道名称">{{ currentCamera.camera_name }}</el-descriptions-item>
-          <el-descriptions-item label="来源">WVP平台</el-descriptions-item>
-          <el-descriptions-item label="协议">{{ currentCamera.protocol }}</el-descriptions-item>
-          <el-descriptions-item label="在线状态">
+          <el-descriptions-item :label="$t('camera.channelCode')">{{ currentCamera.camera_code }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('camera.channelName')">{{ currentCamera.camera_name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('camera.source')">{{ $t('camera.wvpPlatform') }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('camera.protocol')">{{ currentCamera.protocol }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('camera.onlineStatus')">
             <el-tag :type="currentCamera.is_online === 1 ? 'success' : 'danger'">
-              {{ currentCamera.is_online === 1 ? '在线' : '离线' }}
+              {{ currentCamera.is_online === 1 ? $t('common.online') : $t('common.offline') }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="绑定状态">
+          <el-descriptions-item :label="$t('camera.bindStatusColumn')">
             <el-tag :type="currentCamera.is_bound === 1 ? 'warning' : 'info'">
-              {{ currentCamera.is_bound === 1 ? '已绑定' : '未绑定' }}
+              {{ currentCamera.is_bound === 1 ? $t('camera.bound') : $t('camera.unbound') }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="绑定图层" :span="2">
+          <el-descriptions-item :label="$t('camera.boundLayers')" :span="2">
             <span v-if="currentCamera.bound_layers && currentCamera.bound_layers.length > 0">
               {{ currentCamera.bound_layers.map(l => l.layer_name).join(', ') }}
             </span>
-            <span v-else style="color: #909399;">暂未绑定</span>
+            <span v-else style="color: #909399;">{{ $t('camera.notBoundYet') }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="厂商信息" :span="2">{{ currentCamera.location || '暂无信息' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('camera.manufacturerInfo')" :span="2">{{ currentCamera.location || $t('camera.noInfo') }}</el-descriptions-item>
         </el-descriptions>
       </div>
     </el-dialog>
 
     <!-- 绑定相机到图层对话框 -->
     <el-dialog
-      title="绑定相机到图层"
+      :title="$t('camera.bindToLayer')"
       v-model="bindDialogVisible"
       width="500px"
       @close="resetBindDialog"
@@ -239,14 +239,14 @@
         :rules="bindRules"
         label-width="100px"
       >
-        <el-form-item label="相机名称">
+        <el-form-item :label="$t('camera.cameraName')">
           <el-input v-model="bindForm.camera_name" disabled />
         </el-form-item>
-        <el-form-item label="相机编码">
+        <el-form-item :label="$t('camera.cameraCode')">
           <el-input v-model="bindForm.camera_code" disabled />
         </el-form-item>
-        <el-form-item label="选择图层" prop="layer_id">
-          <el-select v-model="bindForm.layer_id" placeholder="请选择图层" style="width: 100%;" class="tech-select">
+        <el-form-item :label="$t('camera.selectLayer')" prop="layer_id">
+          <el-select v-model="bindForm.layer_id" :placeholder="$t('camera.pleaseSelectLayer')" style="width: 100%;" class="tech-select">
             <el-option 
               v-for="layer in availableLayers" 
               :key="layer.id" 
@@ -255,34 +255,34 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="X坐标" prop="position_x">
+        <el-form-item :label="$t('camera.xCoordinate')" prop="position_x">
           <el-input
             v-model="bindForm.position_x"
             type="number"
-            placeholder="图层上的X坐标"
+            :placeholder="$t('camera.xCoordinatePlaceholder')"
             min="0"
           />
         </el-form-item>
-        <el-form-item label="Y坐标" prop="position_y">
+        <el-form-item :label="$t('camera.yCoordinate')" prop="position_y">
           <el-input
             v-model="bindForm.position_y"
             type="number"
-            placeholder="图层上的Y坐标"
+            :placeholder="$t('camera.yCoordinatePlaceholder')"
             min="0"
           />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button class="tech-button-secondary" @click="bindDialogVisible = false">取消</el-button>
-          <el-button type="primary" class="tech-button" @click="submitBindDialog" :loading="binding">确认绑定</el-button>
+          <el-button class="tech-button-secondary" @click="bindDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" class="tech-button" @click="submitBindDialog" :loading="binding">{{ $t('camera.confirmBindCamera') }}</el-button>
         </span>
       </template>
     </el-dialog>
 
     <!-- 解绑相机对话框 -->
     <el-dialog
-      title="解绑相机"
+      :title="$t('camera.unbindCamera')"
       v-model="unbindDialogVisible"
       width="500px"
     >
@@ -292,11 +292,11 @@
         style="margin-bottom: 20px;"
       >
         <template #default>
-          <div>确定要解绑以下相机吗？</div>
+          <div>{{ $t('camera.confirmUnbindPrompt') }}</div>
           <div style="margin-top: 10px;">
-            <strong>相机名称：</strong>{{ unbindCamera?.camera_name }}<br>
-            <strong>相机编码：</strong>{{ unbindCamera?.camera_code }}<br>
-            <strong>绑定图层：</strong>
+            <strong>{{ $t('camera.cameraName') }}：</strong>{{ unbindCamera?.camera_name }}<br>
+            <strong>{{ $t('camera.cameraCode') }}：</strong>{{ unbindCamera?.camera_code }}<br>
+            <strong>{{ $t('camera.boundLayers') }}：</strong>
             <span v-if="unbindCamera?.bound_layers && unbindCamera.bound_layers.length > 0">
               {{ unbindCamera.bound_layers.map(l => l.layer_name).join(', ') }}
             </span>
@@ -305,8 +305,8 @@
       </el-alert>
       <template #footer>
         <span class="dialog-footer">
-          <el-button class="tech-button-secondary" @click="unbindDialogVisible = false">取消</el-button>
-          <el-button type="danger" class="tech-button-danger" @click="confirmUnbind" :loading="unbinding">确认解绑</el-button>
+          <el-button class="tech-button-secondary" @click="unbindDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="danger" class="tech-button-danger" @click="confirmUnbind" :loading="unbinding">{{ $t('common.confirm') }}</el-button>
         </span>
       </template>
     </el-dialog>

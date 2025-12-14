@@ -7,27 +7,27 @@
         <el-card class="management-section tech-card" shadow="hover">
           <template #header>
             <div class="section-header">
-              <span>国标接入信息（SIP）</span>
-              <el-button type="primary" size="small" :icon="Refresh" @click="loadSIPInfo" :loading="sipLoading">获取接入信息</el-button>
+              <span>{{ $t('system.basic.sipInfo') }}</span>
+              <el-button type="primary" size="small" :icon="Refresh" @click="loadSIPInfo" :loading="sipLoading">{{ $t('system.basic.getSipInfo') }}</el-button>
             </div>
           </template>
           <div class="section-content">
             <el-row :gutter="15">
               <el-col :span="12">
                 <div class="info-item">
-                  <label>编号</label>
+                  <label>{{ $t('system.basic.sipId') }}</label>
                   <div class="info-value">
                     <span class="pill">{{ sipInfo.id || '-' }}</span>
-                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.id)">复制</el-button>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.id)">{{ $t('common.copy') }}</el-button>
                   </div>
                 </div>
               </el-col>
               <el-col :span="12">
                 <div class="info-item">
-                  <label>域</label>
+                  <label>{{ $t('system.basic.sipDomain') }}</label>
                   <div class="info-value">
                     <span class="pill">{{ sipInfo.domain || '-' }}</span>
-                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.domain)">复制</el-button>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.domain)">{{ $t('common.copy') }}</el-button>
                   </div>
                 </div>
               </el-col>
@@ -35,19 +35,19 @@
             <el-row :gutter="15" style="margin-top: 10px;">
               <el-col :span="12">
                 <div class="info-item">
-                  <label>端口</label>
+                  <label>{{ $t('system.basic.port') }}</label>
                   <div class="info-value">
                     <span class="pill">{{ sipInfo.port || '-' }}</span>
-                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.port)">复制</el-button>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.port)">{{ $t('common.copy') }}</el-button>
                   </div>
                 </div>
               </el-col>
               <el-col :span="12">
                 <div class="info-item">
-                  <label>IP 列表</label>
+                  <label>{{ $t('system.basic.ipList') }}</label>
                   <div class="info-value">
                     <span class="pill">{{ sipInfo.ips || '-' }}</span>
-                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.ips)">复制</el-button>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.ips)">{{ $t('common.copy') }}</el-button>
                   </div>
                 </div>
               </el-col>
@@ -55,10 +55,10 @@
             <el-row :gutter="15" style="margin-top: 10px;">
               <el-col :span="24">
                 <div class="info-item">
-                  <label>设备注册密码</label>
+                  <label>{{ $t('system.basic.devicePassword') }}</label>
                   <div class="info-value">
                     <span class="pill">{{ sipInfo.password || '-' }}</span>
-                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.password)">复制</el-button>
+                    <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(sipInfo.password)">{{ $t('common.copy') }}</el-button>
                   </div>
                 </div>
               </el-col>
@@ -72,21 +72,21 @@
         <el-card class="management-section tech-card" shadow="hover">
           <template #header>
             <div class="section-header">
-              <span>系统配额统计</span>
-              <el-button type="primary" size="small" :icon="Refresh" @click="loadChannelStats" :loading="statsLoading">刷新</el-button>
+              <span>{{ $t('system.basic.systemQuotaStats') }}</span>
+              <el-button type="primary" size="small" :icon="Refresh" @click="loadChannelStats" :loading="statsLoading">{{ $t('common.refresh') }}</el-button>
             </div>
           </template>
           <div class="section-content">
             <el-row :gutter="15">
               <el-col :span="12">
                 <div class="stat-box" style="border-left: 4px solid #3b82f6;">
-                  <div class="stat-label">当前通道总数</div>
+                  <div class="stat-label">{{ $t('system.basic.totalChannels') }}</div>
                   <div class="stat-value">{{ channelStats.total_channels || 0 }}</div>
                 </div>
               </el-col>
               <el-col :span="12">
                 <div class="stat-box" style="border-left: 4px solid #10b981;">
-                  <div class="stat-label">全局上限</div>
+                  <div class="stat-label">{{ $t('system.basic.globalLimit') }}</div>
                   <div class="stat-value">{{ channelStats.global_limit || 0 }}</div>
                 </div>
               </el-col>
@@ -94,13 +94,13 @@
             <el-row :gutter="15" style="margin-top: 10px;">
               <el-col :span="12">
                 <div class="stat-box" style="border-left: 4px solid #f59e0b;">
-                  <div class="stat-label">剩余配额</div>
+                  <div class="stat-label">{{ $t('system.basic.remainingQuota') }}</div>
                   <div class="stat-value">{{ channelStats.remaining_quota || 0 }}</div>
                 </div>
               </el-col>
               <el-col :span="12">
                 <div class="stat-box" style="border-left: 4px solid #8b5cf6;">
-                  <div class="stat-label">使用率</div>
+                  <div class="stat-label">{{ $t('system.basic.usageRate') }}</div>
                   <div class="stat-value">{{ channelStats.usage_rate || '0.00%' }}</div>
                 </div>
               </el-col>
@@ -108,7 +108,7 @@
             <el-row :gutter="15" style="margin-top: 10px;">
               <el-col :span="24">
                 <div class="stat-box">
-                  <div class="stat-label">当前播放流</div>
+                  <div class="stat-label">{{ $t('system.basic.currentStreams') }}</div>
                   <div class="stat-value" style="font-size: 18px;">
                     {{ channelStats.current_active_plays || 0 }} / {{ channelStats.max_concurrent_plays || 0 }}
                   </div>
@@ -118,8 +118,8 @@
             <el-row :gutter="15" style="margin-top: 10px;" v-if="channelStats.warning">
               <el-col :span="24">
                 <div class="stat-box warning-box">
-                  <div class="stat-label" style="color: #d97706; font-weight: bold;">⚠️ 配额告警</div>
-                  <div style="font-size: 12px; color: #92400e; margin-top: 5px;">通道数已超过90%，请注意管理</div>
+                  <div class="stat-label" style="color: #d97706; font-weight: bold;">{{ $t('system.basic.quotaWarning') }}</div>
+                  <div style="font-size: 12px; color: #92400e; margin-top: 5px;">{{ $t('system.basic.quotaWarningTip') }}</div>
                 </div>
               </el-col>
             </el-row>

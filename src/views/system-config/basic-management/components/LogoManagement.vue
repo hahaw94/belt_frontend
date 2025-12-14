@@ -2,9 +2,9 @@
   <el-card class="config-card tech-card mb-20" shadow="hover">
     <template #header>
       <div class="card-header">
-        <span>LOGO替换</span>
+        <span>{{ $t('system.basic.logoReplace') }}</span>
         <div>
-          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadCurrentLogo" :loading="logoLoading">刷新</el-button>
+          <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadCurrentLogo" :loading="logoLoading">{{ $t('common.refresh') }}</el-button>
         </div>
       </div>
     </template>
@@ -13,19 +13,19 @@
         <!-- 左侧：当前LOGO预览 -->
         <el-col :span="12">
           <div class="logo-section">
-            <h4 class="section-title">当前LOGO预览</h4>
+            <h4 class="section-title">{{ $t('system.basic.currentLogo') }}</h4>
             <div class="current-logo-preview">
               <div v-if="currentLogo.url" class="logo-display">
-                <img :src="currentLogo.url" alt="当前LOGO" class="current-logo-image"/>
+                <img :src="currentLogo.url" :alt="$t('system.basic.currentLogo')" class="current-logo-image"/>
               </div>
               <div v-else class="no-logo">
                 <el-icon class="no-logo-icon"><Picture /></el-icon>
-                <span>暂无自定义LOGO</span>
+                <span>{{ $t('system.basic.noCustomLogo') }}</span>
               </div>
             </div>
             <div v-if="currentLogo.url" class="current-logo-actions">
               <el-button type="danger" size="small" @click="deleteLogo" :loading="logoLoading">
-                恢复默认LOGO
+{{ $t('system.basic.restoreDefaultLogo') }}
               </el-button>
             </div>
           </div>
@@ -34,24 +34,24 @@
         <!-- 右侧：上传新LOGO -->
         <el-col :span="12">
           <div class="logo-section">
-            <h4 class="section-title">上传新LOGO</h4>
+            <h4 class="section-title">{{ $t('system.basic.uploadNewLogo') }}</h4>
             <div class="upload-area">
               <!-- 新预览区域 - 选择新文件后显示 -->
               <div v-if="logoPreview" class="new-preview-container">
                 <div class="preview-box" @click="triggerReselect">
-                  <img :src="logoPreview" alt="预览" class="preview-logo-image"/>
+                  <img :src="logoPreview" :alt="$t('common.preview')" class="preview-logo-image"/>
                   <div class="preview-overlay">
                     <el-icon class="overlay-icon"><Upload /></el-icon>
-                    <div class="overlay-text">点击重新选择</div>
+                    <div class="overlay-text">{{ $t('system.basic.clickReselect') }}</div>
                   </div>
                 </div>
                 <div class="preview-actions">
                   <el-button type="primary" size="small" @click="uploadLogo" :loading="uploading">
                     <el-icon><Upload /></el-icon>
-                    确认更换
+{{ $t('common.confirm') }}
                   </el-button>
                   <el-button size="small" @click="clearLogoPreview">
-                    取消
+{{ $t('common.cancel') }}
                   </el-button>
                 </div>
               </div>
@@ -69,7 +69,7 @@
               >
                 <div class="upload-trigger">
                   <el-icon class="upload-icon"><Upload /></el-icon>
-                  <div class="upload-text">选择文件</div>
+                  <div class="upload-text">{{ $t('system.basic.selectFile') }}</div>
                 </div>
               </el-upload>
               
@@ -89,11 +89,11 @@
               <div class="upload-tips">
                 <div class="tip-item">
                   <el-icon class="tip-icon"><InfoFilled /></el-icon>
-                  <span>支持格式：JPG、PNG</span>
+                  <span>{{ $t('system.basic.supportedFormats') }}</span>
                 </div>
                 <div class="tip-item">
                   <el-icon class="tip-icon"><InfoFilled /></el-icon>
-                  <span>文件大小：不超过2MB</span>
+                  <span>{{ $t('system.basic.fileSizeLimit') }}</span>
                 </div>
               </div>
             </div>
@@ -146,11 +146,11 @@ export default {
       const isLt2M = file.size / 1024 / 1024 < 2
 
       if (!isJPG) {
-        ElMessage.error('LOGO只能是 JPG/PNG 格式!')
+        ElMessage.error(this.$t('system.basic.logoFormatError'))
         return false
       }
       if (!isLt2M) {
-        ElMessage.error('LOGO大小不能超过 2MB!')
+        ElMessage.error(this.$t('system.basic.logoSizeError'))
         return false
       }
       return true
