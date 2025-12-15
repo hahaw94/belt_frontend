@@ -321,6 +321,7 @@
 
 <script>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   VideoCamera, 
@@ -347,6 +348,7 @@ export default {
     Search
   },
   setup() {
+    const { t } = useI18n()
     // 响应式数据
     const layerList = ref([])
     const selectedLayerId = ref(null)
@@ -491,7 +493,7 @@ export default {
           layerList.value = Array.isArray(response.data?.list) ? response.data.list : []
         }
       } catch (error) {
-        ElMessage.error('加载图层列表失败')
+        ElMessage.error(t('map.loadLayerListFailed'))
       }
     }
 
@@ -535,7 +537,7 @@ export default {
           })))
         }
       } catch (error) {
-        ElMessage.error('加载图层相机失败')
+        ElMessage.error(t('map.loadLayerCamerasFailed'))
       }
     }
 
@@ -568,7 +570,7 @@ export default {
         }
       } catch (error) {
         console.error('加载未绑定相机失败:', error)
-        ElMessage.error('加载未绑定相机失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('map.loadUnboundCamerasFailed') + ': ' + (error.message || t('map.unknownError')))
       }
     }
 
@@ -582,7 +584,7 @@ export default {
 
     // 图片加载错误
     const onImageError = () => {
-      ElMessage.error('地图图片加载失败')
+      ElMessage.error(t('map.mapImageLoadFailed'))
     }
 
     // 适应容器大小
@@ -811,7 +813,7 @@ export default {
             }
             // 重新加载相机数据
             await loadLayerCameras(parseInt(selectedLayerId.value, 10))
-            ElMessage.success(`已保存 ${clusterCameraIds.length} 个相机的位置`)
+            ElMessage.success(t('map.clusterCamerasPositionSaved', { count: clusterCameraIds.length }))
           } 
           // 单个相机拖拽
           else if (draggedCameraId) {
@@ -826,14 +828,14 @@ export default {
               await saveSingleCameraPosition(camera)
               // 重新加载相机数据
               await loadLayerCameras(parseInt(selectedLayerId.value, 10))
-              ElMessage.success('相机位置已保存')
+              ElMessage.success(t('map.cameraPositionSaved'))
             }
           }
           
           hasChanges.value = false
         } catch (error) {
           console.error('自动保存位置失败:', error)
-          ElMessage.error('保存位置失败: ' + (error.message || '未知错误'))
+          ElMessage.error(t('map.savePositionFailed') + ': ' + (error.message || t('map.unknownError')))
           // 即使失败也重新加载，以恢复原始位置
           await loadLayerCameras(parseInt(selectedLayerId.value, 10))
         }
@@ -903,7 +905,7 @@ export default {
       tooltipPosition.y = rect.top - 10
       
       tooltipContent.value = cluster.cameras.map(camera => 
-        `${camera.camera_name} (${camera.is_online === 1 ? '在线' : '离线'})`
+        `${camera.camera_name} (${camera.is_online === 1 ? t('map.online') : t('map.offline')})`
       ).join('\n')
       
       tooltipVisible.value = true
@@ -973,7 +975,7 @@ export default {
         
         await Promise.all(promises)
         
-        ElMessage.success(`成功添加 ${selectedUnboundCameras.value.length} 个相机`)
+        ElMessage.success(t('map.camerasAddedSuccess', { count: selectedUnboundCameras.value.length }))
         addCameraVisible.value = false
         await loadLayerCameras(parseInt(selectedLayerId.value, 10))
         
@@ -999,11 +1001,11 @@ export default {
           }))
         })
         
-        let errorMessage = '添加相机失败'
+        let errorMessage = t('map.addCameraFailed')
         if (error.response?.data?.message) {
           errorMessage += ': ' + error.response.data.message
         } else if (error.response?.status === 400) {
-          errorMessage += ': 请求参数错误，请检查相机信息是否正确'
+          errorMessage += ': ' + t('map.requestParamError')
         } else if (error.message) {
           errorMessage += ': ' + error.message
         }
@@ -1054,7 +1056,7 @@ export default {
         })
         console.log('已重新绑定相机到新位置:', { x: positionX, y: positionY, angle: cameraAngle })
         
-        ElMessage.success('位置更新成功')
+        ElMessage.success(t('map.positionUpdateSuccess'))
         editPositionVisible.value = false
         await loadLayerCameras(parseInt(selectedLayerId.value, 10))
         hasChanges.value = false
@@ -1074,7 +1076,7 @@ export default {
         }))
       } catch (error) {
         console.error('更新位置失败:', error)
-        ElMessage.error('更新位置失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('map.positionUpdateFailed') + ': ' + (error.message || t('map.unknownError')))
         // 失败时也重新加载数据，恢复原始位置
         await loadLayerCameras(parseInt(selectedLayerId.value, 10))
       }
@@ -1150,7 +1152,7 @@ export default {
         // 重新加载相机数据
         await loadLayerCameras(parseInt(selectedLayerId.value, 10))
         
-        ElMessage.success('所有相机位置保存成功')
+        ElMessage.success(t('map.allCameraPositionsSaved'))
         hasChanges.value = false
         
         // 发出全局事件，通知其他组件刷新相机数据
@@ -1164,7 +1166,7 @@ export default {
         console.log('已发出相机数据更新事件')
       } catch (error) {
         console.error('批量保存位置失败:', error)
-        ElMessage.error('保存位置失败: ' + (error.response?.data?.message || error.message || '未知错误'))
+        ElMessage.error(t('map.savePositionFailed') + ': ' + (error.response?.data?.message || error.message || t('map.unknownError')))
         // 重新加载数据以恢复状态
         await loadLayerCameras(parseInt(selectedLayerId.value, 10))
       }
@@ -1175,11 +1177,11 @@ export default {
       if (!selectedCamera.value || !selectedLayerId.value) return
       
       ElMessageBox.confirm(
-        `确定要从图层中移除相机"${selectedCamera.value.camera_name}"吗？`,
-        '移除确认',
+        t('map.confirmRemoveCamera', { name: selectedCamera.value.camera_name }),
+        t('map.removeConfirmTitle'),
         {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
+          confirmButtonText: t('map.confirm'),
+          cancelButtonText: t('common.cancel'),
           type: 'warning'
         }
       ).then(async () => {
@@ -1194,7 +1196,7 @@ export default {
           })
           
           await unbindWVPChannelFromLayer(parseInt(selectedLayerId.value, 10), channelId)
-          ElMessage.success('相机移除成功')
+          ElMessage.success(t('map.cameraRemovedSuccess'))
           await loadLayerCameras(parseInt(selectedLayerId.value, 10))
           clearSelection()
           
@@ -1208,7 +1210,7 @@ export default {
           }))
         } catch (error) {
           console.error('移除相机失败:', error)
-          ElMessage.error('移除相机失败: ' + (error.message || '未知错误'))
+          ElMessage.error(t('map.removeCameraFailed') + ': ' + (error.message || t('map.unknownError')))
         }
       })
     }

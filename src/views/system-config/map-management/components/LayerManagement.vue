@@ -218,6 +218,7 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Picture, UploadFilled, Plus, Refresh } from '@element-plus/icons-vue'
 import { 
@@ -236,6 +237,7 @@ export default {
     UploadFilled
   },
   setup() {
+    const { t } = useI18n()
     // 响应式数据
     const loading = ref(false)
     const submitting = ref(false)
@@ -267,11 +269,11 @@ export default {
 
     const dialogRules = {
       layer_name: [
-        { required: true, message: '请输入图层名称', trigger: 'blur' },
-        { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
+        { required: true, message: t('map.layerNameRequired'), trigger: 'blur' },
+        { min: 1, max: 100, message: t('map.layerNameLength'), trigger: 'blur' }
       ],
       file: [
-        { required: true, message: '请上传图层图片', trigger: 'change' }
+        { required: true, message: t('map.layerImageRequired'), trigger: 'change' }
       ]
     }
 
@@ -298,7 +300,7 @@ export default {
           pagination.total = response.data?.total || 0
         }
       } catch (error) {
-        ElMessage.error('获取图层列表失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('map.getLayerListFailed') + ': ' + (error.message || t('map.unknownError')))
       } finally {
         loading.value = false
       }
@@ -351,18 +353,18 @@ export default {
           detailVisible.value = true
         }
       } catch (error) {
-        ElMessage.error('获取图层详情失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('map.getLayerDetailFailed') + ': ' + (error.message || t('map.unknownError')))
       }
     }
 
     // 应用图层到首页
     const applyToHomePage = (layer) => {
       ElMessageBox.confirm(
-        `确定要将图层"${layer.layer_name}"应用到首页地图吗？`,
-        '应用确认',
+        t('map.confirmApplyToHomePage', { name: layer.layer_name }),
+        t('map.applyConfirmTitle'),
         {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
+          confirmButtonText: t('map.confirm'),
+          cancelButtonText: t('common.cancel'),
           type: 'info'
         }
       ).then(() => {
@@ -378,12 +380,12 @@ export default {
           }
           localStorage.setItem('homePageMapLayer', JSON.stringify(homePageMapData))
           
-          ElMessage.success(`已将图层"${layer.layer_name}"应用到首页`)
+          ElMessage.success(t('map.layerAppliedToHomePage', { name: layer.layer_name }))
           
           // 发出自定义事件通知首页更新
           window.dispatchEvent(new CustomEvent('homePageMapUpdate', { detail: homePageMapData }))
         } catch (error) {
-          ElMessage.error('应用失败: ' + (error.message || '未知错误'))
+          ElMessage.error(t('map.applyFailed') + ': ' + (error.message || t('map.unknownError')))
         }
       }).catch(() => {
         // 用户取消操作
@@ -395,21 +397,21 @@ export default {
     // 删除图层
     const deleteLayer = (layer) => {
       const message = layer.camera_count > 0 
-        ? `图层"${layer.layer_name}"还有 ${layer.camera_count} 个关联的相机，是否强制删除？`
-        : `确定要删除图层"${layer.layer_name}"吗？`
+        ? t('map.confirmDeleteLayerWithCameras', { name: layer.layer_name, count: layer.camera_count })
+        : t('map.confirmDeleteLayer', { name: layer.layer_name })
       
-      ElMessageBox.confirm(message, '删除确认', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+      ElMessageBox.confirm(message, t('map.deleteConfirmTitle'), {
+        confirmButtonText: t('map.confirm'),
+        cancelButtonText: t('common.cancel'),
         type: 'warning'
       }).then(async () => {
         try {
           const force = layer.camera_count > 0
           await deleteLayerApi(layer.id, force)
-          ElMessage.success('删除成功')
+          ElMessage.success(t('map.deleteSuccess'))
           loadLayers()
         } catch (error) {
-          ElMessage.error('删除失败: ' + (error.message || '未知错误'))
+          ElMessage.error(t('map.deleteFailed') + ': ' + (error.message || t('map.unknownError')))
         }
       })
     }
@@ -420,11 +422,11 @@ export default {
       const isLt10M = file.size / 1024 / 1024 < 10
 
       if (!isValidType) {
-        ElMessage.error('只能上传 PNG/JPG/JPEG/GIF 格式的图片!')
+        ElMessage.error(t('map.invalidImageFormat'))
         return false
       }
       if (!isLt10M) {
-        ElMessage.error('图片大小不能超过 10MB!')
+        ElMessage.error(t('map.imageSizeExceeded'))
         return false
       }
       return false // 阻止自动上传
@@ -454,7 +456,7 @@ export default {
             status: dialogForm.status
           }
           await updateLayer(dialogForm.id, data)
-          ElMessage.success('更新成功')
+          ElMessage.success(t('map.updateSuccess'))
         } else {
           // 新建图层
           const formData = new FormData()
@@ -465,13 +467,13 @@ export default {
           formData.append('file', dialogForm.file)
 
           await createLayer(formData)
-          ElMessage.success('创建成功')
+          ElMessage.success(t('map.createSuccess'))
         }
 
         dialogVisible.value = false
         loadLayers()
       } catch (error) {
-        ElMessage.error('操作失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('map.operationFailed') + ': ' + (error.message || t('map.unknownError')))
       } finally {
         submitting.value = false
       }

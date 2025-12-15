@@ -89,7 +89,7 @@
               <el-tag :type="(ntpConfig.status === 'synced' || ntpConfig.status === 'active') ? 'success' : 'warning'">
                 {{ getStatusText(ntpConfig.status) }}
               </el-tag>
-              <span style="margin-left: 10px;">{{ $t('system.basic.currentTime') }}：{{ currentTime }}</span>
+              <span style="margin-left: 10px;">{{ $t('system.basic.currentTime') }}{{ $t('common.colon') }}{{ currentTime }}</span>
             </el-form-item>
           </el-col>
         </el-row>

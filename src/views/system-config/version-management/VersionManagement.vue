@@ -219,24 +219,24 @@
     <!-- 创建备份对话框 -->
     <el-dialog
       v-model="createBackupDialogVisible"
-      title="创建系统备份"
+      :title="$t('version.createBackupDialogTitle')"
       width="600px"
       :close-on-click-modal="false"
     >
       <el-form :model="backupForm" :rules="backupRules" ref="backupFormRef" label-width="120px">
-        <el-form-item label="备份名称" prop="name">
+        <el-form-item :label="$t('version.backupName')" prop="name">
           <el-input 
             v-model="backupForm.name" 
-            placeholder="请输入备份名称（最多100个字符）"
+            :placeholder="$t('version.backupNamePlaceholder')"
             maxlength="100"
             show-word-limit
           />
         </el-form-item>
         
-        <el-form-item label="备份描述" prop="description">
+        <el-form-item :label="$t('version.backupDescription')" prop="description">
           <el-input 
             v-model="backupForm.description" 
-            placeholder="请输入备份描述（可选，最多500个字符）"
+            :placeholder="$t('version.backupDescriptionPlaceholder')"
             type="textarea"
             :rows="3"
             maxlength="500"
@@ -244,35 +244,35 @@
           />
         </el-form-item>
 
-        <el-form-item label="备份类型" prop="type">
+        <el-form-item :label="$t('version.backupTypeLabel')" prop="type">
           <el-radio-group v-model="backupForm.type">
-            <el-radio label="full">全量备份</el-radio>
-            <el-radio label="custom">自定义备份</el-radio>
+            <el-radio label="full">{{ $t('version.fullBackupType') }}</el-radio>
+            <el-radio label="custom">{{ $t('version.customBackupType') }}</el-radio>
           </el-radio-group>
         </el-form-item>
         
         <!-- 自定义备份选项 -->
         <div v-if="backupForm.type === 'custom'">
-          <el-form-item label="备份内容">
+          <el-form-item :label="$t('version.backupContent')">
             <el-checkbox-group v-model="customBackupOptions">
-              <el-checkbox label="config">系统配置</el-checkbox>
-              <el-checkbox label="mysql">MySQL数据库</el-checkbox>
-              <el-checkbox label="mongodb">MongoDB数据库</el-checkbox>
-              <el-checkbox label="minio">MinIO存储</el-checkbox>
+              <el-checkbox label="config">{{ $t('version.backupConfig') }}</el-checkbox>
+              <el-checkbox label="mysql">{{ $t('version.backupMysql') }}</el-checkbox>
+              <el-checkbox label="mongodb">{{ $t('version.backupMongodb') }}</el-checkbox>
+              <el-checkbox label="minio">{{ $t('version.backupMinio') }}</el-checkbox>
             </el-checkbox-group>
           </el-form-item>
         </div>
         
         <!-- 存储桶选择 - 仅在全量备份或包含MinIO的自定义备份时显示 -->
         <el-form-item 
-          label="存储桶选择" 
+          :label="$t('version.bucketSelection')" 
           v-if="backupForm.type === 'full' || (backupForm.type === 'custom' && customBackupOptions.includes('minio'))"
           prop="minio_buckets"
         >
           <div v-loading="minioBucketsLoading" style="width: 100%;">
             <el-alert 
               v-if="minioBuckets.length === 0 && !minioBucketsLoading"
-              title="暂无可选择的存储桶" 
+              :title="$t('version.noBucketsAvailable')" 
               type="warning" 
               :closable="false" 
               show-icon
@@ -288,7 +288,7 @@
                   @click="selectAllBuckets" 
                   :disabled="backupForm.minio_buckets.length === minioBuckets.length"
                 >
-                  全选
+                  {{ $t('version.selectAll') }}
                 </el-button>
                 <el-button 
                   size="small" 
@@ -296,7 +296,7 @@
                   @click="clearAllBuckets" 
                   :disabled="backupForm.minio_buckets.length === 0"
                 >
-                  全不选
+                  {{ $t('version.deselectAll') }}
                 </el-button>
                 <el-button 
                   size="small" 
@@ -304,10 +304,10 @@
                   @click="selectRecommendedBuckets"
                   :disabled="areRecommendedBucketsSelected"
                 >
-                  推荐选择
+                  {{ $t('version.selectRecommended') }}
                 </el-button>
                 <span style="font-size: 12px; color: #6b7280; margin-left: 12px;">
-                  已选择 {{ backupForm.minio_buckets.length }} / {{ minioBuckets.length }} 个存储桶
+                  {{ $t('version.selectedBuckets', { selected: backupForm.minio_buckets.length, total: minioBuckets.length }) }}
                 </span>
               </div>
               
@@ -322,7 +322,7 @@
                       <div style="font-weight: 600; color: #ffffff;">
                         {{ bucket.name }}
                         <el-tag size="small" style="margin-left: 8px;">
-                          {{ bucket.file_count }} 个文件, {{ formatFileSize(bucket.total_size) }}
+                          {{ bucket.file_count }} {{ $t('version.filesCount') }}, {{ formatFileSize(bucket.total_size) }}
                         </el-tag>
                       </div>
                       <div style="font-size: 12px; color: rgba(255, 255, 255, 0.7); margin-top: 4px;">
@@ -336,7 +336,7 @@
             
             <el-alert 
               v-if="backupForm.type === 'full'"
-              title="提示：全量备份建议选择所有相关的存储桶以确保数据完整性"
+              :title="$t('version.fullBackupTip')"
               type="info" 
               :closable="false" 
               show-icon
@@ -344,7 +344,7 @@
             />
             <el-alert 
               v-else-if="backupForm.type === 'custom' && customBackupOptions.includes('minio')"
-              title="提示：选择相关的存储桶进行自定义备份"
+              :title="$t('version.customBackupTip')"
               type="info" 
               :closable="false" 
               show-icon
@@ -354,15 +354,15 @@
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button class="tech-button-secondary" @click="createBackupDialogVisible = false">取消</el-button>
-        <el-button type="primary" class="tech-button" @click="createBackup" :loading="creatingBackup">创建备份</el-button>
+        <el-button class="tech-button-secondary" @click="createBackupDialogVisible = false">{{ $t('version.cancel') }}</el-button>
+        <el-button type="primary" class="tech-button" @click="createBackup" :loading="creatingBackup">{{ $t('version.createBackupButton') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 备份进度对话框 -->
     <el-dialog
       v-model="backupProgressVisible"
-      title="正在创建备份"
+      :title="$t('version.creatingBackup')"
       width="400px"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
@@ -377,7 +377,7 @@
     <!-- 恢复进度对话框 -->
     <el-dialog
       v-model="restoreProgressVisible"
-      title="正在恢复系统"
+      :title="$t('version.restoringSystem')"
       width="400px"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
@@ -387,7 +387,7 @@
         <el-progress :percentage="restoreProgress" :status="restoreStatus" />
         <p style="margin-top: 15px; text-align: center;">{{ restoreMessage }}</p>
         <div v-if="restoreProgress === 100" style="text-align: center; margin-top: 20px;">
-          <p>系统恢复完成，将在 <strong>{{ restoreCountdown }}</strong> 秒后自动刷新页面</p>
+          <p v-html="$t('version.restoreComplete', { seconds: restoreCountdown })"></p>
         </div>
       </div>
     </el-dialog>
@@ -395,7 +395,7 @@
     <!-- 升级进度对话框 -->
     <el-dialog
       v-model="upgradeProgressVisible"
-      title="正在升级系统"
+      :title="$t('version.upgradingSystem')"
       width="400px"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
@@ -405,7 +405,7 @@
         <el-progress :percentage="upgradeProgress" :status="upgradeStatus" />
         <p style="margin-top: 15px; text-align: center;">{{ upgradeMessage }}</p>
         <div v-if="upgradeProgress === 100" style="text-align: center; margin-top: 20px;">
-          <p>系统升级完成，将在 <strong>{{ upgradeCountdown }}</strong> 秒后自动刷新页面</p>
+          <p v-html="$t('version.upgradeComplete', { seconds: upgradeCountdown })"></p>
         </div>
       </div>
     </el-dialog>
@@ -502,12 +502,15 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Plus, UploadFilled, QuestionFilled } from '@element-plus/icons-vue'
 import { systemAPI } from '@/api/system'
 import { useTaskProgress } from '@/composables/useTaskProgress'
 import { createSystemBackup } from '@/api/map'
 import ProgressModal from '@/components/ProgressModal.vue'
+
+const { t } = useI18n()
 
 // ===================== 响应式数据 =====================
 
@@ -595,18 +598,18 @@ const {
   },
   onComplete: (data) => {
     console.log('任务完成:', data)
-    ElMessage.success('任务执行完成！')
+    ElMessage.success(t('version.taskCompleted'))
     // 刷新备份列表
     loadBackupList()
     // 如果是恢复任务完成，提示用户重启服务
-    if (taskProgressTitle.value.includes('恢复')) {
+    if (taskProgressTitle.value.includes('恢复') || taskProgressTitle.value.includes('Restore')) {
       ElMessageBox.confirm(
-        '系统恢复已完成！为了确保所有更改生效，建议您重启服务。\n\n是否现在重启服务？',
-        '恢复完成',
+        t('version.restoreCompleted'),
+        t('version.restoreCompletedTitle'),
         {
           type: 'success',
-          confirmButtonText: '重启服务',
-          cancelButtonText: '稍后重启',
+          confirmButtonText: t('version.restartService'),
+          cancelButtonText: t('version.restartLater'),
           confirmButtonClass: 'el-button--primary',
           cancelButtonClass: 'el-button--default',
           customClass: 'tech-message-box',
@@ -619,19 +622,19 @@ const {
       ).then(() => {
         // 重启服务
         systemAPI.restartSystemService().then(() => {
-          ElMessage.success('服务重启指令已发送')
+          ElMessage.success(t('version.serviceRestartSent'))
         }).catch(error => {
           console.error('重启服务失败:', error)
-          ElMessage.error('重启服务失败')
+          ElMessage.error(t('version.serviceRestartFailed'))
         })
       }).catch(() => {
-        ElMessage.info('请记得在适当时机重启服务以确保恢复生效')
+        ElMessage.info(t('version.rememberRestart'))
       })
     }
   },
   onError: (error) => {
     console.error('任务失败:', error)
-    ElMessage.error('任务执行失败：' + (error.message || '未知错误'))
+    ElMessage.error(t('version.taskFailed', { error: error.message || t('common.unknown') }))
   }
 })
 
@@ -700,14 +703,14 @@ watch(customBackupOptions, (newOptions) => {
 
 const backupRules = {
   name: [
-    { required: true, message: '请输入备份名称', trigger: 'blur' },
-    { min: 1, max: 100, message: '备份名称长度在 1 到 100 个字符', trigger: 'blur' }
+    { required: true, message: t('version.backupNameRequired'), trigger: 'blur' },
+    { min: 1, max: 100, message: t('version.backupNameLength'), trigger: 'blur' }
   ],
   description: [
-    { max: 500, message: '备份描述不能超过 500 个字符', trigger: 'blur' }
+    { max: 500, message: t('version.backupDescriptionLength'), trigger: 'blur' }
   ],
   type: [
-    { required: true, message: '请选择备份类型', trigger: 'change' }
+    { required: true, message: t('version.backupTypeRequired'), trigger: 'change' }
   ],
   minio_buckets: [
     {
@@ -718,7 +721,7 @@ const backupRules = {
         
         if (needsMinIO) {
           if (!value || value.length === 0) {
-            callback(new Error('请至少选择一个存储桶'))
+            callback(new Error(t('version.bucketRequired')))
           } else {
             callback()
           }
@@ -750,7 +753,7 @@ const loadVersionInfo = async () => {
       Object.assign(versionInfo, response.data)
     } else {
       console.warn('版本信息API返回非成功状态:', response)
-      ElMessage.warning('版本信息加载失败：' + (response.message || '未知错误'))
+      ElMessage.warning(t('version.versionInfoLoadFailed', { error: response.message || t('common.unknown') }))
     }
   } catch (error) {
     console.error('加载版本信息失败:', error)
@@ -763,24 +766,24 @@ const loadVersionInfo = async () => {
       console.error('错误响应数据:', data)
       
       if (status === 401) {
-        ElMessage.error('未授权访问，请重新登录')
+        ElMessage.error(t('version.unauthorized'))
       } else if (status === 403) {
-        ElMessage.error('权限不足')
+        ElMessage.error(t('version.permissionDenied'))
       } else if (status === 404) {
-        ElMessage.error('版本信息接口不存在 (404)')
+        ElMessage.error(t('version.notFound'))
       } else {
-        ElMessage.error(`加载版本信息失败 (${status}): ${data?.message || '服务器错误'}`)
+        ElMessage.error(t('version.loadVersionFailed', { status, message: data?.message || t('common.error') }))
       }
     } else if (error.request) {
       console.error('网络请求失败:', error.request)
       if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-        ElMessage.error('无法连接到后端服务器，请确认后端服务正在运行 (http://localhost:8080)')
+        ElMessage.error(t('version.cannotConnect'))
       } else {
-        ElMessage.error('网络连接失败，请检查网络连接')
+        ElMessage.error(t('version.networkFailed'))
       }
     } else {
       console.error('请求配置错误:', error.message)
-      ElMessage.error('请求配置错误: ' + error.message)
+      ElMessage.error(t('common.error') + ': ' + error.message)
     }
   } finally {
     versionLoading.value = false
@@ -916,10 +919,10 @@ const createBackup = async () => {
     
     // 设置进度弹窗标题
     const typeNames = {
-      'full': '全量备份',
-      'custom': '自定义备份'
+      'full': t('version.fullBackupType'),
+      'custom': t('version.customBackupType')
     }
-    taskProgressTitle.value = `创建${typeNames[backupForm.type]}`
+    taskProgressTitle.value = t('version.createBackup') + typeNames[backupForm.type]
     
     // 重置进度状态并显示弹窗
     resetProgress()
@@ -1067,12 +1070,12 @@ const downloadBackup = async (backup) => {
 const oneClickRestore = async (backup) => {
   try {
     await ElMessageBox.confirm(
-      `确定要恢复备份 "${backup.file_name}" 吗？\n\n此操作将：\n• 覆盖当前系统配置和数据\n• 在恢复前自动创建当前备份\n• 恢复完成后需要手动重启服务\n\n请确保您了解此操作的影响！`,
-      '确认恢复',
+      t('version.confirmRestoreBackupWithName', { name: backup.file_name }),
+      t('version.confirmRestoreTitle'),
       {
         type: 'warning',
-        confirmButtonText: '确认恢复',
-        cancelButtonText: '取消',
+        confirmButtonText: t('version.confirmRestoreTitle'),
+        cancelButtonText: t('version.cancel'),
         confirmButtonClass: 'el-button--primary',
         cancelButtonClass: 'el-button--default',
         customClass: 'tech-message-box',
@@ -1084,7 +1087,7 @@ const oneClickRestore = async (backup) => {
         beforeClose: (action, instance, done) => {
           if (action === 'confirm') {
             instance.confirmButtonLoading = true
-            instance.confirmButtonText = '确认中...'
+            instance.confirmButtonText = t('version.confirming')
             setTimeout(() => {
               done()
             }, 300)
@@ -1096,7 +1099,7 @@ const oneClickRestore = async (backup) => {
     )
     
     // 设置进度弹窗
-    taskProgressTitle.value = '一键恢复'
+    taskProgressTitle.value = t('version.oneClickRestore')
     resetProgress()
     showTaskProgressModal.value = true
     
@@ -1114,12 +1117,12 @@ const oneClickRestore = async (backup) => {
       // 开始轮询任务进度
       await startPolling(response.data.task_id)
     } else {
-      throw new Error('未获取到任务ID')
+      throw new Error(t('version.noTaskId'))
     }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('一键恢复失败:', error)
-      ElMessage.error('一键恢复失败：' + error.message)
+      ElMessage.error(t('version.oneClickRestoreFailedWithError', { error: error.message }))
       showTaskProgressModal.value = false
     }
   }
@@ -1172,10 +1175,10 @@ const getBackupTypeTag = (type) => {
 // 获取备份类型名称
 const getBackupTypeName = (type) => {
   switch (type) {
-    case 'full': return '全量备份'
-    case 'config': return '配置备份'
-    case 'database': return '数据库备份'
-    default: return '未知类型'
+    case 'full': return t('version.fullBackupType')
+    case 'config': return t('version.configOnly')
+    case 'database': return t('version.databaseOnly')
+    default: return t('common.unknown')
   }
 }
 

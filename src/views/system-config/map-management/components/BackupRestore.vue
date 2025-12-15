@@ -144,13 +144,13 @@
           <template #default>
             <p>{{ $t('map.aboutToRestoreBackup') }}</p>
             <p><strong>{{ selectedBackup.file_name }}</strong></p>
-            <p>{{ $t('version.backupType') }}：{{ selectedBackup.type === 'all' ? $t('map.fullBackup') : $t('map.selectiveBackup') }}</p>
-            <p>{{ $t('version.createTime') }}：{{ formatDate(selectedBackup.create_time) }}</p>
+            <p>{{ $t('version.backupType') }}{{ $t('common.colon') }}{{ selectedBackup.type === 'all' ? $t('map.fullBackup') : $t('map.selectiveBackup') }}</p>
+            <p>{{ $t('version.createTime') }}{{ $t('common.colon') }}{{ formatDate(selectedBackup.create_time) }}</p>
           </template>
         </el-alert>
         
         <el-form label-width="120px">
-          <el-form-item :label="$t('map.forceOverwrite') + '：'">
+          <el-form-item :label="$t('map.forceOverwrite') + $t('common.colon')">
             <el-switch
               v-model="restoreForm.force_restore"
               :active-text="$t('map.yes')"
@@ -180,7 +180,7 @@
       @close="resetUploadForm"
     >
       <el-form label-width="120px">
-        <el-form-item :label="$t('map.backupFile') + '：'">
+        <el-form-item :label="$t('map.backupFile') + $t('common.colon')">
           <el-upload
             ref="uploadRef"
             :auto-upload="false"
@@ -233,6 +233,7 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   UploadFilled 
@@ -252,6 +253,7 @@ export default {
     UploadFilled
   },
   setup() {
+    const { t } = useI18n()
     // 响应式数据
     const loading = ref(false)
     const creating = ref(false)
@@ -286,17 +288,17 @@ export default {
 
     const createBackupRules = {
       backup_name: [
-        { required: true, message: '请输入备份名称', trigger: 'blur' },
-        { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
+        { required: true, message: t('map.backupNameRequired'), trigger: 'blur' },
+        { min: 1, max: 100, message: t('map.backupNameLength'), trigger: 'blur' }
       ],
       backup_type: [
-        { required: true, message: '请选择备份类型', trigger: 'change' }
+        { required: true, message: t('map.backupTypeRequired'), trigger: 'change' }
       ],
       layer_ids: [
         { 
           validator: (rule, value, callback) => {
             if (createBackupForm.backup_type === 'selected' && (!value || value.length === 0)) {
-              callback(new Error('请选择要备份的图层'))
+              callback(new Error(t('map.layersRequired')))
             } else {
               callback()
             }
@@ -316,7 +318,7 @@ export default {
           backupList.value = Array.isArray(response.data) ? response.data : []
         }
       } catch (error) {
-        ElMessage.error('加载备份列表失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('map.loadBackupListFailed') + ': ' + (error.message || t('map.unknownError')))
       } finally {
         loading.value = false
       }
@@ -331,7 +333,7 @@ export default {
           layerList.value = Array.isArray(response.data?.list) ? response.data.list : []
         }
       } catch (error) {
-        ElMessage.error('加载图层列表失败')
+        ElMessage.error(t('map.loadLayerListFailed'))
       }
     }
 
@@ -367,11 +369,11 @@ export default {
         }
 
         await createMapBackup(data)
-        ElMessage.success('备份创建成功')
+        ElMessage.success(t('map.backupCreatedSuccess'))
         createBackupVisible.value = false
         loadBackupList()
       } catch (error) {
-        ElMessage.error('创建备份失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('map.createBackupFailed') + ': ' + (error.message || t('map.unknownError')))
       } finally {
         creating.value = false
       }
@@ -404,9 +406,9 @@ export default {
         document.body.removeChild(link)
         window.URL.revokeObjectURL(url)
         
-        ElMessage.success('下载完成')
+        ElMessage.success(t('map.downloadComplete'))
       } catch (error) {
-        ElMessage.error('下载失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('map.downloadFailed') + ': ' + (error.message || t('map.unknownError')))
       }
     }
 
@@ -441,7 +443,7 @@ export default {
         
         // 验证下载的文件大小
         if (blob.size === 0) {
-          throw new Error('下载的备份文件为空，请检查文件是否存在')
+          throw new Error(t('map.backupFileEmpty'))
         }
         
         // 创建FormData对象进行恢复
@@ -460,7 +462,7 @@ export default {
         
         await restoreMapBackup(formData)
         
-        ElMessage.success('恢复成功')
+        ElMessage.success(t('map.restoreSuccess'))
         restoreVisible.value = false
         loadBackupList()
         
@@ -472,10 +474,10 @@ export default {
           }
         }))
       } catch (error) {
-        console.error('恢复失败详细信息:', error)
+        console.error(t('map.restoreFailedDetail'), error)
         
         // 更详细的错误处理
-        let errorMessage = '未知错误'
+        let errorMessage = t('map.unknownError')
         if (error.response?.data?.message) {
           errorMessage = error.response.data.message
         } else if (error.response?.data && typeof error.response.data === 'string') {
@@ -484,7 +486,7 @@ export default {
           errorMessage = error.message
         }
         
-        ElMessage.error('恢复失败: ' + errorMessage)
+        ElMessage.error(t('map.restoreFailed') + ': ' + errorMessage)
       } finally {
         restoring.value = false
       }
@@ -493,20 +495,20 @@ export default {
     // 删除备份
     const deleteBackup = (backup) => {
       ElMessageBox.confirm(
-        `确定要删除备份文件"${backup.file_name}"吗？`,
-        '删除确认',
+        t('map.confirmDeleteBackup', { name: backup.file_name }),
+        t('map.deleteConfirmTitle'),
         {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
+          confirmButtonText: t('map.confirm'),
+          cancelButtonText: t('common.cancel'),
           type: 'warning'
         }
       ).then(async () => {
         try {
           await deleteMapBackup(backup.file_name)
-          ElMessage.success('删除成功')
+          ElMessage.success(t('map.deleteSuccess'))
           loadBackupList()
         } catch (error) {
-          ElMessage.error('删除失败: ' + (error.message || '未知错误'))
+          ElMessage.error(t('map.deleteFailed') + ': ' + (error.message || t('map.unknownError')))
         }
       })
     }
@@ -522,11 +524,11 @@ export default {
       const isLt100M = file.size / 1024 / 1024 < 100
 
       if (!isValidType) {
-        ElMessage.error('只能上传 .tar.gz 格式的备份文件!')
+        ElMessage.error(t('map.invalidFileFormat'))
         return false
       }
       if (!isLt100M) {
-        ElMessage.error('文件大小不能超过 100MB!')
+        ElMessage.error(t('map.fileSizeExceeded'))
         return false
       }
       return false // 阻止自动上传
@@ -545,7 +547,7 @@ export default {
     // 确认上传恢复
     const confirmUploadRestore = async () => {
       if (!uploadRestoreForm.file) {
-        ElMessage.warning('请选择备份文件')
+        ElMessage.warning(t('map.pleaseSelectBackupFile'))
         return
       }
 
@@ -557,7 +559,7 @@ export default {
         formData.append('force_restore', uploadRestoreForm.force_restore.toString())
         
         await restoreMapBackup(formData)
-        ElMessage.success('恢复成功')
+        ElMessage.success(t('map.restoreSuccess'))
         uploadRestoreVisible.value = false
         loadBackupList()
         
@@ -569,7 +571,7 @@ export default {
           }
         }))
       } catch (error) {
-        ElMessage.error('恢复失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('map.restoreFailed') + ': ' + (error.message || t('map.unknownError')))
       } finally {
         uploading.value = false
       }

@@ -2,7 +2,7 @@
   <el-card class="config-card tech-card mb-20" shadow="hover">
     <template #header>
       <div class="card-header">
-        <span>{{ $t('system.basic.ipAddress') }}</span>
+        <span>{{ $t('system.basic.networkConfig') }}</span>
         <div>
           <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadNetworkConfig" :loading="networkLoading">{{ $t('common.refresh') }}</el-button>
         </div>

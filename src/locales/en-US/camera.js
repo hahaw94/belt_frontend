@@ -62,5 +62,17 @@ export default {
   
   // Others
   syncing: 'Syncing...',
-  loading: 'Loading...'
+  loading: 'Loading...',
+  layerOptionLabel: '{name} ({count} cameras)',
+  pleaseInputXCoordinate: 'Please input X coordinate',
+  pleaseInputYCoordinate: 'Please input Y coordinate',
+  getCameraListFailedWithError: 'Failed to get camera list: {error}',
+  confirmSyncWVPCameras: 'Are you sure you want to sync cameras from WVP?\n\nThis operation will:\n• Sync channel information from all WVP direct devices\n• Save to local database\n• Update camera status\n• May take several minutes',
+  syncConfirm: 'Sync Confirmation',
+  syncComplete: 'Sync completed',
+  syncCompleteMessage: '{message}\n\n• Device count: {deviceCount}\n• Channel count: {channelCount}',
+  errorDetails: 'Error Details',
+  syncFailedWithError: 'Failed to sync cameras: {error}',
+  bindFailedWithError: 'Bind failed: {error}',
+  unbindFailedWithError: 'Unbind failed: {error}'
 }

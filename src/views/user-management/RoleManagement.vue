@@ -226,9 +226,12 @@
 
 <script setup name="RoleManagementIntegrated">
 import { ref, reactive, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Edit, View, Delete } from '@element-plus/icons-vue';
 import { roleApi } from '@/api/user';
+
+const { t } = useI18n();
 
 // ===================== 数据定义 =====================
 const loading = ref(false);
@@ -261,16 +264,16 @@ const pagination = reactive({
 const roleFormRef = ref(null);
 const roleRules = reactive({
   name: [
-    { required: true, message: '请输入角色名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
+    { required: true, message: () => t('user.role.pleaseInputRoleName'), trigger: 'blur' },
+    { min: 2, max: 50, message: () => t('user.role.roleNameLength'), trigger: 'blur' }
   ],
   code: [
-    { required: true, message: '请输入角色编码', trigger: 'blur' },
-    { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/, message: '角色编码必须以字母开头，只能包含字母、数字和下划线', trigger: 'blur' }
+    { required: true, message: () => t('user.role.pleaseInputRoleCode'), trigger: 'blur' },
+    { min: 2, max: 20, message: () => t('user.role.roleCodeLength'), trigger: 'blur' },
+    { pattern: /^[a-zA-Z][a-zA-Z0-9_]*$/, message: () => t('user.role.roleCodePattern'), trigger: 'blur' }
   ],
   description: [
-    { max: 200, message: '描述不能超过 200 个字符', trigger: 'blur' }
+    { max: 200, message: () => t('user.role.descriptionMaxLength'), trigger: 'blur' }
   ]
 });
 
@@ -365,11 +368,11 @@ const getRoleList = async () => {
       roleList.value = processedRoles;
       pagination.total = response.total || processedRoles.length;
     } else {
-      throw new Error(response.message || '获取角色列表失败');
+      throw new Error(response.message || t('user.role.getRoleListFailed'));
     }
   } catch (error) {
     console.error('获取角色列表失败详情:', error);
-    ElMessage.error(error.message || '获取角色列表失败');
+    ElMessage.error(error.message || t('user.role.getRoleListFailed'));
   } finally {
     loading.value = false;
   }
@@ -402,11 +405,11 @@ const getPermissionList = async () => {
       
       availablePermissions.value = processedPermissions;
     } else {
-      throw new Error(response.message || '获取权限列表失败');
+      throw new Error(response.message || t('user.role.getPermissionListFailed'));
     }
   } catch (error) {
     console.error('获取权限列表失败详情:', error);
-    ElMessage.error(error.message || '获取权限列表失败');
+    ElMessage.error(error.message || t('user.role.getPermissionListFailed'));
   }
 };
 
@@ -467,7 +470,7 @@ const handleEditRole = async (row) => {
       roleFormRef.value.clearValidate();
     }
   } catch (error) {
-    ElMessage.error(error.message || '获取角色详情失败');
+    ElMessage.error(error.message || t('user.role.getRoleDetailFailed'));
   } finally {
     loading.value = false;
   }
@@ -506,16 +509,16 @@ const submitRoleForm = async () => {
           };
           const updateResponse = await roleApi.updateRole(currentRole.id, updateData);
           if (updateResponse.code !== 200 || !updateResponse.success) {
-            throw new Error(updateResponse.message || '更新角色基本信息失败');
+            throw new Error(updateResponse.message || t('user.role.updateRoleBasicInfoFailed'));
           }
           
           // 更新权限
           const permissionResponse = await roleApi.setRolePermissions(currentRole.id, currentRole.permissions);
           if (permissionResponse.code !== 200 || !permissionResponse.success) {
-            throw new Error(permissionResponse.message || '设置角色权限失败');
+            throw new Error(permissionResponse.message || t('user.role.setRolePermissionsFailed'));
           }
           
-          ElMessage.success(`角色 ${currentRole.name} 更新成功！`);
+          ElMessage.success(t('user.role.roleUpdateSuccess', { name: currentRole.name }));
         } else {
           // 添加角色 - 映射字段名到API文档要求的格式
           const createData = {
@@ -526,21 +529,21 @@ const submitRoleForm = async () => {
           };
           const response = await roleApi.createRole(createData);
           if (response.code !== 200 || !response.success) {
-            throw new Error(response.message || '创建角色失败');
+            throw new Error(response.message || t('user.role.createRoleFailed'));
           }
           
-          ElMessage.success(`角色 ${currentRole.name} 添加成功！`);
+          ElMessage.success(t('user.role.roleAddSuccess', { name: currentRole.name }));
         }
         
         roleDialogVisible.value = false;
         getRoleList(); // 重新加载角色列表
       } catch (error) {
-        ElMessage.error(error.message || '操作失败');
+        ElMessage.error(error.message || t('common.operationFailed'));
       } finally {
         loading.value = false;
       }
     } else {
-      ElMessage.error('请检查表单输入！');
+      ElMessage.error(t('user.role.pleaseCheckFormInput'));
     }
   });
 };
@@ -550,25 +553,25 @@ const submitRoleForm = async () => {
  */
 const handleDeleteRole = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定要删除角色 "${row.name}" 吗？此操作不可逆！`, '警告', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('user.role.confirmDeleteRole', { name: row.name }), t('common.warning'), {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     });
     
     loading.value = true;
     const response = await roleApi.deleteRole(row.id);
     if (response.code === 200 && response.success) {
-      ElMessage.success(`角色 ${row.name} 删除成功！`);
+      ElMessage.success(t('user.role.roleDeleteSuccess', { name: row.name }));
       getRoleList(); // 重新加载角色列表
     } else {
-      throw new Error(response.message || '删除角色失败');
+      throw new Error(response.message || t('user.role.deleteRoleFailed'));
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除角色失败');
+      ElMessage.error(t('user.role.deleteRoleFailed'));
     } else {
-      ElMessage.info('已取消删除操作。');
+      ElMessage.info(t('common.deleteOperationCancelled'));
     }
   } finally {
     loading.value = false;

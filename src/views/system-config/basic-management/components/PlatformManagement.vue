@@ -132,31 +132,31 @@
     <el-card class="management-section tech-card" shadow="hover">
       <template #header>
         <div class="section-header">
-          <span>直连设备与通道</span>
+          <span>{{ $t('system.basic.directDevicesChannels') }}</span>
         </div>
       </template>
       <div class="section-content">
         <!-- 设备查询区 -->
         <div class="wvp-query-section">
           <el-form inline class="wvp-form">
-            <el-form-item label="设备在线">
+            <el-form-item :label="$t('system.basic.deviceOnline')">
               <el-select v-model="wvpDeviceQuery.status" style="width: 120px;">
-                <el-option label="全部" value=""></el-option>
-                <el-option label="在线" value="true"></el-option>
-                <el-option label="离线" value="false"></el-option>
+                <el-option :label="$t('common.all')" value=""></el-option>
+                <el-option :label="$t('common.online')" value="true"></el-option>
+                <el-option :label="$t('common.offline')" value="false"></el-option>
               </el-select>
             </el-form-item>
-            <el-form-item label="关键字">
-              <el-input v-model="wvpDeviceQuery.query" placeholder="设备名/编号" style="width: 200px;" />
+            <el-form-item :label="$t('system.basic.keyword')">
+              <el-input v-model="wvpDeviceQuery.query" :placeholder="$t('system.basic.deviceNameNumber')" style="width: 200px;" />
             </el-form-item>
-            <el-form-item label="页码">
+            <el-form-item :label="$t('system.basic.pageNumber')">
               <el-input-number v-model="wvpDeviceQuery.page" :min="1" style="width: 120px;" />
             </el-form-item>
-            <el-form-item label="每页">
+            <el-form-item :label="$t('system.basic.perPage')">
               <el-input-number v-model="wvpDeviceQuery.count" :min="1" :max="100" style="width: 120px;" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" :icon="Search" @click="loadWVPDevices" :loading="wvpDeviceLoading">刷新设备</el-button>
+              <el-button type="primary" :icon="Search" @click="loadWVPDevices" :loading="wvpDeviceLoading">{{ $t('system.basic.refreshDevices') }}</el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -171,19 +171,19 @@
           style="width: 100%; margin-top: 15px;"
           @current-change="handleWVPDeviceSelect"
           highlight-current-row
-          :empty-text="wvpDevices.length === 0 && !wvpDeviceLoading ? '暂无数据，请点击【刷新设备】按钮加载数据' : '暂无数据'"
+          :empty-text="wvpDevices.length === 0 && !wvpDeviceLoading ? $t('system.basic.noDataClickRefresh') : $t('common.noData')"
         >
-          <el-table-column type="index" label="序号" width="70" align="center"></el-table-column>
-          <el-table-column prop="deviceId" label="设备ID" min-width="180">
+          <el-table-column type="index" :label="$t('system.basic.sequenceNumber')" width="70" align="center"></el-table-column>
+          <el-table-column prop="deviceId" :label="$t('system.basic.deviceId')" min-width="180">
             <template #default="{ row }">
               <code class="device-id">{{ row.deviceId || row.device_id }}</code>
             </template>
           </el-table-column>
-          <el-table-column prop="name" label="名称" min-width="150"></el-table-column>
-          <el-table-column prop="status" label="状态" width="100" align="center">
+          <el-table-column prop="name" :label="$t('common.name')" min-width="150"></el-table-column>
+          <el-table-column prop="status" :label="$t('common.status')" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="row.status?.toUpperCase() === 'ON' ? 'success' : 'danger'" size="small">
-                {{ row.status?.toUpperCase() || '未知' }}
+                {{ row.status?.toUpperCase() || $t('common.unknown') }}
               </el-tag>
             </template>
           </el-table-column>
@@ -192,24 +192,24 @@
         <!-- 通道查询区 -->
         <div class="wvp-query-section" style="margin-top: 20px;">
           <el-form inline class="wvp-form">
-            <el-form-item label="通道在线">
+            <el-form-item :label="$t('system.basic.channelOnline')">
               <el-select v-model="wvpChannelQuery.online" style="width: 120px;">
-                <el-option label="全部" value=""></el-option>
-                <el-option label="在线" value="true"></el-option>
-                <el-option label="离线" value="false"></el-option>
+                <el-option :label="$t('common.all')" value=""></el-option>
+                <el-option :label="$t('common.online')" value="true"></el-option>
+                <el-option :label="$t('common.offline')" value="false"></el-option>
               </el-select>
             </el-form-item>
-            <el-form-item label="关键字">
-              <el-input v-model="wvpChannelQuery.query" placeholder="通道名/编号" style="width: 200px;" />
+            <el-form-item :label="$t('system.basic.keyword')">
+              <el-input v-model="wvpChannelQuery.query" :placeholder="$t('system.basic.channelNameNumber')" style="width: 200px;" />
             </el-form-item>
-            <el-form-item label="页码">
+            <el-form-item :label="$t('system.basic.pageNumber')">
               <el-input-number v-model="wvpChannelQuery.page" :min="1" style="width: 120px;" />
             </el-form-item>
-            <el-form-item label="每页">
+            <el-form-item :label="$t('system.basic.perPage')">
               <el-input-number v-model="wvpChannelQuery.count" :min="1" :max="100" style="width: 120px;" />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" :icon="Search" @click="loadWVPDeviceChannels" :loading="wvpChannelLoading" :disabled="!selectedWVPDevice">刷新通道</el-button>
+              <el-button type="primary" :icon="Search" @click="loadWVPDeviceChannels" :loading="wvpChannelLoading" :disabled="!selectedWVPDevice">{{ $t('system.basic.refreshChannels') }}</el-button>
             </el-form-item>
           </el-form>
         </div>
@@ -222,39 +222,39 @@
           class="tech-table"
           stripe
           style="width: 100%; margin-top: 15px;"
-          :empty-text="wvpChannels.length === 0 && !wvpChannelLoading ? (selectedWVPDevice ? '暂无数据，请点击【刷新通道】按钮加载数据' : '请先选择设备') : '暂无数据'"
+          :empty-text="wvpChannels.length === 0 && !wvpChannelLoading ? (selectedWVPDevice ? $t('system.basic.noDataClickRefreshChannel') : $t('system.basic.pleaseSelectDevice')) : $t('common.noData')"
         >
-          <el-table-column type="index" label="序号" width="70" align="center"></el-table-column>
-          <el-table-column prop="channel_name" label="名称" min-width="120">
+          <el-table-column type="index" :label="$t('system.basic.sequenceNumber')" width="70" align="center"></el-table-column>
+          <el-table-column prop="channel_name" :label="$t('common.name')" min-width="120">
             <template #default="{ row }">
               {{ row.name || row.channel_name || '-' }}
             </template>
           </el-table-column>
-          <el-table-column prop="channel_id" label="编号" min-width="180">
+          <el-table-column prop="channel_id" :label="$t('system.basic.channelId')" min-width="180">
             <template #default="{ row }">
               <code class="channel-id">{{ row.channelId || row.channel_id || row.deviceId || row.device_id || '-' }}</code>
             </template>
           </el-table-column>
-          <el-table-column prop="manufacturer" label="厂家" min-width="100">
+          <el-table-column prop="manufacturer" :label="$t('system.basic.manufacturer')" min-width="100">
             <template #default="{ row }">
               {{ row.manufacturer || row.gbManufacturer || '-' }}
             </template>
           </el-table-column>
-          <el-table-column prop="model" label="型号" min-width="120">
+          <el-table-column prop="model" :label="$t('system.basic.model')" min-width="120">
             <template #default="{ row }">
               {{ row.model || row.gbModel || '-' }}
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="在线" width="80" align="center">
+          <el-table-column prop="status" :label="$t('common.online')" width="80" align="center">
             <template #default="{ row }">
               <el-tag :type="(row.status || '').toUpperCase() === 'ON' ? 'success' : 'danger'" size="small">
-                {{ (row.status || '').toUpperCase() || '未知' }}
+                {{ (row.status || '').toUpperCase() || $t('common.unknown') }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="120" align="center" fixed="right">
+          <el-table-column :label="$t('common.operation')" width="120" align="center" fixed="right">
             <template #default="{ row }">
-              <el-button type="primary" size="small" @click="viewChannelControl(row)">查看</el-button>
+              <el-button type="primary" size="small" @click="viewChannelControl(row)">{{ $t('common.view') }}</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -264,7 +264,7 @@
     <!-- 摄像机控制弹窗 -->
     <el-dialog
       v-model="showControlDialog"
-      :title="`摄像机控制 - ${currentChannel.name || '未命名'}`"
+      :title="`${$t('system.basic.cameraControl')} - ${currentChannel.name || $t('system.basic.unnamed')}`"
       width="800px"
       :close-on-click-modal="false"
       class="control-dialog"
@@ -272,22 +272,22 @@
       <div v-loading="loadingStreamInfo" class="control-content">
         <!-- 播放地址列表 -->
         <div class="stream-section">
-          <h4 class="section-title">播放地址列表</h4>
+          <h4 class="section-title">{{ $t('system.basic.streamUrlList') }}</h4>
           <div v-if="streamUrls && Object.keys(streamUrls).length > 0" class="stream-urls">
             <div v-for="(url, protocol) in streamUrls" :key="protocol" class="url-item">
-              <span class="protocol-label">{{ protocol }}:</span>
+              <span class="protocol-label">{{ protocol }}{{ $t('common.colon') }}</span>
               <code class="url-value">{{ url }}</code>
-              <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(url)">复制</el-button>
+              <el-button size="small" :icon="CopyDocument" @click="copyToClipboard(url)">{{ $t('common.copy') }}</el-button>
             </div>
           </div>
           <div v-else class="empty-state">
-            {{ loadingStreamInfo ? '正在获取播放地址...' : '未获取到播放地址' }}
+            {{ loadingStreamInfo ? $t('system.basic.gettingStreamUrl') : $t('system.basic.noStreamUrl') }}
           </div>
         </div>
 
         <!-- 云台控制 -->
         <div class="ptz-section">
-          <h4 class="section-title">云台控制</h4>
+          <h4 class="section-title">{{ $t('system.basic.ptzControl') }}</h4>
           <div class="ptz-controls">
             <!-- 方向控制 -->
             <div class="direction-controls">
@@ -304,8 +304,8 @@
               </div>
               <!-- 变焦控制 -->
               <div class="zoom-controls">
-                <el-button class="ptz-btn zoom-btn" @click="handlePTZControl('zoom_in')">放大 +</el-button>
-                <el-button class="ptz-btn zoom-btn" @click="handlePTZControl('zoom_out')">缩小 -</el-button>
+                <el-button class="ptz-btn zoom-btn" @click="handlePTZControl('zoom_in')">{{ $t('system.basic.ptzZoomIn') }} +</el-button>
+                <el-button class="ptz-btn zoom-btn" @click="handlePTZControl('zoom_out')">{{ $t('system.basic.ptzZoomOut') }} -</el-button>
               </div>
             </div>
           </div>
@@ -313,7 +313,7 @@
 
         <!-- 操作日志 -->
         <div class="log-section">
-          <h4 class="section-title">操作日志</h4>
+          <h4 class="section-title">{{ $t('system.basic.operationLog') }}</h4>
           <div class="log-content" ref="logContent">
             <div v-for="(log, index) in controlLogs" :key="index" :class="['log-item', `log-${log.type}`]">
               <span class="log-time">{{ log.time }}</span>
@@ -419,7 +419,7 @@ export default {
         }
       } catch (error) {
         console.error('加载SIP接入信息失败:', error)
-        ElMessage.error('加载SIP接入信息失败')
+        ElMessage.error(this.$t('system.basic.loadSipInfoFailed'))
       } finally {
         this.sipLoading = false
       }
@@ -443,7 +443,7 @@ export default {
         }
       } catch (error) {
         console.error('加载通道统计失败:', error)
-        ElMessage.error('加载通道统计失败')
+        ElMessage.error(this.$t('system.basic.loadChannelStatsFailed'))
       } finally {
         this.statsLoading = false
       }
@@ -478,7 +478,7 @@ export default {
         }
       } catch (error) {
         console.error('加载WVP设备列表失败:', error)
-        ElMessage.error('加载WVP设备列表失败')
+        ElMessage.error(this.$t('system.basic.loadWVPDeviceListFailed'))
       } finally {
         this.wvpDeviceLoading = false
       }
@@ -497,7 +497,7 @@ export default {
     // 加载WVP设备通道列表
     async loadWVPDeviceChannels() {
       if (!this.selectedWVPDevice) {
-        ElMessage.warning('请先选择设备')
+        ElMessage.warning(this.$t('system.basic.pleaseSelectDevice'))
         return
       }
 
@@ -530,7 +530,7 @@ export default {
         }
       } catch (error) {
         console.error('加载WVP设备通道失败:', error)
-        ElMessage.error('加载WVP设备通道失败')
+        ElMessage.error(this.$t('system.basic.loadWVPDeviceChannelsFailed'))
       } finally {
         this.wvpChannelLoading = false
       }
@@ -544,7 +544,7 @@ export default {
           console.log(`同步完成: ${response.data.synced_count || 0} 个通道已保存到本地数据库`)
         }
       } catch (error) {
-        console.error('同步通道到本地失败:', error)
+        console.error(this.$t('system.basic.syncChannelsToLocalFailed'), error)
         throw error
       }
     },
@@ -555,7 +555,7 @@ export default {
       const deviceId = this.selectedWVPDevice
       
       if (!channelId) {
-        ElMessage.warning('通道ID为空')
+        ElMessage.warning(this.$t('system.basic.channelIdEmpty'))
         return
       }
       
@@ -580,7 +580,7 @@ export default {
     // 加载流信息
     async loadStreamInfo() {
       this.loadingStreamInfo = true
-      this.addLog('正在请求播放地址...', 'info')
+      this.addLog(this.$t('system.basic.requestingStreamUrl'), 'info')
       
       try {
         // 调用预览开始接口获取流地址
@@ -593,11 +593,11 @@ export default {
           const data = response.data
           // 提取所有流URL
           this.streamUrls = this.extractStreamUrls(data)
-          this.addLog('播放地址获取成功', 'success')
+          this.addLog(this.$t('system.basic.streamUrlSuccess'), 'success')
         }
       } catch (error) {
         console.error('加载流信息失败:', error)
-        this.addLog('播放地址获取失败: ' + (error.message || '未知错误'), 'error')
+        this.addLog(this.$t('system.basic.getStreamUrlFailed') + ': ' + (error.message || this.$t('system.basic.unknownError')), 'error')
       } finally {
         this.loadingStreamInfo = false
       }
@@ -630,7 +630,7 @@ export default {
 
     // 云台控制
     async handlePTZControl(command) {
-      this.addLog(`执行云台控制: ${this.getPTZCommandName(command)}`, 'info')
+      this.addLog(`${this.$t('system.basic.ptzControlExecuting')}: ${this.getPTZCommandName(command)}`, 'info')
       
       try {
         await gb28181API.controlWVPPTZ({
@@ -640,23 +640,23 @@ export default {
           speed: 50
         })
         
-        this.addLog(`云台控制: ${this.getPTZCommandName(command)} 执行成功`, 'success')
+        this.addLog(`${this.$t('system.basic.ptzControl')}: ${this.getPTZCommandName(command)} ${this.$t('system.basic.ptzControlSuccess')}`, 'success')
       } catch (error) {
         console.error('云台控制失败:', error)
-        this.addLog('云台控制失败: ' + (error.message || '未知错误'), 'error')
+        this.addLog(this.$t('system.basic.ptzControlFailed') + ': ' + (error.message || this.$t('system.basic.unknownError')), 'error')
       }
     },
 
     // 获取PTZ命令名称
     getPTZCommandName(cmd) {
       const names = {
-        'up': '向上',
-        'down': '向下',
-        'left': '向左',
-        'right': '向右',
-        'stop': '停止',
-        'zoom_in': '放大',
-        'zoom_out': '缩小'
+        'up': this.$t('system.basic.ptzUp'),
+        'down': this.$t('system.basic.ptzDown'),
+        'left': this.$t('system.basic.ptzLeft'),
+        'right': this.$t('system.basic.ptzRight'),
+        'stop': this.$t('system.basic.ptzStop'),
+        'zoom_in': this.$t('system.basic.ptzZoomIn'),
+        'zoom_out': this.$t('system.basic.ptzZoomOut')
       }
       return names[cmd] || cmd
     },
@@ -687,10 +687,10 @@ export default {
       const deviceId = row.device_id || this.selectedWVPDevice
       
       if (!channelId) {
-        ElMessage.warning('通道ID为空')
+        ElMessage.warning(this.$t('system.basic.channelIdEmpty'))
         return
       }
-      
+
       try {
         const response = await gb28181API.getWVPDeviceChannelInfo(deviceId, channelId)
         if (response && response.data) {
@@ -698,39 +698,40 @@ export default {
           const detail = response.data
           let message = `
             <div style="text-align: left;">
-              <p><strong>设备ID:</strong> ${detail.device_id || deviceId}</p>
-              <p><strong>通道ID:</strong> ${detail.channel_id || channelId}</p>
-              <p><strong>通道名称:</strong> ${detail.channel_name || detail.name || '-'}</p>
-              <p><strong>制造商:</strong> ${detail.manufacturer || '-'}</p>
-              <p><strong>型号:</strong> ${detail.model || '-'}</p>
-              <p><strong>状态:</strong> ${detail.status || '-'}</p>
-              <p><strong>在线状态:</strong> ${detail.online ? '在线' : '离线'}</p>
+              <p><strong>${this.$t('system.basic.deviceIdLabel')}${this.$t('common.colon')}</strong> ${detail.device_id || deviceId}</p>
+              <p><strong>${this.$t('system.basic.channelIdLabel')}${this.$t('common.colon')}</strong> ${detail.channel_id || channelId}</p>
+              <p><strong>${this.$t('system.basic.channelNameLabel')}${this.$t('common.colon')}</strong> ${detail.channel_name || detail.name || '-'}</p>
+              <p><strong>${this.$t('system.basic.manufacturerLabel')}${this.$t('common.colon')}</strong> ${detail.manufacturer || '-'}</p>
+              <p><strong>${this.$t('system.basic.modelLabel')}${this.$t('common.colon')}</strong> ${detail.model || '-'}</p>
+              <p><strong>${this.$t('system.basic.statusLabel')}${this.$t('common.colon')}</strong> ${detail.status || '-'}</p>
+              <p><strong>${this.$t('system.basic.onlineStatusLabel')}${this.$t('common.colon')}</strong> ${detail.online ? this.$t('common.online') : this.$t('common.offline')}</p>
             </div>
           `
-          this.$alert(message, '通道详情', {
+          this.$alert(message, this.$t('system.basic.channelDetail'), {
             dangerouslyUseHTMLString: true,
-            confirmButtonText: '关闭'
+            confirmButtonText: this.$t('common.close')
           })
         }
       } catch (error) {
         console.error('获取通道详情失败:', error)
-        ElMessage.error('获取通道详情失败')
+        ElMessage.error(this.$t('system.basic.loadWVPDeviceChannelsFailed'))
       }
     },
 
     // ==================== 工具方法 ====================
     async copyToClipboard(text) {
       if (!text || text === '-') {
-        ElMessage.warning('无可复制内容')
+        ElMessage.warning(this.$t('system.basic.noContentToCopy'))
         return
       }
       
       try {
         await navigator.clipboard.writeText(text)
-        ElMessage.success('已复制到剪贴板')
+        ElMessage.success(this.$t('common.copyToClipboard'))
       } catch (error) {
         console.error('复制失败:', error)
-        ElMessage.error('复制失败')
+        ElMessage.error(this.$t('common.copyFailed'))
+        ElMessage.error(this.$t('common.copyFailed'))
       }
     }
   }

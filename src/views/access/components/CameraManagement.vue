@@ -250,7 +250,7 @@
             <el-option 
               v-for="layer in availableLayers" 
               :key="layer.id" 
-              :label="`${layer.layer_name} (${layer.camera_count}个摄像机)`" 
+              :label="t('camera.layerOptionLabel', { name: layer.layer_name, count: layer.camera_count })" 
               :value="layer.id"
             />
           </el-select>
@@ -315,6 +315,7 @@
 
 <script>
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, RefreshRight } from '@element-plus/icons-vue'
 import { 
@@ -331,6 +332,7 @@ export default {
   components: {
   },
   setup() {
+    const { t } = useI18n()
     // 响应式数据
     const loading = ref(false)
     const syncing = ref(false)
@@ -369,13 +371,13 @@ export default {
 
     const bindRules = {
       layer_id: [
-        { required: true, message: '请选择图层', trigger: 'change' }
+        { required: true, message: () => t('camera.pleaseSelectLayer'), trigger: 'change' }
       ],
       position_x: [
-        { required: true, message: '请输入X坐标', trigger: 'blur' }
+        { required: true, message: () => t('camera.pleaseInputXCoordinate'), trigger: 'blur' }
       ],
       position_y: [
-        { required: true, message: '请输入Y坐标', trigger: 'blur' }
+        { required: true, message: () => t('camera.pleaseInputYCoordinate'), trigger: 'blur' }
       ]
     }
 
@@ -516,7 +518,7 @@ export default {
         console.log('最终显示的相机数量:', cameraList.value.length)
       } catch (error) {
         console.error('获取相机列表失败:', error)
-        ElMessage.error('获取相机列表失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('camera.getCameraListFailedWithError', { error: error.message || t('common.unknown') }))
       } finally {
         loading.value = false
       }
@@ -561,11 +563,11 @@ export default {
     const syncWVPCameras = async () => {
       try {
         await ElMessageBox.confirm(
-          '确定要从WVP同步摄像头吗？\n\n此操作将：\n• 从所有WVP直连设备同步通道信息\n• 保存到本地数据库\n• 更新摄像头状态\n• 可能需要几分钟时间',
-          '同步确认',
+          t('camera.confirmSyncWVPCameras'),
+          t('camera.syncConfirm'),
           {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
+            confirmButtonText: t('common.confirm'),
+            cancelButtonText: t('common.cancel'),
             type: 'info'
           }
         )
@@ -573,10 +575,14 @@ export default {
         syncing.value = true
         const response = await syncWVPChannels()
         
-        let message = `${response.message || '同步完成'}\n\n• 设备数量: ${response.device_count || response.data?.device_count || 0}\n• 通道数量: ${response.channel_count || response.data?.channel_count || 0}`
+        let message = t('camera.syncCompleteMessage', {
+          message: response.message || t('camera.syncComplete'),
+          deviceCount: response.device_count || response.data?.device_count || 0,
+          channelCount: response.channel_count || response.data?.channel_count || 0
+        })
         
         if (response.errors && response.errors.length > 0) {
-          message += '\n\n错误详情:\n' + response.errors.join('\n')
+          message += '\n\n' + t('camera.errorDetails') + ':\n' + response.errors.join('\n')
           ElMessage.warning(message)
         } else {
           ElMessage.success(message)
@@ -586,7 +592,7 @@ export default {
         await loadCameras()
       } catch (error) {
         if (error !== 'cancel') {
-          ElMessage.error('同步摄像头失败: ' + (error.message || '未知错误'))
+          ElMessage.error(t('camera.syncFailedWithError', { error: error.message || t('common.unknown') }))
         }
       } finally {
         syncing.value = false
@@ -643,7 +649,7 @@ export default {
           position_y: parseInt(bindForm.position_y, 10)
         })
 
-        ElMessage.success('绑定成功')
+        ElMessage.success(t('camera.bindSuccess'))
         bindDialogVisible.value = false
         loadCameras()
         
@@ -652,7 +658,7 @@ export default {
           detail: { action: 'bind', camera_code: bindForm.camera_code }
         }))
       } catch (error) {
-        ElMessage.error('绑定失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('camera.bindFailedWithError', { error: error.message || t('common.unknown') }))
       } finally {
         binding.value = false
       }
@@ -676,7 +682,7 @@ export default {
           }
         }
 
-        ElMessage.success('解绑成功')
+        ElMessage.success(t('camera.unbindSuccess'))
         unbindDialogVisible.value = false
         loadCameras()
         
@@ -685,7 +691,7 @@ export default {
           detail: { action: 'unbind', camera_code: unbindCamera.value.camera_code }
         }))
       } catch (error) {
-        ElMessage.error('解绑失败: ' + (error.message || '未知错误'))
+        ElMessage.error(t('camera.unbindFailedWithError', { error: error.message || t('common.unknown') }))
       } finally {
         unbinding.value = false
       }

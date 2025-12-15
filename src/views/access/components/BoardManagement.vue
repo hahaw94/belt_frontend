@@ -221,19 +221,19 @@
         <el-form :model="boardForm" :rules="boardRules" ref="boardFormRef" label-width="120px" class="tech-form simplified-form">
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="设备名称" prop="deviceName">
+              <el-form-item :label="$t('board.deviceName')" prop="deviceName">
                 <el-input 
                   v-model="boardForm.deviceName" 
-                  placeholder="请输入设备名称"
+                  :placeholder="$t('board.pleaseInputDeviceName')"
                   class="tech-input">
                 </el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="设备编号" prop="deviceCode">
+              <el-form-item :label="$t('board.deviceCode')" prop="deviceCode">
                 <el-input 
                   v-model="boardForm.deviceCode" 
-                  placeholder="请输入设备编号"
+                  :placeholder="$t('board.pleaseInputDeviceCode')"
                   class="tech-input">
                 </el-input>
               </el-form-item>
@@ -242,16 +242,16 @@
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="设备IP地址" prop="ipAddress">
+              <el-form-item :label="$t('board.deviceIp')" prop="ipAddress">
                 <el-input 
                   v-model="boardForm.ipAddress" 
-                  placeholder="请输入IP地址"
+                  :placeholder="$t('board.pleaseInputDeviceIp')"
                   class="tech-input">
                 </el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="RTSP端口" prop="port">
+              <el-form-item :label="$t('board.rtspPort')" prop="port">
                 <el-input-number 
                   v-model="boardForm.port" 
                   :min="1" 
@@ -265,21 +265,21 @@
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="RTSP用户名" prop="rtspUsername">
+              <el-form-item :label="$t('board.rtspUsername')" prop="rtspUsername">
                 <el-input 
                   v-model="boardForm.rtspUsername" 
-                  placeholder="请输入RTSP用户名"
+                  :placeholder="$t('board.pleaseInputRtspUsername')"
                   class="tech-input"
                   clearable>
                 </el-input>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="RTSP密码" prop="rtspPassword">
+              <el-form-item :label="$t('board.rtspPassword')" prop="rtspPassword">
                 <el-input 
                   v-model="boardForm.rtspPassword" 
                   type="password"
-                  placeholder="请输入RTSP密码"
+                  :placeholder="$t('board.pleaseInputRtspPassword')"
                   class="tech-input"
                   show-password
                   clearable>
@@ -290,10 +290,10 @@
           
           <el-row :gutter="20">
             <el-col :span="24">
-              <el-form-item label="RTSP路径" prop="rtspPath">
+              <el-form-item :label="$t('board.rtspPath')" prop="rtspPath">
                 <el-input 
                   v-model="boardForm.rtspPath" 
-                  placeholder="请输入RTSP路径，例如：/stream1"
+                  :placeholder="$t('board.pleaseInputRtspPath')"
                   class="tech-input"
                   clearable>
                   <template #prepend>rtsp://</template>
@@ -306,11 +306,11 @@
       <template #footer>
         <div class="dialog-footer dialog-footer-actions">
           <el-button @click="boardDialogVisible = false">
-            取消操作
+            {{ $t('common.cancel') }}
           </el-button>
           <el-button type="primary" @click="saveBoard" :loading="boardSaving">
-            <span v-if="!boardSaving">确认保存</span>
-            <span v-else>正在保存...</span>
+            <span v-if="!boardSaving">{{ $t('common.save') }}</span>
+            <span v-else>{{ $t('board.saving') }}</span>
           </el-button>
         </div>
       </template>
@@ -320,7 +320,7 @@
     <!-- 流信息对话框 -->
     <el-dialog 
       v-model="streamInfoDialogVisible" 
-      title="设备流信息" 
+      :title="$t('board.streamInfo')" 
       width="800px"
       class="tech-dialog"
       :modal-class="'tech-modal'"
@@ -328,31 +328,31 @@
       <div class="dialog-content" v-loading="streamInfoLoading">
         <div class="stream-info-panel">
           <div class="info-section">
-            <h3 class="section-title">流基本信息</h3>
+            <h3 class="section-title">{{ $t('board.streamBasicInfo') }}</h3>
             <div class="info-grid">
               <div class="info-item">
-                <span class="label">流ID:</span>
+                <span class="label">{{ $t('board.streamId') }}:</span>
                 <span class="value">{{ streamInfo.stream_id || 'N/A' }}</span>
               </div>
               <div class="info-item">
-                <span class="label">推流状态:</span>
+                <span class="label">{{ $t('board.streamStatus') }}:</span>
                 <span class="value" :class="getStreamStatusClass(streamInfo.status)">
                   {{ getStreamStatusText(streamInfo.status) }}
                 </span>
               </div>
               <div class="info-item">
-                <span class="label">开始时间:</span>
+                <span class="label">{{ $t('board.startTime') }}:</span>
                 <span class="value">{{ formatTime(streamInfo.start_time) }}</span>
               </div>
               <div class="info-item">
-                <span class="label">最后活跃:</span>
+                <span class="label">{{ $t('board.lastActive') }}:</span>
                 <span class="value">{{ formatTime(streamInfo.last_active_time) }}</span>
               </div>
             </div>
           </div>
           
           <div class="info-section" v-if="streamInfo.play_urls && Object.keys(streamInfo.play_urls).length > 0">
-            <h3 class="section-title">播放地址</h3>
+            <h3 class="section-title">{{ $t('board.playUrls') }}</h3>
             <div class="play-urls-list">
               <div 
                 v-for="(url, type) in streamInfo.play_urls" 
@@ -361,16 +361,16 @@
                 <div class="url-type">{{ type.toUpperCase() }}:</div>
                 <div class="url-content">
                   <code class="url-code">{{ url }}</code>
-                  <button class="copy-btn" @click="copyToClipboard(url)">复制</button>
+                  <button class="copy-btn" @click="copyToClipboard(url)">{{ $t('common.copy') }}</button>
                 </div>
               </div>
             </div>
           </div>
           
           <div class="info-section" v-else>
-            <h3 class="section-title">播放地址</h3>
+            <h3 class="section-title">{{ $t('board.playUrls') }}</h3>
             <div class="no-data">
-              <p>暂无播放地址</p>
+              <p>{{ $t('board.noPlayUrls') }}</p>
             </div>
           </div>
         </div>
@@ -378,10 +378,10 @@
       <template #footer>
         <div class="dialog-footer dialog-footer-actions">
           <el-button @click="refreshStreamInfo" :loading="streamInfoLoading">
-            刷新信息
+            {{ $t('board.refreshInfo') }}
           </el-button>
           <el-button @click="streamInfoDialogVisible = false">
-            关闭
+            {{ $t('common.close') }}
           </el-button>
         </div>
       </template>
@@ -390,7 +390,7 @@
     <!-- 设备详情对话框 -->
     <el-dialog 
       v-model="deviceDetailDialogVisible" 
-      title="设备详细信息" 
+      :title="$t('board.deviceDetail')" 
       width="900px"
       class="tech-dialog"
       :modal-class="'tech-modal'"
@@ -398,94 +398,94 @@
       <div class="dialog-content" v-loading="deviceDetailLoading">
         <div class="device-full-detail-panel">
           <div class="detail-section">
-            <h3 class="section-title">基础设备信息</h3>
+            <h3 class="section-title">{{ $t('board.basicDeviceInfo') }}</h3>
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="label">设备ID:</span>
+                <span class="label">{{ $t('board.deviceId') }}:</span>
                 <span class="value">{{ deviceDetail.id || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">设备名称:</span>
+                <span class="label">{{ $t('board.deviceName') }}:</span>
                 <span class="value">{{ deviceDetail.deviceName || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">设备编号:</span>
+                <span class="label">{{ $t('board.deviceCode') }}:</span>
                 <span class="value">{{ deviceDetail.deviceNumber || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">设备IP:</span>
+                <span class="label">{{ $t('board.deviceIp') }}:</span>
                 <span class="value">{{ deviceDetail.deviceIP || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">设备型号:</span>
+                <span class="label">{{ $t('board.deviceModel') }}:</span>
                 <span class="value">{{ deviceDetail.model || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">厂商:</span>
+                <span class="label">{{ $t('board.manufacturer') }}:</span>
                 <span class="value">{{ deviceDetail.manufacturer || 'N/A' }}</span>
               </div>
             </div>
           </div>
           
           <div class="detail-section">
-            <h3 class="section-title">状态与配置</h3>
+            <h3 class="section-title">{{ $t('board.statusAndConfig') }}</h3>
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="label">设备状态:</span>
+                <span class="label">{{ $t('board.deviceStatus') }}:</span>
                 <span class="value" :class="getStatusClass(deviceDetail.deviceStatus)">
                   {{ getStatusText(deviceDetail.deviceStatus) }}
                 </span>
               </div>
               <div class="detail-item">
-                <span class="label">推流状态:</span>
+                <span class="label">{{ $t('board.streamStatus') }}:</span>
                 <span class="value" :class="getStreamStatusClass(deviceDetail.streamStatus)">
                   {{ getStreamStatusText(deviceDetail.streamStatus) }}
                 </span>
               </div>
               <div class="detail-item">
-                <span class="label">固件版本:</span>
+                <span class="label">{{ $t('board.firmwareVersion') }}:</span>
                 <span class="value">{{ deviceDetail.firmwareVersion || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">RTSP端口:</span>
+                <span class="label">{{ $t('board.rtspPort') }}:</span>
                 <span class="value">{{ deviceDetail.rtspPort || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">RTSP路径:</span>
+                <span class="label">{{ $t('board.rtspPath') }}:</span>
                 <span class="value">{{ deviceDetail.rtspPath || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">序列号:</span>
+                <span class="label">{{ $t('board.serialNumber') }}:</span>
                 <span class="value">{{ deviceDetail.serialNumber || 'N/A' }}</span>
               </div>
             </div>
           </div>
           
           <div class="detail-section">
-            <h3 class="section-title">绑定与算法信息</h3>
+            <h3 class="section-title">{{ $t('board.bindingAndAlgorithmInfo') }}</h3>
             <div class="detail-grid">
               <div class="detail-item">
-                <span class="label">绑定摄像机:</span>
-                <span class="value">{{ deviceDetail.boundCameraName || '未绑定' }}</span>
+                <span class="label">{{ $t('board.boundCamera') }}:</span>
+                <span class="value">{{ deviceDetail.boundCameraName || $t('board.unbound') }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">算法模型类型:</span>
+                <span class="label">{{ $t('board.algorithmModelType') }}:</span>
                 <span class="value">{{ deviceDetail.algorithmModelType || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">算法模型版本:</span>
+                <span class="label">{{ $t('board.algorithmModelVersion') }}:</span>
                 <span class="value">{{ deviceDetail.algorithmModelVersion || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">安装位置:</span>
+                <span class="label">{{ $t('board.location') }}:</span>
                 <span class="value">{{ deviceDetail.location || 'N/A' }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">创建时间:</span>
+                <span class="label">{{ $t('common.createTime') }}:</span>
                 <span class="value">{{ formatTime(deviceDetail.createdAt) }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">更新时间:</span>
+                <span class="label">{{ $t('common.updateTime') }}:</span>
                 <span class="value">{{ formatTime(deviceDetail.updatedAt) }}</span>
               </div>
             </div>
@@ -495,10 +495,10 @@
       <template #footer>
         <div class="dialog-footer dialog-footer-actions">
           <el-button @click="refreshDeviceDetail" :loading="deviceDetailLoading">
-            刷新信息
+            {{ $t('board.refreshInfo') }}
           </el-button>
           <el-button @click="deviceDetailDialogVisible = false">
-            关闭
+            {{ $t('common.close') }}
           </el-button>
         </div>
       </template>
@@ -507,7 +507,7 @@
     <!-- 固件升级对话框 -->
     <el-dialog 
       v-model="upgradeDialogVisible" 
-      title="板卡固件升级" 
+      :title="$t('board.firmwareUpgrade')" 
       width="600px"
       class="tech-dialog"
       :modal-class="'tech-modal'"
@@ -515,24 +515,24 @@
       <div class="dialog-content">
         <div class="upgrade-info">
           <div class="info-row">
-            <span class="label">设备名称:</span>
+            <span class="label">{{ $t('board.deviceName') }}:</span>
             <span class="value">{{ currentUpgradeBoard?.device_name || currentUpgradeBoard?.DeviceName }}</span>
           </div>
           <div class="info-row">
-            <span class="label">当前版本:</span>
-            <span class="value">{{ currentUpgradeBoard?.firmware_version || currentUpgradeBoard?.FirmwareVersion || '未知' }}</span>
+            <span class="label">{{ $t('board.currentVersion') }}:</span>
+            <span class="value">{{ currentUpgradeBoard?.firmware_version || currentUpgradeBoard?.FirmwareVersion || $t('common.unknown') }}</span>
           </div>
         </div>
 
         <el-form :model="upgradeForm" label-width="100px" class="upgrade-form">
-          <el-form-item label="新版本号">
+          <el-form-item :label="$t('board.newVersion')">
             <el-input 
               v-model="upgradeForm.version" 
-              placeholder="例如: v2.0.0（可选）"
+              :placeholder="$t('board.newVersionPlaceholder')"
               class="tech-input"
             />
           </el-form-item>
-          <el-form-item label="固件文件">
+          <el-form-item :label="$t('board.firmwareFile')">
             <el-upload
               ref="uploadRef"
               :auto-upload="false"
@@ -544,8 +544,8 @@
               <div class="upload-area">
                 <el-icon class="upload-icon"><Upload /></el-icon>
                 <div class="upload-text">
-                  <p>点击或拖拽文件到此处上传</p>
-                  <p class="upload-hint">支持 .zip, .tar, .gz 格式</p>
+                  <p>{{ $t('board.clickOrDragFile') }}</p>
+                  <p class="upload-hint">{{ $t('board.supportedFormats') }}</p>
                 </div>
               </div>
             </el-upload>
@@ -558,13 +558,13 @@
                 text
                 @click="clearFirmwareFile"
               >
-                移除
+                {{ $t('board.remove') }}
               </el-button>
             </div>
           </el-form-item>
           
           <!-- 升级进度 -->
-          <el-form-item v-if="upgrading" label="升级进度">
+          <el-form-item v-if="upgrading" :label="$t('board.upgradeProgress')">
             <el-progress 
               :percentage="upgradeProgress" 
               :status="upgradeStatus"
@@ -578,7 +578,7 @@
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="upgradeDialogVisible = false" :disabled="upgrading">
-            取消
+            {{ $t('common.cancel') }}
           </el-button>
           <el-button 
             type="primary" 
@@ -586,7 +586,7 @@
             :loading="upgrading"
             :disabled="!upgradeForm.file"
           >
-            {{ upgrading ? '升级中...' : '开始升级' }}
+            {{ upgrading ? $t('board.upgrading') : $t('board.startUpgrade') }}
           </el-button>
         </div>
       </template>
@@ -596,11 +596,14 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Refresh, Plus, Upload, Search, RefreshRight
 } from '@element-plus/icons-vue'
 import { deviceApi } from '@/api/device'
+
+const { t } = useI18n()
 
 // 响应式数据
 const boardLoading = ref(false)
@@ -610,7 +613,7 @@ const streamOperationLoading = ref(false)
 
 // 板卡对话框状态
 const boardDialogVisible = ref(false)
-const boardDialogTitle = ref('添加设备')
+const boardDialogTitle = computed(() => editingBoardId.value ? t('board.editDevice') : t('board.addDevice'))
 const editingBoardId = ref(null)
 const boardSaving = ref(false)
 
@@ -832,7 +835,7 @@ const getBoardList = async () => {
     const token = localStorage.getItem('token')
     console.log('当前Token状态:', token ? '已设置' : '未设置')
     if (!token) {
-      ElMessage.error('请先登录')
+      ElMessage.error(t('board.pleaseLoginFirst'))
       return
     }
     
@@ -871,7 +874,7 @@ const getBoardList = async () => {
       boardPagination.totalPages = response.data?.totalPages || Math.ceil(boardPagination.total / boardPagination.pageSize)
       console.log('处理后的板卡列表数据:', boardList.value)
     } else {
-      const errorMsg = response?.message || '获取板卡列表失败'
+      const errorMsg = response?.message || t('board.getBoardListFailed')
       console.error('板卡API错误响应:', response)
       ElMessage.error(errorMsg)
     }
@@ -880,16 +883,16 @@ const getBoardList = async () => {
     
     // 根据错误类型提供更详细的错误信息
     if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
+      ElMessage.error(t('board.authFailedPleaseRelogin'))
       // 可以在这里跳转到登录页面
     } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法访问板卡管理')
+      ElMessage.error(t('board.insufficientPermissionBoardManagement'))
     } else if (error.response?.status === 404) {
-      ElMessage.error('板卡管理API接口不存在')
+      ElMessage.error(t('board.boardApiNotExist'))
     } else if (error.response?.status >= 500) {
-      ElMessage.error('服务器错误，请联系管理员')
+      ElMessage.error(t('board.serverErrorContactAdmin'))
     } else {
-      ElMessage.error(`获取板卡列表失败：${error.message}`)
+      ElMessage.error(t('board.getBoardListFailedWithError', { error: error.message }))
     }
   } finally {
     boardLoading.value = false
@@ -902,14 +905,14 @@ const getBoardStats = async () => {
     boardStatsLoading.value = true
     const response = await deviceApi.getBoardStats()
     if (response.data && response.data.code === 200) {
-      ElMessage.success('统计信息获取成功')
+      ElMessage.success(t('board.getStatsSuccess'))
       console.log('板卡统计信息:', response.data.data)
     } else {
-      ElMessage.error('获取统计信息失败')
+      ElMessage.error(t('board.getStatsFailed'))
     }
   } catch (error) {
     console.error('获取统计信息错误:', error)
-    ElMessage.error('获取统计信息失败：' + error.message)
+    ElMessage.error(t('board.getStatsFailedWithError', { error: error.message }))
   } finally {
     boardStatsLoading.value = false
   }
@@ -936,7 +939,6 @@ const resetBoardSearch = () => {
 // 显示添加板卡对话框
 const showAddBoard = () => {
   boardDialogVisible.value = true
-  boardDialogTitle.value = '添加设备'
   editingBoardId.value = null
   Object.assign(boardForm, {
     device_name: '',
@@ -989,11 +991,11 @@ const viewBoardDetail = async (board) => {
         updatedAt: detail.UpdatedAt || detail.updated_at || ''
       })
     } else {
-      ElMessage.error('获取设备详情失败')
+      ElMessage.error(t('board.getDeviceDetailFailed'))
     }
   } catch (error) {
     console.error('获取设备详情错误:', error)
-    ElMessage.error('获取设备详情失败：' + error.message)
+    ElMessage.error(t('board.getDeviceDetailFailedWithError', { error: error.message }))
   } finally {
     deviceDetailLoading.value = false
   }
@@ -1021,11 +1023,11 @@ const showStreamInfo = async (board) => {
         play_urls: stream.play_urls || {}
       })
     } else {
-      ElMessage.error('获取流信息失败')
+      ElMessage.error(t('board.getStreamInfoFailed'))
     }
   } catch (error) {
     console.error('获取流信息错误:', error)
-    ElMessage.error('获取流信息失败：' + error.message)
+    ElMessage.error(t('board.getStreamInfoFailedWithError', { error: error.message }))
   } finally {
     streamInfoLoading.value = false
   }
@@ -1049,7 +1051,7 @@ const refreshDeviceDetail = () => {
 const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
-    ElMessage.success('已复制到剪贴板')
+    ElMessage.success(t('common.copyToClipboard'))
   } catch (error) {
     console.error('复制失败:', error)
     // 降级方案
@@ -1059,9 +1061,9 @@ const copyToClipboard = async (text) => {
     textArea.select()
     try {
       document.execCommand('copy')
-      ElMessage.success('已复制到剪贴板')
+      ElMessage.success(t('common.copyToClipboard'))
     } catch (fallbackError) {
-      ElMessage.error('复制失败')
+      ElMessage.error(t('common.copyFailed'))
     } finally {
       document.body.removeChild(textArea)
     }
@@ -1071,7 +1073,6 @@ const copyToClipboard = async (text) => {
 // 显示编辑板卡对话框
 const editBoard = (board) => {
   boardDialogVisible.value = true
-  boardDialogTitle.value = '编辑设备'
   editingBoardId.value = board.ID || board.id
   Object.assign(boardForm, {
     device_name: board.DeviceName || board.device_name || '',
@@ -1094,14 +1095,14 @@ const saveBoard = async () => {
   try {
     // 基本验证
     if (!boardForm.device_name || !boardForm.device_number || !boardForm.device_ip) {
-      ElMessage.error('请填写设备名称、设备编号和设备IP')
+      ElMessage.error(t('board.pleaseFillRequiredFields'))
       return
     }
 
     // 检查认证状态
     const token = localStorage.getItem('token')
     if (!token) {
-      ElMessage.error('请先登录')
+      ElMessage.error(t('board.pleaseLoginFirst'))
       return
     }
 
@@ -1127,11 +1128,11 @@ const saveBoard = async () => {
       const response = await deviceApi.updateBoard(editingBoardId.value, apiData)
       
       if (response && response.code === 200) {
-        ElMessage.success('板卡更新成功')
+        ElMessage.success(t('board.boardUpdateSuccess'))
         boardDialogVisible.value = false
         getBoardList()
       } else {
-        const errorMsg = response?.message || '更新板卡失败'
+        const errorMsg = response?.message || t('board.updateBoardFailed')
         ElMessage.error(errorMsg)
       }
     } else {
@@ -1140,11 +1141,11 @@ const saveBoard = async () => {
       const response = await deviceApi.createBoard(apiData)
       
       if (response && response.code === 200) {
-        ElMessage.success('板卡创建成功')
+        ElMessage.success(t('board.boardCreateSuccess'))
         boardDialogVisible.value = false
         getBoardList()
       } else {
-        const errorMsg = response?.message || '创建板卡失败'
+        const errorMsg = response?.message || t('board.createBoardFailed')
         ElMessage.error(errorMsg)
       }
     }
@@ -1153,15 +1154,15 @@ const saveBoard = async () => {
     
     // 根据错误类型提供更详细的错误信息
     if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
+      ElMessage.error(t('board.authFailedPleaseRelogin'))
     } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法操作板卡')
+      ElMessage.error(t('board.insufficientPermissionOperateBoard'))
     } else if (error.response?.status === 409) {
-      ElMessage.error('板卡已存在，请检查设备编号或IP地址')
+      ElMessage.error(t('board.boardAlreadyExists'))
     } else if (error.response?.status >= 500) {
-      ElMessage.error('服务器错误，请联系管理员')
+      ElMessage.error(t('board.serverErrorContactAdmin'))
     } else {
-      ElMessage.error(`保存板卡失败：${error.message}`)
+      ElMessage.error(t('board.saveBoardFailedWithError', { error: error.message }))
     }
   } finally {
     boardSaving.value = false
@@ -1171,30 +1172,30 @@ const saveBoard = async () => {
 // 删除板卡
 const deleteBoard = async (board) => {
   try {
-    const boardName = board.DeviceName || board.device_name || '未知板卡'
+    const boardName = board.DeviceName || board.device_name || t('board.unknownBoard')
     const boardId = board.ID || board.id
     
     await ElMessageBox.confirm(
-      `确认要删除板卡 "${boardName}" 吗？此操作不可撤销。`,
-      '确认删除',
+      t('board.confirmDeleteBoard', { name: boardName }),
+      t('common.deleteConfirmTitle'),
       {
-        confirmButtonText: '确认删除',
-        cancelButtonText: '取消',
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
         type: 'error'
       }
     )
 
     const response = await deviceApi.deleteBoard(boardId)
     if (response.data && response.data.code === 200) {
-      ElMessage.success('板卡删除成功')
+      ElMessage.success(t('board.boardDeleteSuccess'))
       getBoardList()
     } else {
-      ElMessage.error(response.data?.message || '删除板卡失败')
+      ElMessage.error(response.data?.message || t('board.deleteBoardFailed'))
     }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除板卡错误:', error)
-      ElMessage.error('删除板卡失败：' + error.message)
+      ElMessage.error(t('board.deleteBoardFailedWithError', { error: error.message }))
     }
   }
 }
@@ -1242,7 +1243,7 @@ const formatFileSize = (bytes) => {
 // 开始升级
 const startUpgrade = async () => {
   if (!upgradeForm.file) {
-    ElMessage.warning('请选择固件文件')
+    ElMessage.warning(t('board.pleaseSelectFirmwareFile'))
     return
   }
 
@@ -1261,25 +1262,25 @@ const startUpgrade = async () => {
 
     // 上传固件文件
     upgradeProgress.value = 30
-    upgradeMessage.value = '固件上传中...'
+    upgradeMessage.value = t('board.firmwareUploading')
 
     const response = await deviceApi.upgradeBoardFirmware(boardId, upgradeForm.file, upgradeForm.version)
     
     if (response && response.code === 200) {
       upgradeProgress.value = 50
-      upgradeMessage.value = '固件安装中，请稍候...'
+      upgradeMessage.value = t('board.firmwareInstalling')
       
       // 开始轮询升级状态
       pollUpgradeStatus(boardId)
     } else {
-      throw new Error(response?.message || '升级失败')
+      throw new Error(response?.message || t('board.upgradeFailed'))
     }
   } catch (error) {
     console.error('固件升级失败:', error)
     upgrading.value = false
     upgradeStatus.value = 'exception'
-    upgradeMessage.value = '升级失败: ' + error.message
-    ElMessage.error('固件升级失败: ' + error.message)
+    upgradeMessage.value = t('board.upgradeFailedWithError', { error: error.message })
+    ElMessage.error(t('board.firmwareUpgradeFailedWithError', { error: error.message }))
   }
 }
 
@@ -1297,10 +1298,10 @@ const pollUpgradeStatus = async (boardId) => {
       if (status.status === 'success') {
         upgradeProgress.value = 100
         upgradeStatus.value = 'success'
-        upgradeMessage.value = '升级成功！'
+        upgradeMessage.value = t('board.upgradeSuccess')
         upgrading.value = false
         
-        ElMessage.success('固件升级成功！')
+        ElMessage.success(t('board.firmwareUpgradeSuccess'))
         
         // 2秒后关闭对话框并刷新列表
         setTimeout(() => {
@@ -1309,9 +1310,9 @@ const pollUpgradeStatus = async (boardId) => {
         }, 2000)
       } else if (status.status === 'failed' || status.status === 'error') {
         upgradeStatus.value = 'exception'
-        upgradeMessage.value = '升级失败: ' + (status.message || status.error)
+        upgradeMessage.value = t('board.upgradeFailedWithError', { error: status.message || status.error })
         upgrading.value = false
-        ElMessage.error('固件升级失败')
+        ElMessage.error(t('board.firmwareUpgradeFailed'))
       } else {
         // 继续轮询
         upgradePollingTimer = setTimeout(() => {
@@ -1322,7 +1323,7 @@ const pollUpgradeStatus = async (boardId) => {
   } catch (error) {
     console.error('获取升级状态失败:', error)
     upgradeStatus.value = 'exception'
-    upgradeMessage.value = '获取升级状态失败'
+    upgradeMessage.value = t('board.getUpgradeStatusFailed')
     upgrading.value = false
   }
 }
@@ -1331,12 +1332,12 @@ const pollUpgradeStatus = async (boardId) => {
 const playOriginalStream = (board) => {
   const channelId = board.BoundWVPChannelID || board.bound_wvp_channel_id
   if (!channelId) {
-    ElMessage.warning('该板卡未绑定WVP通道')
+    ElMessage.warning(t('board.boardNotBoundWVPChannel'))
     return
   }
   
   // TODO: 实现原始流播放功能
-  ElMessage.info(`播放原始流功能开发中，通道ID: ${channelId}`)
+  ElMessage.info(t('board.originalStreamFeatureDeveloping', { channelId }))
   // 可以打开一个新窗口或者在当前页面显示播放器
   // window.open(`/play?channelId=${channelId}`, '_blank')
 }
@@ -1348,7 +1349,7 @@ const getCameraList = async () => {
     // 检查认证状态
     const token = localStorage.getItem('token')
     if (!token) {
-      ElMessage.error('请先登录')
+      ElMessage.error(t('board.pleaseLoginFirst'))
       return
     }
     
@@ -1359,18 +1360,18 @@ const getCameraList = async () => {
       cameraList.value = response.data || []
       console.log('摄像机列表数据:', cameraList.value)
     } else {
-      const errorMsg = response?.message || '获取摄像机列表失败'
+      const errorMsg = response?.message || t('board.getCameraListFailed')
       ElMessage.error(errorMsg)
     }
   } catch (error) {
     console.error('获取摄像机列表错误:', error)
     
     if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
+      ElMessage.error(t('board.authFailedPleaseRelogin'))
     } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法访问摄像机列表')
+      ElMessage.error(t('board.insufficientPermissionCameraList'))
     } else {
-      ElMessage.error(`获取摄像机列表失败：${error.message}`)
+      ElMessage.error(t('board.getCameraListFailedWithError', { error: error.message }))
     }
   }
 }
@@ -1390,15 +1391,15 @@ const handleBoardSizeChange = (pageSize) => {
 // 状态文本辅助函数
 const getStatusText = (status) => {
   const textMap = {
-    'online': '在线',
-    'offline': '离线', 
-    'error': '错误',
-    'connected': '在线',
-    'disconnected': '离线',
-    'active': '在线',
-    'inactive': '离线'
+    'online': t('board.online'),
+    'offline': t('board.offline'), 
+    'error': t('board.error'),
+    'connected': t('board.online'),
+    'disconnected': t('board.offline'),
+    'active': t('board.online'),
+    'inactive': t('board.offline')
   }
-  return textMap[status] || status || '未知'
+  return textMap[status] || status || t('common.unknown')
 }
 
 // 时间格式化函数
@@ -1439,16 +1440,16 @@ const getStatusClass = (status) => {
 // 获取推流状态文本
 const getStreamStatusText = (status) => {
   const textMap = {
-    'streaming': '推流中',
-    'stopped': '已停止',
-    'error': '推流错误',
-    'paused': '已暂停',
-    'connecting': '连接中',
-    'disconnected': '已断开',
-    'active': '推流中',
-    'inactive': '已停止'
+    'streaming': t('board.streaming'),
+    'stopped': t('board.stopped'),
+    'error': t('board.streamError'),
+    'paused': t('board.paused'),
+    'connecting': t('board.connecting'),
+    'disconnected': t('board.disconnected'),
+    'active': t('board.streaming'),
+    'inactive': t('board.stopped')
   }
-  return textMap[status] || status || '未知'
+  return textMap[status] || status || t('common.unknown')
 }
 
 // 获取推流状态样式类
@@ -1472,10 +1473,10 @@ const getStreamStatusClass = (status) => {
 const startBoardStreaming = async (board) => {
   try {
     const boardId = board.ID || board.id
-    const boardName = board.DeviceName || board.device_name || '未知板卡'
+    const boardName = board.DeviceName || board.device_name || t('board.unknownBoard')
     
     if (!boardId) {
-      ElMessage.error('板卡ID不存在，无法开始推流')
+      ElMessage.error(t('board.boardIdNotExistCannotStartStream'))
       return
     }
     
@@ -1485,26 +1486,26 @@ const startBoardStreaming = async (board) => {
     const response = await deviceApi.startBoardStream(boardId)
     
     if (response && response.code === 200) {
-      ElMessage.success(`板卡 ${boardName} 推流启动成功`)
+      ElMessage.success(t('board.boardStreamStartSuccess', { name: boardName }))
       // 刷新列表以更新推流状态
       getBoardList()
     } else {
-      const errorMsg = response?.message || '启动推流失败'
-      ElMessage.error(`板卡 ${boardName} 启动推流失败：${errorMsg}`)
+      const errorMsg = response?.message || t('board.startStreamFailed')
+      ElMessage.error(t('board.boardStreamStartFailed', { name: boardName, error: errorMsg }))
     }
   } catch (error) {
     console.error('启动推流错误:', error)
     
     if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
+      ElMessage.error(t('board.authFailedPleaseRelogin'))
     } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法控制推流')
+      ElMessage.error(t('board.insufficientPermissionControlStream'))
     } else if (error.response?.status === 404) {
-      ElMessage.error('板卡不存在或推流接口不可用')
+      ElMessage.error(t('board.boardNotExistOrStreamApiUnavailable'))
     } else if (error.response?.status >= 500) {
-      ElMessage.error('服务器错误，请联系管理员')
+      ElMessage.error(t('board.serverErrorContactAdmin'))
     } else {
-      ElMessage.error(`启动推流失败：${error.message}`)
+      ElMessage.error(t('board.startStreamFailedWithError', { error: error.message }))
     }
   } finally {
     streamOperationLoading.value = false
@@ -1515,10 +1516,10 @@ const startBoardStreaming = async (board) => {
 const stopBoardStreaming = async (board) => {
   try {
     const boardId = board.ID || board.id
-    const boardName = board.DeviceName || board.device_name || '未知板卡'
+    const boardName = board.DeviceName || board.device_name || t('board.unknownBoard')
     
     if (!boardId) {
-      ElMessage.error('板卡ID不存在，无法停止推流')
+      ElMessage.error(t('board.boardIdNotExistCannotStopStream'))
       return
     }
     
@@ -1528,26 +1529,26 @@ const stopBoardStreaming = async (board) => {
     const response = await deviceApi.stopBoardStream(boardId)
     
     if (response && response.code === 200) {
-      ElMessage.success(`板卡 ${boardName} 推流已停止`)
+      ElMessage.success(t('board.boardStreamStopSuccess', { name: boardName }))
       // 刷新列表以更新推流状态
       getBoardList()
     } else {
-      const errorMsg = response?.message || '停止推流失败'
-      ElMessage.error(`板卡 ${boardName} 停止推流失败：${errorMsg}`)
+      const errorMsg = response?.message || t('board.stopStreamFailed')
+      ElMessage.error(t('board.boardStreamStopFailed', { name: boardName, error: errorMsg }))
     }
   } catch (error) {
     console.error('停止推流错误:', error)
     
     if (error.response?.status === 401) {
-      ElMessage.error('认证失败，请重新登录')
+      ElMessage.error(t('board.authFailedPleaseRelogin'))
     } else if (error.response?.status === 403) {
-      ElMessage.error('权限不足，无法控制推流')
+      ElMessage.error(t('board.insufficientPermissionControlStream'))
     } else if (error.response?.status === 404) {
-      ElMessage.error('板卡不存在或推流接口不可用')
+      ElMessage.error(t('board.boardNotExistOrStreamApiUnavailable'))
     } else if (error.response?.status >= 500) {
-      ElMessage.error('服务器错误，请联系管理员')
+      ElMessage.error(t('board.serverErrorContactAdmin'))
     } else {
-      ElMessage.error(`停止推流失败：${error.message}`)
+      ElMessage.error(t('board.stopStreamFailedWithError', { error: error.message }))
     }
   } finally {
     streamOperationLoading.value = false

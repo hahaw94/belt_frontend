@@ -94,4 +94,72 @@ export default {
   backupFile: '备份文件',
   dragMapBackupFile: '将地图备份文件拖到此处，或',
   uploadBackupFileTip: '只能上传 .tar.gz 格式的地图备份文件',
+  
+  // 表单验证消息
+  backupNameRequired: '请输入备份名称',
+  backupNameLength: '长度在 1 到 100 个字符',
+  backupTypeRequired: '请选择备份类型',
+  layersRequired: '请选择要备份的图层',
+  
+  // 操作消息
+  loadBackupListFailed: '加载备份列表失败',
+  backupCreatedSuccess: '备份创建成功',
+  createBackupFailed: '创建备份失败',
+  downloadComplete: '下载完成',
+  downloadFailed: '下载失败',
+  restoreSuccess: '恢复成功',
+  restoreFailed: '恢复失败',
+  invalidFileFormat: '只能上传 .tar.gz 格式的备份文件!',
+  fileSizeExceeded: '文件大小不能超过 100MB!',
+  pleaseSelectBackupFile: '请选择备份文件',
+  backupFileEmpty: '下载的备份文件为空，请检查文件是否存在',
+  unknownError: '未知错误',
+  
+  // 确认对话框
+  confirmDeleteBackup: '确定要删除备份文件"{name}"吗？',
+  deleteConfirmTitle: '删除确认',
+  confirm: '确定',
+  restoreFileInfo: '恢复文件信息',
+  restoreFailedDetail: '恢复失败详细信息',
+  
+  // 图层管理表单验证
+  layerNameRequired: '请输入图层名称',
+  layerNameLength: '长度在 1 到 100 个字符',
+  layerImageRequired: '请上传图层图片',
+  
+  // 图层管理操作消息
+  getLayerListFailed: '获取图层列表失败',
+  getLayerDetailFailed: '获取图层详情失败',
+  confirmApplyToHomePage: '确定要将图层"{name}"应用到首页地图吗？',
+  applyConfirmTitle: '应用确认',
+  layerAppliedToHomePage: '已将图层"{name}"应用到首页',
+  applyFailed: '应用失败',
+  confirmDeleteLayer: '确定要删除图层"{name}"吗？',
+  confirmDeleteLayerWithCameras: '图层"{name}"还有 {count} 个关联的相机，是否强制删除？',
+  deleteSuccess: '删除成功',
+  deleteFailed: '删除失败',
+  invalidImageFormat: '只能上传 PNG/JPG/JPEG/GIF 格式的图片!',
+  imageSizeExceeded: '图片大小不能超过 10MB!',
+  updateSuccess: '更新成功',
+  createSuccess: '创建成功',
+  operationFailed: '操作失败',
+  
+  // 地图配置操作消息
+  loadLayerListFailed: '加载图层列表失败',
+  loadLayerCamerasFailed: '加载图层相机失败',
+  loadUnboundCamerasFailed: '加载未绑定相机失败',
+  mapImageLoadFailed: '地图图片加载失败',
+  cameraPositionSaved: '相机位置已保存',
+  savePositionFailed: '保存位置失败',
+  positionUpdateSuccess: '位置更新成功',
+  positionUpdateFailed: '更新位置失败',
+  allCameraPositionsSaved: '所有相机位置保存成功',
+  camerasAddedSuccess: '成功添加 {count} 个相机',
+  addCameraFailed: '添加相机失败',
+  requestParamError: '请求参数错误，请检查相机信息是否正确',
+  confirmRemoveCamera: '确定要从图层中移除相机"{name}"吗？',
+  removeConfirmTitle: '移除确认',
+  cameraRemovedSuccess: '相机移除成功',
+  removeCameraFailed: '移除相机失败',
+  clusterCamerasPositionSaved: '已保存 {count} 个相机的位置',
 }

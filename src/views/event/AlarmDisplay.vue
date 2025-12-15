@@ -53,7 +53,7 @@
               class="tech-select"
               clearable
             >
-              <el-option label="全部" value="" />
+              <el-option :label="$t('common.all')" value="" />
               <el-option 
                 v-for="type in alarmTypes" 
                 :key="type.id" 
@@ -63,14 +63,14 @@
             </el-select>
           </div>
           <div class="filter-item">
-            <label>板卡</label>
+            <label>{{ $t('event.alarm.board') }}</label>
             <el-select
               v-model="searchForm.boardId"
-              placeholder="全部"
+              :placeholder="$t('common.all')"
               class="tech-select"
               clearable
             >
-              <el-option label="全部" value="" />
+              <el-option :label="$t('common.all')" value="" />
               <el-option 
                 v-for="board in boardList" 
                 :key="board" 
@@ -80,41 +80,41 @@
             </el-select>
           </div>
           <div class="filter-item">
-            <label>告警级别</label>
+            <label>{{ $t('event.alarm.alarmLevel') }}</label>
             <el-select
               v-model="searchForm.alarmLevel"
-              placeholder="全部"
+              :placeholder="$t('common.all')"
               class="tech-select"
               clearable
             >
-              <el-option label="全部" value="" />
-              <el-option label="低" :value="1" />
-              <el-option label="中" :value="2" />
-              <el-option label="高" :value="3" />
+              <el-option :label="$t('common.all')" value="" />
+              <el-option :label="$t('event.alarm.level.low')" :value="1" />
+              <el-option :label="$t('event.alarm.level.medium')" :value="2" />
+              <el-option :label="$t('event.alarm.level.high')" :value="3" />
             </el-select>
           </div>
           <div class="filter-item">
-            <label>处理状态</label>
+            <label>{{ $t('event.alarm.handleStatus') }}</label>
             <el-select
               v-model="searchForm.status"
-              placeholder="全部"
+              :placeholder="$t('common.all')"
               class="tech-select"
               clearable
             >
-              <el-option label="全部" value="" />
-              <el-option label="未处理" :value="0" />
-              <el-option label="已处理" :value="1" />
+              <el-option :label="$t('common.all')" value="" />
+              <el-option :label="$t('event.alarm.status.unhandled')" :value="0" />
+              <el-option :label="$t('event.alarm.status.handled')" :value="1" />
             </el-select>
           </div>
           <div class="filter-actions">
             <el-button type="primary" :icon="Search" @click="handleSearch" class="tech-button">
-              搜索
+              {{ $t('common.search') }}
             </el-button>
             <el-button :icon="Refresh" @click="handleReset" class="tech-button">
-              重置
+              {{ $t('common.reset') }}
             </el-button>
             <el-button type="warning" @click="showBatchMarkDialog" class="tech-button">
-              批量标记误报
+              {{ $t('event.alarm.batchMarkFalsePositive') }}
             </el-button>
           </div>
         </div>
@@ -126,14 +126,14 @@
       <!-- 批量操作栏 -->
       <div v-if="viewMode === 'list' && selectedAlarms.length > 0" class="batch-operation-bar">
         <div class="batch-info">
-          <strong>📋 已选择: <span class="count">{{ selectedAlarms.length }}</span> 条</strong>
+          <strong>{{ $t('event.alarm.selectedCount', { count: selectedAlarms.length }) }}</strong>
         </div>
         <div class="batch-actions">
           <el-button type="warning" size="small" @click="batchMarkFalsePositive">
-            📦 标记为误报
+            📦 {{ $t('event.alarm.markFalsePositive') }}
           </el-button>
           <el-button size="small" @click="clearSelection">
-            ✖ 清空选择
+            ✖ {{ $t('event.alarm.clearSelection') }}
           </el-button>
         </div>
       </div>
@@ -152,36 +152,36 @@
         ref="alarmTableRef"
       >
         <el-table-column type="selection" width="50" align="center" :selectable="checkSelectable" />
-        <el-table-column type="index" label="序号" width="80" align="center" header-align="center" />
-        <el-table-column prop="alarm_code" label="告警编码" min-width="150" header-align="center">
+        <el-table-column type="index" :label="$t('event.alarm.table.index')" width="80" align="center" header-align="center" />
+        <el-table-column prop="alarm_code" :label="$t('event.alarm.table.code')" min-width="150" header-align="center">
           <template #default="{ row }">
             <code style="font-size: 12px; color: #00ffff;">{{ row.alarm_code || '-' }}</code>
           </template>
         </el-table-column>
-        <el-table-column prop="type" label="告警类型" min-width="120" header-align="center" />
-        <el-table-column prop="level" label="级别" width="80" align="center" header-align="center">
+        <el-table-column prop="type" :label="$t('event.alarm.table.type')" min-width="120" header-align="center" />
+        <el-table-column prop="level" :label="$t('event.alarm.table.level')" width="80" align="center" header-align="center">
           <template #default="{ row }">
-            <el-tag :type="getLevelType(row.level)" size="small">
+            <el-tag :type="getLevelType(row.levelRaw)" size="small">
               {{ row.level }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="board_id" label="板卡" min-width="100" header-align="center" />
-        <el-table-column prop="time" label="时间" min-width="140" header-align="center" />
-        <el-table-column prop="status" label="状态" width="100" align="center" header-align="center">
+        <el-table-column prop="board_id" :label="$t('event.alarm.table.board')" min-width="100" header-align="center" />
+        <el-table-column prop="time" :label="$t('event.alarm.table.time')" min-width="140" header-align="center" />
+        <el-table-column prop="status" :label="$t('event.alarm.table.status')" width="100" align="center" header-align="center">
           <template #default="{ row }">
-            <el-tag :type="getStatusType(row.status)">
+            <el-tag :type="getStatusType(row)">
               {{ row.status }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column fixed="right" label="操作" width="200" align="center" header-align="center">
+        <el-table-column fixed="right" :label="$t('common.operation')" width="200" align="center" header-align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" class="tech-button-xs" @click.stop="handleView(row)">
-              查看
+              {{ $t('common.view') }}
             </el-button>
             <el-button type="warning" size="small" class="tech-button-xs" @click.stop="handleProcess(row)">
-              处理
+              {{ $t('event.alarm.handleAlarm') }}
             </el-button>
           </template>
         </el-table-column>
@@ -197,10 +197,10 @@
             :class="getThumbnailCardClass(alarm)"
           >
             <!-- 卡片头部 -->
-            <div class="thumbnail-header" :class="getLevelClass(alarm.level)">
+            <div class="thumbnail-header" :class="getLevelClass(alarm.levelRaw)">
               <div class="thumbnail-header-content">
                 <strong class="thumbnail-type">{{ alarm.type }}</strong>
-                <el-tag :type="getLevelType(alarm.level)" size="small">{{ alarm.level }}</el-tag>
+                <el-tag :type="getLevelType(alarm.levelRaw)" size="small">{{ alarm.level }}</el-tag>
               </div>
             </div>
             
@@ -218,44 +218,44 @@
                   <template #error>
                     <div class="image-slot">
                       <el-icon><Picture /></el-icon>
-                      <div>暂无截图</div>
+                      <div>{{ $t('event.alarm.thumbnail.noSnapshot') }}</div>
                     </div>
                   </template>
                 </el-image>
                 <div v-else class="image-slot">
                   <el-icon><Picture /></el-icon>
-                  <div>暂无截图</div>
+                  <div>{{ $t('event.alarm.thumbnail.noSnapshot') }}</div>
                 </div>
               </div>
               
               <!-- 信息区 -->
               <div class="thumbnail-info">
                 <div class="info-item">
-                  <span class="info-label">编码:</span>
+                  <span class="info-label">{{ $t('event.alarm.thumbnail.code') }}{{ $t('common.colon') }}</span>
                   <code class="info-value">{{ alarm.alarm_code || '-' }}</code>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">时间:</span>
+                  <span class="info-label">{{ $t('event.alarm.thumbnail.time') }}{{ $t('common.colon') }}</span>
                   <span class="info-value">{{ alarm.time }}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">板卡:</span>
+                  <span class="info-label">{{ $t('event.alarm.thumbnail.board') }}{{ $t('common.colon') }}</span>
                   <span class="info-value">{{ alarm.board_id }}</span>
                 </div>
                 <div class="info-item" v-if="alarm.cameraName">
-                  <span class="info-label">摄像头:</span>
+                  <span class="info-label">{{ $t('event.alarm.thumbnail.camera') }}{{ $t('common.colon') }}</span>
                   <span class="info-value">{{ alarm.cameraName }}</span>
                 </div>
                 <div class="info-item">
-                  <span class="info-label">状态:</span>
-                  <el-tag :type="getStatusType(alarm.status)" size="small">{{ alarm.status }}</el-tag>
+                  <span class="info-label">{{ $t('event.alarm.thumbnail.status') }}{{ $t('common.colon') }}</span>
+                  <el-tag :type="getStatusType(alarm)" size="small">{{ alarm.status }}</el-tag>
                 </div>
               </div>
               
               <!-- 操作按钮 -->
               <div class="thumbnail-actions">
                 <el-button type="primary" size="small" @click.stop="handleView(alarm)">
-                  查看详情
+                  {{ $t('event.alarm.viewDetail') }}
                 </el-button>
                 <el-button 
                   v-if="alarm.statusRaw === 0"
@@ -263,7 +263,7 @@
                   size="small" 
                   @click.stop="handleProcess(alarm)"
                 >
-                  处理
+                  {{ $t('event.alarm.handleAlarm') }}
                 </el-button>
               </div>
             </div>
@@ -274,7 +274,7 @@
       <!-- 增强型分页组件 -->
       <div class="pagination-container tech-pagination">
         <div class="pagination-info">
-          <span>共 <span class="total-count">{{ total }}</span> 条记录，每页显示 
+          <span>{{ $t('common.total') }} <span class="total-count">{{ total }}</span> {{ $t('common.records') }}, {{ $t('common.perPage') }} 
             <el-select 
               v-model="pageSize" 
               @change="handleSizeChange"
@@ -285,7 +285,7 @@
               <el-option label="20" :value="20" />
               <el-option label="50" :value="50" />
               <el-option label="100" :value="100" />
-            </el-select> 条
+            </el-select> {{ $t('common.items') }}
           </span>
         </div>
         <div class="pagination-controls">
@@ -295,7 +295,7 @@
             :disabled="currentPage === 1"
             @click="goToPage(1)"
           >
-            首页
+            {{ $t('common.firstPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -303,7 +303,7 @@
             :disabled="currentPage === 1"
             @click="goToPage(currentPage - 1)"
           >
-            上一页
+            {{ $t('common.prevPage') }}
           </el-button>
           <div class="pagination-pages">
             <button 
@@ -322,7 +322,7 @@
             :disabled="currentPage === totalPages"
             @click="goToPage(currentPage + 1)"
           >
-            下一页
+            {{ $t('common.nextPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -330,7 +330,7 @@
             :disabled="currentPage === totalPages"
             @click="goToPage(totalPages)"
           >
-            末页
+            {{ $t('common.lastPage') }}
           </el-button>
         </div>
       </div>
@@ -339,7 +339,7 @@
     <!-- 告警详情对话框 -->
     <el-dialog
       v-model="dialogVisible"
-      title="告警详情"
+      :title="$t('event.alarm.detail.title')"
       width="60%"
       class="tech-dialog"
       :close-on-click-modal="false"
@@ -347,40 +347,40 @@
     >
       <div v-if="selectedAlarm" class="alarm-detail">
         <div class="detail-section">
-          <h4 class="section-title">基本信息</h4>
+          <h4 class="section-title">{{ $t('event.alarm.detail.basicInfo') }}</h4>
           <div class="detail-grid">
             <div class="detail-item">
-              <span class="label">告警编码：</span>
+              <span class="label">{{ $t('event.alarm.detail.alarmCode') }}{{ $t('common.colon') }}</span>
               <span class="value">{{ selectedAlarm.alarmCode || '-' }}</span>
             </div>
             <div class="detail-item">
-              <span class="label">告警时间：</span>
+              <span class="label">{{ $t('event.alarm.detail.alarmTime') }}{{ $t('common.colon') }}</span>
               <span class="value">{{ selectedAlarm.time }}</span>
             </div>
             <div class="detail-item">
-              <span class="label">告警类型：</span>
+              <span class="label">{{ $t('event.alarm.detail.alarmType') }}{{ $t('common.colon') }}</span>
               <span class="value">{{ selectedAlarm.type }}</span>
             </div>
             <div class="detail-item">
-              <span class="label">告警级别：</span>
+              <span class="label">{{ $t('event.alarm.detail.alarmLevel') }}{{ $t('common.colon') }}</span>
               <span class="value">
-                <el-tag :type="selectedAlarm.level === '高' ? 'danger' : selectedAlarm.level === '中' ? 'warning' : 'info'" size="small">
+                <el-tag :type="getLevelType(selectedAlarm.levelRaw)" size="small">
                   {{ selectedAlarm.level }}
                 </el-tag>
               </span>
             </div>
             <div class="detail-item" v-if="selectedAlarm.cameraName">
-              <span class="label">摄像头：</span>
+              <span class="label">{{ $t('event.alarm.detail.camera') }}{{ $t('common.colon') }}</span>
               <span class="value">{{ selectedAlarm.cameraName }}</span>
             </div>
             <div class="detail-item" v-if="selectedAlarm.boardId">
-              <span class="label">板卡ID：</span>
+              <span class="label">{{ $t('event.alarm.detail.boardId') }}{{ $t('common.colon') }}</span>
               <span class="value">{{ selectedAlarm.boardId }}</span>
             </div>
             <div class="detail-item">
-              <span class="label">状态：</span>
+              <span class="label">{{ $t('common.status') }}{{ $t('common.colon') }}</span>
               <span class="value">
-                <el-tag :type="getStatusType(selectedAlarm.status)">
+                <el-tag :type="getStatusType(selectedAlarm)">
                   {{ selectedAlarm.status }}
                 </el-tag>
               </span>
@@ -389,31 +389,31 @@
         </div>
 
         <div class="detail-section" v-if="selectedAlarm.handleTime">
-          <h4 class="section-title">处理信息</h4>
+          <h4 class="section-title">{{ $t('event.alarm.detail.handleInfo') }}</h4>
           <div class="detail-grid">
             <div class="detail-item">
-              <span class="label">处理时间：</span>
+              <span class="label">{{ $t('event.alarm.detail.handleTime') }}{{ $t('common.colon') }}</span>
               <span class="value">{{ selectedAlarm.handleTime }}</span>
             </div>
             <div class="detail-item" v-if="selectedAlarm.handleRemark">
-              <span class="label">备注：</span>
+              <span class="label">{{ $t('event.alarm.detail.remark') }}{{ $t('common.colon') }}</span>
               <span class="value">{{ selectedAlarm.handleRemark }}</span>
             </div>
           </div>
         </div>
 
         <div class="detail-section">
-          <h4 class="section-title">描述</h4>
+          <h4 class="section-title">{{ $t('common.description') }}</h4>
           <p class="detail-description">{{ selectedAlarm.description }}</p>
         </div>
 
         <!-- 截图和视频 -->
         <div class="detail-section">
-          <h4 class="section-title">截图和视频</h4>
+          <h4 class="section-title">{{ $t('event.alarm.detail.media') }}</h4>
           <div class="media-section">
             <!-- 截图 -->
             <div class="media-item" v-if="selectedAlarm.images && selectedAlarm.images.length > 0">
-              <div class="media-label">告警截图</div>
+              <div class="media-label">{{ $t('event.alarm.detail.snapshot') }}</div>
               <div class="detail-images">
                 <!-- 使用Canvas绘制检测框 -->
                 <div v-for="(image, index) in selectedAlarm.images" :key="index" class="image-wrapper">
@@ -425,16 +425,16 @@
                 </div>
               </div>
               <el-button size="small" type="primary" @click="downloadSnapshot" v-if="selectedAlarm.images[0]">
-                下载截图
+                {{ $t('event.alarm.detail.downloadSnapshot') }}
               </el-button>
             </div>
             <!-- 视频 -->
             <div class="media-item">
-              <div class="media-label">告警录像</div>
+              <div class="media-label">{{ $t('event.alarm.detail.video') }}</div>
               <!-- 加载中 -->
               <div v-if="selectedAlarm.videoLoading" class="video-loading">
                 <el-icon class="is-loading"><Loading /></el-icon>
-                <span>正在加载录像...</span>
+                <span>{{ $t('event.alarm.detail.loadingVideo') }}</span>
               </div>
               <!-- 有录像 -->
               <div v-else-if="selectedAlarm.videoUrl" class="video-container">
@@ -444,21 +444,21 @@
                   class="alarm-video"
                   preload="metadata"
                 >
-                  您的浏览器不支持视频播放
+                  {{ $t('event.alarm.detail.notSupportVideo') }}
                 </video>
                 <div class="video-actions">
                   <el-button size="small" type="success" @click="downloadVideo">
-                    下载录像
+                    {{ $t('event.alarm.detail.downloadVideo') }}
                   </el-button>
                   <el-button size="small" @click="openVideoInNewTab">
-                    在新窗口打开
+                    {{ $t('event.alarm.detail.openInNewTab') }}
                   </el-button>
                 </div>
               </div>
               <!-- 无录像 -->
               <div v-else class="video-info no-video">
                 <el-icon><VideoCamera /></el-icon>
-                <span>暂无录像</span>
+                <span>{{ $t('event.alarm.detail.noVideo') }}</span>
               </div>
             </div>
           </div>
@@ -466,10 +466,10 @@
 
         <!-- 原始数据 -->
         <div class="detail-section" v-if="selectedAlarm.rawData && Object.keys(selectedAlarm.rawData).length > 0">
-          <h4 class="section-title">原始数据</h4>
+          <h4 class="section-title">{{ $t('event.alarm.detail.rawData') }}</h4>
           <div class="raw-data-container">
             <el-button size="small" @click="toggleRawData" class="toggle-btn">
-              {{ showRawData ? '收起' : '展开' }}
+              {{ showRawData ? $t('event.alarm.detail.collapse') : $t('event.alarm.detail.expand') }}
             </el-button>
             <pre v-show="showRawData" class="raw-data">{{ JSON.stringify(selectedAlarm.rawData, null, 2) }}</pre>
           </div>
@@ -477,9 +477,9 @@
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">关闭</el-button>
+          <el-button @click="dialogVisible = false">{{ $t('common.close') }}</el-button>
           <el-button type="primary" @click="handleConfirm">
-            确认处理
+            {{ $t('event.alarm.confirmHandle') }}
           </el-button>
         </span>
       </template>
@@ -488,7 +488,7 @@
     <!-- 批量标记误报弹窗 -->
     <el-dialog
       v-model="batchMarkDialogVisible"
-      title="📦 批量标记误报"
+      :title="$t('event.alarm.batchDialog.title')"
       width="650px"
       class="tech-dialog"
       :close-on-click-modal="false"
@@ -496,25 +496,25 @@
       <div class="batch-mark-content">
         <!-- 筛选条件摘要 -->
         <div class="filter-summary">
-          <h4>📋 筛选条件</h4>
+          <h4>{{ $t('event.alarm.batchDialog.filterSummary') }}</h4>
           <div class="summary-content">
             <div v-if="searchForm.timeRange && searchForm.timeRange.length === 2">
-              <strong>时间范围:</strong> {{ searchForm.timeRange[0] }} ~ {{ searchForm.timeRange[1] }}
+              <strong>{{ $t('common.timeRange') }}{{ $t('common.colon') }}</strong> {{ searchForm.timeRange[0] }} ~ {{ searchForm.timeRange[1] }}
             </div>
             <div v-if="searchForm.alarmType">
-              <strong>告警类型:</strong> {{ getAlarmTypeName(searchForm.alarmType) }}
+              <strong>{{ $t('event.alarm.alarmType') }}{{ $t('common.colon') }}</strong> {{ getAlarmTypeName(searchForm.alarmType) }}
             </div>
             <div v-if="searchForm.boardId">
-              <strong>板卡:</strong> {{ searchForm.boardId }}
+              <strong>{{ $t('event.alarm.board') }}{{ $t('common.colon') }}</strong> {{ searchForm.boardId }}
             </div>
             <div v-if="searchForm.alarmLevel">
-              <strong>告警级别:</strong> {{ alarmLevelMap[searchForm.alarmLevel] }}
+              <strong>{{ $t('event.alarm.alarmLevel') }}{{ $t('common.colon') }}</strong> {{ alarmLevelMap.value[searchForm.alarmLevel] }}
             </div>
             <div v-if="searchForm.status !== ''">
-              <strong>处理状态:</strong> {{ searchForm.status === 0 ? '未处理' : '已处理' }}
+              <strong>{{ $t('event.alarm.handleStatus') }}{{ $t('common.colon') }}</strong> {{ searchForm.status === 0 ? $t('event.alarm.status.unhandled') : $t('event.alarm.status.handled') }}
             </div>
             <div v-if="!hasFilters">
-              <span style="color: #6b7280;">未设置筛选条件（将标记所有未处理告警）</span>
+              <span style="color: #6b7280;">{{ $t('event.alarm.batchDialog.noFilters') }}</span>
             </div>
           </div>
         </div>
@@ -523,25 +523,25 @@
         <div class="batch-preview">
           <div class="preview-item">
             <div class="preview-count">{{ batchMarkPreview.total }}</div>
-            <div class="preview-label">符合条件</div>
+            <div class="preview-label">{{ $t('event.alarm.batchDialog.matchCount') }}</div>
           </div>
           <div class="preview-item danger">
             <div class="preview-count">{{ batchMarkPreview.unhandled }}</div>
-            <div class="preview-label">将被标记</div>
+            <div class="preview-label">{{ $t('event.alarm.batchDialog.willMark') }}</div>
           </div>
           <div class="preview-item gray">
             <div class="preview-count">{{ batchMarkPreview.handled }}</div>
-            <div class="preview-label">已处理(跳过)</div>
+            <div class="preview-label">{{ $t('event.alarm.batchDialog.handledSkip') }}</div>
           </div>
         </div>
 
         <!-- 待标记告警列表 -->
         <div v-if="batchMarkPreview.alarmList.length > 0" class="batch-alarm-list-container">
           <div class="list-header">
-            <h4>📋 待标记告警列表 <span class="list-count">(最多显示100条)</span></h4>
+            <h4>{{ $t('event.alarm.batchDialog.pendingList') }} <span class="list-count">{{ $t('event.alarm.batchDialog.maxDisplay') }}</span></h4>
             <div class="list-actions">
-              <el-checkbox v-model="selectAllPreview" @change="toggleSelectAllPreview">全选</el-checkbox>
-              <span class="selected-count">已选: <strong>{{ selectedPreviewCount }}</strong> 条</span>
+              <el-checkbox v-model="selectAllPreview" @change="toggleSelectAllPreview">{{ $t('common.selectAll') }}</el-checkbox>
+              <span class="selected-count">{{ $t('event.alarm.batchDialog.selectedCount', { count: selectedPreviewCount }) }}</span>
             </div>
           </div>
           <div class="alarm-list-table">
@@ -551,12 +551,12 @@
                   <th width="50">
                     <el-checkbox v-model="selectAllPreview" @change="toggleSelectAllPreview" />
                   </th>
-                  <th width="80">ID</th>
-                  <th width="180">告警编码</th>
-                  <th width="120">类型</th>
-                  <th width="80">级别</th>
-                  <th width="120">板卡</th>
-                  <th>时间</th>
+                  <th width="80">{{ $t('common.code') }}</th>
+                  <th width="180">{{ $t('event.alarm.table.code') }}</th>
+                  <th width="120">{{ $t('common.type') }}</th>
+                  <th width="80">{{ $t('event.alarm.table.level') }}</th>
+                  <th width="120">{{ $t('event.alarm.table.board') }}</th>
+                  <th>{{ $t('event.alarm.table.time') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -569,7 +569,7 @@
                   <td>{{ alarm.alarm_type_name }}</td>
                   <td>
                     <el-tag :type="alarm.alarm_level === 3 ? 'danger' : alarm.alarm_level === 2 ? 'warning' : 'info'" size="small">
-                      {{ alarmLevelMap[alarm.alarm_level] }}
+                      {{ getLevelLabel(alarm.alarm_level) }}
                     </el-tag>
                   </td>
                   <td>{{ alarm.board_id || '-' }}</td>
@@ -582,12 +582,12 @@
 
         <!-- 处理说明 -->
         <el-form :model="batchMarkForm" ref="batchMarkFormRef">
-          <el-form-item label="处理说明（必填）" required>
+          <el-form-item :label="$t('event.alarm.batchDialog.remarkLabel')" required>
             <el-input
               v-model="batchMarkForm.remark"
               type="textarea"
               :rows="3"
-              placeholder="请说明批量标记的原因，如：算法误报率高、光线问题导致误报等..."
+              :placeholder="$t('event.alarm.batchDialog.remarkPlaceholder')"
             />
           </el-form-item>
         </el-form>
@@ -595,9 +595,9 @@
 
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="batchMarkDialogVisible = false">取消</el-button>
+          <el-button @click="batchMarkDialogVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button type="warning" @click="confirmBatchMark" :loading="batchMarkLoading">
-            ⚠️ 确认批量标记
+            ⚠️ {{ $t('event.alarm.batchDialog.confirm') }}
           </el-button>
         </span>
       </template>
@@ -606,37 +606,37 @@
     <!-- 处理告警对话框 -->
     <el-dialog
       v-model="processDialogVisible"
-      title="处理告警"
+      :title="$t('event.alarm.processDialog.title')"
       width="500px"
       class="tech-dialog"
       :close-on-click-modal="false"
     >
       <el-form :model="processForm" label-width="100px">
-        <el-form-item label="处理结果" required>
+        <el-form-item :label="$t('event.alarm.processDialog.result')" required>
           <el-radio-group v-model="processForm.result">
             <el-radio label="confirmed">
-              <span style="margin-left: 5px;">✅ 确认告警 - 需要人工处理，上传报修信息</span>
+              <span style="margin-left: 5px;">{{ $t('event.alarm.processDialog.resultConfirmed') }}</span>
             </el-radio>
             <el-radio label="false_positive">
-              <span style="margin-left: 5px;">❌ 误报 - 将作为负样本分类封禁训练使用</span>
+              <span style="margin-left: 5px;">{{ $t('event.alarm.processDialog.resultFalsePositive') }}</span>
             </el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="处理备注">
+        <el-form-item :label="$t('event.alarm.processDialog.remark')">
           <el-input
             v-model="processForm.remark"
             type="textarea"
             :rows="3"
-            placeholder="请输入处理备注..."
+            :placeholder="$t('event.alarm.processDialog.remarkPlaceholder')"
           />
         </el-form-item>
       </el-form>
 
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="processDialogVisible = false">取消</el-button>
+          <el-button @click="processDialogVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button type="primary" @click="confirmProcess">
-            确认处理
+            {{ $t('event.alarm.confirmHandle') }}
           </el-button>
         </span>
       </template>
@@ -646,6 +646,7 @@
 
 <script>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Refresh, List, Grid, Picture, VideoCamera, Loading } from '@element-plus/icons-vue'
 import { eventApi } from '@/api/event'
@@ -654,6 +655,8 @@ import { detectionApi } from '@/api/detection'
 export default {
   name: 'AlarmDisplay',
   setup() {
+    const { t } = useI18n()
+
     // 搜索表单
     const searchForm = reactive({
       timeRange: [],
@@ -713,16 +716,16 @@ export default {
     const alarmTypes = ref([])
 
     // 告警级别映射
-    const alarmLevelMap = {
-      1: '低',
-      2: '中',
-      3: '高'
-    }
+    const alarmLevelMap = computed(() => ({
+      1: t('event.alarm.level.low'),
+      2: t('event.alarm.level.medium'),
+      3: t('event.alarm.level.high')
+    }))
 
     // 日期快捷选项
     const dateShortcuts = [
       {
-        text: '最近一小时',
+        text: t('event.alarm.lastHour'),
         value: () => {
           const end = new Date()
           const start = new Date()
@@ -731,7 +734,7 @@ export default {
         }
       },
       {
-        text: '今天',
+        text: t('common.today'),
         value: () => {
           const end = new Date()
           const start = new Date()
@@ -836,14 +839,13 @@ export default {
               alarm_code: alarm.alarm_code,
               time: alarm.alarm_time,
               // 直接使用后端返回的alarm_type_name
-              type: alarm.alarm_type_name || '未知类型',
+              type: alarm.alarm_type_name || t('event.alarm.unknownType'),
               typeRaw: alarm.alarm_type,
-              level: alarmLevelMap[alarm.alarm_level] || '未知',
+              level: getLevelLabel(alarm.alarm_level),
               levelRaw: alarm.alarm_level,
               board_id: alarm.board_id || '-',
               description: getAlarmDescription(alarm),
-              status: getAlarmStatus(alarm),
-              statusRaw: alarm.status,
+              ...getAlarmStatus(alarm),
               handleResult: alarm.handle_result,
               isFalsePositive: alarm.is_false_positive,
               // 使用snapshot_url和video_url(完整URL)
@@ -877,7 +879,7 @@ export default {
         }
       } catch (error) {
         console.error('加载告警列表失败：', error)
-        ElMessage.error('加载告警列表失败：' + (error.message || '未知错误'))
+        ElMessage.error(t('event.alarm.loadListFailed', { error: error.message || t('common.unknown') }))
         alarmList.value = []
         total.value = 0
       } finally {
@@ -947,17 +949,17 @@ export default {
     // 通过选中的告警批量标记误报
     const batchMarkFalsePositive = async () => {
       if (selectedAlarms.value.length === 0) {
-        ElMessage.warning('请先选择要标记的告警')
+        ElMessage.warning(t('event.alarm.batchDialog.selectWarning'))
         return
       }
 
       try {
         await ElMessageBox.confirm(
-          `确定将选中的 ${selectedAlarms.value.length} 条告警标记为误报吗？`,
-          '批量标记确认',
+          t('event.alarm.batchDialog.confirmSelected', { count: selectedAlarms.value.length }),
+          t('event.alarm.batchDialog.confirmTitle'),
           {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
+            confirmButtonText: t('common.confirm'),
+            cancelButtonText: t('common.cancel'),
             type: 'warning'
           }
         )
@@ -973,7 +975,7 @@ export default {
           try {
             await eventApi.handleAlarm(id, {
               result: 'false_positive',
-              remark: '批量标记为误报'
+              remark: t('event.alarm.batchDialog.remarkDefault')
             })
             successCount++
           } catch (error) {
@@ -983,9 +985,9 @@ export default {
         }
 
         if (successCount > 0) {
-          ElMessage.success(`批量标记成功：${successCount}条, 失败：${failCount}条`)
+          ElMessage.success(t('event.alarm.batchDialog.markSuccess', { success: successCount, fail: failCount }))
         } else {
-          ElMessage.error('批量标记全部失败')
+          ElMessage.error(t('event.alarm.batchDialog.markAllFailed'))
         }
         
         clearSelection()
@@ -993,7 +995,7 @@ export default {
       } catch (error) {
         if (error !== 'cancel') {
           console.error('批量标记失败：', error)
-          ElMessage.error('批量标记失败：' + (error.message || '未知错误'))
+          ElMessage.error(t('event.alarm.batchDialog.markFailed', { error: error.message || t('common.unknown') }))
         }
       } finally {
         batchMarkLoading.value = false
@@ -1094,14 +1096,14 @@ export default {
         
         // 如果实际总数超过100，给出提示
         if (totalCount > 100) {
-          ElMessage.warning(`符合条件的告警共${totalCount}条，预览仅显示前100条`)
+          ElMessage.warning(t('event.alarm.batchDialog.previewLimited', { total: totalCount }))
         }
       } catch (error) {
         console.error('=== 获取预览数据失败 ===')
         console.error('错误详情:', error)
         console.error('错误响应:', error.response?.data)
         
-        let errorMsg = '获取预览数据失败'
+        let errorMsg = t('event.alarm.batchDialog.previewFailed')
         if (error.response?.data?.message) {
           errorMsg += ': ' + error.response.data.message
         } else if (error.message) {
@@ -1120,7 +1122,7 @@ export default {
     // 确认批量标记
     const confirmBatchMark = async () => {
       if (!batchMarkForm.remark.trim()) {
-        ElMessage.warning('请填写处理说明')
+        ElMessage.warning(t('event.alarm.batchDialog.remarkRequired'))
         return
       }
 
@@ -1129,21 +1131,21 @@ export default {
       const alarmsToMark = selectedAlarms.length > 0 ? selectedAlarms : batchMarkPreview.alarmList
       
       if (alarmsToMark.length === 0) {
-        ElMessage.warning('没有可标记的告警')
+        ElMessage.warning(t('event.alarm.batchDialog.noAlarms'))
         return
       }
 
       try {
         const confirmMsg = selectedAlarms.length > 0
-          ? `确定将选中的 ${alarmsToMark.length} 条告警标记为误报吗？`
-          : `确定将全部 ${alarmsToMark.length} 条未处理告警标记为误报吗？`
+          ? t('event.alarm.batchDialog.confirmSelected', { count: alarmsToMark.length })
+          : t('event.alarm.batchDialog.confirmAll', { count: alarmsToMark.length })
           
         await ElMessageBox.confirm(
           confirmMsg,
-          '批量标记确认',
+          t('event.alarm.batchDialog.confirmTitle'),
           {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
+            confirmButtonText: t('common.confirm'),
+            cancelButtonText: t('common.cancel'),
             type: 'warning'
           }
         )
@@ -1168,9 +1170,9 @@ export default {
         }
 
         if (successCount > 0) {
-          ElMessage.success(`批量标记成功：${successCount}条, 失败：${failCount}条`)
+          ElMessage.success(t('event.alarm.batchDialog.markSuccess', { success: successCount, fail: failCount }))
         } else {
-          ElMessage.error('批量标记全部失败')
+          ElMessage.error(t('event.alarm.batchDialog.markAllFailed'))
         }
         
         batchMarkDialogVisible.value = false
@@ -1178,7 +1180,7 @@ export default {
       } catch (error) {
         if (error !== 'cancel') {
           console.error('批量标记失败：', error)
-          ElMessage.error('批量标记失败：' + (error.message || '未知错误'))
+          ElMessage.error(t('event.alarm.batchDialog.markFailed', { error: error.message || t('common.unknown') }))
         }
       } finally {
         batchMarkLoading.value = false
@@ -1192,52 +1194,75 @@ export default {
     }
 
     // 获取告警描述
+    const getLevelLabel = (level) => alarmLevelMap.value[level] || t('common.unknown')
+
     const getAlarmDescription = (alarm) => {
-      // 直接使用后端返回的alarm_type_name
-      const typeText = alarm.alarm_type_name || '未知类型'
-      const cameraInfo = alarm.camera_name ? `${alarm.camera_name} - ` : ''
-      const boardInfo = alarm.board_id ? `板卡${alarm.board_id} - ` : ''
-      return `${boardInfo}${cameraInfo}检测到${typeText}`
+      const typeText = alarm.alarm_type_name || t('event.alarm.unknownType')
+      const cameraInfo = alarm.camera_name ? `${t('event.alarm.thumbnail.camera')} ${alarm.camera_name} - ` : ''
+      const boardInfo = alarm.board_id ? `${t('event.alarm.board')}${alarm.board_id} - ` : ''
+      return `${boardInfo}${cameraInfo}${t('event.alarm.descriptionDetected', { type: typeText })}`
     }
 
     // 获取告警状态
     const getAlarmStatus = (alarm) => {
-      // 优先判断是否误报
       if (alarm.is_false_positive) {
-        return '误报'
-      }
-      // 判断处理状态
-      if (alarm.status === 0) {
-        return '未处理'
-      } else if (alarm.status === 1) {
-        if (alarm.handle_result === 'confirmed') {
-          return '已确认'
-        } else {
-          return '已处理'
+        return {
+          status: t('event.alarm.status.falsePositive'),
+          statusRaw: alarm.status,
+          statusKey: 'falsePositive'
         }
       }
-      return '未知'
+
+      if (alarm.status === 0) {
+        return {
+          status: t('event.alarm.status.unhandled'),
+          statusRaw: alarm.status,
+          statusKey: 'unhandled'
+        }
+      }
+
+      if (alarm.status === 1) {
+        if (alarm.handle_result === 'confirmed') {
+          return {
+            status: t('event.alarm.status.confirmed'),
+            statusRaw: alarm.status,
+            statusKey: 'confirmed'
+          }
+        }
+        return {
+          status: t('event.alarm.status.handled'),
+          statusRaw: alarm.status,
+          statusKey: 'handled'
+        }
+      }
+
+      return {
+        status: t('common.unknown'),
+        statusRaw: alarm.status,
+        statusKey: 'unknown'
+      }
     }
 
     // 获取状态标签类型
-    const getStatusType = (status) => {
+    const getStatusType = (alarm) => {
+      const statusKey = alarm.statusKey || alarm
       const typeMap = {
-        '未处理': 'warning',
-        '已确认': 'success',
-        '已处理': 'info',
-        '误报': 'danger'
+        unhandled: 'warning',
+        confirmed: 'success',
+        handled: 'info',
+        falsePositive: 'danger'
       }
-      return typeMap[status] || 'info'
+      return typeMap[statusKey] || 'info'
     }
 
     // 获取级别标签类型
-    const getLevelType = (level) => {
+    const getLevelType = (levelRaw) => {
       const typeMap = {
-        '低': 'info',
-        '中': 'warning',
-        '高': 'danger'
+        1: 'info',
+        2: 'warning',
+        3: 'danger'
       }
-      return typeMap[level] || 'info'
+      return typeMap[levelRaw] || 'info'
     }
 
     // 获取默认图片（根据告警类型）
@@ -1247,22 +1272,22 @@ export default {
     }
 
     // 获取级别样式类
-    const getLevelClass = (level) => {
+    const getLevelClass = (levelRaw) => {
       const classMap = {
-        '低': 'level-low',
-        '中': 'level-medium',
-        '高': 'level-high'
+        1: 'level-low',
+        2: 'level-medium',
+        3: 'level-high'
       }
-      return classMap[level] || 'level-low'
+      return classMap[levelRaw] || 'level-low'
     }
 
     // 获取缩略图卡片样式类
     const getThumbnailCardClass = (alarm) => {
       const classes = []
       // 根据告警级别添加边框颜色类
-      if (alarm.level === '高') {
+      if (alarm.levelRaw === 3) {
         classes.push('border-danger')
-      } else if (alarm.level === '中') {
+      } else if (alarm.levelRaw === 2) {
         classes.push('border-warning')
       } else {
         classes.push('border-info')
@@ -1287,16 +1312,19 @@ export default {
         const alarm = response.data || response
         
         if (alarm && alarm.id) {
+          const statusInfo = getAlarmStatus(alarm)
           selectedAlarm.value = {
             id: alarm.id,
             alarmCode: alarm.alarm_code,
             time: alarm.alarm_time,
             // 直接使用后端返回的alarm_type_name
-            type: alarm.alarm_type_name || '未知类型',
+            type: alarm.alarm_type_name || t('event.alarm.unknownType'),
             description: getAlarmDescription(alarm),
-            status: getAlarmStatus(alarm),
+            status: statusInfo.status,
             statusRaw: alarm.status,
-            level: alarmLevelMap[alarm.alarm_level] || '未知',
+            statusKey: statusInfo.statusKey,
+            level: getLevelLabel(alarm.alarm_level),
+            levelRaw: alarm.alarm_level,
             handleRemark: alarm.handle_remark,
             handleTime: alarm.handle_time,
             boardId: alarm.board_id,
@@ -1324,11 +1352,11 @@ export default {
             drawDetectionBoxes()
           })
         } else {
-          ElMessage.error('获取告警详情失败：数据格式错误')
+          ElMessage.error(t('event.alarm.detail.loadErrorFormat'))
         }
       } catch (error) {
         console.error('获取告警详情失败：', error)
-        ElMessage.error('获取告警详情失败：' + (error.message || '未知错误'))
+        ElMessage.error(t('event.alarm.detail.loadError', { error: error.message || t('common.unknown') }))
       }
     }
 
@@ -1413,7 +1441,7 @@ export default {
               ctx.strokeRect(left, top, width, height)
               
               // 绘制标签背景
-              const labelText = `${label || '未知'} ${(confidence * 100).toFixed(1)}%`
+              const labelText = `${label || t('common.unknown')} ${(confidence * 100).toFixed(1)}%`
               ctx.font = 'bold 24px Arial'
               const textMetrics = ctx.measureText(labelText)
               const textWidth = textMetrics.width
@@ -1519,7 +1547,7 @@ export default {
 
         ElMessage({
           type: 'success',
-          message: '告警处理成功'
+          message: t('event.alarm.processSuccess')
         })
 
         processDialogVisible.value = false
@@ -1527,7 +1555,7 @@ export default {
         loadAlarmList()
       } catch (error) {
         console.error('处理告警失败：', error)
-        ElMessage.error('处理告警失败：' + (error.message || '未知错误'))
+        ElMessage.error(t('event.alarm.processFailed', { error: error.message || t('common.unknown') }))
       }
     }
 
@@ -1565,17 +1593,17 @@ export default {
     // 下载视频
     const downloadVideo = async () => {
       if (!selectedAlarm.value || !selectedAlarm.value.videoUrl) {
-        ElMessage.warning('没有可下载的录像')
+        ElMessage.warning(t('event.alarm.detail.noVideoToDownload'))
         return
       }
 
       try {
-        ElMessage.info('正在准备下载录像...')
+        ElMessage.info(t('event.alarm.detail.prepareDownload'))
         
         // 使用fetch下载视频
         const response = await fetch(selectedAlarm.value.videoUrl)
         if (!response.ok) {
-          throw new Error('下载失败')
+          throw new Error(t('event.alarm.detail.downloadFailed'))
         }
         
         // 获取blob数据
@@ -1593,10 +1621,10 @@ export default {
         document.body.removeChild(link)
         window.URL.revokeObjectURL(url)
         
-        ElMessage.success('录像下载成功')
+        ElMessage.success(t('event.alarm.detail.downloadVideoSuccess'))
       } catch (error) {
         console.error('下载录像失败:', error)
-        ElMessage.error('下载录像失败，请尝试在新窗口打开')
+        ElMessage.error(t('event.alarm.detail.downloadVideoFailed'))
       }
     }
 
@@ -1697,6 +1725,7 @@ export default {
       handleReset,
       getStatusType,
       getLevelType,
+      getLevelLabel,
       handleView,
       handleProcess,
       handleConfirm,

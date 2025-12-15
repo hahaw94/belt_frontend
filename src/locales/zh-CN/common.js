@@ -140,5 +140,24 @@ export default {
   // 其他常用
   config: '配置',
   apply: '应用',
-  selectModule: '在左侧菜单栏中选择您需要的功能模块，开始使用智能监控系统的各项功能。'
+  selectModule: '在左侧菜单栏中选择您需要的功能模块，开始使用智能监控系统的各项功能。',
+  
+  // 通用操作结果
+  update: '更新',
+  updateSuccess: '更新成功',
+  updateFailed: '更新失败',
+  testConnection: '连接测试',
+  testConnectionSuccess: '连接测试成功',
+  testConnectionFailed: '连接测试失败',
+  statusToggle: '状态切换',
+  statusToggleFailed: '状态切换失败',
+  confirmDeleteTitle: '确认删除',
+  confirmDeleteWithName: '确定要删除"{name}"吗？',
+  copyToClipboard: '已复制到剪贴板',
+  copyFailed: '复制失败',
+  colon: '：',
+  comma: '，',
+  tip: '提示',
+  operationCancelled: '已取消操作',
+  deleteOperationCancelled: '已取消删除操作'
 }

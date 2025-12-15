@@ -277,7 +277,7 @@
     <!-- 批量创建用户对话框 -->
     <el-dialog
       v-model="batchCreateDialogVisible"
-      title="批量创建用户"
+      :title="$t('user.user.batchCreateUser')"
       width="900px"
       :close-on-click-modal="false"
       destroy-on-close
@@ -291,14 +291,14 @@
       <div class="batch-create-container">
         <!-- 功能选择选项卡 -->
         <el-tabs v-model="batchCreateActiveTab" class="tech-tabs">
-          <el-tab-pane label="手动输入" name="manual">
+          <el-tab-pane :label="$t('user.user.manualInput')" name="manual">
             <div class="manual-input-section">
               <div class="format-description">
-                <h4>用户列表 (每行一个用户)</h4>
+                <h4>{{ $t('user.user.userListOnePerLine') }}</h4>
                 <div class="format-info">
-                  <p><strong>格式说明：</strong> 用户名,邮箱,手机号,角色代码 （邮箱和手机号可为空，角色代码必填）</p>
+                  <p><strong>{{ $t('user.user.formatDescription') }}：</strong> {{ $t('user.user.formatDetail') }}</p>
                   <div class="available-roles">
-                    <p><strong>可用角色代码：</strong></p>
+                    <p><strong>{{ $t('user.user.availableRoleCodes') }}：</strong></p>
                     <div class="roles-list">
                       <span 
                         v-for="role in availableRoles" 
@@ -310,11 +310,11 @@
                       </span>
                     </div>
                   </div>
-                  <p><strong>多个角色用分号分隔，如：</strong> admin;operator</p>
-                  <p><strong>系统将自动生成随机密码并在创建成功后显示</strong></p>
+                  <p><strong>{{ $t('user.user.multipleRolesSeparated') }}：</strong> admin;operator</p>
+                  <p><strong>{{ $t('user.user.autoGeneratePassword') }}</strong></p>
                 </div>
                 <div class="format-examples">
-                  <p><strong>例如：</strong></p>
+                  <p><strong>{{ $t('user.user.example') }}：</strong></p>
                   <p v-if="availableRoles.length >= 1">user1, user1@email.com, 13800138001, {{ availableRoles[0].role_code || availableRoles[0].code }}</p>
                   <p v-if="availableRoles.length >= 2">user2, user2@email.com, 13800138002, {{ availableRoles[0].role_code || availableRoles[0].code }};{{ availableRoles[1].role_code || availableRoles[1].code }}</p>
                   <p v-if="availableRoles.length >= 1">user3, , 13800138003, {{ availableRoles[0].role_code || availableRoles[0].code }}</p>
@@ -324,13 +324,13 @@
                 v-model="batchUserText"
                 type="textarea"
                 :rows="12"
-                placeholder="请按照格式输入用户信息，每行一个用户..."
+                :placeholder="$t('user.user.inputUserInfoPlaceholder')"
                 class="batch-input-area"
                 style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
               ></el-input>
             </div>
           </el-tab-pane>
-          <el-tab-pane label="文件上传" name="upload">
+          <el-tab-pane :label="$t('user.user.fileUpload')" name="upload">
             <div class="upload-section">
               <div class="upload-header">
                 <el-button 
@@ -341,11 +341,11 @@
                   @click="downloadTemplate"
                   :loading="downloadingTemplate"
                 >
-                  下载模板
+                  {{ $t('user.user.downloadTemplate') }}
                 </el-button>
                 <div class="upload-tips">
-                  <p>支持 CSV 和 Excel 文件格式，文件大小不超过 10MB</p>
-                  <p>文件格式：用户名、邮箱、手机号、角色代码（支持多角色用分号分隔）</p>
+                  <p>{{ $t('user.user.uploadFileFormat') }}</p>
+                  <p>{{ $t('user.user.uploadFileFormatDetail') }}</p>
                 </div>
               </div>
               <el-upload
@@ -362,35 +362,35 @@
               >
                 <el-icon class="el-icon--upload"><Upload /></el-icon>
                 <div class="el-upload__text">
-                  将文件拖到此处，或<em>点击上传</em>
+                  {{ $t('user.user.dragFileHere') }}<em>{{ $t('user.user.clickToUpload') }}</em>
                 </div>
                 <template #tip>
                   <div class="el-upload__tip">
-                    只能上传 CSV/Excel 文件，且不超过 10MB
+                    {{ $t('user.user.uploadFileTip') }}
                   </div>
                 </template>
               </el-upload>
               
               <!-- 文件解析预览 -->
               <div v-if="parsedUsers.length > 0" class="file-preview-section">
-                <el-divider content-position="left">文件预览</el-divider>
+                <el-divider content-position="left">{{ $t('user.user.filePreview') }}</el-divider>
                 <div class="preview-summary">
-                  <el-tag type="info" size="large">共解析到 {{ parsedUsers.length }} 个用户</el-tag>
+                  <el-tag type="info" size="large">{{ $t('user.user.parsedUsersCount', { count: parsedUsers.length }) }}</el-tag>
                 </div>
                 <div class="preview-table-container">
                   <el-table :data="parsedUsers.slice(0, 10)" border stripe class="tech-table preview-table" style="width: 100%;">
-                    <el-table-column prop="username" label="用户名" min-width="120" header-align="center"></el-table-column>
-                    <el-table-column prop="email" label="邮箱" min-width="150" header-align="center">
+                    <el-table-column prop="username" :label="$t('user.user.username')" min-width="120" header-align="center"></el-table-column>
+                    <el-table-column prop="email" :label="$t('user.user.email')" min-width="150" header-align="center">
                       <template #default="{ row }">
                         {{ row.email || '-' }}
                       </template>
                     </el-table-column>
-                    <el-table-column prop="phone" label="手机号" width="120" header-align="center">
+                    <el-table-column prop="phone" :label="$t('user.user.phone')" width="120" header-align="center">
                       <template #default="{ row }">
                         {{ row.phone || '-' }}
                       </template>
                     </el-table-column>
-                    <el-table-column prop="role_codes" label="角色代码" min-width="150" header-align="center">
+                    <el-table-column prop="role_codes" :label="$t('user.user.roleCode')" min-width="150" header-align="center">
                       <template #default="{ row }">
                         <el-tag
                           v-for="roleCode in row.role_codes"
@@ -404,7 +404,7 @@
                     </el-table-column>
                   </el-table>
                   <div v-if="parsedUsers.length > 10" class="preview-more-tip">
-                    <el-text type="info">仅显示前10条数据，共 {{ parsedUsers.length }} 条</el-text>
+                    <el-text type="info">{{ $t('user.user.previewMoreTip', { total: parsedUsers.length }) }}</el-text>
                   </div>
                 </div>
               </div>
@@ -414,30 +414,30 @@
 
         <!-- 结果显示区域 -->
         <div v-if="batchCreateResult" class="result-section">
-          <el-divider content-position="left">创建结果</el-divider>
+          <el-divider content-position="left">{{ $t('user.user.createResult') }}</el-divider>
           <div class="result-summary">
-            <el-tag type="info" size="large">总计: {{ batchCreateResult.total }}</el-tag>
-            <el-tag type="success" size="large">成功: {{ batchCreateResult.success }}</el-tag>
-            <el-tag type="danger" size="large">失败: {{ batchCreateResult.failed }}</el-tag>
+            <el-tag type="info" size="large">{{ $t('user.user.total') }}: {{ batchCreateResult.total }}</el-tag>
+            <el-tag type="success" size="large">{{ $t('user.user.success') }}: {{ batchCreateResult.success }}</el-tag>
+            <el-tag type="danger" size="large">{{ $t('user.user.failed') }}: {{ batchCreateResult.failed }}</el-tag>
           </div>
           <div class="result-details">
             <el-table :data="batchCreateResult.details" border stripe class="tech-table" style="width: 100%;">
-              <el-table-column prop="row" label="行号" width="80" align="center"></el-table-column>
-              <el-table-column prop="username" label="用户名" min-width="120"></el-table-column>
-              <el-table-column prop="status" label="状态" width="100" align="center">
+              <el-table-column prop="row" :label="$t('user.user.rowNumber')" width="80" align="center"></el-table-column>
+              <el-table-column prop="username" :label="$t('user.user.username')" min-width="120"></el-table-column>
+              <el-table-column prop="status" :label="$t('user.user.status')" width="100" align="center">
                 <template #default="{ row }">
                   <el-tag :type="row.status === 'success' ? 'success' : 'danger'">
-                    {{ row.status === 'success' ? '成功' : '失败' }}
+                    {{ row.status === 'success' ? $t('user.user.success') : $t('user.user.failed') }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="initial_password" label="初始密码" min-width="120">
+              <el-table-column prop="initial_password" :label="$t('user.user.initialPassword')" min-width="120">
                 <template #default="{ row }">
                   <span v-if="row.initial_password">{{ row.initial_password }}</span>
                   <span v-else>-</span>
                 </template>
               </el-table-column>
-              <el-table-column prop="message" label="说明" min-width="200"></el-table-column>
+              <el-table-column prop="message" :label="$t('user.user.message')" min-width="200"></el-table-column>
             </el-table>
           </div>
         </div>
@@ -445,14 +445,14 @@
 
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="closeBatchCreateDialog">取消</el-button>
+          <el-button @click="closeBatchCreateDialog">{{ $t('common.cancel') }}</el-button>
           <el-button 
             type="primary" 
             @click="submitBatchCreate" 
             :loading="batchCreating"
             :disabled="!canSubmitBatch"
           >
-            {{ batchCreateActiveTab === 'manual' ? '批量创建' : '上传并创建' }}
+            {{ batchCreateActiveTab === 'manual' ? $t('user.user.batchCreate') : $t('user.user.uploadAndCreate') }}
           </el-button>
         </span>
       </template>
@@ -462,11 +462,14 @@
 
 <script setup name="UserManagementIntegrated">
 import { ref, reactive, computed, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Edit, CircleClose, Select, Delete, Upload, Download, Search, RefreshRight } from '@element-plus/icons-vue';
 import { userApi, roleApi } from '@/api/user';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+
+const { t } = useI18n();
 
 // ===================== 数据定义 =====================
 const loading = ref(false); // 表格加载状态
@@ -523,18 +526,18 @@ const pagination = reactive({
 const userFormRef = ref(null);
 const userRules = reactive({
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+    { required: true, message: () => t('user.user.pleaseInputUsername'), trigger: 'blur' },
+    { min: 3, max: 20, message: () => t('user.user.usernameLength'), trigger: 'blur' }
   ],
   email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+    { required: true, message: () => t('user.user.pleaseInputEmail'), trigger: 'blur' },
+    { type: 'email', message: () => t('user.user.invalidEmail'), trigger: 'blur' }
   ],
   phone: [
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入有效的11位手机号码', trigger: 'blur' }
+    { pattern: /^1[3-9]\d{9}$/, message: () => t('user.user.invalidPhone'), trigger: 'blur' }
   ],
   roleIds: [
-    { required: true, type: 'array', min: 1, message: '请至少选择一个角色', trigger: 'change' }
+    { required: true, type: 'array', min: 1, message: () => t('user.user.mustAssignRole'), trigger: 'change' }
   ],
 
 });
@@ -669,7 +672,7 @@ const getUserList = async (page = pagination.page) => {
         email: user.email,
         phone: user.phone,
         createTime: user.create_time ? new Date(user.create_time).toLocaleString('zh-CN') : new Date().toLocaleString('zh-CN'),
-        lastLogin: user.last_login_at ? new Date(user.last_login_at).toLocaleString('zh-CN') : '从未登录',
+        lastLogin: user.last_login_at ? new Date(user.last_login_at).toLocaleString('zh-CN') : t('user.user.neverLogin'),
         status: user.status, // 保持原始数字状态值：0=禁用，1=正常，2=锁定
         roles: (user.roles || []).map(role => ({
           ...role,
@@ -714,11 +717,11 @@ const getUserList = async (page = pagination.page) => {
       }
       
     } else {
-      throw new Error(response.message || '获取用户列表失败');
+      throw new Error(response.message || t('user.user.getUserListFailed'));
     }
   } catch (error) {
     console.error('获取用户列表失败:', error);
-    ElMessage.error(error.message || '获取用户列表失败');
+    ElMessage.error(error.message || t('user.user.getUserListFailed'));
   } finally {
     loading.value = false;
   }
@@ -752,11 +755,11 @@ const getRoleList = async () => {
       
       availableRoles.value = processedRoles;
     } else {
-      throw new Error(response.message || '获取角色列表失败');
+      throw new Error(response.message || t('user.user.getRoleListFailed'));
     }
   } catch (error) {
     console.error('获取角色列表失败详情:', error);
-    ElMessage.error(error.message || '获取角色列表失败');
+    ElMessage.error(error.message || t('user.user.getRoleListFailed'));
   }
 };
 
@@ -881,18 +884,18 @@ const submitUserForm = async () => {
           const { roleIds, ...updateData } = userData;
           const userUpdateResponse = await userApi.updateUser(currentUser.id, updateData);
           if (userUpdateResponse.code === 200 && userUpdateResponse.success) {
-            successMessages.push('用户信息更新成功');
+            successMessages.push(t('user.user.userInfoUpdateSuccess'));
           } else {
-            throw new Error(userUpdateResponse.message || '更新用户信息失败');
+            throw new Error(userUpdateResponse.message || t('user.user.userInfoUpdateFailed'));
           }
           
           // 2. 更新角色分配
           if (roleIds && roleIds.length > 0) {
             const roleResponse = await roleApi.assignUserRole(currentUser.id, roleIds);
             if (roleResponse.code === 200 && roleResponse.success) {
-              successMessages.push('角色分配成功');
+              successMessages.push(t('user.user.roleAssignSuccess'));
             } else {
-              throw new Error(roleResponse.message || '角色分配失败');
+              throw new Error(roleResponse.message || t('user.user.roleAssignFailed'));
             }
           }
           
@@ -900,13 +903,13 @@ const submitUserForm = async () => {
           if (passwordResetMode.value) {
             const passwordResponse = await userApi.resetPassword(currentUser.id);
             if (passwordResponse.code === 200 && passwordResponse.success) {
-              successMessages.push('密码已重置为初始密码');
+              successMessages.push(t('user.user.passwordResetToInitialSuccess'));
             } else {
-              throw new Error(passwordResponse.message || '密码重置失败');
+              throw new Error(passwordResponse.message || t('user.user.passwordResetFailed'));
             }
           }
           
-          ElMessage.success(`用户 ${currentUser.username} ${successMessages.join('，')}！`);
+          ElMessage.success(t('user.user.userUpdateSuccessMessage', { username: currentUser.username, messages: successMessages.join(t('common.comma')) }));
         } else {
           // 添加用户 - 添加调试信息
           // 添加用户 - 后端会自动生成初始密码
@@ -924,34 +927,34 @@ const submitUserForm = async () => {
           if (response.code === 200 && response.success) {
             const initialPassword = response.data.initial_password;
             ElMessage.success({
-              message: `用户 ${currentUser.username} 添加成功！初始密码：${initialPassword}`,
+              message: t('user.user.userAddSuccessWithPassword', { username: currentUser.username, password: initialPassword }),
               duration: 10000, // 显示10秒
               showClose: true
             });
             
             // 显示初始密码对话框
             ElMessageBox.alert(
-              `用户创建成功！\n\n用户名：${currentUser.username}\n初始密码：${initialPassword}\n\n请妥善保管初始密码，并提醒用户首次登录后修改密码。`,
-              '用户创建成功',
+              t('user.user.userCreateSuccessDialog', { username: currentUser.username, password: initialPassword }),
+              t('user.user.userCreateSuccess'),
               {
-                confirmButtonText: '我已记录',
+                confirmButtonText: t('user.user.iHaveRecorded'),
                 type: 'success'
               }
             );
           } else {
-            throw new Error(response.message || '添加用户失败');
+            throw new Error(response.message || t('user.user.addUserFailed'));
           }
         }
         
         userDialogVisible.value = false;
         getUserList(); // 重新加载用户列表
       } catch (error) {
-        ElMessage.error(error.message || '操作失败');
+        ElMessage.error(error.message || t('common.operationFailed'));
       } finally {
         loading.value = false;
       }
     } else {
-      ElMessage.error('请检查表单输入！');
+      ElMessage.error(t('user.user.pleaseCheckFormInput'));
     }
   });
 };
@@ -967,39 +970,39 @@ const toggleUserStatus = async (row) => {
   // 状态值：0=禁用，1=正常，2=锁定
   // 只能在正常(1)和锁定(2)之间切换，禁用(0)状态不可操作
   if (row.status === 0) {
-    ElMessage.warning('禁用状态的用户无法进行锁定/解锁操作');
+    ElMessage.warning(t('user.user.disabledUserCannotLockUnlock'));
     return;
   }
   
   const isLock = row.status === 1; // 正常状态可以锁定
-  const action = isLock ? '锁定' : '解锁';
+  const action = isLock ? t('user.user.lock') : t('user.user.unlock');
   
   try {
-    await ElMessageBox.confirm(`确定要${action}用户 "${row.username}" 吗？`, '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('user.user.confirmLockUnlockUser', { action, username: row.username }), t('common.tip'), {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     });
     
     loading.value = true;
     let response;
     if (isLock) {
-      response = await userApi.lockUser(row.id, '管理员操作');
+      response = await userApi.lockUser(row.id, t('user.user.adminOperation'));
     } else {
       response = await userApi.unlockUser(row.id);
     }
     
     if (response.code === 200 && response.success) {
-      ElMessage.success(`用户 ${row.username} 已${action}！`);
+      ElMessage.success(t('user.user.userLockUnlockSuccess', { username: row.username, action }));
       getUserList(); // 重新加载用户列表
     } else {
-      throw new Error(response.message || `${action}操作失败`);
+      throw new Error(response.message || t('user.user.lockUnlockOperationFailed', { action }));
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(`${action}操作失败`);
+      ElMessage.error(t('user.user.lockUnlockOperationFailed', { action }));
     } else {
-      ElMessage.info('已取消操作。');
+      ElMessage.info(t('common.operationCancelled'));
     }
   } finally {
     loading.value = false;
@@ -1012,16 +1015,16 @@ const toggleUserStatus = async (row) => {
  */
 const handleDeleteUser = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定要删除用户 "${row.username}" 吗？此操作不可逆！`, '警告', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('user.user.confirmDeleteUser', { username: row.username }), t('common.warning'), {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     });
     
     loading.value = true;
     const response = await userApi.deleteUser(row.id);
     if (response.code === 200 && response.success) {
-      ElMessage.success(`用户 ${row.username} 删除成功！`);
+      ElMessage.success(t('user.user.userDeleteSuccess', { username: row.username }));
       
       // 检查当前页是否为空，如果为空且不是第一页，则跳转到上一页
       if (userList.value.length === 1 && pagination.page > 1) {
@@ -1030,13 +1033,13 @@ const handleDeleteUser = async (row) => {
       
       getUserList(); // 重新加载用户列表
     } else {
-      throw new Error(response.message || '删除用户失败');
+      throw new Error(response.message || t('user.user.deleteUserFailed'));
     }
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除用户失败');
+      ElMessage.error(t('user.user.deleteUserFailed'));
     } else {
-      ElMessage.info('已取消删除操作。');
+      ElMessage.info(t('common.deleteOperationCancelled'));
     }
   } finally {
     loading.value = false;
@@ -1175,10 +1178,10 @@ testuser2,test@example.com,,admin`;
     document.body.removeChild(link);
     window.URL.revokeObjectURL(url);
     
-    ElMessage.success('模板下载成功！请查看文件中的详细使用说明');
+    ElMessage.success(t('user.user.templateDownloadSuccess'));
   } catch (error) {
     console.error('下载模板失败:', error);
-    ElMessage.error('下载模板失败');
+    ElMessage.error(t('user.user.templateDownloadFailed'));
   } finally {
     downloadingTemplate.value = false;
   }
@@ -1195,13 +1198,13 @@ const beforeFileUpload = (file) => {
                   file.name.endsWith('.xls');
   
   if (!isCSV && !isExcel) {
-    ElMessage.error('只能上传 CSV 或 Excel 文件！');
+    ElMessage.error(t('user.user.onlyCsvExcelAllowed'));
     return false;
   }
   
   const isLt10M = file.size / 1024 / 1024 < 10;
   if (!isLt10M) {
-    ElMessage.error('文件大小不能超过 10MB！');
+    ElMessage.error(t('user.user.fileSizeExceeded'));
     return false;
   }
   
@@ -1221,10 +1224,10 @@ const handleFileChange = async (file) => {
     const users = await parseFileContent(file.raw);
     parsedUsers.value = users;
     console.log('解析的用户数据:', users);
-    ElMessage.success(`文件解析成功，共发现 ${users.length} 个用户`);
+    ElMessage.success(t('user.user.fileParseSuccess', { count: users.length }));
   } catch (error) {
     console.error('文件解析失败:', error);
-    ElMessage.error('文件解析失败: ' + error.message);
+    ElMessage.error(t('user.user.fileParseFailed') + ': ' + error.message);
     selectedFile.value = null;
     parsedUsers.value = [];
     if (fileUploadRef.value) {
@@ -1255,7 +1258,7 @@ const parseFileContent = (file) => {
           }
         },
         error: (error) => {
-          reject(new Error('CSV 文件解析失败: ' + error.message));
+          reject(new Error(t('user.user.csvParseFailed') + ': ' + error.message));
         }
       });
     } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
@@ -1272,15 +1275,15 @@ const parseFileContent = (file) => {
           const users = parseUserData(jsonData);
           resolve(users);
         } catch (error) {
-          reject(new Error('Excel 文件解析失败: ' + error.message));
+          reject(new Error(t('user.user.excelParseFailed') + ': ' + error.message));
         }
       };
       reader.onerror = () => {
-        reject(new Error('文件读取失败'));
+        reject(new Error(t('user.user.fileReadFailed')));
       };
       reader.readAsArrayBuffer(file);
     } else {
-      reject(new Error('不支持的文件格式'));
+      reject(new Error(t('user.user.unsupportedFileFormat')));
     }
   });
 };
@@ -1290,7 +1293,7 @@ const parseFileContent = (file) => {
  */
 const parseUserData = (data) => {
   if (!data || data.length === 0) {
-    throw new Error('文件内容为空');
+    throw new Error(t('user.user.fileContentEmpty'));
   }
   
   const users = [];
@@ -1308,7 +1311,7 @@ const parseUserData = (data) => {
         continue;
       }
       // 找到标题行
-      if (firstCell === '用户名' || firstCell.toLowerCase() === 'username') {
+      if (firstCell === t('user.user.username') || firstCell.toLowerCase() === 'username') {
         headerRowIndex = i;
         break;
       }
@@ -1316,7 +1319,7 @@ const parseUserData = (data) => {
   }
   
   if (headerRowIndex === -1) {
-    throw new Error('未找到标题行，请确保文件包含"用户名,邮箱,手机号,角色代码"标题行');
+    throw new Error(t('user.user.headerRowNotFound'));
   }
   
   // 从标题行的下一行开始解析数据
@@ -1336,7 +1339,7 @@ const parseUserData = (data) => {
     
     // 确保至少有4列数据
     if (row.length < 4) {
-      throw new Error(`第 ${i + 1} 行数据不完整：必须包含用户名、邮箱、手机号、角色代码四列`);
+      throw new Error(t('user.user.rowDataIncomplete', { row: i + 1 }));
     }
     
     const username = row[0] ? row[0].toString().trim() : '';
@@ -1346,38 +1349,38 @@ const parseUserData = (data) => {
     
     // 验证用户名
     if (!username) {
-      throw new Error(`第 ${i + 1} 行：用户名不能为空`);
+      throw new Error(t('user.user.rowUsernameEmpty', { row: i + 1 }));
     }
     
     if (username.length < 3 || username.length > 50) {
-      throw new Error(`第 ${i + 1} 行：用户名长度必须在3-50个字符之间`);
+      throw new Error(t('user.user.rowUsernameLengthInvalid', { row: i + 1 }));
     }
     
     // 验证邮箱格式
     if (email && !isValidEmail(email)) {
-      throw new Error(`第 ${i + 1} 行：邮箱格式不正确`);
+      throw new Error(t('user.user.rowEmailInvalid', { row: i + 1 }));
     }
     
     // 验证手机号格式
     if (phone && !isValidPhone(phone)) {
-      throw new Error(`第 ${i + 1} 行：手机号格式不正确，必须是11位数字且以1开头`);
+      throw new Error(t('user.user.rowPhoneInvalid', { row: i + 1 }));
     }
     
     // 验证角色代码
     if (!roleCodesStr) {
-      throw new Error(`第 ${i + 1} 行：角色代码不能为空`);
+      throw new Error(t('user.user.rowRoleCodeEmpty', { row: i + 1 }));
     }
     
     const roleCodes = roleCodesStr.split(';').map(code => code.trim()).filter(code => code !== '');
     
     if (roleCodes.length === 0) {
-      throw new Error(`第 ${i + 1} 行：角色代码不能为空`);
+      throw new Error(t('user.user.rowRoleCodeEmpty', { row: i + 1 }));
     }
     
     // 验证角色代码是否存在
     for (const roleCode of roleCodes) {
       if (!availableRoleCodes.includes(roleCode)) {
-        throw new Error(`第 ${i + 1} 行：角色代码 "${roleCode}" 不存在。可用角色代码：${availableRoleCodes.join(', ')}`);
+        throw new Error(t('user.user.rowRoleCodeNotExist', { row: i + 1, roleCode, availableCodes: availableRoleCodes.join(', ') }));
       }
     }
     
@@ -1390,7 +1393,7 @@ const parseUserData = (data) => {
   }
   
   if (users.length === 0) {
-    throw new Error('文件中没有有效的用户数据，请检查数据格式或确保删除了说明部分');
+    throw new Error(t('user.user.noValidUserData'));
   }
   
   return users;
@@ -1444,7 +1447,7 @@ const parseManualInput = (text) => {
     const parts = line.split(',').map(part => part.trim());
     
     if (parts.length < 4) {
-      throw new Error(`第 ${i + 1} 行格式错误：必须包含用户名,邮箱,手机号,角色代码四个字段`);
+      throw new Error(t('user.user.rowFormatError', { row: i + 1 }));
     }
     
     const username = parts[0];
@@ -1454,38 +1457,38 @@ const parseManualInput = (text) => {
     
     // 验证用户名
     if (!username) {
-      throw new Error(`第 ${i + 1} 行：用户名不能为空`);
+      throw new Error(t('user.user.rowUsernameEmpty', { row: i + 1 }));
     }
     
     if (username.length < 3 || username.length > 50) {
-      throw new Error(`第 ${i + 1} 行：用户名长度必须在3-50个字符之间`);
+      throw new Error(t('user.user.rowUsernameLengthInvalid', { row: i + 1 }));
     }
     
     // 验证邮箱格式
     if (email && !isValidEmail(email)) {
-      throw new Error(`第 ${i + 1} 行：邮箱格式不正确`);
+      throw new Error(t('user.user.rowEmailInvalid', { row: i + 1 }));
     }
     
     // 验证手机号格式
     if (phone && !isValidPhone(phone)) {
-      throw new Error(`第 ${i + 1} 行：手机号格式不正确，必须是11位数字且以1开头`);
+      throw new Error(t('user.user.rowPhoneInvalid', { row: i + 1 }));
     }
     
     // 验证角色代码
     if (!roleCodesStr) {
-      throw new Error(`第 ${i + 1} 行：角色代码不能为空`);
+      throw new Error(t('user.user.rowRoleCodeEmpty', { row: i + 1 }));
     }
     
     const roleCodes = roleCodesStr.split(';').map(code => code.trim()).filter(code => code !== '');
     
     if (roleCodes.length === 0) {
-      throw new Error(`第 ${i + 1} 行：角色代码不能为空`);
+      throw new Error(t('user.user.rowRoleCodeEmpty', { row: i + 1 }));
     }
     
     // 验证角色代码是否存在
     for (const roleCode of roleCodes) {
       if (!availableRoleCodes.includes(roleCode)) {
-        throw new Error(`第 ${i + 1} 行：角色代码 "${roleCode}" 不存在。可用角色代码：${availableRoleCodes.join(', ')}`);
+        throw new Error(t('user.user.rowRoleCodeNotExist', { row: i + 1, roleCode, availableCodes: availableRoleCodes.join(', ') }));
       }
     }
     
@@ -1513,7 +1516,7 @@ const submitBatchCreate = async () => {
     if (batchCreateActiveTab.value === 'manual') {
       // 手动输入模式
       if (!batchUserText.value.trim()) {
-        ElMessage.error('请输入用户信息');
+        ElMessage.error(t('user.user.pleaseInputUserInfo'));
         return;
       }
       
@@ -1529,7 +1532,7 @@ const submitBatchCreate = async () => {
     } else {
       // 文件上传模式
       if (!selectedFile.value || parsedUsers.value.length === 0) {
-        ElMessage.error('请选择文件并确保文件解析成功');
+        ElMessage.error(t('user.user.pleaseSelectFileAndParseSuccess'));
         return;
       }
       
@@ -1546,18 +1549,18 @@ const submitBatchCreate = async () => {
     batchCreateResult.value = result;
     
     if (result.success > 0) {
-      ElMessage.success(`批量创建完成！成功 ${result.success} 个，失败 ${result.failed} 个`);
+      ElMessage.success(t('user.user.batchCreateComplete', { success: result.success, failed: result.failed }));
       // 刷新用户列表
       getUserList();
     } else {
-      ElMessage.warning('所有用户创建失败，请检查输入数据');
+      ElMessage.warning(t('user.user.allUsersCreateFailed'));
     }
     
   } catch (error) {
     console.error('批量创建用户失败:', error);
     console.error('错误详情:', error.response?.data);
     
-    let errorMessage = '批量创建用户失败';
+    let errorMessage = t('user.user.batchCreateUserFailed');
     if (error.response?.data?.message) {
       errorMessage = error.response.data.message;
     } else if (error.response?.data?.error) {
@@ -1594,10 +1597,10 @@ const getStatusType = (status) => {
  */
 const getStatusText = (status) => {
   switch (status) {
-    case 0: return '禁用';
-    case 1: return '正常';
-    case 2: return '锁定';
-    default: return '未知';
+    case 0: return t('user.user.disabled');
+    case 1: return t('user.user.normal');
+    case 2: return t('user.user.locked');
+    default: return t('common.unknown');
   }
 };
 
@@ -1608,10 +1611,10 @@ const getStatusText = (status) => {
  */
 const getStatusActionText = (status) => {
   switch (status) {
-    case 0: return '禁用'; // 禁用状态不可操作
-    case 1: return '锁定'; // 正常状态可以锁定
-    case 2: return '解锁'; // 锁定状态可以解锁
-    default: return '操作';
+    case 0: return t('user.user.disabled'); // 禁用状态不可操作
+    case 1: return t('user.user.lock'); // 正常状态可以锁定
+    case 2: return t('user.user.unlock'); // 锁定状态可以解锁
+    default: return t('common.operation');
   }
 };
 

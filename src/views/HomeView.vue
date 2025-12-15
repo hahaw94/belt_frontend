@@ -76,11 +76,11 @@
       <div class="left-panel">
         <!-- 告警统计 -->
         <div class="widget widget-alarm">
-          <div class="widget-title">告警统计</div>
+          <div class="widget-title">{{ $t('home.alarmStatsTitle') }}</div>
           <div class="alarm-stats-container">
             <!-- 今日告警总数显示区域 -->
             <div class="main-alarm-display">
-              <div class="alarm-label">今日告警总数</div>
+              <div class="alarm-label">{{ $t('home.alarmTodayTotal') }}</div>
               <div class="alarm-counter">
                 <span class="counter-digit">{{ String(dashboardData.alarm_stats.today_total).padStart(6, '0').split('').slice(0, 1).join('') }}</span>
                 <span class="counter-digit">{{ String(dashboardData.alarm_stats.today_total).padStart(6, '0').split('').slice(1, 2).join('') }}</span>
@@ -137,11 +137,11 @@
               <div class="chart-legend">
                 <div class="legend-item">
                   <span class="legend-dot processed"></span>
-                  <span class="legend-text">已处理: {{ dashboardData.alarm_stats.processed }}</span>
+                  <span class="legend-text">{{ $t('home.processed') }}: {{ dashboardData.alarm_stats.processed }}</span>
                 </div>
                 <div class="legend-item">
                   <span class="legend-dot unprocessed"></span>
-                  <span class="legend-text">未处理: {{ dashboardData.alarm_stats.unprocessed }}</span>
+                  <span class="legend-text">{{ $t('home.unprocessed') }}: {{ dashboardData.alarm_stats.unprocessed }}</span>
                 </div>
               </div>
             </div>
@@ -150,7 +150,7 @@
 
         <!-- 事件通知 -->
         <div class="widget widget-event">
-          <div class="widget-title">事件通知</div>
+          <div class="widget-title">{{ $t('home.eventNotification') }}</div>
           <div class="event-list">
             <div
               v-for="alarm in recentAlarms"
@@ -176,32 +176,32 @@
       <div class="right-panel">
         <!-- 设备统计 -->
         <div class="widget">
-          <div class="widget-title">设备统计</div>
+          <div class="widget-title">{{ $t('home.deviceStats') }}</div>
           <div class="device-stats-container">
             <!-- 摄像机统计 -->
             <div class="device-category">
               <div class="device-header">
                 <div class="device-icon camera-icon"></div>
                 <div class="device-info-box">
-                  <div class="device-type">摄像机</div>
+                  <div class="device-type">{{ $t('home.camera') }}</div>
                   <div class="device-total">
                     <span class="total-number">{{ dashboardData.camera_stats.total_cameras }}</span>
-                    <span class="unit-text">个</span>
+                    <span class="unit-text">{{ $t('home.unit') }}</span>
                   </div>
                 </div>
               </div>
               <div class="device-details">
                 <div class="detail-item">
                   <div class="detail-number status-online">
-                    {{ dashboardData.camera_stats.online_cameras }}<span class="unit-text-small">个</span>
+                    {{ dashboardData.camera_stats.online_cameras }}<span class="unit-text-small">{{ $t('home.unit') }}</span>
                   </div>
-                  <div class="detail-label">在线</div>
+                  <div class="detail-label">{{ $t('home.online') }}</div>
                 </div>
                 <div class="detail-item">
                   <div class="detail-number status-offline">
-                    {{ dashboardData.camera_stats.offline_cameras }}<span class="unit-text-small">个</span>
+                    {{ dashboardData.camera_stats.offline_cameras }}<span class="unit-text-small">{{ $t('home.unit') }}</span>
                   </div>
-                  <div class="detail-label">离线</div>
+                  <div class="detail-label">{{ $t('home.offline') }}</div>
                 </div>
               </div>
             </div>
@@ -211,25 +211,25 @@
               <div class="device-header">
                 <div class="device-icon algorithm-icon"></div>
                 <div class="device-info-box">
-                  <div class="device-type">算法服务</div>
+                  <div class="device-type">{{ $t('home.algorithmService') }}</div>
                   <div class="device-total">
                     <span class="total-number">{{ dashboardData.device_stats.total_devices - dashboardData.camera_stats.total_cameras }}</span>
-                    <span class="unit-text">个</span>
+                    <span class="unit-text">{{ $t('home.unit') }}</span>
                   </div>
                 </div>
               </div>
               <div class="device-details">
                 <div class="detail-item">
                   <div class="detail-number status-online">
-                    {{ dashboardData.device_stats.online_devices - dashboardData.camera_stats.online_cameras }}<span class="unit-text-small">个</span>
+                    {{ dashboardData.device_stats.online_devices - dashboardData.camera_stats.online_cameras }}<span class="unit-text-small">{{ $t('home.unit') }}</span>
                   </div>
-                  <div class="detail-label">在线</div>
+                  <div class="detail-label">{{ $t('home.online') }}</div>
                 </div>
                 <div class="detail-item">
                   <div class="detail-number status-offline">
-                    1<span class="unit-text-small">个</span>
+                    1<span class="unit-text-small">{{ $t('home.unit') }}</span>
                   </div>
-                  <div class="detail-label">离线</div>
+                  <div class="detail-label">{{ $t('home.offline') }}</div>
                 </div>
               </div>
             </div>
@@ -238,14 +238,14 @@
 
         <!-- 相机在线历史统计 -->
         <div class="widget">
-          <div class="widget-title">相机在线历史统计</div>
+          <div class="widget-title">{{ $t('home.cameraOnlineHistory') }}</div>
           <div class="online-history-container">
             <!-- 三个卡片横向排列 -->
             <div class="history-cards-row">
               <!-- 周统计 -->
               <div class="history-card week-card">
                 <div class="card-header">
-                  <span class="card-title">周</span>
+                  <span class="card-title">{{ $t('home.week') }}</span>
                 </div>
                 <div class="card-rate">{{ onlineHistoryStats.week.avg_online_rate }}</div>
               </div>
@@ -253,7 +253,7 @@
               <!-- 月统计 -->
               <div class="history-card month-card">
                 <div class="card-header">
-                  <span class="card-title">月</span>
+                  <span class="card-title">{{ $t('home.month') }}</span>
                 </div>
                 <div class="card-rate">{{ onlineHistoryStats.month.avg_online_rate }}</div>
               </div>
@@ -261,7 +261,7 @@
               <!-- 年统计 -->
               <div class="history-card year-card">
                 <div class="card-header">
-                  <span class="card-title">年</span>
+                  <span class="card-title">{{ $t('home.year') }}</span>
                 </div>
                 <div class="card-rate">{{ onlineHistoryStats.year.avg_online_rate }}</div>
               </div>
@@ -271,7 +271,7 @@
 
         <!-- 高频告警排行 -->
         <div class="widget">
-          <div class="widget-title">高频告警排行</div>
+          <div class="widget-title">{{ $t('home.highFreqAlarmRanking') }}</div>
           <div class="ranking-chart-container">
             <svg class="ranking-chart" viewBox="0 0 100 100" preserveAspectRatio="none">
               <!-- 定义渐变 -->

@@ -62,5 +62,17 @@ export default {
   
   // 其他
   syncing: '同步中...',
-  loading: '加载中...'
+  loading: '加载中...',
+  layerOptionLabel: '{name} ({count}个摄像机)',
+  pleaseInputXCoordinate: '请输入X坐标',
+  pleaseInputYCoordinate: '请输入Y坐标',
+  getCameraListFailedWithError: '获取相机列表失败: {error}',
+  confirmSyncWVPCameras: '确定要从WVP同步摄像头吗？\n\n此操作将：\n• 从所有WVP直连设备同步通道信息\n• 保存到本地数据库\n• 更新摄像头状态\n• 可能需要几分钟时间',
+  syncConfirm: '同步确认',
+  syncComplete: '同步完成',
+  syncCompleteMessage: '{message}\n\n• 设备数量: {deviceCount}\n• 通道数量: {channelCount}',
+  errorDetails: '错误详情',
+  syncFailedWithError: '同步摄像头失败: {error}',
+  bindFailedWithError: '绑定失败: {error}',
+  unbindFailedWithError: '解绑失败: {error}'
 }

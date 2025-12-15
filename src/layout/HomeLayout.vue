@@ -82,6 +82,7 @@
 
 <script>
 import { ref, computed, onMounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
@@ -102,6 +103,7 @@ export default {
     Globe
   },
   setup() {
+    const { t } = useI18n();
     const router = useRouter();
     const route = useRoute();
     const authStore = useAuthStore();
@@ -116,9 +118,9 @@ export default {
     // 显示用户名
     const displayUsername = computed(() => {
       if (!authStore.isAuthenticated || !authStore.userInfo) {
-        return '未登录';
+        return t('common.notLoggedIn');
       }
-      return authStore.username || authStore.userInfo?.username || '游客';
+      return authStore.username || authStore.userInfo?.username || t('common.guest');
     });
 
     // 当前logo URL
@@ -198,7 +200,7 @@ export default {
       } else if (command === 'zh-CN' || command === 'en-US') {
         // 语言切换
         localeStore.setLocale(command);
-        ElMessage.success(command === 'zh-CN' ? '已切换到中文' : 'Switched to English');
+        ElMessage.success(command === 'zh-CN' ? t('common.switchToZh') : t('common.switchToEn'));
         // 刷新页面以确保所有组件都使用新语言
         setTimeout(() => {
           window.location.reload();
@@ -235,6 +237,7 @@ export default {
     });
 
     return {
+      t,
       userAvatarUrl,
       displayUsername,
       currentLogoUrl,

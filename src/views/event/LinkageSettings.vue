@@ -59,16 +59,16 @@
 {{ $t('common.view') }}
             </el-button>
             <el-button type="primary" size="small" class="tech-button-xs" @click="handleConfigRules(row)">
-              配置
+              {{ $t('event.linkage.config') }}
             </el-button>
             <el-button type="warning" size="small" class="tech-button-xs" @click="handleApplyPlan(row)">
-              应用
+              {{ $t('event.linkage.apply') }}
             </el-button>
             <el-button type="info" size="small" class="tech-button-xs" @click="handleEditPlan(row)">
-              编辑
+              {{ $t('common.edit') }}
             </el-button>
             <el-button type="danger" size="small" class="tech-button-xs" @click="handleDeletePlan(row)">
-              删除
+              {{ $t('common.delete') }}
             </el-button>
           </template>
         </el-table-column>
@@ -77,7 +77,7 @@
       <!-- 分页组件 -->
       <div class="pagination-container tech-pagination">
         <div class="pagination-info">
-          <span>共 <span class="total-count">{{ pagination.total }}</span> 条记录，每页显示 
+          <span>{{ $t('common.total') }} <span class="total-count">{{ pagination.total }}</span> {{ $t('common.records') }}, {{ $t('common.perPage') }} 
             <el-select 
               v-model="pagination.pageSize" 
               @change="handleSizeChange"
@@ -88,7 +88,7 @@
               <el-option label="10" :value="10" />
               <el-option label="20" :value="20" />
               <el-option label="50" :value="50" />
-            </el-select> 条
+            </el-select> {{ $t('common.items') }}
           </span>
         </div>
         <div class="pagination-controls">
@@ -98,7 +98,7 @@
             :disabled="pagination.page === 1"
             @click="goToPage(1)"
           >
-            首页
+            {{ $t('common.firstPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -106,7 +106,7 @@
             :disabled="pagination.page === 1"
             @click="goToPage(pagination.page - 1)"
           >
-            上一页
+            {{ $t('common.prevPage') }}
           </el-button>
           <div class="pagination-pages">
             <button 
@@ -125,7 +125,7 @@
             :disabled="pagination.page === totalPages"
             @click="goToPage(pagination.page + 1)"
           >
-            下一页
+            {{ $t('common.nextPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -133,7 +133,7 @@
             :disabled="pagination.page === totalPages"
             @click="goToPage(totalPages)"
           >
-            末页
+            {{ $t('common.lastPage') }}
           </el-button>
         </div>
       </div>
@@ -141,11 +141,11 @@
       </el-tab-pane>
 
       <!-- 规则配置Tab -->
-      <el-tab-pane label="规则配置" name="rules">
+      <el-tab-pane :label="$t('event.linkage.ruleConfig')" name="rules">
         <el-card class="tech-card mb-20" shadow="hover">
           <template #header>
             <div class="card-header">
-              <span>板卡联动规则配置</span>
+              <span>{{ $t('event.linkage.boardRuleConfig') }}</span>
               <div class="header-actions">
                 <el-button 
                   type="primary" 
@@ -154,7 +154,7 @@
                   @click="handleSelectAll"
                   :disabled="boardRulesList.length === 0"
                 >
-                  {{ isAllSelected ? '取消全选' : '全选' }}
+                  {{ isAllSelected ? $t('common.deselectAll') : $t('common.selectAll') }}
                 </el-button>
                 <el-button 
                   type="warning" 
@@ -163,7 +163,7 @@
                   @click="handleBatchConfig"
                   :disabled="selectedBoardRules.length === 0"
                 >
-                  批量配置 ({{ selectedBoardRules.length }})
+                  {{ $t('event.linkage.batchConfig') }} ({{ selectedBoardRules.length }})
                 </el-button>
                 <el-button 
                   type="success" 
@@ -172,7 +172,7 @@
                   @click="handleApplyPlanToSelectedBoards"
                   :disabled="selectedBoardRules.length === 0"
                 >
-                  应用预案 ({{ selectedBoardRules.length }})
+                  {{ $t('event.linkage.applyPlan') }} ({{ selectedBoardRules.length }})
                 </el-button>
                 <el-button 
                   type="danger" 
@@ -181,9 +181,9 @@
                   @click="handleBatchDelete"
                   :disabled="selectedBoardRules.length === 0"
                 >
-                  批量删除 ({{ selectedBoardRules.length }})
+                  {{ $t('event.linkage.batchDelete') }} ({{ selectedBoardRules.length }})
                 </el-button>
-                <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadBoardRules">刷新</el-button>
+                <el-button type="primary" :icon="Refresh" size="small" class="tech-button-sm" @click="loadBoardRules">{{ $t('common.refresh') }}</el-button>
               </div>
             </div>
           </template>
@@ -199,35 +199,35 @@
             @selection-change="handleSelectionChange"
           >
             <el-table-column type="selection" width="55" align="center" />
-            <el-table-column prop="board_id" label="板卡ID" width="150" align="center" header-align="center" />
-            <el-table-column prop="board_name" label="板卡名称" min-width="120" header-align="center" />
-            <el-table-column label="规则数量" width="100" align="center" header-align="center">
+            <el-table-column prop="board_id" :label="$t('event.linkage.boardId')" width="150" align="center" header-align="center" />
+            <el-table-column prop="board_name" :label="$t('event.linkage.boardName')" min-width="120" header-align="center" />
+            <el-table-column :label="$t('event.linkage.ruleCount')" width="100" align="center" header-align="center">
               <template #default="{ row }">
                 <el-tag type="info" size="small">{{ row.rules ? row.rules.length : 0 }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="同步状态" width="120" align="center" header-align="center">
+            <el-table-column :label="$t('event.linkage.syncStatus')" width="120" align="center" header-align="center">
               <template #default="{ row }">
                 <el-tag :type="getSyncStatusType(row)" size="small">
                   {{ getSyncStatusText(row) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="最后同步时间" width="180" header-align="center">
+            <el-table-column :label="$t('event.linkage.lastSyncTime')" width="180" header-align="center">
               <template #default="{ row }">
                 {{ getLastSyncTime(row) }}
               </template>
             </el-table-column>
-            <el-table-column label="来源预案" min-width="120" header-align="center">
+            <el-table-column :label="$t('event.linkage.sourcePlan')" min-width="120" header-align="center">
               <template #default="{ row }">
                 <span v-if="row.plan_name">{{ row.plan_name }}</span>
-                <el-tag v-else type="info" size="small">未关联</el-tag>
+                <el-tag v-else type="info" size="small">{{ $t('event.linkage.notLinked') }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column fixed="right" label="操作" width="150" align="center" header-align="center">
+            <el-table-column fixed="right" :label="$t('common.operation')" width="150" align="center" header-align="center">
               <template #default="{ row }">
                 <el-button type="primary" size="small" class="tech-button-xs" @click="handleEditBoardRules(row)">
-                  编辑规则
+                  {{ $t('event.linkage.editBoardRules') }}
                 </el-button>
               </template>
             </el-table-column>
@@ -239,7 +239,7 @@
     <!-- 新增/编辑预案对话框 -->
     <el-dialog
       v-model="planDialogVisible"
-      :title="isEditPlan ? '编辑预案' : '新增预案'"
+    :title="isEditPlan ? $t('event.linkage.editPlan') : $t('event.linkage.addPlan')"
       width="700px"
       :close-on-click-modal="false"
       destroy-on-close
@@ -251,30 +251,30 @@
         :rules="planRules"
         label-width="100px"
       >
-        <el-form-item label="预案名称" prop="plan_name">
-          <el-input v-model="planForm.plan_name" placeholder="请输入预案名称" />
+        <el-form-item :label="$t('event.linkage.planName')" prop="plan_name">
+          <el-input v-model="planForm.plan_name" :placeholder="$t('event.linkage.planNamePlaceholder')" />
         </el-form-item>
-        <el-form-item label="分类" prop="category">
-          <el-select v-model="planForm.category" placeholder="请选择分类">
-            <el-option label="基于算法" value="algorithm_based" />
-            <el-option label="通用预案" value="general" />
-            <el-option label="组合预案" value="combined" />
-            <el-option label="自定义" value="custom" />
+        <el-form-item :label="$t('common.type')" prop="category">
+          <el-select v-model="planForm.category" :placeholder="$t('common.pleaseSelect')">
+            <el-option :label="$t('event.linkage.category.algorithm')" value="algorithm_based" />
+            <el-option :label="$t('event.linkage.category.general')" value="general" />
+            <el-option :label="$t('event.linkage.category.combined')" value="combined" />
+            <el-option :label="$t('event.linkage.category.custom')" value="custom" />
           </el-select>
         </el-form-item>
-        <el-form-item label="描述" prop="description">
+        <el-form-item :label="$t('common.description')" prop="description">
           <el-input
             v-model="planForm.description"
             type="textarea"
             :rows="3"
-            placeholder="请输入预案描述"
+            :placeholder="$t('event.linkage.planDescPlaceholder')"
           />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="planDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSavePlan">保存</el-button>
+          <el-button @click="planDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" @click="handleSavePlan">{{ $t('common.save') }}</el-button>
         </span>
       </template>
     </el-dialog>
@@ -282,7 +282,7 @@
     <!-- 规则配置对话框 -->
     <el-dialog
       v-model="ruleConfigDialogVisible"
-      title="配置规则"
+    :title="$t('event.linkage.configRules')"
       width="900px"
       :close-on-click-modal="false"
       destroy-on-close
@@ -290,8 +290,8 @@
     >
       <div class="rule-config-content">
         <div class="rule-config-header">
-          <span>预案：{{ currentPlan?.plan_name }}</span>
-          <el-button type="success" size="small" :icon="Plus" @click="handleAddRuleItem">添加规则项</el-button>
+          <span>{{ $t('event.linkage.planLabel') }}{{ currentPlan?.plan_name }}</span>
+          <el-button type="success" size="small" :icon="Plus" @click="handleAddRuleItem">{{ $t('event.linkage.addRuleItem') }}</el-button>
         </div>
         
         <el-table
@@ -300,19 +300,19 @@
           class="tech-table"
           style="width: 100%"
         >
-          <el-table-column type="index" label="序号" width="60" align="center" />
-          <el-table-column prop="name" label="规则名称" min-width="120" header-align="center" />
-          <el-table-column label="触发条件" min-width="200" header-align="center">
+          <el-table-column type="index" :label="$t('event.linkage.table.index')" width="60" align="center" />
+          <el-table-column prop="name" :label="$t('event.linkage.table.ruleName')" min-width="120" header-align="center" />
+          <el-table-column :label="$t('event.linkage.table.trigger')" min-width="200" header-align="center">
             <template #default="{ row }">
               <div>
                 <el-tag size="small">{{ getAlarmTypeName(row.trigger_condition?.alarm_type) }}</el-tag>
                 <el-tag size="small" type="warning" style="margin-left: 5px;">
-                  等级{{ row.trigger_condition?.alarm_level }}
+                  {{ $t('event.linkage.level') }}{{ row.trigger_condition?.alarm_level }}
                 </el-tag>
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="联动动作" min-width="150" header-align="center">
+          <el-table-column :label="$t('event.linkage.table.actions')" min-width="150" header-align="center">
             <template #default="{ row }">
               <el-tag 
                 v-for="(action, index) in row.linkage_actions" 
@@ -324,13 +324,13 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column fixed="right" label="操作" width="150" align="center">
+          <el-table-column fixed="right" :label="$t('common.operation')" width="150" align="center">
             <template #default="{ row, $index }">
               <el-button type="primary" size="small" class="tech-button-xs" @click="handleEditRuleItem(row, $index)">
-                编辑
+                {{ $t('common.edit') }}
               </el-button>
               <el-button type="danger" size="small" class="tech-button-xs" @click="handleDeleteRuleItem($index)">
-                删除
+                {{ $t('common.delete') }}
               </el-button>
             </template>
           </el-table-column>
@@ -338,32 +338,32 @@
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="ruleConfigDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSaveRuleConfig">保存配置</el-button>
+          <el-button @click="ruleConfigDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" @click="handleSaveRuleConfig">{{ $t('common.save') }}</el-button>
         </span>
       </template>
     </el-dialog>
 
     <!-- 规则项编辑对话框 -->
-    <el-dialog
-      v-model="ruleItemDialogVisible"
-      :title="isEditRuleItem ? '编辑规则项' : '添加规则项'"
-      width="600px"
-      :close-on-click-modal="false"
-      destroy-on-close
-      class="tech-dialog"
-    >
+  <el-dialog
+    v-model="ruleItemDialogVisible"
+    :title="isEditRuleItem ? $t('event.linkage.editRuleItem') : $t('event.linkage.addRuleItem')"
+    width="600px"
+    :close-on-click-modal="false"
+    destroy-on-close
+    class="tech-dialog"
+  >
       <el-form
         ref="ruleItemFormRef"
         :model="ruleItemForm"
         :rules="ruleItemRules"
         label-width="100px"
       >
-        <el-form-item label="规则名称" prop="name">
-          <el-input v-model="ruleItemForm.name" placeholder="请输入规则名称" />
+        <el-form-item :label="$t('event.linkage.ruleName')" prop="name">
+          <el-input v-model="ruleItemForm.name" :placeholder="$t('event.linkage.ruleNamePlaceholder')" />
         </el-form-item>
-        <el-form-item label="告警类型" prop="alarm_type">
-          <el-select v-model="ruleItemForm.alarm_type" placeholder="请选择告警类型" style="width: 100%">
+        <el-form-item :label="$t('event.linkage.alarmType')" prop="alarm_type">
+          <el-select v-model="ruleItemForm.alarm_type" :placeholder="$t('event.linkage.alarmTypePlaceholder')" style="width: 100%">
             <el-option
               v-for="type in alarmTypes"
               :key="type.id"
@@ -372,47 +372,47 @@
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="告警等级" prop="alarm_level">
-          <el-select v-model="ruleItemForm.alarm_level" placeholder="请选择告警等级" style="width: 100%">
-            <el-option label="等级1（低）" :value="1" />
-            <el-option label="等级2（中）" :value="2" />
-            <el-option label="等级3（高）" :value="3" />
+        <el-form-item :label="$t('event.linkage.alarmLevel')" prop="alarm_level">
+          <el-select v-model="ruleItemForm.alarm_level" :placeholder="$t('event.linkage.alarmLevelPlaceholder')" style="width: 100%">
+            <el-option :label="$t('event.linkage.level1')" :value="1" />
+            <el-option :label="$t('event.linkage.level2')" :value="2" />
+            <el-option :label="$t('event.linkage.level3')" :value="3" />
           </el-select>
         </el-form-item>
-        <el-form-item label="联动动作" prop="action_type">
-          <el-select v-model="ruleItemForm.action_type" placeholder="请选择联动动作" style="width: 100%">
-            <el-option label="广播" value="broadcast" />
-            <el-option label="声光报警" value="light_sound" />
-            <el-option label="控制" value="control" />
+        <el-form-item :label="$t('event.linkage.actionType')" prop="action_type">
+          <el-select v-model="ruleItemForm.action_type" :placeholder="$t('event.linkage.actionTypePlaceholder')" style="width: 100%">
+            <el-option :label="$t('event.linkage.actions.broadcast')" value="broadcast" />
+            <el-option :label="$t('event.linkage.actions.lightSound')" value="light_sound" />
+            <el-option :label="$t('event.linkage.actions.control')" value="control" />
           </el-select>
         </el-form-item>
-        <el-form-item label="延迟执行" prop="delay_seconds">
-          <el-input-number v-model="ruleItemForm.delay_seconds" :min="0" :max="300" placeholder="秒" />
+        <el-form-item :label="$t('event.linkage.delay')" prop="delay_seconds">
+          <el-input-number v-model="ruleItemForm.delay_seconds" :min="0" :max="300" :placeholder="$t('event.linkage.delayPlaceholder')" />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="ruleItemDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSaveRuleItem">保存</el-button>
+          <el-button @click="ruleItemDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" @click="handleSaveRuleItem">{{ $t('common.save') }}</el-button>
         </span>
       </template>
     </el-dialog>
 
     <!-- 应用预案对话框 -->
-    <el-dialog
-      v-model="applyDialogVisible"
-      title="应用预案到板卡"
-      width="600px"
-      :close-on-click-modal="false"
-      destroy-on-close
-      class="tech-dialog"
-    >
+  <el-dialog
+    v-model="applyDialogVisible"
+    :title="$t('event.linkage.applyPlanToBoards')"
+    width="600px"
+    :close-on-click-modal="false"
+    destroy-on-close
+    class="tech-dialog"
+  >
       <el-form label-width="100px">
-        <el-form-item label="预案名称">
+        <el-form-item :label="$t('event.linkage.planName')">
           <el-input :value="currentPlan?.plan_name" disabled />
         </el-form-item>
-        <el-form-item label="目标板卡" required>
-          <el-select v-model="selectedBoards" multiple placeholder="请选择目标板卡" style="width: 100%">
+        <el-form-item :label="$t('event.linkage.targetBoards')" required>
+          <el-select v-model="selectedBoards" multiple :placeholder="$t('event.linkage.selectBoards')" style="width: 100%">
             <el-option
               v-for="board in boardList"
               :key="board.board_id"
@@ -424,8 +424,8 @@
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="applyDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleConfirmApply" :loading="applyLoading">确认应用</el-button>
+          <el-button @click="applyDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" @click="handleConfirmApply" :loading="applyLoading">{{ $t('event.linkage.confirmApply') }}</el-button>
         </span>
       </template>
     </el-dialog>
@@ -433,7 +433,7 @@
     <!-- 预案详情对话框 -->
     <el-dialog
       v-model="planDetailDialogVisible"
-      title="预案详情"
+    :title="$t('event.linkage.planDetail')"
       width="800px"
       :close-on-click-modal="false"
       destroy-on-close
@@ -441,58 +441,58 @@
     >
       <div v-if="planDetailData" class="plan-detail-content">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="预案编码">{{ planDetailData.plan_code }}</el-descriptions-item>
-          <el-descriptions-item label="预案名称">{{ planDetailData.plan_name }}</el-descriptions-item>
-          <el-descriptions-item label="分类">{{ getCategoryText(planDetailData.category) }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label="$t('common.code')">{{ planDetailData.plan_code }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('event.linkage.planName')">{{ planDetailData.plan_name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('common.type')">{{ getCategoryText(planDetailData.category) }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('common.status')">
             <el-tag :type="planDetailData.status === 1 ? 'success' : 'info'" size="small">
-              {{ planDetailData.status === 1 ? '启用' : '禁用' }}
+              {{ planDetailData.status === 1 ? $t('common.enable') : $t('common.disable') }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="描述" :span="2">{{ planDetailData.description || '无' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('common.description')" :span="2">{{ planDetailData.description || $t('common.noData') }}</el-descriptions-item>
         </el-descriptions>
         
-        <h4 style="margin-top: 20px; color: #00ffff;">规则项列表</h4>
+        <h4 style="margin-top: 20px; color: #00ffff;">{{ $t('event.linkage.ruleItemList') }}</h4>
         <div v-if="planDetailData.rule_items && planDetailData.rule_items.length > 0" style="max-height: 400px; overflow-y: auto;">
           <el-card v-for="(item, index) in planDetailData.rule_items" :key="index" style="margin-bottom: 10px;">
             <h5>{{ index + 1 }}. {{ item.name }}</h5>
-            <p><strong>触发条件：</strong>{{ getAlarmTypeName(item.trigger_condition.alarm_type) }}，等级{{ item.trigger_condition.alarm_level }}</p>
-            <p><strong>联动动作：</strong></p>
+            <p><strong>{{ $t('event.linkage.triggerCondition') }}：</strong>{{ getAlarmTypeName(item.trigger_condition.alarm_type) }}，{{ $t('event.linkage.level') }}{{ item.trigger_condition.alarm_level }}</p>
+            <p><strong>{{ $t('event.linkage.linkageAction') }}：</strong></p>
             <ul>
               <li v-for="(action, aIndex) in item.linkage_actions" :key="aIndex">
                 {{ getActionTypeName(action.action_type) }}
-                <span v-if="action.delay_seconds > 0">（延迟{{ action.delay_seconds }}秒）</span>
+                <span v-if="action.delay_seconds > 0">（{{ $t('event.linkage.delayLabel', { seconds: action.delay_seconds }) }}）</span>
               </li>
             </ul>
           </el-card>
         </div>
-        <p v-else style="color: #9ca3af; text-align: center; padding: 20px;">暂无规则项</p>
+        <p v-else style="color: #9ca3af; text-align: center; padding: 20px;">{{ $t('event.linkage.noRuleItems') }}</p>
       </div>
       <template #footer>
-        <el-button @click="planDetailDialogVisible = false">关闭</el-button>
+        <el-button @click="planDetailDialogVisible = false">{{ $t('common.close') }}</el-button>
       </template>
     </el-dialog>
     
     <!-- 应用预案到选中板卡对话框 -->
     <el-dialog
       v-model="applyPlanToSelectedDialogVisible"
-      title="应用预案到选中板卡"
+    :title="$t('event.linkage.applyPlanToSelected')"
       width="600px"
       :close-on-click-modal="false"
       destroy-on-close
       class="tech-dialog"
     >
       <el-form label-width="100px">
-        <el-form-item label="选中板卡">
+      <el-form-item :label="$t('event.linkage.selectedBoards')">
           <el-tag v-for="board in selectedBoardRules" :key="board.board_id" style="margin: 2px;">
             {{ board.board_id }}
           </el-tag>
           <div style="margin-top: 5px; font-size: 12px; color: rgba(255, 255, 255, 0.6);">
-            共选中 {{ selectedBoardRules.length }} 个板卡
+          {{ $t('event.linkage.selectedBoardsCount', { count: selectedBoardRules.length }) }}
           </div>
         </el-form-item>
-        <el-form-item label="选择预案" required>
-          <el-select v-model="selectedApplyPlanId" placeholder="请选择预案" style="width: 100%;">
+      <el-form-item :label="$t('event.linkage.choosePlan')" required>
+        <el-select v-model="selectedApplyPlanId" :placeholder="$t('event.linkage.choosePlanPlaceholder')" style="width: 100%;">
             <el-option
               v-for="plan in planList"
               :key="plan.id"
@@ -502,19 +502,19 @@
           </el-select>
         </el-form-item>
       </el-form>
-      <el-alert type="warning" :closable="false" style="margin-top: 15px;">
-        ⚠️ 应用预案将替换选中板卡的所有现有规则，请谨慎操作！
+    <el-alert type="warning" :closable="false" style="margin-top: 15px;">
+      ⚠️ {{ $t('event.linkage.applyPlanWarning') }}
       </el-alert>
       <template #footer>
-        <el-button @click="applyPlanToSelectedDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleConfirmApplyToSelected">确认应用</el-button>
+      <el-button @click="applyPlanToSelectedDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+      <el-button type="primary" @click="handleConfirmApplyToSelected">{{ $t('event.linkage.confirmApply') }}</el-button>
       </template>
     </el-dialog>
     
     <!-- 编辑板卡规则对话框 -->
     <el-dialog
       v-model="boardRulesDialogVisible"
-      title="编辑板卡规则"
+    :title="$t('event.linkage.editBoardRules')"
       width="900px"
       :close-on-click-modal="false"
       destroy-on-close
@@ -523,8 +523,8 @@
       <div class="board-rules-content">
         <div class="board-info">
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="板卡ID">{{ currentBoard?.board_id }}</el-descriptions-item>
-            <el-descriptions-item label="板卡名称">{{ currentBoard?.board_name }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('event.linkage.boardId')">{{ currentBoard?.board_id }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('event.linkage.boardName')">{{ currentBoard?.board_name }}</el-descriptions-item>
           </el-descriptions>
         </div>
         
@@ -532,13 +532,13 @@
         <el-card class="quick-apply-card" style="margin-top: 15px; background: rgba(0, 255, 255, 0.05);">
           <template #header>
             <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 14px; color: #00ffff;">📋 快速应用预案</span>
-              <el-button type="primary" size="small" @click="handleQuickApplyPlan">应用</el-button>
+              <span style="font-size: 14px; color: #00ffff;">📋 {{ $t('event.linkage.quickApply') }}</span>
+              <el-button type="primary" size="small" @click="handleQuickApplyPlan">{{ $t('event.linkage.apply') }}</el-button>
             </div>
           </template>
           <el-select 
             v-model="selectedQuickPlanId" 
-            placeholder="选择预案快速配置" 
+            :placeholder="$t('event.linkage.quickApplyPlaceholder')" 
             style="width: 100%;"
             size="small"
           >
@@ -550,13 +550,13 @@
             />
           </el-select>
           <div style="margin-top: 10px; font-size: 12px; color: rgba(255, 255, 255, 0.6);">
-            选择一个预案快速配置规则，或直接手动添加
+            {{ $t('event.linkage.quickApplyHint') }}
           </div>
         </el-card>
         
         <div class="rules-header" style="margin-top: 20px; margin-bottom: 10px;">
-          <span style="font-weight: bold;">规则项列表</span>
-          <el-button type="success" size="small" :icon="Plus" @click="handleAddBoardRuleItem">添加规则项</el-button>
+          <span style="font-weight: bold;">{{ $t('event.linkage.ruleItemList') }}</span>
+          <el-button type="success" size="small" :icon="Plus" @click="handleAddBoardRuleItem">{{ $t('event.linkage.addRuleItem') }}</el-button>
         </div>
         
         <el-table
@@ -565,19 +565,19 @@
           class="tech-table"
           style="width: 100%"
         >
-          <el-table-column type="index" label="序号" width="60" align="center" />
-          <el-table-column prop="name" label="规则名称" min-width="120" header-align="center" />
-          <el-table-column label="触发条件" min-width="200" header-align="center">
+          <el-table-column type="index" :label="$t('event.linkage.table.index')" width="60" align="center" />
+          <el-table-column prop="name" :label="$t('event.linkage.table.ruleName')" min-width="120" header-align="center" />
+          <el-table-column :label="$t('event.linkage.table.trigger')" min-width="200" header-align="center">
             <template #default="{ row }">
               <div>
                 <el-tag size="small">{{ getAlarmTypeName(row.trigger_condition?.alarm_type) }}</el-tag>
                 <el-tag size="small" type="warning" style="margin-left: 5px;">
-                  等级{{ row.trigger_condition?.alarm_level }}
+                  {{ $t('event.linkage.level') }}{{ row.trigger_condition?.alarm_level }}
                 </el-tag>
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="联动动作" min-width="150" header-align="center">
+          <el-table-column :label="$t('event.linkage.table.actions')" min-width="150" header-align="center">
             <template #default="{ row }">
               <el-tag 
                 v-for="(action, index) in row.linkage_actions" 
@@ -589,13 +589,13 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column fixed="right" label="操作" width="150" align="center">
+          <el-table-column fixed="right" :label="$t('common.operation')" width="150" align="center">
             <template #default="{ row, $index }">
               <el-button type="primary" size="small" class="tech-button-xs" @click="handleEditBoardRuleItem(row, $index)">
-                编辑
+                {{ $t('common.edit') }}
               </el-button>
               <el-button type="danger" size="small" class="tech-button-xs" @click="handleDeleteBoardRuleItem($index)">
-                删除
+                {{ $t('common.delete') }}
               </el-button>
             </template>
           </el-table-column>
@@ -603,8 +603,8 @@
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="boardRulesDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSaveBoardRules">保存规则</el-button>
+          <el-button @click="boardRulesDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" @click="handleSaveBoardRules">{{ $t('event.linkage.saveRules') }}</el-button>
         </span>
       </template>
     </el-dialog>
@@ -613,6 +613,7 @@
 
 <script>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import { eventApi } from '@/api/event'
@@ -620,6 +621,8 @@ import { eventApi } from '@/api/event'
 export default {
   name: 'LinkageSettings',
   setup() {
+    const { t } = useI18n()
+
     // ESLint会误报这些变量未使用，但它们在return语句中被返回并在模板中使用
     /* eslint-disable no-unused-vars */
     const _icons = { Plus, Refresh }
@@ -1572,7 +1575,8 @@ export default {
       loadBoards()
     })
 
-        return {
+    return {
+      t,
       // 图标
       Plus,
       Refresh,

@@ -138,24 +138,24 @@
               <el-col :span="12">
                 <div class="config-section">
                   <h4>{{ $t('system.basic.currentConfig') }}</h4>
-                  <p><strong>{{ $t('system.basic.ipAddress') }}：</strong>{{ currentNetworkConfig.ip_address }}</p>
-                  <p><strong>{{ $t('system.basic.subnetMask') }}：</strong>{{ currentNetworkConfig.subnet_mask }}</p>
-                  <p><strong>{{ $t('system.basic.gateway') }}：</strong>{{ currentNetworkConfig.gateway }}</p>
-                  <p><strong>{{ $t('system.basic.port') }}：</strong>{{ currentNetworkConfig.port }}</p>
+                  <p><strong>{{ $t('system.basic.ipAddress') }}{{ $t('common.colon') }}</strong>{{ currentNetworkConfig.ip_address }}</p>
+                  <p><strong>{{ $t('system.basic.subnetMask') }}{{ $t('common.colon') }}</strong>{{ currentNetworkConfig.subnet_mask }}</p>
+                  <p><strong>{{ $t('system.basic.gateway') }}{{ $t('common.colon') }}</strong>{{ currentNetworkConfig.gateway }}</p>
+                  <p><strong>{{ $t('system.basic.port') }}{{ $t('common.colon') }}</strong>{{ currentNetworkConfig.port }}</p>
                 </div>
               </el-col>
               <el-col :span="12">
                 <div class="config-section">
                   <h4>{{ $t('system.basic.changeTo') }}</h4>
-                  <p><strong>{{ $t('system.basic.ipAddress') }}：</strong>{{ networkConfig.ip_address }}</p>
-                  <p><strong>{{ $t('system.basic.subnetMask') }}：</strong>{{ networkConfig.subnet_mask }}</p>
-                  <p><strong>{{ $t('system.basic.gateway') }}：</strong>{{ networkConfig.gateway }}</p>
-                  <p><strong>{{ $t('system.basic.port') }}：</strong>{{ networkConfig.port }}</p>
+                  <p><strong>{{ $t('system.basic.ipAddress') }}{{ $t('common.colon') }}</strong>{{ networkConfig.ip_address }}</p>
+                  <p><strong>{{ $t('system.basic.subnetMask') }}{{ $t('common.colon') }}</strong>{{ networkConfig.subnet_mask }}</p>
+                  <p><strong>{{ $t('system.basic.gateway') }}{{ $t('common.colon') }}</strong>{{ networkConfig.gateway }}</p>
+                  <p><strong>{{ $t('system.basic.port') }}{{ $t('common.colon') }}</strong>{{ networkConfig.port }}</p>
                 </div>
               </el-col>
             </el-row>
             <div style="margin-top: 15px; text-align: center;">
-              <p><strong>{{ $t('system.basic.newAccessUrl') }}：</strong><span style="color: #409EFF; font-size: 16px;">{{ getPreviewAccessUrl() }}</span></p>
+              <p><strong>{{ $t('system.basic.newAccessUrl') }}{{ $t('common.colon') }}</strong><span style="color: #409EFF; font-size: 16px;">{{ getPreviewAccessUrl() }}</span></p>
             </div>
           </div>
           <div class="network-change-tips">
@@ -475,33 +475,33 @@ const serviceRestartCountdown = ref(10)
 
 // 表单验证规则
 const ntpRules = reactive({
-  server: [{ required: true, message: '请输入NTP服务器地址', trigger: 'blur' }],
-  timezone: [{ required: true, message: '请选择时区', trigger: 'change' }]
+  server: [{ required: true, message: t('system.basic.pleaseInputNtpServer'), trigger: 'blur' }],
+  timezone: [{ required: true, message: t('system.basic.pleaseSelectTimezone'), trigger: 'change' }]
 })
 
 const networkRules = reactive({
   ip_address: [
-    { required: true, message: '请输入IP地址', trigger: 'blur' },
-    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: '请输入正确的IP地址格式', trigger: 'blur' }
+    { required: true, message: t('system.basic.pleaseInputIpAddress'), trigger: 'blur' },
+    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: t('system.basic.pleaseInputCorrectIpFormat'), trigger: 'blur' }
   ],
   subnet_mask: [
-    { required: true, message: '请输入子网掩码', trigger: 'blur' },
-    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: '请输入正确的子网掩码格式', trigger: 'blur' }
+    { required: true, message: t('system.basic.pleaseInputSubnetMask'), trigger: 'blur' },
+    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: t('system.basic.pleaseInputCorrectSubnetMaskFormat'), trigger: 'blur' }
   ],
   gateway: [
-    { required: true, message: '请输入网关地址', trigger: 'blur' },
-    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: '请输入正确的网关地址格式', trigger: 'blur' }
+    { required: true, message: t('system.basic.pleaseInputGateway'), trigger: 'blur' },
+    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: t('system.basic.pleaseInputCorrectGatewayFormat'), trigger: 'blur' }
   ],
   port: [
-    { required: true, message: '请输入服务端口', trigger: 'blur' },
-    { pattern: /^[1-9]\d{0,4}$/, message: '端口号应为1-65535之间的数字', trigger: 'blur' },
+    { required: true, message: t('system.basic.pleaseInputServicePort'), trigger: 'blur' },
+    { pattern: /^[1-9]\d{0,4}$/, message: t('system.basic.portShouldBeNumber'), trigger: 'blur' },
     { 
       validator: (rule, value, callback) => {
         const port = parseInt(value)
         if (port < 1 || port > 65535) {
-          callback(new Error('端口号必须在1-65535范围内'))
+          callback(new Error(t('system.basic.portRangeError')))
         } else if (port < 1024) {
-          callback(new Error('建议使用1024以上的端口号'))
+          callback(new Error(t('system.basic.portRecommendation')))
         } else {
           callback()
         }
@@ -512,53 +512,53 @@ const networkRules = reactive({
 })
 
 const gb28181Rules = reactive({
-  platform_name: [{ required: true, message: '请输入平台名称', trigger: 'blur' }],
+  platform_name: [{ required: true, message: t('system.basic.pleaseInputPlatformName'), trigger: 'blur' }],
   platform_ip: [
-    { required: true, message: '请输入平台IP地址', trigger: 'blur' },
-    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: '请输入正确的IP地址格式', trigger: 'blur' }
+    { required: true, message: t('system.basic.pleaseInputPlatformIp'), trigger: 'blur' },
+    { pattern: /^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, message: t('system.basic.pleaseInputCorrectIpFormat'), trigger: 'blur' }
   ],
   platform_port: [
-    { required: true, message: '请输入平台端口', trigger: 'blur' },
-    { type: 'number', min: 1000, max: 65535, message: '端口范围为1000-65535', trigger: 'change' }
+    { required: true, message: t('system.basic.pleaseInputPlatformPort'), trigger: 'blur' },
+    { type: 'number', min: 1000, max: 65535, message: t('system.basic.portRange1000To65535'), trigger: 'change' }
   ],
-  device_id: [{ required: true, message: '请输入设备编码', trigger: 'blur' }],
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+  device_id: [{ required: true, message: t('system.basic.pleaseInputDeviceId'), trigger: 'blur' }],
+  username: [{ required: true, message: t('system.basic.pleaseInputUsername'), trigger: 'blur' }],
+  password: [{ required: true, message: t('system.basic.pleaseInputPassword'), trigger: 'blur' }]
 })
 
 const videoStorageRules = reactive({
   retention_days: [
-    { required: true, message: '请输入保存天数', trigger: 'blur' },
-    { type: 'number', min: 1, max: 3650, message: '保存天数范围为1-3650天', trigger: 'change' }
+    { required: true, message: t('system.basic.pleaseInputRetentionDays'), trigger: 'blur' },
+    { type: 'number', min: 1, max: 3650, message: t('system.basic.retentionDaysRange'), trigger: 'change' }
   ],
   max_storage_gb: [
-    { required: true, message: '请输入最大存储容量', trigger: 'blur' },
-    { type: 'number', min: 1, max: 100000, message: '存储容量范围为1-100000GB', trigger: 'change' }
+    { required: true, message: t('system.basic.pleaseInputMaxStorage'), trigger: 'blur' },
+    { type: 'number', min: 1, max: 100000, message: t('system.basic.storageCapacityRange'), trigger: 'change' }
   ]
 })
 
 const alarmDataRules = reactive({
   retention_days: [
-    { required: true, message: '请输入保存天数', trigger: 'blur' },
-    { type: 'number', min: 1, max: 3650, message: '保存天数范围为1-3650天', trigger: 'change' }
+    { required: true, message: t('system.basic.pleaseInputRetentionDays'), trigger: 'blur' },
+    { type: 'number', min: 1, max: 3650, message: t('system.basic.retentionDaysRange'), trigger: 'change' }
   ],
   max_records: [
-    { required: true, message: '请输入最大记录数', trigger: 'blur' },
-    { type: 'number', min: 1000, max: 10000000, message: '记录数范围为1000-10000000条', trigger: 'change' }
+    { required: true, message: t('system.basic.pleaseInputMaxRecords'), trigger: 'blur' },
+    { type: 'number', min: 1000, max: 10000000, message: t('system.basic.recordsRange'), trigger: 'change' }
   ]
 })
 
 const portRules = reactive({
   port: [
-    { required: true, message: '请输入服务端口', trigger: 'blur' },
-    { pattern: /^[1-9]\d{0,4}$/, message: '端口号应为1-65535之间的数字', trigger: 'blur' },
+    { required: true, message: t('system.basic.pleaseInputServicePort'), trigger: 'blur' },
+    { pattern: /^[1-9]\d{0,4}$/, message: t('system.basic.portShouldBeNumber'), trigger: 'blur' },
     { 
       validator: (rule, value, callback) => {
         const port = parseInt(value)
         if (port < 1 || port > 65535) {
-          callback(new Error('端口号必须在1-65535范围内'))
+          callback(new Error(t('system.basic.portRangeError')))
         } else if (port < 1024) {
-          callback(new Error('建议使用1024以上的端口号'))
+          callback(new Error(t('system.basic.portRecommendation')))
         } else {
           callback()
         }
@@ -1008,7 +1008,7 @@ const loadGB28181Platforms = async () => {
     }
   } catch (error) {
     console.error('加载GB28181平台失败:', error)
-    ElMessage.error('加载GB28181平台失败')
+    ElMessage.error(t('system.basic.loadGB28181PlatformFailed'))
   } finally {
     gb28181Loading.value = false
   }
@@ -1050,15 +1050,17 @@ const saveGB28181Platform = async () => {
     }
     
     if (response.success) {
-      ElMessage.success(`GB28181平台${gb28181DialogMode.value === 'add' ? '添加' : '更新'}成功`)
+      const action = gb28181DialogMode.value === 'add' ? t('common.add') : t('common.update')
+      ElMessage.success(t('system.basic.saveGB28181PlatformSuccess', { action }))
       gb28181DialogVisible.value = false
       await loadGB28181Platforms()
     } else {
-      ElMessage.error(response.message || `GB28181平台${gb28181DialogMode.value === 'add' ? '添加' : '更新'}失败`)
+      const action = gb28181DialogMode.value === 'add' ? t('common.add') : t('common.update')
+      ElMessage.error(response.message || t('system.basic.saveGB28181PlatformFailed', { action }))
     }
   } catch (error) {
     console.error('保存GB28181平台失败:', error)
-    ElMessage.error('保存GB28181平台失败')
+    ElMessage.error(t('system.basic.saveGB28181PlatformError'))
   } finally {
     gb28181Loading.value = false
   }
@@ -1069,16 +1071,16 @@ const toggleGB28181Platform = async (row) => {
   try {
     const response = await systemAPI.toggleGB28181Platform(row.id, row.enabled)
     if (response.success) {
-      ElMessage.success(`平台${row.enabled ? '启用' : '禁用'}成功`)
+      ElMessage.success(row.enabled ? t('system.basic.platformEnableSuccess') : t('system.basic.platformDisableSuccess'))
       await loadGB28181Platforms()
     } else {
       row.enabled = !row.enabled
-      ElMessage.error(response.message || '状态切换失败')
+      ElMessage.error(response.message || t('common.statusToggleFailed'))
     }
   } catch (error) {
     row.enabled = !row.enabled
     console.error('切换平台状态失败:', error)
-    ElMessage.error('切换平台状态失败')
+    ElMessage.error(t('system.basic.platformToggleFailed'))
   } finally {
     row.switching = false
   }
@@ -1089,13 +1091,13 @@ const testGB28181Connection = async (row) => {
   try {
     const response = await systemAPI.testGB28181Connection(row.id)
     if (response.success) {
-      ElMessage.success('连接测试成功')
+      ElMessage.success(t('common.testConnectionSuccess'))
     } else {
-      ElMessage.error(response.message || '连接测试失败')
+      ElMessage.error(response.message || t('common.testConnectionFailed'))
     }
   } catch (error) {
     console.error('测试连接失败:', error)
-    ElMessage.error('测试连接失败')
+    ElMessage.error(t('common.testConnectionFailed'))
   } finally {
     row.testing = false
   }
@@ -1103,22 +1105,22 @@ const testGB28181Connection = async (row) => {
 
 const deleteGB28181Platform = async (row) => {
   try {
-    await ElMessageBox.confirm(`确定要删除平台 "${row.platform_name}" 吗？`, '确认删除', {
+    await ElMessageBox.confirm(t('common.confirmDeleteWithName', { name: row.platform_name }), t('common.confirmDeleteTitle'), {
       type: 'warning'
     })
     
     gb28181Loading.value = true
     const response = await systemAPI.deleteGB28181Platform(row.id)
     if (response.success) {
-      ElMessage.success('删除成功')
+      ElMessage.success(t('common.deleteSuccess'))
       await loadGB28181Platforms()
     } else {
-      ElMessage.error(response.message || '删除失败')
+      ElMessage.error(response.message || t('common.deleteFailed'))
     }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除GB28181平台失败:', error)
-      ElMessage.error('删除失败')
+      ElMessage.error(t('common.deleteFailed'))
     }
   } finally {
     gb28181Loading.value = false
@@ -1135,7 +1137,7 @@ const loadVideoStorageConfig = async () => {
     }
   } catch (error) {
     console.error('加载录像存储配置失败:', error)
-    ElMessage.error('加载录像存储配置失败')
+    ElMessage.error(t('system.basic.loadVideoStorageConfigFailed'))
   } finally {
     storageLoading.value = false
   }
@@ -1146,13 +1148,13 @@ const saveVideoStorageConfig = async () => {
   try {
     const response = await systemAPI.setVideoStorageConfig(videoStorageConfig)
     if (response.success) {
-      ElMessage.success('录像存储配置保存成功')
+      ElMessage.success(t('system.basic.saveVideoStorageConfigSuccess'))
     } else {
-      ElMessage.error(response.message || '录像存储配置保存失败')
+      ElMessage.error(response.message || t('system.basic.saveVideoStorageConfigFailed'))
     }
   } catch (error) {
     console.error('保存录像存储配置失败:', error)
-    ElMessage.error('保存录像存储配置失败')
+    ElMessage.error(t('system.basic.saveVideoStorageConfigFailed'))
   } finally {
     storageLoading.value = false
   }
@@ -1167,7 +1169,7 @@ const loadAlarmDataConfig = async () => {
     }
   } catch (error) {
     console.error('加载告警数据配置失败:', error)
-    ElMessage.error('加载告警数据配置失败')
+    ElMessage.error(t('system.basic.loadAlarmDataConfigFailed'))
   } finally {
     storageLoading.value = false
   }
@@ -1178,13 +1180,13 @@ const saveAlarmDataConfig = async () => {
   try {
     const response = await systemAPI.setAlarmDataConfig(alarmDataConfig)
     if (response.success) {
-      ElMessage.success('告警数据配置保存成功')
+      ElMessage.success(t('system.basic.saveAlarmDataConfigSuccess'))
     } else {
-      ElMessage.error(response.message || '告警数据配置保存失败')
+      ElMessage.error(response.message || t('system.basic.saveAlarmDataConfigFailed'))
     }
   } catch (error) {
     console.error('保存告警数据配置失败:', error)
-    ElMessage.error('保存告警数据配置失败')
+    ElMessage.error(t('system.basic.saveAlarmDataConfigFailed'))
   } finally {
     storageLoading.value = false
   }
@@ -1194,15 +1196,15 @@ const saveAlarmDataConfig = async () => {
 
 const confirmRestartService = () => {
   restartType.value = 'service'
-  restartDialogTitle.value = '确认重启服务'
-  restartDialogMessage.value = '即将重启应用服务，系统将暂时不可用。'
+  restartDialogTitle.value = t('system.basic.confirmRestartServiceTitle')
+  restartDialogMessage.value = t('system.basic.confirmRestartServiceMessage')
   restartDialogVisible.value = true
 }
 
 const confirmRebootServer = () => {
   restartType.value = 'server'
-  restartDialogTitle.value = '确认重启服务器'
-  restartDialogMessage.value = '即将重启整个服务器，系统将完全不可用。'
+  restartDialogTitle.value = t('system.basic.confirmRebootServerTitle')
+  restartDialogMessage.value = t('system.basic.confirmRebootServerMessage')
   restartDialogVisible.value = true
 }
 
@@ -1214,21 +1216,21 @@ const performRestart = async () => {
     let response
     if (restartType.value === 'service') {
       response = await systemAPI.restartService()
-      restartProgressTitle.value = '服务重启'
+      restartProgressTitle.value = t('system.basic.restartService')
     } else {
       response = await systemAPI.rebootServer()
-      restartProgressTitle.value = '服务器重启'
+      restartProgressTitle.value = t('system.basic.restartServer')
     }
     
     if (response.success) {
       restartProgressVisible.value = true
       startRestartProgress()
     } else {
-      ElMessage.error(response.message || '重启失败')
+      ElMessage.error(response.message || t('system.basic.restartFailed'))
     }
   } catch (error) {
     console.error('重启失败:', error)
-    ElMessage.error('重启失败')
+    ElMessage.error(t('system.basic.restartFailed'))
   } finally {
     performingRestart.value = false
   }
@@ -1236,14 +1238,14 @@ const performRestart = async () => {
 
 const startRestartProgress = () => {
   restartProgress.value = 0
-  restartProgressMessage.value = restartType.value === 'service' ? '正在重启服务...' : '正在重启服务器...'
+  restartProgressMessage.value = restartType.value === 'service' ? t('system.basic.restartingService') : t('system.basic.restartingServer')
   
   const progressInterval = setInterval(() => {
     restartProgress.value += 2
     if (restartProgress.value >= 100) {
       clearInterval(progressInterval)
       restartProgress.value = 100
-      restartProgressMessage.value = restartType.value === 'service' ? '服务重启完成' : '服务器重启完成'
+      restartProgressMessage.value = restartType.value === 'service' ? t('system.basic.serviceRestartComplete') : t('system.basic.serverRestartComplete')
       
       if (restartType.value === 'service') {
         startServiceRestartCountdown()
@@ -1290,7 +1292,7 @@ const updateTimezone = (value) => {
   
   // 提示用户保存配置
   if (ntpConfig.mode === 'ntp_client') {
-    ElMessage.info('时区已更改，请点击"保存配置"或"立即同步"以应用更改')
+    ElMessage.info(t('system.basic.timezoneChanged'))
   }
 }
 
@@ -1327,7 +1329,7 @@ const showPortChangeDialog = () => {
 const changePort = async () => {
   // 检查端口是否真的发生了变化
   if (!isPortChanged.value) {
-    ElMessage.info('端口未发生变化，无需修改')
+    ElMessage.info(t('system.basic.portNotChanged'))
     return
   }
 
@@ -1338,11 +1340,11 @@ const changePort = async () => {
     // 调用端口修改API
     const portResponse = await systemAPI.setPortConfig({ port: newPort.value })
     if (portResponse.code !== 200 && !portResponse.success) {
-      ElMessage.error(portResponse.message || '端口配置修改失败')
+      ElMessage.error(portResponse.message || t('system.basic.portChangeFailed'))
       return
     }
     
-    ElMessage.success('端口修改成功，系统将使用新端口提供服务')
+    ElMessage.success(t('system.basic.portChangeSuccess'))
     
     // 立即更新API请求的baseURL到新端口
     updateBaseURL(newPort.value)
@@ -1355,7 +1357,7 @@ const changePort = async () => {
     portChangeDialogVisible.value = false
   } catch (error) {
     console.error('修改端口失败:', error)
-    ElMessage.error('修改端口失败')
+    ElMessage.error(t('system.basic.portModifyFailed'))
   } finally {
     portChanging.value = false
   }
@@ -1442,10 +1444,10 @@ const getPreviewAccessUrl = () => {
 const copyToClipboard = async (text) => {
   try {
     await navigator.clipboard.writeText(text)
-    ElMessage.success('地址已复制到剪贴板')
+    ElMessage.success(t('common.copyToClipboard'))
   } catch (error) {
     console.error('复制失败:', error)
-    ElMessage.error('复制失败')
+    ElMessage.error(t('common.copyFailed'))
   }
 }
 
@@ -1462,7 +1464,7 @@ const changeNetworkConfig = async () => {
     })
     
     if (networkResponse.code !== 200 && !networkResponse.success) {
-      ElMessage.error(networkResponse.message || '网络配置修改失败')
+      ElMessage.error(networkResponse.message || t('system.basic.networkConfigChangeFailed'))
       return
     }
     
@@ -1472,7 +1474,7 @@ const changeNetworkConfig = async () => {
     
   } catch (error) {
     console.error('修改网络配置失败:', error)
-    ElMessage.error('修改网络配置失败')
+    ElMessage.error(t('system.basic.networkConfigChangeFailed'))
   } finally {
     networkChanging.value = false
   }
@@ -1480,14 +1482,14 @@ const changeNetworkConfig = async () => {
 
 const startNetworkChangeProgress = () => {
   networkChangeProgress.value = 0
-  networkChangeMessage.value = '正在修改网络配置...'
+  networkChangeMessage.value = t('system.basic.changingNetworkConfig')
   
   const progressInterval = setInterval(() => {
     networkChangeProgress.value += 3
     if (networkChangeProgress.value >= 100) {
       clearInterval(progressInterval)
       networkChangeProgress.value = 100
-      networkChangeMessage.value = '网络配置修改完成'
+      networkChangeMessage.value = t('system.basic.networkConfigChangeComplete')
       startNetworkChangeCountdown()
     }
   }, 1000)

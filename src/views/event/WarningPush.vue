@@ -59,7 +59,7 @@
       <!-- 增强型分页组件 -->
       <div class="pagination-container tech-pagination">
         <div class="pagination-info">
-          <span>共 <span class="total-count">{{ pagination.total }}</span> 条记录，每页显示 
+          <span>{{ $t('common.total') }} <span class="total-count">{{ pagination.total }}</span> {{ $t('common.records') }}, {{ $t('common.perPage') }} 
             <el-select 
               v-model="pagination.pageSize" 
               @change="handleSizeChange"
@@ -70,7 +70,7 @@
               <el-option label="10" :value="10" />
               <el-option label="20" :value="20" />
               <el-option label="50" :value="50" />
-            </el-select> 条
+            </el-select> {{ $t('common.items') }}
           </span>
         </div>
         <div class="pagination-controls">
@@ -80,7 +80,7 @@
             :disabled="pagination.page === 1 || typeLoading"
             @click="goToPage(1)"
           >
-            首页
+            {{ $t('common.firstPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -88,7 +88,7 @@
             :disabled="pagination.page === 1 || typeLoading"
             @click="goToPage(pagination.page - 1)"
           >
-            上一页
+            {{ $t('common.prevPage') }}
           </el-button>
           <div class="pagination-pages">
             <button 
@@ -108,7 +108,7 @@
             :disabled="pagination.page === totalPages || typeLoading"
             @click="goToPage(pagination.page + 1)"
           >
-            下一页
+            {{ $t('common.nextPage') }}
           </el-button>
           <el-button 
             class="pagination-btn"
@@ -116,7 +116,7 @@
             :disabled="pagination.page === totalPages || typeLoading"
             @click="goToPage(totalPages)"
           >
-            末页
+            {{ $t('common.lastPage') }}
           </el-button>
         </div>
       </div>
@@ -125,25 +125,25 @@
     <!-- 添加类型对话框 -->
     <el-dialog
       v-model="showAddForm"
-      title="添加告警类型"
+      :title="$t('event.warningPush.addTypeDialogTitle')"
       width="600px"
       :close-on-click-modal="false"
       destroy-on-close
       class="tech-dialog"
     >
       <el-form :model="typeForm" :rules="typeRules" ref="typeFormRef" label-width="100px">
-        <el-form-item label="类型ID" prop="id">
-          <el-input-number v-model="typeForm.id" :min="10" placeholder="建议从10开始" style="width: 100%" />
-          <div class="form-tip">💡 ID 1-9 为系统预置类型</div>
+        <el-form-item :label="$t('event.warningPush.typeId')" prop="id">
+          <el-input-number v-model="typeForm.id" :min="10" :placeholder="$t('event.warningPush.typeIdPlaceholder')" style="width: 100%" />
+          <div class="form-tip">💡 {{ $t('event.warningPush.typeIdTip') }}</div>
         </el-form-item>
-        <el-form-item label="类型名称" prop="type_name">
-          <el-input v-model="typeForm.type_name" placeholder="如：人员闯入" />
+        <el-form-item :label="$t('event.warningPush.typeName')" prop="type_name">
+          <el-input v-model="typeForm.type_name" :placeholder="$t('event.warningPush.typeNamePlaceholder')" />
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="showAddForm = false">取消</el-button>
-          <el-button type="primary" @click="handleSaveType">保存</el-button>
+          <el-button @click="showAddForm = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" @click="handleSaveType">{{ $t('common.save') }}</el-button>
         </span>
       </template>
     </el-dialog>
@@ -151,7 +151,7 @@
     <!-- 订阅配置对话框 -->
     <el-dialog
       v-model="subscriptionDialogVisible"
-      title="告警订阅配置"
+      :title="$t('event.warningPush.subscriptionConfig')"
       width="700px"
       :close-on-click-modal="false"
       destroy-on-close
@@ -161,7 +161,7 @@
         <!-- 订阅的告警类型 -->
         <div class="subscription-section">
           <div class="section-title">
-            <span class="required">*</span> 订阅的告警类型
+            <span class="required">*</span> {{ $t('event.warningPush.subscription.alarmTypes') }}
           </div>
           <div class="alarm-types-scroll-container">
             <div class="alarm-types-grid">
@@ -177,31 +177,31 @@
             </div>
           </div>
           <div class="section-actions">
-            <el-button size="small" @click="selectAllTypes">全选</el-button>
-            <el-button size="small" @click="deselectAllTypes">全不选</el-button>
+            <el-button size="small" @click="selectAllTypes">{{ $t('common.selectAll') }}</el-button>
+            <el-button size="small" @click="deselectAllTypes">{{ $t('common.deselectAll') }}</el-button>
           </div>
         </div>
 
         <!-- 推送方式 -->
         <div class="subscription-section">
-          <div class="section-title">推送方式</div>
+          <div class="section-title">{{ $t('event.warningPush.subscription.methods') }}</div>
           <div class="push-methods">
             <div class="push-method-item">
               <el-checkbox v-model="subscriptionForm.enable_web_push">
-                <span class="method-name">Web页面弹出告警</span>
+                <span class="method-name">{{ $t('event.warningPush.subscription.webPush') }}</span>
               </el-checkbox>
-              <div class="method-desc">实时在浏览器中弹出告警通知</div>
+              <div class="method-desc">{{ $t('event.warningPush.subscription.webPushDesc') }}</div>
             </div>
             
             <div class="push-method-item">
               <el-checkbox v-model="subscriptionForm.enable_email">
-                <span class="method-name">邮件推送</span>
+                <span class="method-name">{{ $t('event.warningPush.subscription.email') }}</span>
               </el-checkbox>
-              <div class="method-desc">发送告警邮件到指定邮箱</div>
+              <div class="method-desc">{{ $t('event.warningPush.subscription.emailDesc') }}</div>
               <el-input
                 v-if="subscriptionForm.enable_email"
                 v-model="subscriptionForm.email_address"
-                placeholder="请输入邮箱地址"
+                :placeholder="$t('event.warningPush.subscription.emailPlaceholder')"
                 type="email"
                 class="email-input"
               />
@@ -212,18 +212,18 @@
         <!-- 配置提示 -->
         <el-alert
           v-if="subscriptionForm.enable_web_push"
-          title="Web推送已启用"
+          :title="$t('event.warningPush.subscription.webPushEnabled')"
           type="success"
           :closable="false"
           show-icon
         >
-          保存配置后，系统将自动建立WebSocket连接，实时推送告警信息
+          {{ $t('event.warningPush.subscription.webPushTip') }}
         </el-alert>
       </div>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="subscriptionDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSaveSubscription">保存配置</el-button>
+          <el-button @click="subscriptionDialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button type="primary" @click="handleSaveSubscription">{{ $t('common.save') }}</el-button>
         </span>
       </template>
     </el-dialog>

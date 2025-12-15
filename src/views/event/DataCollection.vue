@@ -1,4 +1,4 @@
-<template>
+·<template>
   <div class="data-collection tech-page-container">
     <!-- 科技感背景 -->
     <div class="tech-background"></div>
@@ -64,11 +64,11 @@
             <div class="filter-row">
               <!-- 时间范围 -->
               <div class="filter-item">
-                <label>开始日期</label>
+                <label>{{ $t('event.dataCollection.filter.startDate') }}</label>
                 <el-date-picker
                   v-model="filterForm.startDate"
                   type="date"
-                  placeholder="选择开始日期"
+                  :placeholder="$t('event.dataCollection.filter.startPlaceholder')"
                   class="tech-input"
                   value-format="YYYY-MM-DD"
                   style="width: 100%"
@@ -76,11 +76,11 @@
               </div>
               
               <div class="filter-item">
-                <label>结束日期</label>
+                <label>{{ $t('event.dataCollection.filter.endDate') }}</label>
                 <el-date-picker
                   v-model="filterForm.endDate"
                   type="date"
-                  placeholder="选择结束日期"
+                  :placeholder="$t('event.dataCollection.filter.endPlaceholder')"
                   class="tech-input"
                   value-format="YYYY-MM-DD"
                   style="width: 100%"
@@ -96,21 +96,21 @@
                   @click="handleFilter"
                   :loading="statsLoading"
                 >
-                  筛选
+                  {{ $t('common.filter') }}
                 </el-button>
                 <el-button 
                   :icon="Refresh" 
                   class="tech-button-sm" 
                   @click="handleReset"
                 >
-                  重置
+                  {{ $t('common.reset') }}
                 </el-button>
               </div>
             </div>
 
             <!-- 告警类型选择 -->
             <div class="alarm-type-section">
-              <label>告警类型（可多选，不选则统计所有）</label>
+              <label>{{ $t('event.dataCollection.filter.alarmTypeLabel') }}</label>
               <div class="alarm-type-list">
                 <el-checkbox-group v-model="filterForm.alarmTypes">
                   <el-checkbox 
@@ -133,18 +133,18 @@
     <el-card class="operation-card tech-card mb-20" shadow="never">
       <template #header>
         <div class="card-header">
-          <span>数据收集操作</span>
+          <span>{{ $t('event.dataCollection.operation.title') }}</span>
         </div>
       </template>
 
       <div class="operation-content">
         <!-- 选择数据范围 -->
         <div class="range-selection">
-          <label class="section-label">选择数据范围</label>
+          <label class="section-label">{{ $t('event.dataCollection.operation.selectRange') }}</label>
           <el-radio-group v-model="operationForm.rangeType" @change="handleRangeChange">
-            <el-radio label="all">所有未导出的误报</el-radio>
-            <el-radio label="timeRange">按时间范围</el-radio>
-            <el-radio label="alarmType">按告警类型</el-radio>
+            <el-radio label="all">{{ $t('event.dataCollection.operation.rangeAll') }}</el-radio>
+            <el-radio label="timeRange">{{ $t('event.dataCollection.operation.rangeTime') }}</el-radio>
+            <el-radio label="alarmType">{{ $t('event.dataCollection.operation.rangeType') }}</el-radio>
           </el-radio-group>
         </div>
 
@@ -152,22 +152,22 @@
         <div v-show="operationForm.rangeType === 'timeRange'" class="time-range-group">
           <div class="time-range-inputs">
             <div class="input-item">
-              <label>开始日期</label>
+              <label>{{ $t('event.dataCollection.operation.startDate') }}</label>
               <el-date-picker
                 v-model="operationForm.startDate"
                 type="date"
-                placeholder="选择开始日期"
+                :placeholder="$t('event.dataCollection.operation.startPlaceholder')"
                 class="tech-input"
                 value-format="YYYY-MM-DD"
                 style="width: 100%"
               />
             </div>
             <div class="input-item">
-              <label>结束日期</label>
+              <label>{{ $t('event.dataCollection.operation.endDate') }}</label>
               <el-date-picker
                 v-model="operationForm.endDate"
                 type="date"
-                placeholder="选择结束日期"
+                :placeholder="$t('event.dataCollection.operation.endPlaceholder')"
                 class="tech-input"
                 value-format="YYYY-MM-DD"
                 style="width: 100%"
@@ -178,7 +178,7 @@
 
         <!-- 告警类型选择 -->
         <div v-show="operationForm.rangeType === 'alarmType'" class="alarm-type-group">
-          <label class="section-label">选择告警类型</label>
+          <label class="section-label">{{ $t('event.dataCollection.operation.selectAlarmType') }}</label>
           <div class="alarm-type-checkboxes">
             <el-checkbox-group v-model="operationForm.selectedTypes">
               <el-checkbox 
@@ -195,8 +195,8 @@
         <!-- 仅未导出选项 -->
         <div v-show="operationForm.rangeType !== 'all'" class="unexported-option">
           <el-checkbox v-model="operationForm.onlyUnexported">
-            📌 仅导出未导出的数据
-            <span class="hint-text">(取消勾选将导出所有数据)</span>
+            📌 {{ $t('event.dataCollection.operation.onlyUnexported') }}
+            <span class="hint-text">{{ $t('event.dataCollection.operation.onlyUnexportedHint') }}</span>
           </el-checkbox>
         </div>
 
@@ -204,9 +204,9 @@
         <div v-show="previewData.visible" class="data-preview">
           <div class="preview-content">
             <div class="preview-info">
-              <span class="preview-label">当前选择将导出：</span>
+              <span class="preview-label">{{ $t('event.dataCollection.operation.previewLabel') }}</span>
               <span class="preview-count">{{ previewData.count }}</span>
-              <span class="preview-unit">条数据</span>
+              <span class="preview-unit">{{ $t('event.dataCollection.operation.previewUnit') }}</span>
             </div>
             <el-button 
               text 
@@ -227,7 +227,7 @@
             @click="handlePreview"
             :loading="previewLoading"
           >
-            预览数量
+            {{ $t('event.dataCollection.operation.previewCount') }}
           </el-button>
           <el-button 
             type="success" 
@@ -236,7 +236,7 @@
             @click="handleExport"
             :loading="exportLoading"
           >
-            导出样本包
+            {{ $t('event.dataCollection.operation.exportPackage') }}
           </el-button>
           <el-button 
             type="primary" 
@@ -245,7 +245,7 @@
             @click="handlePackageUpload"
             :loading="uploadLoading"
           >
-            打包并上传
+            {{ $t('event.dataCollection.operation.packageUpload') }}
           </el-button>
           <el-button 
             type="warning" 
@@ -253,7 +253,7 @@
             class="tech-button-sm config-button"
             @click="showConfigDialog"
           >
-            训练平台配置管理
+            {{ $t('event.dataCollection.operation.configManage') }}
           </el-button>
         </div>
       </div>
@@ -262,7 +262,7 @@
     <!-- 训练平台配置对话框 -->
     <el-dialog
       v-model="configDialog.visible"
-      title="训练平台配置管理"
+      :title="$t('event.dataCollection.config.title')"
       width="700px"
       :close-on-click-modal="false"
     >
@@ -276,32 +276,32 @@
         />
 
         <el-form :model="configForm" label-width="120px" label-position="left">
-          <el-form-item label="平台名称" required>
+          <el-form-item :label="$t('event.dataCollection.config.platformName')" required>
             <el-input
               v-model="configForm.platform_name"
-              placeholder="如：AI训练平台"
+              :placeholder="$t('event.dataCollection.config.platformNamePlaceholder')"
               class="tech-input"
             />
           </el-form-item>
 
-          <el-form-item label="平台URL" required>
+          <el-form-item :label="$t('event.dataCollection.config.platformUrl')" required>
             <el-input
               v-model="configForm.platform_url"
-              placeholder="http://training-platform:8080/api/upload"
+              :placeholder="$t('event.dataCollection.config.platformUrlPlaceholder')"
               class="tech-input"
             />
           </el-form-item>
 
-          <el-form-item label="认证类型" required>
+          <el-form-item :label="$t('event.dataCollection.config.authType')" required>
             <el-select
               v-model="configForm.auth_type"
-              placeholder="选择认证类型"
+              :placeholder="$t('event.dataCollection.config.authTypePlaceholder')"
               class="tech-input"
               style="width: 100%"
             >
-              <el-option label="API Key" value="api_key" />
-              <el-option label="Bearer Token" value="bearer_token" />
-              <el-option label="Basic Auth" value="basic_auth" />
+              <el-option :label="$t('event.dataCollection.config.authOptions.apiKey')" value="api_key" />
+              <el-option :label="$t('event.dataCollection.config.authOptions.bearer')" value="bearer_token" />
+              <el-option :label="$t('event.dataCollection.config.authOptions.basic')" value="basic_auth" />
             </el-select>
           </el-form-item>
 
@@ -309,7 +309,7 @@
             <el-input
               v-model="configForm.api_key"
               :type="showPassword ? 'text' : 'password'"
-              placeholder="输入API密钥或认证信息"
+              :placeholder="$t('event.dataCollection.config.authInputPlaceholder')"
               class="tech-input"
             >
               <template #suffix>
@@ -322,7 +322,7 @@
             <div class="form-hint">{{ authHelp }}</div>
           </el-form-item>
 
-          <el-form-item label="超时时间（秒）">
+          <el-form-item :label="$t('event.dataCollection.config.timeout')">
             <el-input-number
               v-model="configForm.timeout"
               :min="60"
@@ -338,9 +338,9 @@
 
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="configDialog.visible = false">取消</el-button>
+          <el-button @click="configDialog.visible = false">{{ $t('common.cancel') }}</el-button>
           <el-button type="primary" @click="handleSaveConfig" :loading="configDialog.saving">
-            保存配置
+            {{ $t('event.dataCollection.config.save') }}
           </el-button>
         </div>
       </template>
@@ -350,6 +350,7 @@
 
 <script>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh, Search, Download, Upload, View, Setting, Hide } from '@element-plus/icons-vue'
 import { eventApi } from '@/api/event'
@@ -358,6 +359,8 @@ import request from '@/api/index'
 export default {
   name: 'DataCollection',
   setup() {
+    const { t } = useI18n()
+
     // 数据收集操作表单
     const operationForm = ref({
       rangeType: 'all', // all, timeRange, alarmType
@@ -403,20 +406,20 @@ export default {
     // 认证标签和帮助文本
     const authLabel = computed(() => {
       const labels = {
-        'api_key': 'API Key',
-        'bearer_token': 'Bearer Token',
-        'basic_auth': 'Basic Auth'
+        'api_key': t('event.dataCollection.config.authOptions.apiKey'),
+        'bearer_token': t('event.dataCollection.config.authOptions.bearer'),
+        'basic_auth': t('event.dataCollection.config.authOptions.basic')
       }
-      return labels[configForm.value.auth_type] || 'API Key'
+      return labels[configForm.value.auth_type] || t('event.dataCollection.config.authOptions.apiKey')
     })
 
     const authHelp = computed(() => {
       const helps = {
-        'api_key': '请输入训练平台的API密钥',
-        'bearer_token': '请输入Bearer Token',
-        'basic_auth': '请输入Basic Auth凭证（格式：username:password）'
+        'api_key': t('event.dataCollection.config.authHelp.apiKey'),
+        'bearer_token': t('event.dataCollection.config.authHelp.bearer'),
+        'basic_auth': t('event.dataCollection.config.authHelp.basic')
       }
-      return helps[configForm.value.auth_type] || '请输入认证信息'
+      return helps[configForm.value.auth_type] || t('event.dataCollection.config.authHelp.default')
     })
 
     // 筛选表单
@@ -459,14 +462,14 @@ export default {
       
       if (operationForm.value.rangeType === 'timeRange') {
         if (!operationForm.value.startDate || !operationForm.value.endDate) {
-          throw new Error('请选择开始和结束日期')
+          throw new Error(t('event.dataCollection.messages.selectDateRange'))
         }
         params.start_date = operationForm.value.startDate
         params.end_date = operationForm.value.endDate
         params.only_unexported = operationForm.value.onlyUnexported
       } else if (operationForm.value.rangeType === 'alarmType') {
         if (operationForm.value.selectedTypes.length === 0) {
-          throw new Error('请至少选择一个告警类型')
+          throw new Error(t('event.dataCollection.messages.selectAlarmType'))
         }
         params.alarm_types = operationForm.value.selectedTypes
         params.only_unexported = operationForm.value.onlyUnexported
@@ -500,11 +503,11 @@ export default {
           const count = response.data.data?.count || response.data.count || 0
           previewData.value.count = count
           previewData.value.visible = true
-          ElMessage.success(`找到 ${count} 条符合条件的数据`)
+          ElMessage.success(t('event.dataCollection.messages.previewSuccess', { count }))
         }
       } catch (error) {
         console.error('预览失败：', error)
-        ElMessage.error(error.message || '预览失败')
+        ElMessage.error(error.message || t('event.dataCollection.messages.previewFailed'))
       } finally {
         previewLoading.value = false
       }
@@ -516,11 +519,11 @@ export default {
         const params = buildOperationParams()
         
         await ElMessageBox.confirm(
-          '确认要导出误报样本包吗？',
-          '提示',
+          t('event.dataCollection.messages.exportConfirm'),
+          t('common.tip'),
           {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
+            confirmButtonText: t('common.confirm'),
+            cancelButtonText: t('common.cancel'),
             type: 'info'
           }
         )
@@ -572,24 +575,24 @@ export default {
                 window.URL.revokeObjectURL(url)
               }, 100)
               
-              ElMessage.success(`导出成功！共 ${data.alarm_count || 0} 条数据`)
+              ElMessage.success(t('event.dataCollection.messages.exportSuccess', { count: data.alarm_count || 0 }))
               
               // 刷新统计
               await loadStats()
             } catch (downloadError) {
               console.error('下载文件失败:', downloadError)
               console.error('错误详情:', downloadError.response)
-              ElMessage.error(`下载文件失败: ${downloadError.message}`)
+              ElMessage.error(t('event.dataCollection.messages.downloadFailed', { error: downloadError.message }))
             }
           } else {
             console.error('未找到download_url字段')
-            ElMessage.error('导出失败：未返回下载链接')
+            ElMessage.error(t('event.dataCollection.messages.exportNoLink'))
           }
         }
       } catch (error) {
         if (error !== 'cancel') {
           console.error('导出失败：', error)
-          ElMessage.error(error.message || '导出失败')
+          ElMessage.error(error.message || t('event.dataCollection.messages.exportFailed'))
         }
       } finally {
         exportLoading.value = false
@@ -608,7 +611,7 @@ export default {
         console.log('配置是否存在:', exists)
         
         if (!exists) {
-          ElMessage.warning('请先配置训练平台信息')
+          ElMessage.warning(t('event.dataCollection.messages.needConfig'))
           showConfigDialog()
           return
         }
@@ -616,11 +619,11 @@ export default {
         const params = buildOperationParams()
         
         await ElMessageBox.confirm(
-          '确认要打包并上传误报样本到训练平台吗？',
-          '提示',
+          t('event.dataCollection.messages.packageConfirm'),
+          t('common.tip'),
           {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
+            confirmButtonText: t('common.confirm'),
+            cancelButtonText: t('common.cancel'),
             type: 'warning'
           }
         )
@@ -641,7 +644,7 @@ export default {
           console.log('解析后的data:', data)
           console.log('alarm_count:', data.alarm_count)
           
-          ElMessage.success(`打包上传成功！共 ${data.alarm_count || 0} 条数据`)
+          ElMessage.success(t('event.dataCollection.messages.packageSuccess', { count: data.alarm_count || 0 }))
           
           // 刷新统计
           await loadStats()
@@ -649,7 +652,7 @@ export default {
       } catch (error) {
         if (error !== 'cancel') {
           console.error('打包上传失败：', error)
-          ElMessage.error(error.message || '打包上传失败')
+          ElMessage.error(error.message || t('event.dataCollection.messages.packageFailed'))
         }
       } finally {
         uploadLoading.value = false
@@ -683,7 +686,7 @@ export default {
           }
           
           configDialog.value.status = true
-          configDialog.value.statusText = '已加载现有配置'
+          configDialog.value.statusText = t('event.dataCollection.messages.configLoaded')
           configDialog.value.statusType = 'success'
         }
       } catch (error) {
@@ -695,13 +698,13 @@ export default {
         if (error.response && error.response.status === 404) {
           console.log('配置不存在（404），显示未配置提示')
           configDialog.value.status = true
-          configDialog.value.statusText = '训练平台尚未配置，请填写配置信息'
+          configDialog.value.statusText = t('event.dataCollection.messages.configNotSet')
           configDialog.value.statusType = 'info'
         } else {
-          const errorMsg = error.response?.data?.error || error.message || '未知错误'
+          const errorMsg = error.response?.data?.error || error.message || t('common.unknown')
           console.error('其他错误:', errorMsg)
           configDialog.value.status = true
-          configDialog.value.statusText = '加载配置失败：' + errorMsg
+          configDialog.value.statusText = t('event.dataCollection.messages.configLoadFailed', { error: errorMsg })
           configDialog.value.statusType = 'error'
         }
       } finally {
@@ -713,15 +716,15 @@ export default {
     const handleSaveConfig = async () => {
       // 验证必填字段
       if (!configForm.value.platform_name) {
-        ElMessage.warning('请输入平台名称')
+        ElMessage.warning(t('event.dataCollection.messages.platformNameRequired'))
         return
       }
       if (!configForm.value.platform_url) {
-        ElMessage.warning('请输入平台URL')
+        ElMessage.warning(t('event.dataCollection.messages.platformUrlRequired'))
         return
       }
       if (!configForm.value.api_key) {
-        ElMessage.warning('请输入认证信息')
+        ElMessage.warning(t('event.dataCollection.messages.authInfoRequired'))
         return
       }
 
@@ -730,7 +733,7 @@ export default {
         try {
           JSON.parse(configForm.value.additional_params)
         } catch (e) {
-          ElMessage.warning('额外参数必须是有效的JSON格式')
+          ElMessage.warning(t('event.dataCollection.messages.extraParamsInvalid'))
           return
         }
       }
@@ -749,9 +752,9 @@ export default {
         const response = await eventApi.saveTrainingPlatformConfig(data)
         console.log('保存配置响应:', response)
         
-        ElMessage.success('配置保存成功')
+        ElMessage.success(t('event.dataCollection.messages.configSaveSuccess'))
         configDialog.value.status = true
-        configDialog.value.statusText = '配置保存成功'
+        configDialog.value.statusText = t('event.dataCollection.messages.configSaveSuccess')
         configDialog.value.statusType = 'success'
         
         // 延迟关闭对话框
@@ -760,9 +763,9 @@ export default {
         }, 1500)
       } catch (error) {
         console.error('保存配置失败：', error)
-        ElMessage.error('保存配置失败：' + (error.message || '未知错误'))
+        ElMessage.error(t('event.dataCollection.messages.configSaveFailed', { error: error.message || t('common.unknown') }))
         configDialog.value.status = true
-        configDialog.value.statusText = '保存配置失败：' + (error.message || '未知错误')
+        configDialog.value.statusText = t('event.dataCollection.messages.configSaveFailed', { error: error.message || t('common.unknown') })
         configDialog.value.statusType = 'error'
       } finally {
         configDialog.value.saving = false
@@ -801,11 +804,11 @@ export default {
           console.log('统计数据已更新(兼容模式):', stats.value)
         } else {
           console.warn('响应数据格式异常:', response)
-          ElMessage.warning('获取统计数据格式异常')
+          ElMessage.warning(t('event.dataCollection.messages.statsFormatError'))
         }
       } catch (error) {
         console.error('加载统计信息失败：', error)
-        ElMessage.error('加载统计信息失败：' + (error.message || '未知错误'))
+        ElMessage.error(t('event.dataCollection.messages.statsLoadFailed', { error: error.message || t('common.unknown') }))
       } finally {
         statsLoading.value = false
       }

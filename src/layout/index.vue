@@ -16,7 +16,7 @@
 
         <!-- 居中的标题 -->
         <div class="header-center">
-          <span class="app-title">智能监控系统</span>
+          <span class="app-title">{{ $t('common.systemTitle') }}</span>
         </div>
 
         <div class="header-right">
@@ -160,6 +160,7 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { useAuthStore } from '@/stores/auth';
@@ -200,6 +201,7 @@ export default {
     TrendCharts
   },
   setup() {
+    const { t } = useI18n();
     const router = useRouter();
     const route = useRoute();
     const authStore = useAuthStore();
@@ -216,9 +218,9 @@ export default {
     const displayUsername = computed(() => {
       // 如果没有认证信息，不显示任何用户名
       if (!authStore.isAuthenticated || !authStore.userInfo) {
-        return '未登录';
+        return t('common.notLoggedIn');
       }
-      return authStore.username || authStore.userInfo?.username || '游客';
+      return authStore.username || authStore.userInfo?.username || t('common.guest');
     });
 
     // 当前logo URL
@@ -340,6 +342,7 @@ export default {
     });
 
     return {
+      t,
       userAvatarUrl,
       isCollapse,
       displayUsername,

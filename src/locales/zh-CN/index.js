@@ -10,6 +10,7 @@ import map from './map'
 import board from './board'
 import camera from './camera'
 import detection from './detection'
+import home from './home'
 
 export default {
   common,
@@ -23,5 +24,6 @@ export default {
   user,
   board,
   camera,
-  detection
+  detection,
+  home
 }
