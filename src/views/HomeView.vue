@@ -733,9 +733,7 @@ import { eventApi } from '@/api/event'
 import { gb28181API } from '@/api/system'
 import { ElMessage } from 'element-plus'
 import { Loading, VideoCamera, VideoPlay, VideoPause } from '@element-plus/icons-vue'
-// eslint-disable-next-line no-unused-vars
-import H265Player from '@/components/H265Player.vue' // 保留但不使用
-import ZLKWebRTCPlayer from '@/components/ZLKWebRTCPlayer.vue' // 新增WebRTC播放器
+import ZLKWebRTCPlayer from '@/components/ZLKWebRTCPlayer.vue' // WebRTC 播放器
 import { useAlertStore } from '@/stores/alertStore' // 导入告警存储
 
 // 初始化路由

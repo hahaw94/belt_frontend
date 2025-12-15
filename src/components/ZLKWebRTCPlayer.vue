@@ -17,23 +17,21 @@
       crossorigin="anonymous"
     ></video>
     
-    <!-- 状态指示器 -->
     <div v-if="showStatus" class="player-status" :class="statusClass">
       <span class="status-text">{{ statusText }}</span>
     </div>
 
-    <!-- 统计信息 -->
     <div v-if="showStats && stats" class="player-stats">
       <div class="stat-item">
-        <span class="label">延迟:</span>
+        <span class="label">{{ texts.latency }}:</span>
         <span class="value">{{ stats.latency }}ms</span>
       </div>
       <div class="stat-item">
-        <span class="label">帧率:</span>
+        <span class="label">{{ texts.fps }}:</span>
         <span class="value">{{ stats.fps }} fps</span>
       </div>
       <div class="stat-item">
-        <span class="label">码率:</span>
+        <span class="label">{{ texts.bitrate }}:</span>
         <span class="value">{{ stats.bitrate }} kbps</span>
       </div>
     </div>
@@ -104,6 +102,11 @@ const props = defineProps({
   performanceMode: {
     type: Boolean,
     default: false
+  },
+  // 语言
+  locale: {
+    type: String,
+    default: 'zh'
   }
 })
 
@@ -119,6 +122,41 @@ const stats = ref({
   fps: 0,
   bitrate: 0
 })
+
+const localeTexts = {
+  zh: {
+    status: {
+      idle: '未播放',
+      connecting: (current, max) => (current > 0 ? `重连中 (${current}/${max})...` : '连接中...'),
+      playing: '播放中',
+      error: (msg) => `错误: ${msg}`,
+      stopped: '已停止',
+      unknown: '未知状态'
+    },
+    latency: '延迟',
+    fps: '帧率',
+    bitrate: '码率',
+    playError: (msg) => `播放失败: ${msg}`,
+    reconnectFailed: (max) => `WebRTC 连接失败，已尝试重连 ${max} 次`
+  },
+  en: {
+    status: {
+      idle: 'Idle',
+      connecting: (current, max) => (current > 0 ? `Reconnecting (${current}/${max})...` : 'Connecting...'),
+      playing: 'Playing',
+      error: (msg) => `Error: ${msg}`,
+      stopped: 'Stopped',
+      unknown: 'Unknown status'
+    },
+    latency: 'Latency',
+    fps: 'FPS',
+    bitrate: 'Bitrate',
+    playError: (msg) => `Play failed: ${msg}`,
+    reconnectFailed: (max) => `WebRTC connection failed after ${max} retries`
+  }
+}
+
+const texts = computed(() => localeTexts[props.locale] || localeTexts.zh)
 
 // 重连相关
 const reconnectAttempts = ref(0)
@@ -138,14 +176,15 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  const textMap = {
-    idle: '未播放',
-    connecting: reconnectAttempts.value > 0 ? `重连中 (${reconnectAttempts.value}/${maxReconnectAttempts})...` : '连接中...',
-    playing: '播放中',
-    error: `错误: ${errorMessage.value}`,
-    stopped: '已停止'
+  const t = texts.value.status
+  const map = {
+    idle: t.idle,
+    connecting: t.connecting(reconnectAttempts.value, maxReconnectAttempts),
+    playing: t.playing,
+    error: t.error(errorMessage.value),
+    stopped: t.stopped
   }
-  return textMap[status.value] || '未知状态'
+  return map[status.value] || t.unknown
 })
 
 // 监听流地址变化
@@ -299,7 +338,7 @@ const attemptReconnect = () => {
   }
   
   if (reconnectAttempts.value >= maxReconnectAttempts) {
-    handleError(`WebRTC 连接失败，已尝试重连 ${maxReconnectAttempts} 次`)
+    handleError(texts.value.reconnectFailed(maxReconnectAttempts))
     return
   }
   
@@ -369,7 +408,7 @@ const handleError = (message) => {
   status.value = 'error'
   errorMessage.value = message
   emit('error', message)
-  ElMessage.error(`播放失败: ${message}`)
+  ElMessage.error(texts.value.playError(message))
 }
 
 // 统计监控

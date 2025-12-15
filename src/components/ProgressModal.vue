@@ -2,7 +2,7 @@
   <div class="progress-modal-overlay" v-if="visible" @click.self="handleOverlayClick">
     <div class="progress-modal">
       <div class="progress-header">
-        <h3>{{ title }}</h3>
+        <h3>{{ displayTitle }}</h3>
         <button 
           v-if="!isPolling && (isCompleted || isError)" 
           @click="handleClose" 
@@ -30,36 +30,36 @@
         </div>
         
         <!-- 状态消息 -->
-        <div class="progress-message">
+          <div class="progress-message">
           <div v-if="isError" class="error-message">
             {{ errorMessage }}
           </div>
           <div v-else-if="isCompleted" class="success-message">
-            {{ message || '任务完成' }}
+            {{ message || texts.completed }}
           </div>
           <div v-else class="info-message">
-            {{ message || '处理中...' }}
+            {{ message || texts.processing }}
           </div>
         </div>
         
         <!-- 任务详情 -->
         <div v-if="taskData && showDetails" class="task-details">
-          <h4>任务详情</h4>
+          <h4>{{ texts.detailTitle }}</h4>
           <div class="detail-item" v-if="taskData.task_type">
-            <span class="label">任务类型:</span>
+            <span class="label">{{ texts.taskType }}:</span>
             <span class="value">{{ getTaskTypeText(taskData.task_type) }}</span>
           </div>
           <div class="detail-item" v-if="taskData.start_time">
-            <span class="label">开始时间:</span>
+            <span class="label">{{ texts.startTime }}:</span>
             <span class="value">{{ formatTime(taskData.start_time) }}</span>
           </div>
           <div class="detail-item" v-if="taskData.end_time">
-            <span class="label">结束时间:</span>
+            <span class="label">{{ texts.endTime }}:</span>
             <span class="value">{{ formatTime(taskData.end_time) }}</span>
           </div>
           <div class="detail-item" v-if="taskData.steps && taskData.steps.length">
-            <span class="label">当前步骤:</span>
-            <span class="value">{{ taskData.current_step || '准备中' }}</span>
+            <span class="label">{{ texts.currentStep }}:</span>
+            <span class="value">{{ taskData.current_step || texts.preparing }}</span>
           </div>
         </div>
       </div>
@@ -71,14 +71,14 @@
           class="cancel-btn"
           :disabled="!allowCancel"
         >
-          {{ allowCancel ? '取消' : '请稍候...' }}
+          {{ allowCancel ? texts.cancel : texts.waiting }}
         </button>
         <button 
           v-else-if="isCompleted || isError" 
           @click="handleClose" 
           class="confirm-btn"
         >
-          确定
+          {{ texts.confirm }}
         </button>
       </div>
     </div>
@@ -86,6 +86,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 // eslint-disable-next-line no-undef
 const props = defineProps({
   visible: {
@@ -94,7 +95,7 @@ const props = defineProps({
   },
   title: {
     type: String,
-    default: '任务进度'
+    default: ''
   },
   progress: {
     type: Number,
@@ -135,11 +136,63 @@ const props = defineProps({
   closeOnOverlay: {
     type: Boolean,
     default: false
+  },
+  locale: {
+    type: String,
+    default: 'zh'
   }
 })
 
 // eslint-disable-next-line no-undef
 const emit = defineEmits(['close', 'cancel'])
+
+const localeTexts = {
+  zh: {
+    title: '任务进度',
+    completed: '任务完成',
+    processing: '处理中...',
+    detailTitle: '任务详情',
+    taskType: '任务类型',
+    startTime: '开始时间',
+    endTime: '结束时间',
+    currentStep: '当前步骤',
+    preparing: '准备中',
+    cancel: '取消',
+    waiting: '请稍候...',
+    confirm: '确定',
+    typeMap: {
+      backup_create: '系统备份',
+      snapshot_create: '创建镜像点',
+      snapshot_restore: '恢复镜像点',
+      system_upgrade: '系统升级',
+      system_restore: '系统恢复'
+    }
+  },
+  en: {
+    title: 'Task Progress',
+    completed: 'Task completed',
+    processing: 'Processing...',
+    detailTitle: 'Task Details',
+    taskType: 'Task Type',
+    startTime: 'Start Time',
+    endTime: 'End Time',
+    currentStep: 'Current Step',
+    preparing: 'Preparing',
+    cancel: 'Cancel',
+    waiting: 'Please wait...',
+    confirm: 'OK',
+    typeMap: {
+      backup_create: 'System Backup',
+      snapshot_create: 'Create Snapshot',
+      snapshot_restore: 'Restore Snapshot',
+      system_upgrade: 'System Upgrade',
+      system_restore: 'System Restore'
+    }
+  }
+}
+
+const texts = computed(() => localeTexts[props.locale] || localeTexts.zh)
+const displayTitle = computed(() => props.title || texts.value.title)
 
 const handleClose = () => {
   emit('close')
@@ -156,13 +209,7 @@ const handleOverlayClick = () => {
 }
 
 const getTaskTypeText = (taskType) => {
-  const typeMap = {
-    'backup_create': '系统备份',
-    'snapshot_create': '创建镜像点',
-    'snapshot_restore': '恢复镜像点',
-    'system_upgrade': '系统升级',
-    'system_restore': '系统恢复'
-  }
+  const typeMap = texts.value.typeMap
   return typeMap[taskType] || taskType
 }
 

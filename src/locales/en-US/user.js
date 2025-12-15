@@ -4,6 +4,8 @@ export default {
   roleManagement: 'Role Management',
   
   // User management
+  profile: 'Profile',
+  logout: 'Logout',
   user: {
     title: 'User Management',
     addUser: 'Add User',
@@ -127,6 +129,41 @@ export default {
     excelParseFailed: 'Excel file parsing failed',
     fileReadFailed: 'File read failed',
     unsupportedFileFormat: 'Unsupported file format'
+  },
+
+  profileDialog: {
+    title: 'Profile',
+    viewTab: 'View Profile',
+    editTab: 'Edit Profile',
+    username: 'Username',
+    userId: 'User ID',
+    email: 'Email',
+    phone: 'Phone',
+    notSet: 'Not set',
+    roleInfo: 'Role Info',
+    noRoles: 'No roles',
+    permissionInfo: 'Permission Info',
+    noPermissions: 'No permissions',
+    usernameReadonly: 'Username cannot be modified',
+    emailPlaceholder: 'Please enter email address',
+    phonePlaceholder: 'Please enter phone number',
+    changePassword: 'Change Password',
+    oldPassword: 'Old Password',
+    newPassword: 'New Password',
+    confirmPassword: 'Confirm Password',
+    oldPasswordPlaceholder: 'Please enter old password',
+    newPasswordPlaceholder: 'Please enter new password (6-20 chars)',
+    confirmPasswordPlaceholder: 'Please re-enter new password',
+    status: {
+      normal: 'Normal',
+      locked: 'Locked',
+      unknown: 'Unknown'
+    },
+    roleType: {
+      system: 'System Role',
+      custom: 'Custom Role',
+      unknown: 'Unknown Type'
+    }
   },
   
   // Role management

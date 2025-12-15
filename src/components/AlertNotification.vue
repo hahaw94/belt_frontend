@@ -18,7 +18,7 @@
       <template #dropdown>
         <el-dropdown-menu class="notification-dropdown">
           <div class="notification-header">
-            <h4>告警通知</h4>
+            <h4>{{ texts.title }}</h4>
             <div class="header-actions">
               <el-button 
                 size="small" 
@@ -26,7 +26,7 @@
                 @click="markAllAsRead"
                 v-if="hasUnreadAlerts"
               >
-                全部已读
+                {{ texts.markAll }}
               </el-button>
             </div>
           </div>
@@ -34,7 +34,7 @@
           <div class="notification-content">
             <div v-if="alertHistory.length === 0" class="empty-state">
               <el-icon class="empty-icon"><DocumentRemove /></el-icon>
-              <p>暂无告警记录</p>
+              <p>{{ texts.empty }}</p>
             </div>
             
             <div v-else class="alert-list">
@@ -65,7 +65,7 @@
                 :disabled="currentPage === 1"
                 @click="currentPage--"
               >
-                上一页
+                {{ texts.prevPage }}
               </el-button>
               <span class="page-info">
                 {{ currentPage }} / {{ totalPages }}
@@ -75,14 +75,14 @@
                 :disabled="currentPage === totalPages"
                 @click="currentPage++"
               >
-                下一页
+                {{ texts.nextPage }}
               </el-button>
             </div>
           </div>
           
           <div class="notification-footer">
             <el-button size="small" text @click="clearHistory">
-              清空历史
+              {{ texts.clear }}
             </el-button>
           </div>
         </el-dropdown-menu>
@@ -107,14 +107,71 @@ export default {
     alertHistory: {
       type: Array,
       default: () => []
+    },
+    locale: {
+      type: String,
+      default: 'zh'
     }
   },
   emits: ['mark-as-read', 'mark-all-as-read', 'clear-history', 'alert-click'],
   setup(props, { emit }) {
+    const localeTexts = {
+      zh: {
+        title: '告警通知',
+        markAll: '全部已读',
+        empty: '暂无告警记录',
+        prevPage: '上一页',
+        nextPage: '下一页',
+        clear: '清空历史',
+        toastAllRead: '已标记所有告警为已读',
+        toastCleared: '历史记录已清空',
+        justNow: '刚刚',
+        minutesAgo: (m) => `${m}分钟前`,
+        hoursAgo: (h) => `${h}小时前`,
+        formatDate: (date) => `${date.toLocaleDateString()} ${date.toLocaleTimeString().slice(0, 5)}`,
+        typeMap: {
+          error: '错误',
+          warning: '警告',
+          info: '信息',
+          success: '成功'
+        }
+      },
+      en: {
+        title: 'Alerts',
+        markAll: 'Mark all read',
+        empty: 'No alerts yet',
+        prevPage: 'Prev',
+        nextPage: 'Next',
+        clear: 'Clear history',
+        toastAllRead: 'All alerts marked as read',
+        toastCleared: 'History cleared',
+        justNow: 'Just now',
+        minutesAgo: (m) => `${m} minutes ago`,
+        hoursAgo: (h) => `${h} hours ago`,
+        formatDate: (date) => new Intl.DateTimeFormat('en', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        }).format(date),
+        typeMap: {
+          error: 'Error',
+          warning: 'Warning',
+          info: 'Info',
+          success: 'Success'
+        }
+      }
+    }
+
     const router = useRouter()
     const dropdownRef = ref(null)
     const currentPage = ref(1)
     const pageSize = ref(10)
+
+    const texts = computed(() => {
+      return localeTexts[props.locale] || localeTexts.zh
+    })
 
     const unreadCount = computed(() => {
       return props.alertHistory.filter(alert => !alert.read).length
@@ -161,13 +218,13 @@ export default {
 
     const markAllAsRead = () => {
       emit('mark-all-as-read')
-      ElMessage.success('已标记所有告警为已读')
+      ElMessage.success(texts.value.toastAllRead)
     }
 
     const clearHistory = () => {
       emit('clear-history')
       currentPage.value = 1
-      ElMessage.success('历史记录已清空')
+      ElMessage.success(texts.value.toastCleared)
     }
 
     const handleDropdownVisible = (visible) => {
@@ -182,24 +239,19 @@ export default {
       const diff = now - date
       
       if (diff < 60000) { // 1分钟内
-        return '刚刚'
+        return texts.value.justNow
       } else if (diff < 3600000) { // 1小时内
-        return `${Math.floor(diff / 60000)}分钟前`
+        return texts.value.minutesAgo(Math.floor(diff / 60000))
       } else if (diff < 86400000) { // 24小时内
-        return `${Math.floor(diff / 3600000)}小时前`
+        return texts.value.hoursAgo(Math.floor(diff / 3600000))
       } else {
-        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString().slice(0, 5)
+        return texts.value.formatDate(date)
       }
     }
 
     const getTypeText = (type) => {
-      const typeMap = {
-        error: '错误',
-        warning: '警告',
-        info: '信息',
-        success: '成功'
-      }
-      return typeMap[type] || '未知'
+      const typeMap = texts.value.typeMap
+      return typeMap[type] || type
     }
 
     return {
@@ -216,7 +268,8 @@ export default {
       handleDropdownVisible,
       handleAlertClick,
       formatTime,
-      getTypeText
+      getTypeText,
+      texts
     }
   }
 }

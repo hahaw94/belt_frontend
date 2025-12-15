@@ -1,4 +1,6 @@
 export default {
+  profile: '个人资料',
+  logout: '退出登录',
   // 用户管理
   userManagement: '用户管理',
   roleManagement: '角色管理',
@@ -127,6 +129,41 @@ export default {
     excelParseFailed: 'Excel 文件解析失败',
     fileReadFailed: '文件读取失败',
     unsupportedFileFormat: '不支持的文件格式'
+  },
+
+  profileDialog: {
+    title: '个人资料',
+    viewTab: '查看资料',
+    editTab: '编辑资料',
+    username: '用户名',
+    userId: '用户ID',
+    email: '邮箱',
+    phone: '手机号',
+    notSet: '未设置',
+    roleInfo: '角色信息',
+    noRoles: '暂无角色',
+    permissionInfo: '权限信息',
+    noPermissions: '暂无权限',
+    usernameReadonly: '用户名不可修改',
+    emailPlaceholder: '请输入邮箱地址',
+    phonePlaceholder: '请输入手机号',
+    changePassword: '修改密码',
+    oldPassword: '原密码',
+    newPassword: '新密码',
+    confirmPassword: '确认密码',
+    oldPasswordPlaceholder: '请输入原密码',
+    newPasswordPlaceholder: '请输入新密码（6-20位）',
+    confirmPasswordPlaceholder: '请再次输入新密码',
+    status: {
+      normal: '正常',
+      locked: '锁定',
+      unknown: '未知'
+    },
+    roleType: {
+      system: '系统角色',
+      custom: '自定义角色',
+      unknown: '未知类型'
+    }
   },
   
   // 角色管理

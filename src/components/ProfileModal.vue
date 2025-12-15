@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="visible"
-    title="个人资料"
+    :title="t('user.profileDialog.title')"
     width="600px"
     @close="handleClose"
     :close-on-click-modal="false"
@@ -32,7 +32,7 @@
         }"
       >
         <!-- 查看个人资料 -->
-        <el-tab-pane label="查看资料" name="view">
+        <el-tab-pane :label="t('user.profileDialog.viewTab')" name="view">
           <div class="profile-view">
             <!-- 自定义用户信息表格，避免Element Plus的白色背景问题 -->
             <div 
@@ -63,14 +63,14 @@
                   'minWidth': '80px',
                   'borderRight': '1px solid rgba(0, 255, 255, 0.2)',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">用户名</div>
+                }">{{ t('user.profileDialog.username') }}</div>
                 <div :style="{
                   'padding': '12px 16px',
                   'background': 'rgba(45, 55, 75, 0.8)',
                   'backgroundColor': 'rgba(45, 55, 75, 0.8)',
                   'color': 'rgba(255, 255, 255, 0.9)',
                   'flex': '1'
-                }">{{ profileData.username || '暂无数据' }}</div>
+                }">{{ profileData.username || t('common.noData') }}</div>
               </div>
               
               <!-- 用户ID -->
@@ -87,14 +87,14 @@
                   'minWidth': '80px',
                   'borderRight': '1px solid rgba(0, 255, 255, 0.2)',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">用户ID</div>
+                }">{{ t('user.profileDialog.userId') }}</div>
                 <div :style="{
                   'padding': '12px 16px',
                   'background': 'rgba(45, 55, 75, 0.8)',
                   'backgroundColor': 'rgba(45, 55, 75, 0.8)',
                   'color': 'rgba(255, 255, 255, 0.9)',
                   'flex': '1'
-                }">{{ profileData.id || '暂无数据' }}</div>
+                }">{{ profileData.id || t('common.noData') }}</div>
               </div>
               
               <!-- 邮箱 -->
@@ -111,14 +111,14 @@
                   'minWidth': '80px',
                   'borderRight': '1px solid rgba(0, 255, 255, 0.2)',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">邮箱</div>
+                }">{{ t('user.profileDialog.email') }}</div>
                 <div :style="{
                   'padding': '12px 16px',
                   'background': 'rgba(45, 55, 75, 0.8)',
                   'backgroundColor': 'rgba(45, 55, 75, 0.8)',
                   'color': 'rgba(255, 255, 255, 0.9)',
                   'flex': '1'
-                }">{{ profileData.email || '未设置' }}</div>
+                }">{{ profileData.email || t('user.profileDialog.notSet') }}</div>
               </div>
               
               <!-- 手机号 -->
@@ -134,14 +134,14 @@
                   'minWidth': '80px',
                   'borderRight': '1px solid rgba(0, 255, 255, 0.2)',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">手机号</div>
+                }">{{ t('user.profileDialog.phone') }}</div>
                 <div :style="{
                   'padding': '12px 16px',
                   'background': 'rgba(45, 55, 75, 0.8)',
                   'backgroundColor': 'rgba(45, 55, 75, 0.8)',
                   'color': 'rgba(255, 255, 255, 0.9)',
                   'flex': '1'
-                }">{{ profileData.phone || '未设置' }}</div>
+                }">{{ profileData.phone || t('user.profileDialog.notSet') }}</div>
               </div>
             </div>
 
@@ -165,7 +165,7 @@
                 'font-size': '16px',
                 'font-weight': '600',
                 'text-shadow': '0 0 8px rgba(0, 255, 255, 0.4)'
-              }">角色信息</h4>
+              }">{{ t('user.profileDialog.roleInfo') }}</h4>
               <div class="roles-list">
                 <el-tag
                   v-for="role in profileData.roles"
@@ -185,7 +185,7 @@
                   {{ role.role_name }}
                 </el-tag>
                 <span v-if="!profileData.roles || profileData.roles.length === 0" class="no-data">
-                  暂无角色
+                  {{ t('user.profileDialog.noRoles') }}
                 </span>
               </div>
             </div>
@@ -210,7 +210,7 @@
                 'font-size': '16px',
                 'font-weight': '600',
                 'text-shadow': '0 0 8px rgba(0, 255, 255, 0.4)'
-              }">权限信息</h4>
+              }">{{ t('user.profileDialog.permissionInfo') }}</h4>
               <div class="permissions-list">
                 <el-tag
                   v-for="permission in profileData.permissions"
@@ -231,7 +231,7 @@
                   {{ permission.permission_name }}
                 </el-tag>
                 <span v-if="!profileData.permissions || profileData.permissions.length === 0" class="no-data">
-                  暂无权限
+                  {{ t('user.profileDialog.noPermissions') }}
                 </span>
               </div>
             </div>
@@ -239,7 +239,7 @@
         </el-tab-pane>
 
         <!-- 编辑个人资料 -->
-        <el-tab-pane label="编辑资料" name="edit">
+        <el-tab-pane :label="t('user.profileDialog.editTab')" name="edit">
           <el-form
             ref="editFormRef"
             :model="editForm"
@@ -253,7 +253,7 @@
             }"
           >
             <el-form-item 
-              label="用户名"
+              :label="t('user.profileDialog.username')"
               :style="{
                 '--el-form-item-label-color': '#00ffff'
               }"
@@ -263,7 +263,7 @@
                   'color': '#00ffff',
                   'fontWeight': '500',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">用户名</span>
+                }">{{ t('user.profileDialog.username') }}</span>
               </template>
               <el-input 
                 v-model="profileData.username" 
@@ -281,11 +281,11 @@
               />
               <div class="form-help" :style="{
                 'color': 'rgba(255, 255, 255, 0.6)'
-              }">用户名不可修改</div>
+                }">{{ t('user.profileDialog.usernameReadonly') }}</div>
             </el-form-item>
 
-            <el-form-item 
-              label="邮箱" 
+          <el-form-item 
+              :label="t('user.profileDialog.email')" 
               prop="email"
               :style="{
                 '--el-form-item-label-color': '#00ffff'
@@ -296,19 +296,19 @@
                   'color': '#00ffff',
                   'fontWeight': '500',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">邮箱</span>
+                }">{{ t('user.profileDialog.email') }}</span>
               </template>
               <el-input
                 v-model="editForm.email"
                 type="email"
-                placeholder="请输入邮箱地址"
+                :placeholder="t('user.profileDialog.emailPlaceholder')"
                 clearable
                 style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
               />
             </el-form-item>
 
             <el-form-item 
-              label="手机号" 
+              :label="t('user.profileDialog.phone')" 
               prop="phone"
               :style="{
                 '--el-form-item-label-color': '#00ffff'
@@ -319,11 +319,11 @@
                   'color': '#00ffff',
                   'fontWeight': '500',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">手机号</span>
+                }">{{ t('user.profileDialog.phone') }}</span>
               </template>
               <el-input
                 v-model="editForm.phone"
-                placeholder="请输入手机号"
+                :placeholder="t('user.profileDialog.phonePlaceholder')"
                 clearable
                 maxlength="11"
                 style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
@@ -352,7 +352,7 @@
                 'fontWeight': '500',
                 'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)',
                 'borderRadius': '4px'
-              }">修改密码</div>
+            }">{{ t('user.profileDialog.changePassword') }}</div>
               <div :style="{
                 'flex': '1',
                 'height': '1px',
@@ -362,7 +362,7 @@
             </div>
             
             <el-form-item 
-              label="原密码" 
+              :label="t('user.profileDialog.oldPassword')" 
               prop="oldPassword"
               :style="{
                 '--el-form-item-label-color': '#00ffff'
@@ -373,12 +373,12 @@
                   'color': '#00ffff',
                   'fontWeight': '500',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">原密码</span>
+                }">{{ t('user.profileDialog.oldPassword') }}</span>
               </template>
               <el-input
                 v-model="editForm.oldPassword"
                 type="password"
-                placeholder="请输入原密码"
+                :placeholder="t('user.profileDialog.oldPasswordPlaceholder')"
                 clearable
                 show-password
                 style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
@@ -386,7 +386,7 @@
             </el-form-item>
 
             <el-form-item 
-              label="新密码" 
+              :label="t('user.profileDialog.newPassword')" 
               prop="newPassword"
               :style="{
                 '--el-form-item-label-color': '#00ffff'
@@ -397,12 +397,12 @@
                   'color': '#00ffff',
                   'fontWeight': '500',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">新密码</span>
+                }">{{ t('user.profileDialog.newPassword') }}</span>
               </template>
               <el-input
                 v-model="editForm.newPassword"
                 type="password"
-                placeholder="请输入新密码（6-20位）"
+                :placeholder="t('user.profileDialog.newPasswordPlaceholder')"
                 clearable
                 show-password
                 style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
@@ -410,7 +410,7 @@
             </el-form-item>
 
             <el-form-item 
-              label="确认密码" 
+              :label="t('user.profileDialog.confirmPassword')" 
               prop="confirmPassword"
               :style="{
                 '--el-form-item-label-color': '#00ffff'
@@ -421,12 +421,12 @@
                   'color': '#00ffff',
                   'fontWeight': '500',
                   'textShadow': '0 0 8px rgba(0, 255, 255, 0.3)'
-                }">确认密码</span>
+                }">{{ t('user.profileDialog.confirmPassword') }}</span>
               </template>
               <el-input
                 v-model="editForm.confirmPassword"
                 type="password"
-                placeholder="请再次输入新密码"
+                :placeholder="t('user.profileDialog.confirmPasswordPlaceholder')"
                 clearable
                 show-password
                 style="--el-input-bg-color: rgba(65, 75, 95, 0.85); --el-input-border-color: rgba(0, 255, 255, 0.4); --el-input-text-color: rgba(255, 255, 255, 0.95);"
@@ -435,9 +435,9 @@
 
             <el-form-item>
               <el-button type="primary" @click="handleUpdate" :loading="updating">
-                保存修改
+                {{ t('common.save') }}
               </el-button>
-              <el-button @click="resetEditForm">重置</el-button>
+              <el-button @click="resetEditForm">{{ t('common.reset') }}</el-button>
             </el-form-item>
           </el-form>
         </el-tab-pane>
@@ -446,7 +446,7 @@
 
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="handleClose">关闭</el-button>
+        <el-button @click="handleClose">{{ t('common.close') }}</el-button>
       </span>
     </template>
   </el-dialog>
@@ -454,6 +454,7 @@
 
 <script>
 import { ref, reactive, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { userApi } from '@/api/user'
 import { authApi } from '@/api/auth'
@@ -468,6 +469,7 @@ export default {
   },
   emits: ['update:modelValue', 'profile-updated'],
   setup(props, { emit }) {
+    const { t } = useI18n()
     const visible = ref(false)
     const loading = ref(false)
     const updating = ref(false)
@@ -795,22 +797,23 @@ export default {
     // 获取状态文本
     const getStatusText = (status) => {
       switch (status) {
-        case 1: return '正常'
-        case 2: return '锁定'
-        default: return '未知'
+        case 1: return t('user.profileDialog.status.normal')
+        case 2: return t('user.profileDialog.status.locked')
+        default: return t('user.profileDialog.status.unknown')
       }
     }
 
     // 获取角色类型文本
     const getRoleTypeText = (roleType) => {
       switch (roleType) {
-        case 0: return '系统角色'
-        case 1: return '自定义角色'
-        default: return '未知类型'
+        case 0: return t('user.profileDialog.roleType.system')
+        case 1: return t('user.profileDialog.roleType.custom')
+        default: return t('user.profileDialog.roleType.unknown')
       }
     }
 
     return {
+      t,
       visible,
       loading,
       updating,
